@@ -342,7 +342,7 @@
       <section class="tab-section active" id="tab-portfolio">
         <div class="pg-head">
           <h1>MF Portfolio <span class="accent">Planner</span></h1>
-          <p>Track your liquid and equity funds. Set SIP amounts and dates — they drive the STP split automatically.</p>
+          <p>Enter your current values and target totals. The page calculates exactly how much you must invest to reach your goals.</p>
         </div>
 
         <div class="dep-summary" id="depSummary">
@@ -351,7 +351,7 @@
           <span class="note" id="depNote">—</span>
         </div>
 
-        <div class="sec-head">Liquid Funds — Reserve &amp; Deployable</div>
+        <div class="sec-head">Liquid Funds — Current, target &amp; deployable</div>
         <div class="fund-grid" id="liqGrid"></div>
 
         <div class="sec-head mt">Equity Funds — SIP Configuration</div>
@@ -607,8 +607,8 @@
       function defaultState() {
         return {
           liquid: {
-            liq1: { name: "Liquid Fund 1", value: 0, reserve: 0 },
-            liq2: { name: "Liquid Fund 2", value: 0, reserve: 0 },
+            liq1: { name: "Liquid Fund 1", value: 0, reserve: 0, target: 0 },
+            liq2: { name: "Liquid Fund 2", value: 0, reserve: 0, target: 0 },
           },
           equity: {
             eq1: { name: "Nifty 50 Index Fund", paid: 0, shown: 0, target: 0, sipAmt: 0, sipDate: 5 },
@@ -741,7 +741,14 @@
               </div>
             </div>
           </div>
+          <div class="field">
+            <label class="flabel" for="ltgt-${f.id}">Target total</label>
+            <div class="ibox"><span class="pfx">&#8377;</span>
+              <input class="num liq" id="ltgt-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.target || ""}" />
+            </div>
+          </div>
           <div class="chip liq"><span>Deployable</span><b id="ldep-${f.id}">&#8377;0</b></div>
+          <div class="chip liq"><span id="linvlbl-${f.id}">Invest now</span><b id="linv-${f.id}">&#8377;0</b></div>
           <div class="pbar-row"><span>Reserved</span><span id="lrespct-${f.id}">0%</span></div>
           <div class="pbar"><div class="fill liq" id="ldepfill-${f.id}" style="width:0%"></div></div>
         </div>`;
@@ -807,6 +814,7 @@
         el("lname-" + f.id).addEventListener("input", e => { state.liquid[f.id].name = e.target.value; render(); });
         el("lval-"  + f.id).addEventListener("input", e => { state.liquid[f.id].value   = num(e.target.value); render(); });
         el("lres-"  + f.id).addEventListener("input", e => { state.liquid[f.id].reserve = num(e.target.value); render(); });
+        el("ltgt-"  + f.id).addEventListener("input", e => { state.liquid[f.id].target  = num(e.target.value); render(); });
       });
 
       EQ_FUNDS.forEach(f => {
@@ -853,14 +861,23 @@
       ════════════════════════════════════════════ */
       function render() {
         /* — Liquid funds — */
-        let totalLiqVal = 0, totalDep = 0;
+        let totalLiqVal = 0, totalDep = 0, totalLiqTgt = 0, totalLiqInv = 0;
         LIQ_FUNDS.forEach(f => {
           const val = state.liquid[f.id].value || 0;
           const res = Math.min(state.liquid[f.id].reserve || 0, val);
           const dep = Math.max(0, val - res);
+          const tgt = state.liquid[f.id].target || 0;
+          const gap = tgt - val;
+          const required = gap > 0 ? gap : 0;
+
           totalLiqVal += val;
           totalDep    += dep;
+          totalLiqTgt += tgt;
+          totalLiqInv += required;
+
           el("ldep-"    + f.id).textContent = fmt(dep);
+          el("linvlbl-" + f.id).textContent = required > 0 ? "Invest now" : (tgt > 0 ? "Goal reached ✓" : "Invest now");
+          el("linv-"     + f.id).textContent = fmt(required);
           const resPct = val > 0 ? Math.round((res / val) * 100) : 0;
           el("lrespct-" + f.id).textContent = resPct + "% reserved";
           el("ldepfill-"+ f.id).style.width = val > 0 ? Math.round((dep / val) * 100) + "%" : "0%";
@@ -957,18 +974,22 @@
 
         /* — Summary table — */
         const totCur = eqCur + totalLiqVal;
-        const totTgt = eqTgt + totalLiqVal;
+        const totTgt = eqTgt + totalLiqTgt;
+        const totInv = eqInv + totalLiqInv;
         el("eqCur").textContent  = fmt(eqCur);
         el("eqTgt").textContent  = fmt(eqTgt);
         el("eqInv").textContent  = fmt(eqInv);
         el("liqCur").textContent = fmt(totalLiqVal);
+        el("liqTgt").textContent = fmt(totalLiqTgt);
+        el("liqInv").textContent = fmt(totalLiqInv);
         el("totCur").textContent = fmt(totCur);
         el("totTgt").textContent = fmt(totTgt);
-        el("totInv").textContent = fmt(eqInv);
+        el("totInv").textContent = fmt(totInv);
 
         /* Hero */
-        el("heroVal").textContent = fmt(eqInv);
-        el("heroSub").textContent = EQ_FUNDS.map(f => (state.equity[f.id].name || f.defaultName).split(" ").slice(0, 2).join(" ")).join(" + ");
+        el("heroLabel").textContent = "Total invest required";
+        el("heroVal").textContent = fmt(totInv);
+        el("heroSub").textContent = "To reach targets across equity + liquid funds";
 
         /* Allocation bars */
         const nowEqPct = pct(eqCur, totCur);
