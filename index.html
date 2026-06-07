@@ -1454,6 +1454,27 @@
             style="margin-top: 10px; color: var(--txt)"
           ></p>
         </div>
+
+        <div class="card" style="margin-bottom: 14px">
+          <div class="grid2" style="gap: 10px; flex-wrap: wrap">
+            <div class="field" style="flex: 1; min-width: 120px">
+              <label class="flabel" for="calStpDate">STP Transfer Date</label>
+              <input class="num no-pfx" id="calStpDate" type="number" min="1" max="28" inputmode="numeric" placeholder="15" />
+            </div>
+            <div class="field" style="flex: 1; min-width: 120px">
+              <label class="flabel" for="calStpDuration">Duration (months)</label>
+              <input class="num no-pfx" id="calStpDuration" type="number" min="1" inputmode="numeric" placeholder="12" />
+            </div>
+            <div class="field" style="flex: 1; min-width: 120px">
+              <label class="flabel" for="calStpOverride">Override Amount</label>
+              <div class="ibox">
+                <span class="pfx">&#8377;</span>
+                <input class="num amb" id="calStpOverride" type="number" min="0" inputmode="numeric" placeholder="auto" />
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div
           id="calEmpty"
           style="
@@ -2119,6 +2140,12 @@
             if (stpOv) stpOv.value = state.stp.override || "";
             if (stpDur) stpDur.value = state.stp.duration || "";
             if (stpDt) stpDt.value = state.stp.date || "";
+            const calOv = el("calStpOverride");
+            const calDur = el("calStpDuration");
+            const calDt = el("calStpDate");
+            if (calOv) calOv.value = state.stp.override || "";
+            if (calDur) calDur.value = state.stp.duration || "";
+            if (calDt) calDt.value = state.stp.date || "";
             NW_FIELDS.forEach((f) => {
               const inp = el("nw-" + f.id);
               if (inp) inp.value = state.networth[f.id] || "";
@@ -2376,14 +2403,34 @@
             });
           el("stpOverride").addEventListener("input", (e) => {
             state.stp.override = num(e.target.value);
+            el("calStpOverride").value = e.target.value;
             render();
           });
           el("stpDuration").addEventListener("input", (e) => {
             state.stp.duration = num(e.target.value);
+            el("calStpDuration").value = e.target.value;
             render();
           });
           el("stpDate").addEventListener("input", (e) => {
             state.stp.date = num(e.target.value);
+            el("calStpDate").value = e.target.value;
+            render();
+          });
+
+          /* Calendar-tab mirrors of STP fields */
+          el("calStpOverride").addEventListener("input", (e) => {
+            state.stp.override = num(e.target.value);
+            el("stpOverride").value = e.target.value;
+            render();
+          });
+          el("calStpDuration").addEventListener("input", (e) => {
+            state.stp.duration = num(e.target.value);
+            el("stpDuration").value = e.target.value;
+            render();
+          });
+          el("calStpDate").addEventListener("input", (e) => {
+            state.stp.date = num(e.target.value);
+            el("stpDate").value = e.target.value;
             render();
           });
 
@@ -2391,6 +2438,9 @@
           if (state.stp.override) el("stpOverride").value = state.stp.override;
           el("stpDuration").value = state.stp.duration || "";
           el("stpDate").value = state.stp.date || "";
+          if (state.stp.override) el("calStpOverride").value = state.stp.override;
+          el("calStpDuration").value = state.stp.duration || "";
+          el("calStpDate").value = state.stp.date || "";
 
           /* Tabs */
           el("tabs")
