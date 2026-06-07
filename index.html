@@ -1289,8 +1289,9 @@
           <h1>Deployment <span class="accent">Calendar</span></h1>
           <p>
             All STP transfers and SIP investments scheduled for the coming
-            months.
+            month.
           </p>
+          <p id="calStatus" class="foot" style="margin-top:10px;color:var(--txt);"></p>
         </div>
         <div
           id="calEmpty"
@@ -2064,7 +2065,8 @@
         const autoDep = stpDeployable();
         const effective = state.stp.override > 0 ? state.stp.override : autoDep;
         const dur = state.stp.duration || 0;
-        const stpAmt = dur > 0 && effective > 0 ? Math.ceil(effective / dur) : 0;
+        const stpAmt =
+          dur > 0 && effective > 0 ? Math.ceil(effective / dur) : 0;
         const weights = sipWeights();
 
         /* Update STP source buttons */
@@ -2232,11 +2234,17 @@
         const events = [];
 
         const monthIndex = showNextMonth ? 1 : 0;
-        if (stpAmt > 0 && stpDate > 0 && monthIndex < (state.stp.duration || 0)) {
+        if (
+          stpAmt > 0 &&
+          stpDate > 0 &&
+          monthIndex < (state.stp.duration || 0)
+        ) {
           const detail = weights
             .map((w) => {
-              const name = (state.equity[w.id].name ||
-                EQ_FUNDS.find((f) => f.id === w.id).defaultName)
+              const name = (
+                state.equity[w.id].name ||
+                EQ_FUNDS.find((f) => f.id === w.id).defaultName
+              )
                 .split(" ")
                 .slice(0, 2)
                 .join(" ");
@@ -2249,7 +2257,11 @@
             label: "STP Transfer",
             amount: stpAmt,
             detail,
-            status: showNextMonth ? "pending" : today.getDate() >= 16 ? "paid" : "pending",
+            status: showNextMonth
+              ? "pending"
+              : today.getDate() >= 16
+                ? "paid"
+                : "pending",
           });
           hasAny = true;
         }
@@ -2263,7 +2275,11 @@
               label: s.name || f.defaultName,
               amount: s.sipAmt,
               detail: "Monthly SIP",
-              status: showNextMonth ? "pending" : today.getDate() > s.sipDate ? "paid" : "pending",
+              status: showNextMonth
+                ? "pending"
+                : today.getDate() > s.sipDate
+                  ? "paid"
+                  : "pending",
             });
             hasAny = true;
           }
@@ -2285,11 +2301,16 @@
           .reduce((s, e) => s + e.amount, 0);
         const grandTotal = stpTotal + sipTotal;
 
-        const mHead = stpTotal > 0 ? `<span class="mtotal">${fmt(stpTotal)} STP</span>` : "";
+        const mHead =
+          stpTotal > 0
+            ? `<span class="mtotal">${fmt(stpTotal)} STP</span>`
+            : "";
 
-        const evHTML = events.length > 0
-          ? events
-              .map((ev, i) => `
+        const evHTML =
+          events.length > 0
+            ? events
+                .map(
+                  (ev, i) => `
               ${i > 0 && events[i - 1].date !== ev.date ? '<div class="cal-sep"></div>' : ""}
               <div class="cal-event">
                 <div class="cal-day">${ev.date}</div>
@@ -2298,13 +2319,15 @@
                   <div class="cal-amt ${ev.type}">${fmt(ev.amount)}</div>
                   <div class="cal-detail">${ev.detail}</div>
                 </div>
-              </div>`)
-              .join("")
-          : `<div class="cal-empty-month">No events</div>`;
+              </div>`,
+                )
+                .join("")
+            : `<div class="cal-empty-month">No events</div>`;
 
-        const totalRow = grandTotal > 0
-          ? `<div class="cal-total-row"><span class="k">Month total</span><span class="v">${fmt(grandTotal)}</span></div>`
-          : "";
+        const totalRow =
+          grandTotal > 0
+            ? `<div class="cal-total-row"><span class="k">Month total</span><span class="v">${fmt(grandTotal)}</span></div>`
+            : "";
 
         el("calGrid").innerHTML = `
           <div class="cal-month">
