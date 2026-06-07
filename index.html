@@ -1734,8 +1734,10 @@
         const liq2Amt = deployable("liq2");
         const src = state.stp.sourceId;
         if (src === "both") return "both";
-        if (src === "liq1") return liq1Amt > 0 ? "liq1" : liq2Amt > 0 ? "liq2" : "liq1";
-        if (src === "liq2") return liq2Amt > 0 ? "liq2" : liq1Amt > 0 ? "liq1" : "liq2";
+        if (src === "liq1")
+          return liq1Amt > 0 ? "liq1" : liq2Amt > 0 ? "liq2" : "liq1";
+        if (src === "liq2")
+          return liq2Amt > 0 ? "liq2" : liq1Amt > 0 ? "liq1" : "liq2";
         return liq1Amt + liq2Amt > 0 ? "both" : src;
       }
 
@@ -2023,6 +2025,13 @@
           totalLiqVal > 0
             ? fmt(totalLiqVal - totalDep) + " reserved across " + liqNames
             : "Enter liquid fund values above";
+
+        const autoDep = stpDeployable();
+        const effective = state.stp.override > 0 ? state.stp.override : autoDep;
+        const dur = state.stp.duration || 0;
+        const stpAmt =
+          dur > 0 && effective > 0 ? Math.ceil(effective / dur) : 0;
+
         el("monthlyStpDue").textContent = stpAmt > 0 ? fmt(stpAmt) : "₹0";
         el("stpDueNote").textContent = state.stp.date
           ? `Pay on ${state.stp.date}th`
@@ -2080,11 +2089,6 @@
         });
 
         /* — STP — */
-        const autoDep = stpDeployable();
-        const effective = state.stp.override > 0 ? state.stp.override : autoDep;
-        const dur = state.stp.duration || 0;
-        const stpAmt =
-          dur > 0 && effective > 0 ? Math.ceil(effective / dur) : 0;
         const weights = sipWeights();
 
         /* Update STP source buttons */
