@@ -1777,6 +1777,7 @@
                 ...Object.fromEntries(NW_FIELDS.map((f) => [f.id, 0])),
                 snapshots: {},
               },
+              _meta: { v: 0, savedAt: null, syncedAt: null },
             };
           }
 
@@ -1803,6 +1804,7 @@
                   ),
                   snapshots: { ...(s.networth?.snapshots || {}) },
                 },
+                _meta: { ...def._meta, ...(s._meta || {}) },
               };
             } catch {
               return def;
@@ -1812,6 +1814,9 @@
           let state = loadState();
 
           function saveState() {
+            if (!state._meta) state._meta = { v: 0, savedAt: null, syncedAt: null };
+            state._meta.v       = (state._meta.v || 0) + 1;
+            state._meta.savedAt = new Date().toISOString();
             try {
               localStorage.setItem(STORE_KEY, JSON.stringify(state));
               if (!fbEnabled) {
@@ -1827,15 +1832,22 @@
               el("saveDot").className = "dot warn";
               el("saveTxt").textContent = "Storage blocked — data won’t persist";
             }
-            queueCloudSave();
+            scheduleCloudSave();
           }
 
           /* ════════════════════════════════════════════
-             FIREBASE
+             FIREBASE — cache-first, version-aware sync
           ════════════════════════════════════════════ */
-          let db = null;
-          let fbEnabled = false;
-          let fbSaveTimer = null;
+          const CACHE_TTL_MS  = 5 * 60 * 1000; // skip cloud fetch if synced < 5 min ago
+          const SAVE_DEBOUNCE = 2000;           // ms to debounce writes to Firestore
+          const MAX_FB_RETRY  = 4;              // max retries before surfacing error
+
+          let db            = null;
+          let fbEnabled     = false;
+          let fbSaveTimer   = null;
+          let fbDirty       = false;  // true when local state hasn't reached Firestore yet
+          let fbRetryDelay  = 2000;   // doubles on each failed retry (exponential backoff)
+          let fbUnsubscribe = null;   // cleanup handle for real-time onSnapshot listener
 
           function fbSyncUI(status, msg) {
             const dot = el("saveDot");
@@ -1871,30 +1883,74 @@
             }
           }
 
-          async function saveToCloud() {
+          /* Merge cloud state into local, persist, and re-render */
+          function applyCloudState(raw) {
+            const def = defaultState();
+            state = {
+              liquid: {
+                liq1: { ...def.liquid.liq1, ...(raw.liquid?.liq1 || {}) },
+                liq2: { ...def.liquid.liq2, ...(raw.liquid?.liq2 || {}) },
+              },
+              equity: {
+                eq1: { ...def.equity.eq1, ...(raw.equity?.eq1 || {}) },
+                eq2: { ...def.equity.eq2, ...(raw.equity?.eq2 || {}) },
+                eq3: { ...def.equity.eq3, ...(raw.equity?.eq3 || {}) },
+              },
+              stp: { ...def.stp, ...(raw.stp || {}) },
+              networth: {
+                ...Object.fromEntries(
+                  NW_FIELDS.map((f) => [f.id, raw.networth?.[f.id] ?? 0]),
+                ),
+                snapshots: { ...(raw.networth?.snapshots || {}) },
+              },
+              _meta: {
+                ...def._meta,
+                ...(raw._meta || {}),
+                syncedAt: new Date().toISOString(),
+              },
+            };
+            localStorage.setItem(STORE_KEY, JSON.stringify(state));
+            syncInputsFromState();
+            applyStpIfDue();
+            render();
+          }
+
+          /* Write to Firestore with exponential-backoff retry */
+          async function saveToCloud(retryNum = 0) {
             if (!fbEnabled || !db) return;
             fbSyncUI("syncing");
             try {
-              await db
-                .collection("portfolios")
-                .doc("main")
-                .set({
-                  state: JSON.stringify(state),
-                  savedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                });
+              await db.collection("portfolios").doc("main").set({
+                state:   JSON.stringify(state),
+                v:       state._meta?.v || 0,
+                savedAt: firebase.firestore.FieldValue.serverTimestamp(),
+              });
+              state._meta.syncedAt = new Date().toISOString();
+              localStorage.setItem(STORE_KEY, JSON.stringify(state));
+              fbDirty      = false;
+              fbRetryDelay = 2000;
               fbSyncUI("ok");
             } catch (e) {
               console.warn("Firebase save:", e.message);
-              fbSyncUI("err");
+              if (retryNum < MAX_FB_RETRY) {
+                setTimeout(() => saveToCloud(retryNum + 1), fbRetryDelay);
+                fbRetryDelay = Math.min(fbRetryDelay * 2, 30_000);
+              } else {
+                fbRetryDelay = 2000;
+                fbSyncUI("err", "Sync failed after retries — saved locally");
+              }
             }
           }
 
-          function queueCloudSave() {
+          /* Mark state dirty and debounce a Firestore write */
+          function scheduleCloudSave() {
             if (!fbEnabled) return;
+            fbDirty = true;
             clearTimeout(fbSaveTimer);
-            fbSaveTimer = setTimeout(saveToCloud, 1500);
+            fbSaveTimer = setTimeout(() => saveToCloud(0), SAVE_DEBOUNCE);
           }
 
+          /* One-shot read from Firestore (used by maybeLoadFromCloud) */
           async function loadFromCloud() {
             if (!fbEnabled || !db) return null;
             try {
@@ -1905,6 +1961,69 @@
               console.warn("Firebase load:", e.message);
             }
             return null;
+          }
+
+          /* Cache-first load: skip the network round-trip if local is fresh */
+          async function maybeLoadFromCloud() {
+            if (!fbEnabled || !db) return;
+            const meta     = state._meta || {};
+            const syncedAt = meta.syncedAt ? new Date(meta.syncedAt).getTime() : 0;
+            const isStale  = !syncedAt || (Date.now() - syncedAt > CACHE_TTL_MS);
+
+            if (!isStale) {
+              fbSyncUI("ok", "Cache valid — no sync needed");
+              return;
+            }
+
+            fbSyncUI("syncing");
+            const raw = await loadFromCloud();
+
+            if (!raw) {
+              fbDirty = true;
+              await saveToCloud(0);
+              return;
+            }
+
+            const localV = meta.v || 0;
+            const cloudV = raw._meta?.v || 0;
+
+            if (cloudV > localV) {
+              // Another device saved a newer version — apply it
+              applyCloudState(raw);
+              fbSyncUI("ok", "Synced from cloud ✓");
+            } else if (cloudV < localV) {
+              // Local is ahead (e.g., edited offline) — push to cloud
+              fbDirty = true;
+              await saveToCloud(0);
+            } else {
+              // Same version — stamp syncedAt so next load skips the network
+              state._meta.syncedAt = new Date().toISOString();
+              localStorage.setItem(STORE_KEY, JSON.stringify(state));
+              fbSyncUI("ok");
+            }
+          }
+
+          /* Real-time listener: update UI when another device pushes a newer version */
+          function subscribeToCloud() {
+            if (!fbEnabled || !db) return;
+            fbUnsubscribe = db.collection("portfolios").doc("main").onSnapshot(
+              (doc) => {
+                // hasPendingWrites = true means this is our own optimistic write — skip
+                if (!doc.exists || doc.metadata.hasPendingWrites) return;
+                try {
+                  const raw    = JSON.parse(doc.data().state || "{}");
+                  const localV = state._meta?.v || 0;
+                  const cloudV = raw._meta?.v   || 0;
+                  if (cloudV > localV) {
+                    applyCloudState(raw);
+                    fbSyncUI("ok", "Updated from another device ✓");
+                  }
+                } catch (e) {
+                  console.warn("Firestore snapshot:", e.message);
+                }
+              },
+              (err) => console.warn("Firestore listener:", err.message),
+            );
           }
 
           /* Sync all input fields from current state (called after cloud load) */
@@ -3278,43 +3397,12 @@
           applyStpIfDue();
           render();
 
-          /* After first render, pull cloud state (async) and refresh if needed */
+          /* Cache-first cloud sync + real-time listener for cross-device updates */
           if (fbEnabled) {
-            fbSyncUI("syncing");
-            loadFromCloud()
-              .then((raw) => {
-                if (!raw) {
-                  /* No cloud doc yet — push current local state */
-                  saveToCloud();
-                  return;
-                }
-                /* Merge cloud data using the same safe-merge as loadState() */
-                const def = defaultState();
-                state = {
-                  liquid: {
-                    liq1: { ...def.liquid.liq1, ...(raw.liquid?.liq1 || {}) },
-                    liq2: { ...def.liquid.liq2, ...(raw.liquid?.liq2 || {}) },
-                  },
-                  equity: {
-                    eq1: { ...def.equity.eq1, ...(raw.equity?.eq1 || {}) },
-                    eq2: { ...def.equity.eq2, ...(raw.equity?.eq2 || {}) },
-                    eq3: { ...def.equity.eq3, ...(raw.equity?.eq3 || {}) },
-                  },
-                  stp: { ...def.stp, ...(raw.stp || {}) },
-                  networth: {
-                    ...Object.fromEntries(
-                      NW_FIELDS.map((f) => [f.id, raw.networth?.[f.id] ?? 0]),
-                    ),
-                    snapshots: { ...(raw.networth?.snapshots || {}) },
-                  },
-                };
-                localStorage.setItem(STORE_KEY, JSON.stringify(state));
-                syncInputsFromState();
-                applyStpIfDue();
-                render();
-                fbSyncUI("ok", "Loaded from cloud ✓");
-              })
-              .catch(() => fbSyncUI("err", "Cloud unavailable — using local data"));
+            maybeLoadFromCloud().catch(() =>
+              fbSyncUI("err", "Cloud unavailable — using local data"),
+            );
+            subscribeToCloud();
           }
     </script>
   </body>
