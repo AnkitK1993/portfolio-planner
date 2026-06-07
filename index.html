@@ -196,6 +196,16 @@
         background: var(--liq-dim);
         color: #cfe2fa;
       }
+      .tag.stp {
+        background: var(--amber-dim);
+        color: #fae3cf;
+        flex-shrink: 0;
+      }
+      .tag.sip {
+        background: var(--mint-dim);
+        color: #cffae3;
+        flex-shrink: 0;
+      }
 
       /* ── FIELDS ── */
       .field {
@@ -474,6 +484,74 @@
         margin-left: auto;
       }
 
+      /* ── UPCOMING PAYMENTS ── */
+      .upcoming-card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+        margin-bottom: 14px;
+      }
+      .upcoming-hd {
+        background: var(--panel-2);
+        padding: 8px 14px;
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--dim);
+      }
+      .upcoming-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        border-top: 1px solid var(--line);
+      }
+      .upcoming-dblock {
+        min-width: 46px;
+      }
+      .upcoming-day {
+        font-family: "Fraunces", serif;
+        font-size: 20px;
+        line-height: 1;
+        color: var(--txt);
+      }
+      .upcoming-mo {
+        font-size: 9.5px;
+        color: var(--dim);
+        margin-top: 2px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .upcoming-name {
+        flex: 1;
+        color: var(--dim);
+        font-size: 11px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
+      }
+      .upcoming-amt {
+        font-family: "Fraunces", serif;
+        font-size: 15px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .upcoming-amt.stp {
+        color: var(--amber);
+      }
+      .upcoming-amt.sip {
+        color: var(--mint);
+      }
+      .upcoming-diff {
+        font-size: 9.5px;
+        color: var(--dim);
+        min-width: 58px;
+        text-align: right;
+        white-space: nowrap;
+      }
+
       /* ── CALENDAR ── */
       .cal-grid {
         display: grid;
@@ -592,6 +670,15 @@
         font-family: "Fraunces", serif;
         font-size: 14px;
         color: var(--txt);
+      }
+      .cal-event.pending {
+        opacity: 0.42;
+      }
+      .cal-event.paid {
+        background: rgba(74, 222, 156, 0.05);
+      }
+      .cal-event.paid .cal-day {
+        color: var(--mint);
       }
 
       /* ── MARKET ── */
@@ -891,6 +978,20 @@
         background: var(--amber);
         box-shadow: none;
       }
+      .dot.sync {
+        background: var(--liq);
+        box-shadow: 0 0 6px var(--liq);
+        animation: dotpulse 1.2s ease-in-out infinite;
+      }
+      @keyframes dotpulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
 
       /* ── FOOTER NOTE ── */
       .foot {
@@ -1175,6 +1276,8 @@
           <span class="v" id="monthlyStpDue">₹0</span>
           <span class="note" id="stpDueNote">Pay on 15th</span>
         </div>
+
+        <div id="upcomingSection"></div>
 
         <div class="sec-head">
           Liquid Funds — Current, target &amp; deployable
@@ -1538,1241 +1641,1681 @@
     </div>
     <!-- /app -->
 
+    <!-- Firebase SDK (compat) — loaded only when FIREBASE_CONFIG.apiKey is set -->
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+
     <script>
-      /* ════════════════════════════════════════════
-         CONSTANTS
-      ════════════════════════════════════════════ */
-      const STORE_KEY = "mfPlanner_v3";
+          /* ════════════════════════════════════════════
+             CONSTANTS
+          ════════════════════════════════════════════ */
+          const STORE_KEY = "mfPlanner_v3";
 
-      const LIQ_FUNDS = [
-        { id: "liq1", defaultName: "Liquid Fund 1" },
-        { id: "liq2", defaultName: "Liquid Fund 2" },
-      ];
-
-      const EQ_FUNDS = [
-        { id: "eq1", defaultName: "Nifty 50 Index Fund" },
-        { id: "eq2", defaultName: "Flexi Cap Fund" },
-        { id: "eq3", defaultName: "Mid Cap Fund" },
-      ];
-
-      const MARKET_DATA = {
-        label:
-          "Nifty 50 as of 04 Jun 2026 16:14 IST; Nifty 500 & Midcap 150 as of 04 Jun 2026 15:44 IST; PE updated 03 Jun 2026.",
-        indices: [
-          {
-            equityId: "eq1",
-            fund: "Nifty 50 Index",
-            index: "Nifty 50",
-            level: 23416.55,
-            changePct: 0.05,
-            pe: 20.2,
-            medianPe: 22.63,
-          },
-          {
-            equityId: "eq2",
-            fund: "Flexi Cap",
-            index: "Nifty 500",
-            level: 22497.7,
-            changePct: 0.2,
-            pe: 22.28,
-            medianPe: 24.61,
-          },
-          {
-            equityId: "eq3",
-            fund: "Midcap",
-            index: "Nifty Midcap 150",
-            level: 22315.95,
-            changePct: 0.43,
-            pe: 28.44,
-            medianPe: 31.27,
-          },
-        ],
-      };
-
-      const MONTHS = [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-        "Nov",
-        "Dec",
-      ];
-
-      const NW_FIELDS = [
-        { id: "mfProfit", label: "MF Unrealized Profit", color: "#4ade9c" },
-        { id: "bank", label: "Bank & Savings", color: "var(--liq)" },
-        { id: "fd", label: "Fixed Deposit", color: "#5bc4f5" },
-        { id: "cash", label: "Cash", color: "var(--amber)" },
-        { id: "ppf", label: "PPF / EPF / NPS", color: "#8be8ff" },
-      ];
-
-      /* ════════════════════════════════════════════
-         STATE & PERSISTENCE
-      ════════════════════════════════════════════ */
-      function defaultState() {
-        return {
-          liquid: {
-            liq1: { name: "Liquid Fund 1", value: 0, reserve: 0, target: 0 },
-            liq2: { name: "Liquid Fund 2", value: 0, reserve: 0, target: 0 },
-          },
-          equity: {
-            eq1: {
-              name: "Nifty 50 Index Fund",
-              paid: 0,
-              shown: 0,
-              target: 0,
-              sipAmt: 0,
-              sipDate: 5,
-            },
-            eq2: {
-              name: "Flexi Cap Fund",
-              paid: 0,
-              shown: 0,
-              target: 0,
-              sipAmt: 0,
-              sipDate: 5,
-            },
-            eq3: {
-              name: "Mid Cap Fund",
-              paid: 0,
-              shown: 0,
-              target: 0,
-              sipAmt: 0,
-              sipDate: 5,
-            },
-          },
-          stp: { sourceId: "liq1", override: 0, duration: 12, date: 15 },
-          networth: {
-            ...Object.fromEntries(NW_FIELDS.map((f) => [f.id, 0])),
-            snapshots: {},
-          },
-        };
-      }
-
-      function loadState() {
-        const def = defaultState();
-        try {
-          const raw = localStorage.getItem(STORE_KEY);
-          if (!raw) return def;
-          const s = JSON.parse(raw);
-          return {
-            liquid: {
-              liq1: { ...def.liquid.liq1, ...(s.liquid?.liq1 || {}) },
-              liq2: { ...def.liquid.liq2, ...(s.liquid?.liq2 || {}) },
-            },
-            equity: {
-              eq1: { ...def.equity.eq1, ...(s.equity?.eq1 || {}) },
-              eq2: { ...def.equity.eq2, ...(s.equity?.eq2 || {}) },
-              eq3: { ...def.equity.eq3, ...(s.equity?.eq3 || {}) },
-            },
-            stp: { ...def.stp, ...(s.stp || {}) },
-            networth: {
-              ...Object.fromEntries(
-                NW_FIELDS.map((f) => [f.id, s.networth?.[f.id] ?? 0]),
-              ),
-              snapshots: { ...(s.networth?.snapshots || {}) },
-            },
+          /* ────────────────────────────────────────────
+             FIREBASE CONFIG
+             1. Go to https://console.firebase.google.com
+             2. Create a project → Add a web app → copy the config below
+             3. In Firestore → Rules, set:
+                  allow read, write: if true;   (personal use only)
+             4. Leave apiKey empty to use localStorage-only mode.
+          ──────────────────────────────────────────── */
+          const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyDDul9W_6IHyrXrZ-8yUccCEl_Ry51CCBE",
+      authDomain: "portfolio-planner-1db7f.firebaseapp.com",
+      projectId: "portfolio-planner-1db7f",
+      storageBucket: "portfolio-planner-1db7f.firebasestorage.app",
+      messagingSenderId: "416220077104",
+      appId: "1:416220077104:web:5b3f57af70f0c3461261f5",
+      measurementId: "G-GNXQJMH7W8"            "",
           };
-        } catch {
-          return def;
-        }
-      }
 
-      let state = loadState();
+          const LIQ_FUNDS = [
+            { id: "liq1", defaultName: "Liquid Fund 1" },
+            { id: "liq2", defaultName: "Liquid Fund 2" },
+          ];
 
-      function saveState() {
-        try {
-          localStorage.setItem(STORE_KEY, JSON.stringify(state));
-          el("saveDot").className = "dot";
-          el("saveTxt").textContent =
-            "Saved ✓ " +
-            new Date().toLocaleTimeString("en-IN", {
-              hour: "2-digit",
-              minute: "2-digit",
+          const EQ_FUNDS = [
+            { id: "eq1", defaultName: "Nifty 50 Index Fund" },
+            { id: "eq2", defaultName: "Flexi Cap Fund" },
+            { id: "eq3", defaultName: "Mid Cap Fund" },
+          ];
+
+          const MARKET_DATA = {
+            label:
+              "Nifty 50 as of 04 Jun 2026 16:14 IST; Nifty 500 & Midcap 150 as of 04 Jun 2026 15:44 IST; PE updated 03 Jun 2026.",
+            indices: [
+              {
+                equityId: "eq1",
+                fund: "Nifty 50 Index",
+                index: "Nifty 50",
+                level: 23416.55,
+                changePct: 0.05,
+                pe: 20.2,
+                medianPe: 22.63,
+              },
+              {
+                equityId: "eq2",
+                fund: "Flexi Cap",
+                index: "Nifty 500",
+                level: 22497.7,
+                changePct: 0.2,
+                pe: 22.28,
+                medianPe: 24.61,
+              },
+              {
+                equityId: "eq3",
+                fund: "Midcap",
+                index: "Nifty Midcap 150",
+                level: 22315.95,
+                changePct: 0.43,
+                pe: 28.44,
+                medianPe: 31.27,
+              },
+            ],
+          };
+
+          const MONTHS = [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
+          ];
+
+          const NW_FIELDS = [
+            { id: "mfProfit", label: "MF Unrealized Profit", color: "#4ade9c" },
+            { id: "bank", label: "Bank & Savings", color: "var(--liq)" },
+            { id: "fd", label: "Fixed Deposit", color: "#5bc4f5" },
+            { id: "cash", label: "Cash", color: "var(--amber)" },
+            { id: "ppf", label: "PPF / EPF / NPS", color: "#8be8ff" },
+          ];
+
+          /* ════════════════════════════════════════════
+             STATE & PERSISTENCE
+          ════════════════════════════════════════════ */
+          function defaultState() {
+            return {
+              liquid: {
+                liq1: { name: "Liquid Fund 1", value: 0, reserve: 0, target: 0 },
+                liq2: { name: "Liquid Fund 2", value: 0, reserve: 0, target: 0 },
+              },
+              equity: {
+                eq1: {
+                  name: "Nifty 50 Index Fund",
+                  paid: 0,
+                  shown: 0,
+                  target: 0,
+                  sipAmt: 0,
+                  sipDate: 5,
+                },
+                eq2: {
+                  name: "Flexi Cap Fund",
+                  paid: 0,
+                  shown: 0,
+                  target: 0,
+                  sipAmt: 0,
+                  sipDate: 5,
+                },
+                eq3: {
+                  name: "Mid Cap Fund",
+                  paid: 0,
+                  shown: 0,
+                  target: 0,
+                  sipAmt: 0,
+                  sipDate: 5,
+                },
+              },
+              stp: { sourceId: "liq1", override: 0, duration: 12, date: 15, lastApplied: null, appliedCount: 0 },
+              networth: {
+                ...Object.fromEntries(NW_FIELDS.map((f) => [f.id, 0])),
+                snapshots: {},
+              },
+            };
+          }
+
+          function loadState() {
+            const def = defaultState();
+            try {
+              const raw = localStorage.getItem(STORE_KEY);
+              if (!raw) return def;
+              const s = JSON.parse(raw);
+              return {
+                liquid: {
+                  liq1: { ...def.liquid.liq1, ...(s.liquid?.liq1 || {}) },
+                  liq2: { ...def.liquid.liq2, ...(s.liquid?.liq2 || {}) },
+                },
+                equity: {
+                  eq1: { ...def.equity.eq1, ...(s.equity?.eq1 || {}) },
+                  eq2: { ...def.equity.eq2, ...(s.equity?.eq2 || {}) },
+                  eq3: { ...def.equity.eq3, ...(s.equity?.eq3 || {}) },
+                },
+                stp: { ...def.stp, ...(s.stp || {}) },
+                networth: {
+                  ...Object.fromEntries(
+                    NW_FIELDS.map((f) => [f.id, s.networth?.[f.id] ?? 0]),
+                  ),
+                  snapshots: { ...(s.networth?.snapshots || {}) },
+                },
+              };
+            } catch {
+              return def;
+            }
+          }
+
+          let state = loadState();
+
+          function saveState() {
+            try {
+              localStorage.setItem(STORE_KEY, JSON.stringify(state));
+              if (!fbEnabled) {
+                el("saveDot").className = "dot";
+                el("saveTxt").textContent =
+                  "Saved ✓ " +
+                  new Date().toLocaleTimeString("en-IN", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  });
+              }
+            } catch {
+              el("saveDot").className = "dot warn";
+              el("saveTxt").textContent = "Storage blocked — data won’t persist";
+            }
+            queueCloudSave();
+          }
+
+          /* ════════════════════════════════════════════
+             FIREBASE
+          ════════════════════════════════════════════ */
+          let db = null;
+          let fbEnabled = false;
+          let fbSaveTimer = null;
+
+          function fbSyncUI(status, msg) {
+            const dot = el("saveDot");
+            const txt = el("saveTxt");
+            if (!dot || !txt) return;
+            if (status === "syncing") {
+              dot.className = "dot sync";
+              txt.textContent = "Syncing to cloud…";
+            } else if (status === "ok") {
+              dot.className = "dot";
+              txt.textContent =
+                msg ||
+                "Synced ✓ " +
+                  new Date().toLocaleTimeString("en-IN", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  });
+            } else if (status === "err") {
+              dot.className = "dot warn";
+              txt.textContent = msg || "Cloud sync failed — saved locally";
+            }
+          }
+
+          function initFirebase() {
+            if (!FIREBASE_CONFIG.apiKey) return;
+            try {
+              firebase.initializeApp(FIREBASE_CONFIG);
+              db = firebase.firestore();
+              db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+              fbEnabled = true;
+            } catch (e) {
+              console.warn("Firebase init:", e.message);
+            }
+          }
+
+          async function saveToCloud() {
+            if (!fbEnabled || !db) return;
+            fbSyncUI("syncing");
+            try {
+              await db
+                .collection("portfolios")
+                .doc("main")
+                .set({
+                  state: JSON.stringify(state),
+                  savedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                });
+              fbSyncUI("ok");
+            } catch (e) {
+              console.warn("Firebase save:", e.message);
+              fbSyncUI("err");
+            }
+          }
+
+          function queueCloudSave() {
+            if (!fbEnabled) return;
+            clearTimeout(fbSaveTimer);
+            fbSaveTimer = setTimeout(saveToCloud, 1500);
+          }
+
+          async function loadFromCloud() {
+            if (!fbEnabled || !db) return null;
+            try {
+              const doc = await db.collection("portfolios").doc("main").get();
+              if (doc.exists && doc.data().state)
+                return JSON.parse(doc.data().state);
+            } catch (e) {
+              console.warn("Firebase load:", e.message);
+            }
+            return null;
+          }
+
+          /* Sync all input fields from current state (called after cloud load) */
+          function syncInputsFromState() {
+            LIQ_FUNDS.forEach((f) => {
+              const s = state.liquid[f.id];
+              el("lname-" + f.id).value = s.name || "";
+              el("lval-" + f.id).value = s.value || "";
+              el("lres-" + f.id).value = s.reserve || "";
+              el("ltgt-" + f.id).value = s.target || "";
             });
-        } catch {
-          el("saveDot").className = "dot warn";
-          el("saveTxt").textContent = "Storage blocked — data won’t persist";
-        }
-      }
+            EQ_FUNDS.forEach((f) => {
+              const s = state.equity[f.id];
+              el("ename-" + f.id).value = s.name || "";
+              el("epaid-" + f.id).value = s.paid || "";
+              el("eshown-" + f.id).value = s.shown || "";
+              el("etgt-" + f.id).value = s.target || "";
+              el("esip-" + f.id).value = s.sipAmt || "";
+              el("esipdate-" + f.id).value = s.sipDate || "";
+            });
+            const stpOv = el("stpOverride");
+            const stpDur = el("stpDuration");
+            const stpDt = el("stpDate");
+            if (stpOv) stpOv.value = state.stp.override || "";
+            if (stpDur) stpDur.value = state.stp.duration || "";
+            if (stpDt) stpDt.value = state.stp.date || "";
+            NW_FIELDS.forEach((f) => {
+              const inp = el("nw-" + f.id);
+              if (inp) inp.value = state.networth[f.id] || "";
+            });
+            /* Restore active STP source button */
+            el("srcBtns")
+              .querySelectorAll(".src-btn")
+              .forEach((b) =>
+                b.classList.toggle("active", b.dataset.src === state.stp.sourceId),
+              );
+          }
 
-      /* ════════════════════════════════════════════
-         HELPERS
-      ════════════════════════════════════════════ */
-      const el = (id) => document.getElementById(id);
-      const fmt = (n) =>
-        "₹" + Math.max(0, Math.round(n)).toLocaleString("en-IN");
-      const num = (v) => Number(v) || 0;
-      const pct = (a, b) => (b > 0 ? (a / b) * 100 : 0);
-      const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
-      const roundUpInvest = (target, rate) =>
-        target > 0 && rate < 1 ? Math.ceil(target / (1 - rate)) : 0;
+          /* ════════════════════════════════════════════
+             HELPERS
+          ════════════════════════════════════════════ */
+          const el = (id) => document.getElementById(id);
+          const fmt = (n) =>
+            "₹" + Math.max(0, Math.round(n)).toLocaleString("en-IN");
+          const num = (v) => Number(v) || 0;
+          const pct = (a, b) => (b > 0 ? (a / b) * 100 : 0);
+          const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+          const roundUpInvest = (target, rate) =>
+            target > 0 && rate < 1 ? Math.ceil(target / (1 - rate)) : 0;
 
-      function deployable(fid) {
-        const s = state.liquid[fid];
-        return Math.max(0, (s.value || 0) - (s.reserve || 0));
-      }
+          function deployable(fid) {
+            const s = state.liquid[fid];
+            return Math.max(0, (s.value || 0) - (s.reserve || 0));
+          }
 
-      function stpDeployable() {
-        const liq1Amt = deployable("liq1");
-        const liq2Amt = deployable("liq2");
-        const src = state.stp.sourceId;
-        if (src === "both") return liq1Amt + liq2Amt;
-        if (src === "liq1") return liq1Amt > 0 ? liq1Amt : liq2Amt;
-        if (src === "liq2") return liq2Amt > 0 ? liq2Amt : liq1Amt;
-        return liq1Amt + liq2Amt;
-      }
+          function stpDeployable() {
+            const liq1Amt = deployable("liq1");
+            const liq2Amt = deployable("liq2");
+            const src = state.stp.sourceId;
+            if (src === "both") return liq1Amt + liq2Amt;
+            if (src === "liq1") return liq1Amt > 0 ? liq1Amt : liq2Amt;
+            if (src === "liq2") return liq2Amt > 0 ? liq2Amt : liq1Amt;
+            return liq1Amt + liq2Amt;
+          }
 
-      function stpSourceId() {
-        const liq1Amt = deployable("liq1");
-        const liq2Amt = deployable("liq2");
-        const src = state.stp.sourceId;
-        if (src === "both") return "both";
-        if (src === "liq1")
-          return liq1Amt > 0 ? "liq1" : liq2Amt > 0 ? "liq2" : "liq1";
-        if (src === "liq2")
-          return liq2Amt > 0 ? "liq2" : liq1Amt > 0 ? "liq1" : "liq2";
-        return liq1Amt + liq2Amt > 0 ? "both" : src;
-      }
+          function stpSourceId() {
+            const liq1Amt = deployable("liq1");
+            const liq2Amt = deployable("liq2");
+            const src = state.stp.sourceId;
+            if (src === "both") return "both";
+            if (src === "liq1")
+              return liq1Amt > 0 ? "liq1" : liq2Amt > 0 ? "liq2" : "liq1";
+            if (src === "liq2")
+              return liq2Amt > 0 ? "liq2" : liq1Amt > 0 ? "liq1" : "liq2";
+            return liq1Amt + liq2Amt > 0 ? "both" : src;
+          }
 
-      function sipWeights() {
-        const total = EQ_FUNDS.reduce(
-          (s, f) => s + (state.equity[f.id].sipAmt || 0),
-          0,
-        );
-        if (total === 0)
-          return EQ_FUNDS.map((f) => ({ id: f.id, w: 1 / EQ_FUNDS.length }));
-        return EQ_FUNDS.map((f) => ({
-          id: f.id,
-          w: (state.equity[f.id].sipAmt || 0) / total,
-        }));
-      }
+          function sipWeights() {
+            const total = EQ_FUNDS.reduce(
+              (s, f) => s + (state.equity[f.id].sipAmt || 0),
+              0,
+            );
+            if (total === 0)
+              return EQ_FUNDS.map((f) => ({ id: f.id, w: 1 / EQ_FUNDS.length }));
+            return EQ_FUNDS.map((f) => ({
+              id: f.id,
+              w: (state.equity[f.id].sipAmt || 0) / total,
+            }));
+          }
 
-      function fundName(id) {
-        const liq = LIQ_FUNDS.find((f) => f.id === id);
-        if (liq) return state.liquid[id]?.name || liq.defaultName;
-        const eq = EQ_FUNDS.find((f) => f.id === id);
-        return eq ? state.equity[id]?.name || eq.defaultName : id;
-      }
+          function fundName(id) {
+            const liq = LIQ_FUNDS.find((f) => f.id === id);
+            if (liq) return state.liquid[id]?.name || liq.defaultName;
+            const eq = EQ_FUNDS.find((f) => f.id === id);
+            return eq ? state.equity[id]?.name || eq.defaultName : id;
+          }
 
-      function mfTotalValue() {
-        const liq = LIQ_FUNDS.reduce(
-          (s, f) => s + (state.liquid[f.id].value || 0),
-          0,
-        );
-        const eq = EQ_FUNDS.reduce(
-          (s, f) => s + (state.equity[f.id].shown || 0),
-          0,
-        );
-        return liq + eq;
-      }
+          function mfTotalValue() {
+            const liq = LIQ_FUNDS.reduce(
+              (s, f) => s + (state.liquid[f.id].value || 0),
+              0,
+            );
+            const eq = EQ_FUNDS.reduce(
+              (s, f) => s + (state.equity[f.id].shown || 0),
+              0,
+            );
+            return liq + eq;
+          }
 
-      function nwTotal() {
-        const other = NW_FIELDS.filter((f) => f.id !== "mfProfit").reduce(
-          (s, f) => s + (state.networth[f.id] || 0),
-          0,
-        );
-        return mfTotalValue() + other;
-      }
+          function nwTotal() {
+            const other = NW_FIELDS.filter((f) => f.id !== "mfProfit").reduce(
+              (s, f) => s + (state.networth[f.id] || 0),
+              0,
+            );
+            return mfTotalValue() + other;
+          }
 
-      function fmtMonth(key) {
-        const [y, m] = key.split("-").map(Number);
-        return MONTHS[m - 1] + " " + y;
-      }
+          function fmtMonth(key) {
+            const [y, m] = key.split("-").map(Number);
+            return MONTHS[m - 1] + " " + y;
+          }
 
-      function snapshotKey() {
-        const d = new Date();
-        return (
-          d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0")
-        );
-      }
+          function snapshotKey() {
+            const d = new Date();
+            return (
+              d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0")
+            );
+          }
 
-      /* ════════════════════════════════════════════
-         CARD HTML GENERATORS
-      ════════════════════════════════════════════ */
-      function liqCardHTML(f) {
-        const s = state.liquid[f.id];
-        return `
-        <div class="card liquid">
-          <div class="fhead">
-            <input class="fundname" id="lname-${f.id}" value="${s.name}" placeholder="${f.defaultName}" />
-            <span class="tag liquid">LIQUID</span>
-          </div>
-          <div class="grid2">
-            <div class="field">
-              <label class="flabel" for="lval-${f.id}">Current value</label>
-              <div class="ibox"><span class="pfx">&#8377;</span>
-                <input class="num liq" id="lval-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.value || ""}" />
+          /* ════════════════════════════════════════════
+             CARD HTML GENERATORS
+          ════════════════════════════════════════════ */
+          function liqCardHTML(f) {
+            const s = state.liquid[f.id];
+            return `
+            <div class="card liquid">
+              <div class="fhead">
+                <input class="fundname" id="lname-${f.id}" value="${s.name}" placeholder="${f.defaultName}" />
+                <span class="tag liquid">LIQUID</span>
               </div>
-            </div>
-            <div class="field">
-              <label class="flabel" for="lres-${f.id}">Untouchable reserve</label>
-              <div class="ibox"><span class="pfx">&#8377;</span>
-                <input class="num liq" id="lres-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.reserve || ""}" />
+              <div class="grid2">
+                <div class="field">
+                  <label class="flabel" for="lval-${f.id}">Current value</label>
+                  <div class="ibox"><span class="pfx">&#8377;</span>
+                    <input class="num liq" id="lval-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.value || ""}" />
+                  </div>
+                </div>
+                <div class="field">
+                  <label class="flabel" for="lres-${f.id}">Untouchable reserve</label>
+                  <div class="ibox"><span class="pfx">&#8377;</span>
+                    <input class="num liq" id="lres-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.reserve || ""}" />
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-          <div class="field">
-            <label class="flabel" for="ltgt-${f.id}">Target total</label>
-            <div class="ibox"><span class="pfx">&#8377;</span>
-              <input class="num liq" id="ltgt-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.target || ""}" />
-            </div>
-          </div>
-          <div class="chip liq"><span>Deployable</span><b id="ldep-${f.id}">&#8377;0</b></div>
-          <div class="chip liq"><span id="linvlbl-${f.id}">Invest now</span><b id="linv-${f.id}">&#8377;0</b></div>
-          <div class="pbar-row"><span>Reserved</span><span id="lrespct-${f.id}">0%</span></div>
-          <div class="pbar"><div class="fill liq" id="ldepfill-${f.id}" style="width:0%"></div></div>
-        </div>`;
-      }
-
-      function eqCardHTML(f) {
-        const s = state.equity[f.id];
-        return `
-        <div class="card equity">
-          <div class="fhead">
-            <input class="fundname" id="ename-${f.id}" value="${s.name}" placeholder="${f.defaultName}" />
-            <span class="tag equity">EQUITY</span>
-          </div>
-          <div class="grid2">
-            <div class="field">
-              <label class="flabel" for="epaid-${f.id}">Invested (paid)</label>
-              <div class="ibox"><span class="pfx">&#8377;</span>
-                <input class="num" id="epaid-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.paid || ""}" />
+              <div class="field">
+                <label class="flabel" for="ltgt-${f.id}">Target total</label>
+                <div class="ibox"><span class="pfx">&#8377;</span>
+                  <input class="num liq" id="ltgt-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.target || ""}" />
+                </div>
               </div>
-            </div>
-            <div class="field">
-              <label class="flabel" for="eshown-${f.id}">After expense</label>
-              <div class="ibox"><span class="pfx">&#8377;</span>
-                <input class="num" id="eshown-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.shown || ""}" />
+              <div class="chip liq"><span>Deployable</span><b id="ldep-${f.id}">&#8377;0</b></div>
+              <div class="chip liq"><span id="linvlbl-${f.id}">Invest now</span><b id="linv-${f.id}">&#8377;0</b></div>
+              <div class="pbar-row"><span>Reserved</span><span id="lrespct-${f.id}">0%</span></div>
+              <div class="pbar"><div class="fill liq" id="ldepfill-${f.id}" style="width:0%"></div></div>
+            </div>`;
+          }
+
+          function eqCardHTML(f) {
+            const s = state.equity[f.id];
+            return `
+            <div class="card equity">
+              <div class="fhead">
+                <input class="fundname" id="ename-${f.id}" value="${s.name}" placeholder="${f.defaultName}" />
+                <span class="tag equity">EQUITY</span>
               </div>
-            </div>
-          </div>
-          <div class="ratechip">Expense rate: <b id="erate-${f.id}">—</b></div>
-          <div class="field">
-            <label class="flabel" for="etgt-${f.id}">Target total</label>
-            <div class="ibox"><span class="pfx">&#8377;</span>
-              <input class="num" id="etgt-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.target || ""}" />
-            </div>
-          </div>
-          <div class="chip mint"><span id="einvlbl-${f.id}">Invest now</span><b id="einv-${f.id}">&#8377;0</b></div>
-          <div class="sip-divider"></div>
-          <div class="sip-row">
-            <div class="field">
-              <label class="flabel" for="esip-${f.id}">Monthly SIP</label>
-              <div class="ibox"><span class="pfx">&#8377;</span>
-                <input class="num" id="esip-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.sipAmt || ""}" />
+              <div class="grid2">
+                <div class="field">
+                  <label class="flabel" for="epaid-${f.id}">Invested (paid)</label>
+                  <div class="ibox"><span class="pfx">&#8377;</span>
+                    <input class="num" id="epaid-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.paid || ""}" />
+                  </div>
+                </div>
+                <div class="field">
+                  <label class="flabel" for="eshown-${f.id}">After expense</label>
+                  <div class="ibox"><span class="pfx">&#8377;</span>
+                    <input class="num" id="eshown-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.shown || ""}" />
+                  </div>
+                </div>
               </div>
-            </div>
-            <div class="field date-field">
-              <label class="flabel" for="esipdate-${f.id}">SIP date</label>
-              <input class="num no-pfx" id="esipdate-${f.id}" type="number" min="1" max="28" placeholder="5" inputmode="numeric" value="${s.sipDate || ""}" />
-            </div>
-            <div class="sip-pct" id="esippct-${f.id}">0%</div>
-          </div>
-        </div>`;
-      }
+              <div class="ratechip">Expense rate: <b id="erate-${f.id}">—</b></div>
+              <div class="field">
+                <label class="flabel" for="etgt-${f.id}">Target total</label>
+                <div class="ibox"><span class="pfx">&#8377;</span>
+                  <input class="num" id="etgt-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.target || ""}" />
+                </div>
+              </div>
+              <div class="chip mint"><span id="einvlbl-${f.id}">Invest now</span><b id="einv-${f.id}">&#8377;0</b></div>
+              <div class="sip-divider"></div>
+              <div class="sip-row">
+                <div class="field">
+                  <label class="flabel" for="esip-${f.id}">Monthly SIP</label>
+                  <div class="ibox"><span class="pfx">&#8377;</span>
+                    <input class="num" id="esip-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.sipAmt || ""}" />
+                  </div>
+                </div>
+                <div class="field date-field">
+                  <label class="flabel" for="esipdate-${f.id}">SIP date</label>
+                  <input class="num no-pfx" id="esipdate-${f.id}" type="number" min="1" max="28" placeholder="5" inputmode="numeric" value="${s.sipDate || ""}" />
+                </div>
+                <div class="sip-pct" id="esippct-${f.id}">0%</div>
+              </div>
+              <div class="chip amber" id="estpchip-${f.id}" style="display:none;margin-top:8px">
+                <span>Monthly STP</span><b id="estp-${f.id}">&#8377;0</b>
+              </div>
+            </div>`;
+          }
 
-      /* ════════════════════════════════════════════
-         RENDER FUND GRIDS
-      ════════════════════════════════════════════ */
-      el("liqGrid").innerHTML = LIQ_FUNDS.map(liqCardHTML).join("");
-      el("eqGrid").innerHTML = EQ_FUNDS.map(eqCardHTML).join("");
+          /* ════════════════════════════════════════════
+             RENDER FUND GRIDS
+          ════════════════════════════════════════════ */
+          el("liqGrid").innerHTML = LIQ_FUNDS.map(liqCardHTML).join("");
+          el("eqGrid").innerHTML = EQ_FUNDS.map(eqCardHTML).join("");
 
-      /* ════════════════════════════════════════════
-         BIND INPUT EVENTS
-      ════════════════════════════════════════════ */
-      LIQ_FUNDS.forEach((f) => {
-        el("lname-" + f.id).addEventListener("input", (e) => {
-          state.liquid[f.id].name = e.target.value;
-          render();
-        });
-        el("lval-" + f.id).addEventListener("input", (e) => {
-          state.liquid[f.id].value = num(e.target.value);
-          render();
-        });
-        el("lres-" + f.id).addEventListener("input", (e) => {
-          state.liquid[f.id].reserve = num(e.target.value);
-          render();
-        });
-        el("ltgt-" + f.id).addEventListener("input", (e) => {
-          state.liquid[f.id].target = num(e.target.value);
-          render();
-        });
-      });
+          /* ════════════════════════════════════════════
+             BIND INPUT EVENTS
+          ════════════════════════════════════════════ */
+          LIQ_FUNDS.forEach((f) => {
+            el("lname-" + f.id).addEventListener("input", (e) => {
+              state.liquid[f.id].name = e.target.value;
+              render();
+            });
+            el("lval-" + f.id).addEventListener("input", (e) => {
+              state.liquid[f.id].value = num(e.target.value);
+              render();
+            });
+            el("lres-" + f.id).addEventListener("input", (e) => {
+              state.liquid[f.id].reserve = num(e.target.value);
+              render();
+            });
+            el("ltgt-" + f.id).addEventListener("input", (e) => {
+              state.liquid[f.id].target = num(e.target.value);
+              render();
+            });
+          });
 
-      EQ_FUNDS.forEach((f) => {
-        el("ename-" + f.id).addEventListener("input", (e) => {
-          state.equity[f.id].name = e.target.value;
-          render();
-        });
-        el("epaid-" + f.id).addEventListener("input", (e) => {
-          state.equity[f.id].paid = num(e.target.value);
-          render();
-        });
-        el("eshown-" + f.id).addEventListener("input", (e) => {
-          state.equity[f.id].shown = num(e.target.value);
-          render();
-        });
-        el("etgt-" + f.id).addEventListener("input", (e) => {
-          state.equity[f.id].target = num(e.target.value);
-          render();
-        });
-        el("esip-" + f.id).addEventListener("input", (e) => {
-          state.equity[f.id].sipAmt = num(e.target.value);
-          render();
-        });
-        el("esipdate-" + f.id).addEventListener("input", (e) => {
-          state.equity[f.id].sipDate = num(e.target.value) || 5;
-          render();
-        });
-      });
+          EQ_FUNDS.forEach((f) => {
+            el("ename-" + f.id).addEventListener("input", (e) => {
+              state.equity[f.id].name = e.target.value;
+              render();
+            });
+            el("epaid-" + f.id).addEventListener("input", (e) => {
+              state.equity[f.id].paid = num(e.target.value);
+              render();
+            });
+            el("eshown-" + f.id).addEventListener("input", (e) => {
+              state.equity[f.id].shown = num(e.target.value);
+              render();
+            });
+            el("etgt-" + f.id).addEventListener("input", (e) => {
+              state.equity[f.id].target = num(e.target.value);
+              render();
+            });
+            el("esip-" + f.id).addEventListener("input", (e) => {
+              state.equity[f.id].sipAmt = num(e.target.value);
+              render();
+            });
+            el("esipdate-" + f.id).addEventListener("input", (e) => {
+              state.equity[f.id].sipDate = num(e.target.value) || 5;
+              render();
+            });
+          });
 
-      /* STP controls */
-      el("srcBtns")
-        .querySelectorAll(".src-btn")
-        .forEach((btn) => {
-          btn.addEventListener("click", () => {
-            state.stp.sourceId = btn.dataset.src;
+          /* STP controls */
+          el("srcBtns")
+            .querySelectorAll(".src-btn")
+            .forEach((btn) => {
+              btn.addEventListener("click", () => {
+                state.stp.sourceId = btn.dataset.src;
+                render();
+              });
+            });
+          el("stpOverride").addEventListener("input", (e) => {
+            state.stp.override = num(e.target.value);
             render();
           });
-        });
-      el("stpOverride").addEventListener("input", (e) => {
-        state.stp.override = num(e.target.value);
-        render();
-      });
-      el("stpDuration").addEventListener("input", (e) => {
-        state.stp.duration = num(e.target.value);
-        render();
-      });
-      el("stpDate").addEventListener("input", (e) => {
-        state.stp.date = num(e.target.value);
-        render();
-      });
-
-      /* Restore STP input values */
-      if (state.stp.override) el("stpOverride").value = state.stp.override;
-      el("stpDuration").value = state.stp.duration || "";
-      el("stpDate").value = state.stp.date || "";
-
-      /* Tabs */
-      el("tabs")
-        .querySelectorAll("button")
-        .forEach((btn) => {
-          btn.addEventListener("click", () => {
-            el("tabs")
-              .querySelectorAll("button")
-              .forEach((b) => b.classList.remove("active"));
-            btn.classList.add("active");
-            document
-              .querySelectorAll(".tab-section")
-              .forEach((s) => s.classList.remove("active"));
-            el("tab-" + btn.dataset.tab).classList.add("active");
+          el("stpDuration").addEventListener("input", (e) => {
+            state.stp.duration = num(e.target.value);
+            render();
           });
-        });
-
-      /* Actions */
-      el("copyBtn").addEventListener("click", copySummary);
-      el("resetBtn").addEventListener("click", resetAll);
-
-      /* ════════════════════════════════════════════
-         MAIN RENDER
-      ════════════════════════════════════════════ */
-      function render() {
-        /* — Liquid funds — */
-        let totalLiqVal = 0,
-          totalDep = 0,
-          totalLiqTgt = 0,
-          totalLiqInv = 0;
-        LIQ_FUNDS.forEach((f) => {
-          const val = state.liquid[f.id].value || 0;
-          const res = Math.min(state.liquid[f.id].reserve || 0, val);
-          const dep = Math.max(0, val - res);
-          const tgt = state.liquid[f.id].target || 0;
-          const gap = tgt - val;
-          const required = gap > 0 ? gap : 0;
-
-          totalLiqVal += val;
-          totalDep += dep;
-          totalLiqTgt += tgt;
-          totalLiqInv += required;
-
-          el("ldep-" + f.id).textContent = fmt(dep);
-          el("linvlbl-" + f.id).textContent =
-            required > 0
-              ? "Invest now"
-              : tgt > 0
-                ? "Goal reached ✓"
-                : "Invest now";
-          el("linv-" + f.id).textContent = fmt(required);
-          const resPct = val > 0 ? Math.round((res / val) * 100) : 0;
-          el("lrespct-" + f.id).textContent = resPct + "% reserved";
-          el("ldepfill-" + f.id).style.width =
-            val > 0 ? Math.round((dep / val) * 100) + "%" : "0%";
-        });
-
-        /* Deployable summary bar */
-        el("totalDep").textContent = fmt(totalDep);
-        const liqNames = LIQ_FUNDS.map(
-          (f) => state.liquid[f.id].name || f.defaultName,
-        ).join(" + ");
-        el("depNote").textContent =
-          totalLiqVal > 0
-            ? fmt(totalLiqVal - totalDep) + " reserved across " + liqNames
-            : "Enter liquid fund values above";
-
-        const autoDep = stpDeployable();
-        const effective = state.stp.override > 0 ? state.stp.override : autoDep;
-        const dur = state.stp.duration || 0;
-        const stpAmt =
-          dur > 0 && effective > 0 ? Math.ceil(effective / dur) : 0;
-
-        el("monthlyStpDue").textContent = stpAmt > 0 ? fmt(stpAmt) : "₹0";
-        el("stpDueNote").textContent = state.stp.date
-          ? `Pay on ${state.stp.date}th`
-          : "Set STP date";
-
-        /* — Equity funds — */
-        let eqCur = 0,
-          eqTgt = 0,
-          eqInv = 0,
-          totDuty = 0,
-          totalSip = 0;
-
-        EQ_FUNDS.forEach((f) => {
-          const s = state.equity[f.id];
-          const paid = s.paid || 0;
-          const shown = s.shown || 0;
-          const tgt = s.target || 0;
-
-          let rate = 0.00005;
-          if (paid > 0 && shown > 0 && shown <= paid)
-            rate = (paid - shown) / paid;
-
-          const cur = shown > 0 ? shown : 0;
-          const targetVal = tgt > 0 ? tgt : cur;
-          const gap = targetVal - cur;
-          const required = gap > 0 ? roundUpInvest(gap, rate) : 0;
-          const duty = required * rate;
-          totDuty += duty;
-
-          el("erate-" + f.id).textContent =
-            (rate * 100).toFixed(5).replace(/0+$/, "").replace(/\.$/, "") + "%";
-
-          if (required > 0) {
-            el("einvlbl-" + f.id).textContent = "Invest now";
-            el("einv-" + f.id).textContent = fmt(required);
-          } else if (tgt > 0 && cur > 0 && gap <= 0) {
-            el("einvlbl-" + f.id).textContent = "Goal reached ✓";
-            el("einv-" + f.id).textContent = fmt(0);
-          } else {
-            el("einvlbl-" + f.id).textContent = "Invest now";
-            el("einv-" + f.id).textContent = fmt(0);
-          }
-
-          eqCur += cur;
-          eqTgt += targetVal;
-          eqInv += required;
-          totalSip += s.sipAmt || 0;
-        });
-
-        /* SIP weight % on cards */
-        EQ_FUNDS.forEach((f) => {
-          const sip = state.equity[f.id].sipAmt || 0;
-          const p = totalSip > 0 ? Math.round((sip / totalSip) * 100) : 0;
-          el("esippct-" + f.id).textContent = p + "%";
-        });
-
-        /* — STP — */
-        const weights = sipWeights();
-
-        /* Update STP source buttons */
-        el("srcBtns")
-          .querySelectorAll(".src-btn")
-          .forEach((b) =>
-            b.classList.toggle("active", b.dataset.src === state.stp.sourceId),
-          );
-        el("stpAutoDep").textContent = fmt(autoDep);
-        el("stpMonthly").textContent = fmt(stpAmt);
-
-        const selectedStpSource = stpSourceId();
-        const srcLabel =
-          selectedStpSource === "both"
-            ? "both liquid funds"
-            : fundName(selectedStpSource);
-
-        el("stpSub").textContent =
-          stpAmt > 0
-            ? fmt(effective) +
-              " over " +
-              dur +
-              " month" +
-              (dur !== 1 ? "s" : "") +
-              " from " +
-              srcLabel +
-              " on the " +
-              (state.stp.date || "?") +
-              "th"
-            : "Enter duration and date to begin";
-
-        let splitHTML = "";
-        if (stpAmt > 0) {
-          weights.forEach((w) => {
-            const name = fundName(w.id);
-            const amt = stpAmt * w.w;
-            const p = Math.round(w.w * 100);
-            splitHTML += `<div class="stp-fund-row">
-              <span class="stp-fund-name">${name} <span style="opacity:.55">(${p}%)</span></span>
-              <span class="stp-fund-amt">${fmt(amt)}</span>
-            </div>`;
+          el("stpDate").addEventListener("input", (e) => {
+            state.stp.date = num(e.target.value);
+            render();
           });
-        } else {
-          splitHTML = `<div style="color:var(--dim);font-size:12px;">Configure SIP amounts to see the per-fund split.</div>`;
-        }
-        el("stpSplitRows").innerHTML = splitHTML;
 
-        /* — Summary table — */
-        const totCur = eqCur + totalLiqVal;
-        const totTgt = eqTgt + totalLiqTgt;
-        const totInv = eqInv + totalLiqInv;
-        el("eqCur").textContent = fmt(eqCur);
-        el("eqTgt").textContent = fmt(eqTgt);
-        el("eqInv").textContent = fmt(eqInv);
-        el("liqCur").textContent = fmt(totalLiqVal);
-        el("liqTgt").textContent = fmt(totalLiqTgt);
-        el("liqInv").textContent = fmt(totalLiqInv);
-        el("totCur").textContent = fmt(totCur);
-        el("totTgt").textContent = fmt(totTgt);
-        el("totInv").textContent = fmt(totInv);
+          /* Restore STP input values */
+          if (state.stp.override) el("stpOverride").value = state.stp.override;
+          el("stpDuration").value = state.stp.duration || "";
+          el("stpDate").value = state.stp.date || "";
 
-        /* Hero */
-        el("heroLabel").textContent = "Total invest required";
-        el("heroVal").textContent = fmt(totInv);
-        el("heroSub").textContent =
-          "To reach targets across equity + liquid funds";
-
-        /* Allocation bars */
-        const nowEqPct = pct(eqCur, totCur);
-        setAllocBar("curEqSeg", "curLiqSeg", "curSplit", nowEqPct, totCur);
-        const tgtEqPct = pct(eqTgt, totTgt);
-        setAllocBar("tgtEqSeg", "tgtLiqSeg", "tgtSplit", tgtEqPct, totTgt);
-
-        /* Stats */
-        const funded = pct(eqCur, eqTgt);
-        el("fundedPct").textContent = Math.round(funded) + "%";
-        el("fundedBar").style.width = clamp(funded, 0, 100) + "%";
-        el("totDuty").textContent = fmt(totDuty);
-        el("totalSipDisp").textContent = fmt(totalSip);
-        el("eqStp").textContent = stpAmt > 0 ? fmt(stpAmt) : "—";
-        el("totStp").textContent = stpAmt > 0 ? fmt(stpAmt) : "—";
-
-        /* SIP table */
-        let sipRows = "";
-        EQ_FUNDS.forEach((f) => {
-          const s = state.equity[f.id];
-          const name = s.name || f.defaultName;
-          const sip = s.sipAmt || 0;
-          const d = s.sipDate || "—";
-          const p =
-            totalSip > 0 && sip > 0
-              ? Math.round((sip / totalSip) * 100) + "%"
-              : "—";
-          sipRows += `<tr>
-            <td>${name}</td>
-            <td style="text-align:center">${sip > 0 ? d + (typeof d === "number" ? "th" : "") : "—"}</td>
-            <td style="color:var(--mint)">${sip > 0 ? fmt(sip) : "—"}</td>
-            <td style="color:var(--dim)">${p}</td>
-          </tr>`;
-        });
-        const sipHead = `<tr style="font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim);">
-          <th style="text-align:left;padding-bottom:8px">Fund</th>
-          <th style="text-align:center;padding-bottom:8px">Date</th>
-          <th style="text-align:right;padding-bottom:8px">Amount</th>
-          <th style="text-align:right;padding-bottom:8px">Weight</th>
-        </tr>`;
-        el("sipTable").innerHTML = sipHead + sipRows;
-
-        /* STP overview in summary */
-        if (stpAmt > 0) {
-          let stpOv = `<div style="font-size:12px;line-height:2;color:var(--dim);">`;
-          stpOv += `<span style="color:var(--amber)">${fmt(stpAmt)}/month</span> on the <span style="color:var(--txt)">${state.stp.date || "?"}th</span> for <span style="color:var(--txt)">${dur} months</span> from <span style="color:var(--liq)">${srcLabel}</span>`;
-          stpOv += `</div>`;
-          el("sumStpOverview").innerHTML = stpOv;
-        } else {
-          el("sumStpOverview").textContent =
-            "STP not configured. Set it up in the STP tab.";
-        }
-
-        renderNetWorth();
-        saveState();
-        renderCalendar(stpAmt, weights);
-      }
-
-      function setAllocBar(eqId, liqId, splitId, eqPct, total) {
-        const liqPct = 100 - eqPct;
-        el(eqId).style.width = eqPct + "%";
-        el(liqId).style.width = liqPct + "%";
-        el(eqId).textContent = eqPct >= 14 ? Math.round(eqPct) + "%" : "";
-        el(liqId).textContent = liqPct >= 14 ? Math.round(liqPct) + "%" : "";
-        el(splitId).textContent =
-          total > 0
-            ? Math.round(eqPct) + "% eq / " + Math.round(liqPct) + "% liq"
-            : "—";
-      }
-
-      /* ════════════════════════════════════════════
-         CALENDAR
-      ════════════════════════════════════════════ */
-      function renderCalendar(stpAmt, weights) {
-        const today = new Date();
-        const showNextMonth = today.getDate() >= 16;
-        const visibleMonth = new Date(
-          today.getFullYear(),
-          today.getMonth() + (showNextMonth ? 1 : 0),
-          1,
-        );
-        const monthLabel =
-          MONTHS[visibleMonth.getMonth()] + " " + visibleMonth.getFullYear();
-        const stpDate = state.stp.date || 0;
-
-        const calendarTab = document.querySelector('[data-tab="calendar"]');
-        if (calendarTab)
-          calendarTab.textContent =
-            "Calendar" + (showNextMonth ? " — DONE" : "");
-
-        const statusText = showNextMonth
-          ? "Previous month is done. Showing next month's pending SIP and STP."
-          : "Showing current month's schedule. SIP after the date is paid; STP clears on the 16th.";
-        el("calStatus").textContent = statusText;
-
-        if (!stpAmt) stpAmt = 0;
-        if (!weights) weights = sipWeights();
-
-        let hasAny = false;
-        const events = [];
-
-        const monthIndex = showNextMonth ? 1 : 0;
-        if (
-          stpAmt > 0 &&
-          stpDate > 0 &&
-          monthIndex < (state.stp.duration || 0)
-        ) {
-          const detail = weights
-            .map((w) => {
-              const name = (
-                state.equity[w.id].name ||
-                EQ_FUNDS.find((f) => f.id === w.id).defaultName
-              )
-                .split(" ")
-                .slice(0, 2)
-                .join(" ");
-              return name + ": " + fmt(stpAmt * w.w);
-            })
-            .join(" • ");
-          events.push({
-            date: stpDate,
-            type: "stp",
-            label: "STP Transfer",
-            amount: stpAmt,
-            detail,
-            status: showNextMonth
-              ? "pending"
-              : today.getDate() >= 16
-                ? "paid"
-                : "pending",
-          });
-          hasAny = true;
-        }
-
-        EQ_FUNDS.forEach((f) => {
-          const s = state.equity[f.id];
-          if ((s.sipAmt || 0) > 0 && (s.sipDate || 0) > 0) {
-            events.push({
-              date: s.sipDate,
-              type: "sip",
-              label: s.name || f.defaultName,
-              amount: s.sipAmt,
-              detail: "Monthly SIP",
-              status: showNextMonth
-                ? "pending"
-                : today.getDate() > s.sipDate
-                  ? "paid"
-                  : "pending",
+          /* Tabs */
+          el("tabs")
+            .querySelectorAll("button")
+            .forEach((btn) => {
+              btn.addEventListener("click", () => {
+                el("tabs")
+                  .querySelectorAll("button")
+                  .forEach((b) => b.classList.remove("active"));
+                btn.classList.add("active");
+                document
+                  .querySelectorAll(".tab-section")
+                  .forEach((s) => s.classList.remove("active"));
+                el("tab-" + btn.dataset.tab).classList.add("active");
+              });
             });
-            hasAny = true;
-          }
-        });
 
-        events.sort((a, b) => a.date - b.date);
+          /* Actions */
+          el("copyBtn").addEventListener("click", copySummary);
+          el("resetBtn").addEventListener("click", resetAll);
 
-        el("calEmpty").style.display = hasAny ? "none" : "block";
-        if (!hasAny) {
-          el("calGrid").innerHTML = "";
-          return;
-        }
+          /* ════════════════════════════════════════════
+             MAIN RENDER
+          ════════════════════════════════════════════ */
+          function render() {
+            /* — Liquid funds — */
+            let totalLiqVal = 0,
+              totalDep = 0,
+              totalLiqTgt = 0,
+              totalLiqInv = 0;
+            LIQ_FUNDS.forEach((f) => {
+              const val = state.liquid[f.id].value || 0;
+              const res = Math.min(state.liquid[f.id].reserve || 0, val);
+              const dep = Math.max(0, val - res);
+              const tgt = state.liquid[f.id].target || 0;
+              const gap = tgt - val;
+              const required = gap > 0 ? gap : 0;
 
-        const stpTotal = events
-          .filter((e) => e.type === "stp")
-          .reduce((s, e) => s + e.amount, 0);
-        const sipTotal = events
-          .filter((e) => e.type === "sip")
-          .reduce((s, e) => s + e.amount, 0);
-        const grandTotal = stpTotal + sipTotal;
+              totalLiqVal += val;
+              totalDep += dep;
+              totalLiqTgt += tgt;
+              totalLiqInv += required;
 
-        const mHead =
-          stpTotal > 0
-            ? `<span class="mtotal">${fmt(stpTotal)} STP</span>`
-            : "";
+              el("ldep-" + f.id).textContent = fmt(dep);
+              el("linvlbl-" + f.id).textContent =
+                required > 0
+                  ? "Invest now"
+                  : tgt > 0
+                    ? "Goal reached ✓"
+                    : "Invest now";
+              el("linv-" + f.id).textContent = fmt(required);
+              const resPct = val > 0 ? Math.round((res / val) * 100) : 0;
+              el("lrespct-" + f.id).textContent = resPct + "% reserved";
+              el("ldepfill-" + f.id).style.width =
+                val > 0 ? Math.round((dep / val) * 100) + "%" : "0%";
+            });
 
-        const evHTML =
-          events.length > 0
-            ? events
-                .map(
-                  (ev, i) => `
-              ${i > 0 && events[i - 1].date !== ev.date ? '<div class="cal-sep"></div>' : ""}
-              <div class="cal-event">
-                <div class="cal-day">${ev.date}</div>
-                <div class="cal-body">
-                  <div class="cal-type ${ev.type}">${ev.type === "stp" ? "STP" : "SIP"}<span class="cal-status ${ev.status}">${ev.status}</span></div>
-                  <div class="cal-amt ${ev.type}">${fmt(ev.amount)}</div>
-                  <div class="cal-detail">${ev.detail}</div>
-                </div>
-              </div>`,
-                )
-                .join("")
-            : `<div class="cal-empty-month">No events</div>`;
+            /* Deployable summary bar */
+            el("totalDep").textContent = fmt(totalDep);
+            const liqNames = LIQ_FUNDS.map(
+              (f) => state.liquid[f.id].name || f.defaultName,
+            ).join(" + ");
+            el("depNote").textContent =
+              totalLiqVal > 0
+                ? fmt(totalLiqVal - totalDep) + " reserved across " + liqNames
+                : "Enter liquid fund values above";
 
-        const totalRow =
-          grandTotal > 0
-            ? `<div class="cal-total-row"><span class="k">Month total</span><span class="v">${fmt(grandTotal)}</span></div>`
-            : "";
+            const autoDep = stpDeployable();
+            const effective = state.stp.override > 0 ? state.stp.override : autoDep;
+            const dur = state.stp.duration || 0;
+            const stpAmt =
+              dur > 0 && effective > 0 ? Math.ceil(effective / dur) : 0;
 
-        el("calGrid").innerHTML = `
-          <div class="cal-month">
-            <div class="cal-mhead">
-              <span class="mname">${monthLabel}</span>${mHead}
-            </div>
-            <div class="cal-events">${evHTML}</div>
-            ${totalRow}
-          </div>`;
-      }
+            el("monthlyStpDue").textContent = stpAmt > 0 ? fmt(stpAmt) : "₹0";
+            el("stpDueNote").textContent = state.stp.date
+              ? `Pay on ${state.stp.date}th`
+              : "Set STP date";
 
-      /* ════════════════════════════════════════════
-         MARKET SIGNALS
-      ════════════════════════════════════════════ */
-      function renderMarket() {
-        el("mktSnapshotLine").textContent = MARKET_DATA.label;
+            /* — Equity funds — */
+            let eqCur = 0,
+              eqTgt = 0,
+              eqInv = 0,
+              totDuty = 0,
+              totalSip = 0;
 
-        el("mktGrid").innerHTML = MARKET_DATA.indices
-          .map((idx) => {
-            const discount = ((idx.pe - idx.medianPe) / idx.medianPe) * 100;
-            let score = 12;
-            if (discount <= -15) score = 95;
-            else if (discount <= -10) score = 86;
-            else if (discount <= -7) score = 76;
-            else if (discount <= -3) score = 58;
-            else if (discount <= 2) score = 45;
-            else if (discount <= 8) score = 28;
+            EQ_FUNDS.forEach((f) => {
+              const s = state.equity[f.id];
+              const paid = s.paid || 0;
+              const shown = s.shown || 0;
+              const tgt = s.target || 0;
 
-            let action = "Wait",
-              tone = "wait";
-            if (score >= 80) {
-              action = "Invest now";
-              tone = "good";
-            } else if (score >= 62) {
-              action = "Invest in tranches";
-              tone = "good";
-            } else if (score >= 45) {
-              action = "Small SIP only";
-              tone = "watch";
+              let rate = 0.00005;
+              if (paid > 0 && shown > 0 && shown <= paid)
+                rate = (paid - shown) / paid;
+
+              const cur = shown > 0 ? shown : 0;
+              const targetVal = tgt > 0 ? tgt : cur;
+              const gap = targetVal - cur;
+              const required = gap > 0 ? roundUpInvest(gap, rate) : 0;
+              const duty = required * rate;
+              totDuty += duty;
+
+              el("erate-" + f.id).textContent =
+                (rate * 100).toFixed(5).replace(/0+$/, "").replace(/\.$/, "") + "%";
+
+              if (required > 0) {
+                el("einvlbl-" + f.id).textContent = "Invest now";
+                el("einv-" + f.id).textContent = fmt(required);
+              } else if (tgt > 0 && cur > 0 && gap <= 0) {
+                el("einvlbl-" + f.id).textContent = "Goal reached ✓";
+                el("einv-" + f.id).textContent = fmt(0);
+              } else {
+                el("einvlbl-" + f.id).textContent = "Invest now";
+                el("einv-" + f.id).textContent = fmt(0);
+              }
+
+              eqCur += cur;
+              eqTgt += targetVal;
+              eqInv += required;
+              totalSip += s.sipAmt || 0;
+            });
+
+            /* SIP weight % on cards */
+            EQ_FUNDS.forEach((f) => {
+              const sip = state.equity[f.id].sipAmt || 0;
+              const p = totalSip > 0 ? Math.round((sip / totalSip) * 100) : 0;
+              el("esippct-" + f.id).textContent = p + "%";
+            });
+
+            /* — STP — */
+            const weights = sipWeights();
+
+            /* Update STP source buttons */
+            el("srcBtns")
+              .querySelectorAll(".src-btn")
+              .forEach((b) =>
+                b.classList.toggle("active", b.dataset.src === state.stp.sourceId),
+              );
+            el("stpAutoDep").textContent = fmt(autoDep);
+            el("stpMonthly").textContent = fmt(stpAmt);
+
+            const selectedStpSource = stpSourceId();
+            const srcLabel =
+              selectedStpSource === "both"
+                ? "both liquid funds"
+                : fundName(selectedStpSource);
+
+            el("stpSub").textContent =
+              stpAmt > 0
+                ? fmt(effective) +
+                  " over " +
+                  dur +
+                  " month" +
+                  (dur !== 1 ? "s" : "") +
+                  " from " +
+                  srcLabel +
+                  " on the " +
+                  (state.stp.date || "?") +
+                  "th"
+                : "Enter duration and date to begin";
+
+            let splitHTML = "";
+            if (stpAmt > 0) {
+              weights.forEach((w) => {
+                const name = fundName(w.id);
+                const amt = stpAmt * w.w;
+                const p = Math.round(w.w * 100);
+                splitHTML += `<div class="stp-fund-row">
+                  <span class="stp-fund-name">${name} <span style="opacity:.55">(${p}%)</span></span>
+                  <span class="stp-fund-amt">${fmt(amt)}</span>
+                </div>`;
+              });
+            } else {
+              splitHTML = `<div style="color:var(--dim);font-size:12px;">Configure SIP amounts to see the per-fund split.</div>`;
+            }
+            el("stpSplitRows").innerHTML = splitHTML;
+
+            /* Per-fund STP chips on portfolio equity cards */
+            EQ_FUNDS.forEach((f) => {
+              const w = weights.find((wt) => wt.id === f.id);
+              const fundStp = stpAmt > 0 && w ? Math.round(stpAmt * w.w) : 0;
+              const chipEl = el("estpchip-" + f.id);
+              if (chipEl) {
+                chipEl.style.display = fundStp > 0 ? "flex" : "none";
+                el("estp-" + f.id).textContent = fmt(fundStp);
+              }
+            });
+
+            /* — Summary table — */
+            const totCur = eqCur + totalLiqVal;
+            const totTgt = eqTgt + totalLiqTgt;
+            const totInv = eqInv + totalLiqInv;
+            el("eqCur").textContent = fmt(eqCur);
+            el("eqTgt").textContent = fmt(eqTgt);
+            el("eqInv").textContent = fmt(eqInv);
+            el("liqCur").textContent = fmt(totalLiqVal);
+            el("liqTgt").textContent = fmt(totalLiqTgt);
+            el("liqInv").textContent = fmt(totalLiqInv);
+            el("totCur").textContent = fmt(totCur);
+            el("totTgt").textContent = fmt(totTgt);
+            el("totInv").textContent = fmt(totInv);
+
+            /* Hero */
+            el("heroLabel").textContent = "Total invest required";
+            el("heroVal").textContent = fmt(totInv);
+            el("heroSub").textContent =
+              "To reach targets across equity + liquid funds";
+
+            /* Allocation bars */
+            const nowEqPct = pct(eqCur, totCur);
+            setAllocBar("curEqSeg", "curLiqSeg", "curSplit", nowEqPct, totCur);
+            const tgtEqPct = pct(eqTgt, totTgt);
+            setAllocBar("tgtEqSeg", "tgtLiqSeg", "tgtSplit", tgtEqPct, totTgt);
+
+            /* Stats */
+            const funded = pct(eqCur, eqTgt);
+            el("fundedPct").textContent = Math.round(funded) + "%";
+            el("fundedBar").style.width = clamp(funded, 0, 100) + "%";
+            el("totDuty").textContent = fmt(totDuty);
+            el("totalSipDisp").textContent = fmt(totalSip);
+            el("eqStp").textContent = stpAmt > 0 ? fmt(stpAmt) : "—";
+            el("totStp").textContent = stpAmt > 0 ? fmt(stpAmt) : "—";
+
+            /* SIP table */
+            let sipRows = "";
+            EQ_FUNDS.forEach((f) => {
+              const s = state.equity[f.id];
+              const name = s.name || f.defaultName;
+              const sip = s.sipAmt || 0;
+              const d = s.sipDate || "—";
+              const p =
+                totalSip > 0 && sip > 0
+                  ? Math.round((sip / totalSip) * 100) + "%"
+                  : "—";
+              sipRows += `<tr>
+                <td>${name}</td>
+                <td style="text-align:center">${sip > 0 ? d + (typeof d === "number" ? "th" : "") : "—"}</td>
+                <td style="color:var(--mint)">${sip > 0 ? fmt(sip) : "—"}</td>
+                <td style="color:var(--dim)">${p}</td>
+              </tr>`;
+            });
+            const sipHead = `<tr style="font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim);">
+              <th style="text-align:left;padding-bottom:8px">Fund</th>
+              <th style="text-align:center;padding-bottom:8px">Date</th>
+              <th style="text-align:right;padding-bottom:8px">Amount</th>
+              <th style="text-align:right;padding-bottom:8px">Weight</th>
+            </tr>`;
+            el("sipTable").innerHTML = sipHead + sipRows;
+
+            /* STP overview in summary */
+            if (stpAmt > 0) {
+              let stpOv = `<div style="font-size:12px;line-height:2;color:var(--dim);">`;
+              stpOv += `<span style="color:var(--amber)">${fmt(stpAmt)}/month</span> on the <span style="color:var(--txt)">${state.stp.date || "?"}th</span> for <span style="color:var(--txt)">${dur} months</span> from <span style="color:var(--liq)">${srcLabel}</span>`;
+              stpOv += `</div>`;
+              el("sumStpOverview").innerHTML = stpOv;
+            } else {
+              el("sumStpOverview").textContent =
+                "STP not configured. Set it up in the STP tab.";
             }
 
-            const entryPe = idx.medianPe * 0.92;
-            const entryLevel = idx.level * (entryPe / idx.pe);
-            const discColor = discount < 0 ? "var(--mint)" : "var(--amber)";
-
-            return `
-          <div class="mkt-card ${tone}">
-            <div class="mkt-head">
-              <div>
-                <div class="mkt-idx">${idx.fund}</div>
-                <div class="mkt-name">${idx.index}</div>
-              </div>
-              <span class="pill ${tone}">${action}</span>
-            </div>
-            <div class="mkt-level">${idx.level.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</div>
-            <div class="mkt-data">
-              <div class="mkt-box">
-                <div class="k">PE / 7Y Median</div>
-                <div class="v">${idx.pe.toFixed(2)} / ${idx.medianPe.toFixed(2)}</div>
-              </div>
-              <div class="mkt-box">
-                <div class="k">Valuation gap</div>
-                <div class="v" style="color:${discColor}">${discount.toFixed(2)}%</div>
-              </div>
-            </div>
-            <div class="mkt-note">
-              ${
-                action === "Wait"
-                  ? "Wait for " +
-                    idx.index +
-                    " near " +
-                    Math.round(entryLevel).toLocaleString("en-IN") +
-                    " (PE " +
-                    entryPe.toFixed(2) +
-                    ")."
-                  : "Inside entry zone. 1D: " +
-                    (idx.changePct >= 0 ? "+" : "") +
-                    idx.changePct.toFixed(2) +
-                    "%."
-              }
-            </div>
-          </div>`;
-          })
-          .join("");
-      }
-
-      /* ════════════════════════════════════════════
-         COPY & RESET
-      ════════════════════════════════════════════ */
-      function copySummary() {
-        const effective =
-          state.stp.override > 0 ? state.stp.override : stpDeployable();
-        const dur = state.stp.duration || 0;
-        const stpAmt = dur > 0 && effective > 0 ? effective / dur : 0;
-        const weights = sipWeights();
-
-        const lines = ["*MF Portfolio Plan*", ""];
-        lines.push("EQUITY FUNDS");
-        EQ_FUNDS.forEach((f) => {
-          const s = state.equity[f.id];
-          const name = s.name || f.defaultName;
-          const inv = el("einv-" + f.id).textContent;
-          const sip = s.sipAmt
-            ? " | SIP " + fmt(s.sipAmt) + " on " + s.sipDate + "th"
-            : "";
-          lines.push("  " + name + ": invest " + inv + sip);
-        });
-        lines.push("");
-        lines.push("STP");
-        if (stpAmt > 0) {
-          lines.push(
-            "  " +
-              fmt(stpAmt) +
-              "/month × " +
-              dur +
-              " months on the " +
-              (state.stp.date || "?") +
-              "th",
-          );
-          weights.forEach((w) =>
-            lines.push("    → " + fundName(w.id) + ": " + fmt(stpAmt * w.w)),
-          );
-        } else {
-          lines.push("  Not configured");
-        }
-        lines.push("");
-        lines.push(
-          "Equity now " +
-            el("eqCur").textContent +
-            " → target " +
-            el("eqTgt").textContent,
-        );
-        lines.push("Equity to invest: " + el("eqInv").textContent);
-        lines.push("Monthly SIP: " + el("totalSipDisp").textContent);
-
-        navigator.clipboard
-          .writeText(lines.join("\n"))
-          .then(() => {
-            const b = el("copyBtn"),
-              o = b.textContent;
-            b.textContent = "Copied ✓";
-            setTimeout(() => (b.textContent = o), 1600);
-          })
-          .catch(() => alert(lines.join("\n")));
-      }
-
-      function resetAll() {
-        if (!confirm("Reset all saved fund data?")) return;
-        state = defaultState();
-        LIQ_FUNDS.forEach((f) => {
-          el("lname-" + f.id).value = f.defaultName;
-          el("lval-" + f.id).value = "";
-          el("lres-" + f.id).value = "";
-        });
-        EQ_FUNDS.forEach((f) => {
-          el("ename-" + f.id).value = f.defaultName;
-          el("epaid-" + f.id).value = "";
-          el("eshown-" + f.id).value = "";
-          el("etgt-" + f.id).value = "";
-          el("esip-" + f.id).value = "";
-          el("esipdate-" + f.id).value = "";
-        });
-        el("stpOverride").value = "";
-        el("stpDuration").value = "";
-        el("stpDate").value = "";
-        NW_FIELDS.forEach((f) => {
-          const i = el("nw-" + f.id);
-          if (i) i.value = "";
-        });
-        try {
-          localStorage.removeItem(STORE_KEY);
-        } catch {}
-        render();
-      }
-
-      /* ════════════════════════════════════════════
-         NET WORTH
-      ════════════════════════════════════════════ */
-      function buildNwGrid() {
-        el("nwFieldsGrid").innerHTML = NW_FIELDS.map(
-          (f) => `
-          <div class="field" style="margin-bottom:0;">
-            <label class="flabel" for="nw-${f.id}">${f.label}${f.id === "mfProfit" ? ' <span style="color:var(--dim);font-size:8px;text-transform:none;letter-spacing:0;">(within MF value)</span>' : ""}</label>
-            <div class="ibox"><span class="pfx">&#8377;</span>
-              <input class="num" id="nw-${f.id}" type="number" min="0" placeholder="0"
-                inputmode="numeric" value="${state.networth[f.id] || ""}" />
-            </div>
-          </div>`,
-        ).join("");
-
-        NW_FIELDS.forEach((f) => {
-          el("nw-" + f.id)?.addEventListener("input", (e) => {
-            state.networth[f.id] = num(e.target.value);
             renderNetWorth();
             saveState();
-          });
-        });
-      }
-
-      function renderNetWorth() {
-        const mfVal = mfTotalValue();
-        const profit = state.networth.mfProfit || 0;
-        const other = NW_FIELDS.filter((f) => f.id !== "mfProfit").reduce(
-          (s, f) => s + (state.networth[f.id] || 0),
-          0,
-        );
-        const total = mfVal + other;
-
-        el("nwMfVal").textContent = fmt(mfVal);
-        el("nwMfChip").textContent = fmt(mfVal);
-        el("nwMfProfitChip").textContent = fmt(profit);
-        el("nwOtherChip").textContent = fmt(other);
-        el("nwHeroVal").textContent = fmt(total);
-        el("nwSnapshotBtn").textContent =
-          "Save snapshot — " + fmtMonth(snapshotKey());
-
-        const mfCost = Math.max(0, mfVal - profit);
-        const cats = [
-          {
-            label: "MF Invested (cost)",
-            value: mfCost,
-            color: "rgba(74,222,156,0.4)",
-          },
-          { label: "MF Unrealized Gain", value: profit, color: "#4ade9c" },
-          {
-            label: "Bank & Savings",
-            value: state.networth.bank || 0,
-            color: "var(--liq)",
-          },
-          {
-            label: "Fixed Deposit",
-            value: state.networth.fd || 0,
-            color: "#5bc4f5",
-          },
-          {
-            label: "Cash",
-            value: state.networth.cash || 0,
-            color: "var(--amber)",
-          },
-          {
-            label: "PPF / EPF / NPS",
-            value: state.networth.ppf || 0,
-            color: "#8be8ff",
-          },
-        ].filter((c) => c.value > 0);
-
-        if (!cats.length) {
-          el("nwBreakdown").innerHTML =
-            `<div style="color:var(--dim);font-size:12px;">Enter values above to see the breakdown.</div>`;
-          return;
-        }
-        const maxW = Math.max(...cats.map((c) => c.value));
-        el("nwBreakdown").innerHTML = cats
-          .map((c) => {
-            const barW = Math.max(1, Math.round((c.value / maxW) * 100));
-            const share = total > 0 ? Math.round((c.value / total) * 100) : 0;
-            return `<div class="nw-bar-row">
-            <div class="nw-bar-label" title="${c.label}">${c.label}</div>
-            <div class="nw-bar-track"><div class="nw-bar-fill" style="width:${barW}%;background:${c.color};"></div></div>
-            <div class="nw-bar-val">${fmt(c.value)}<span class="nw-bar-pct">${share}%</span></div>
-          </div>`;
-          })
-          .join("");
-      }
-
-      function takeSnapshot() {
-        const key = snapshotKey();
-        const mfVal = mfTotalValue();
-        const other = NW_FIELDS.filter((f) => f.id !== "mfProfit").reduce(
-          (s, f) => s + (state.networth[f.id] || 0),
-          0,
-        );
-        const total = mfVal + other;
-
-        if (!state.networth.snapshots) state.networth.snapshots = {};
-        if (state.networth.snapshots[key]) {
-          if (
-            !confirm("Overwrite existing snapshot for " + fmtMonth(key) + "?")
-          )
-            return;
-        }
-
-        const snap = { mf: mfVal, total, savedAt: new Date().toISOString() };
-        NW_FIELDS.forEach((f) => {
-          snap[f.id] = state.networth[f.id] || 0;
-        });
-        state.networth.snapshots[key] = snap;
-
-        saveState();
-        renderNwHistory();
-        renderNwProjection();
-
-        const msg = el("nwSnapMsg");
-        msg.textContent = "Saved ✓ " + fmtMonth(key);
-        setTimeout(() => {
-          if (msg.textContent.startsWith("Saved")) msg.textContent = "";
-        }, 3000);
-      }
-
-      function renderNwHistory() {
-        const snaps = state.networth.snapshots || {};
-        const sorted = Object.entries(snaps)
-          .map(([k, v]) => ({ key: k, ...v }))
-          .sort((a, b) => b.key.localeCompare(a.key));
-
-        if (!sorted.length) {
-          el("nwHistory").innerHTML =
-            `<div style="color:var(--dim);font-size:12px;">No snapshots yet. Fill in values above and click "Save snapshot".</div>`;
-          return;
-        }
-
-        const rows = sorted
-          .map((s, i) => {
-            const prev = sorted[i + 1];
-            const delta = prev !== undefined ? s.total - prev.total : null;
-            const dStr =
-              delta !== null
-                ? `<span style="color:${delta >= 0 ? "var(--mint)" : "var(--coral)"}">${delta >= 0 ? "+" : "−"}${fmt(Math.abs(delta))}</span>`
-                : "—";
-            const td = (v, c) =>
-              `<td style="text-align:right;${c ? "color:" + c + ";" : ""}">${fmt(v || 0)}</td>`;
-            return `<tr>
-            <td>${fmtMonth(s.key)}</td>
-            ${td(s.mf)}${td(s.mfProfit, "var(--mint)")}
-            ${td(s.bank)}${td(s.fd)}${td(s.cash)}${td(s.ppf)}
-            <td style="text-align:right;color:var(--mint);font-weight:600;">${fmt(s.total)}</td>
-            <td style="text-align:right;">${dStr}</td>
-          </tr>`;
-          })
-          .join("");
-
-        el("nwHistory").innerHTML = `<div class="nw-hist-wrap">
-          <table class="nw-hist-table">
-            <thead><tr>
-              <th style="text-align:left;padding-bottom:8px;">Month</th>
-              <th style="text-align:right;padding-bottom:8px;">MF</th>
-              <th style="text-align:right;padding-bottom:8px;">Profit</th>
-              <th style="text-align:right;padding-bottom:8px;">Bank</th>
-              <th style="text-align:right;padding-bottom:8px;">FD</th>
-              <th style="text-align:right;padding-bottom:8px;">Cash</th>
-              <th style="text-align:right;padding-bottom:8px;">PPF</th>
-              <th style="text-align:right;padding-bottom:8px;">Total</th>
-              <th style="text-align:right;padding-bottom:8px;">&Delta;</th>
-            </tr></thead>
-            <tbody>${rows}</tbody>
-          </table>
-        </div>`;
-      }
-
-      function renderNwProjection() {
-        const snaps = state.networth.snapshots || {};
-        const sorted = Object.entries(snaps)
-          .map(([k, v]) => ({ key: k, ...v }))
-          .sort((a, b) => a.key.localeCompare(b.key));
-
-        if (sorted.length < 2) {
-          el("nwProjection").innerHTML =
-            `<div style="color:var(--dim);font-size:12px;">
-            Need at least 2 monthly snapshots to project. You have <b style="color:var(--txt)">${sorted.length}</b> so far.
-          </div>`;
-          return;
-        }
-
-        let totalRate = 0,
-          count = 0;
-        for (let i = 1; i < sorted.length; i++) {
-          const prev = sorted[i - 1],
-            curr = sorted[i];
-          if (prev.total > 0) {
-            const [py, pm] = prev.key.split("-").map(Number);
-            const [cy, cm] = curr.key.split("-").map(Number);
-            const months = (cy - py) * 12 + (cm - pm);
-            if (months > 0) {
-              totalRate += Math.pow(curr.total / prev.total, 1 / months) - 1;
-              count++;
-            }
+            renderUpcoming(stpAmt, weights);
+            renderCalendar(stpAmt, weights);
           }
-        }
-        const r = count > 0 ? totalRate / count : 0;
-        const ann = (Math.pow(1 + r, 12) - 1) * 100;
-        const cur = nwTotal();
 
-        const cards = [
-          { label: "3 months", months: 3 },
-          { label: "6 months", months: 6 },
-          { label: "1 year", months: 12 },
-          { label: "2 years", months: 24 },
-          { label: "5 years", months: 60 },
-          { label: "10 years", months: 120 },
-        ]
-          .map((m) => {
-            const proj = cur * Math.pow(1 + r, m.months);
-            return `<div class="nw-proj-card">
-            <div class="pk">${m.label}</div>
-            <div class="pv">${fmt(proj)}</div>
-            <div class="pg">+${fmt(proj - cur)}</div>
-          </div>`;
-          })
-          .join("");
+          function setAllocBar(eqId, liqId, splitId, eqPct, total) {
+            const liqPct = 100 - eqPct;
+            el(eqId).style.width = eqPct + "%";
+            el(liqId).style.width = liqPct + "%";
+            el(eqId).textContent = eqPct >= 14 ? Math.round(eqPct) + "%" : "";
+            el(liqId).textContent = liqPct >= 14 ? Math.round(liqPct) + "%" : "";
+            el(splitId).textContent =
+              total > 0
+                ? Math.round(eqPct) + "% eq / " + Math.round(liqPct) + "% liq"
+                : "—";
+          }
 
-        el("nwProjection").innerHTML = `
-          <div style="font-size:11px;color:var(--dim);margin-bottom:12px;">
-            Based on <b style="color:var(--txt)">${sorted.length} snapshots</b> &mdash;
-            avg <b style="color:var(--mint)">${ann >= 0 ? "+" : ""}${ann.toFixed(1)}%/yr</b>
-            (<b style="color:var(--mint)">${(r * 100).toFixed(2)}%/mo</b>).
-            Projected from current net worth <b style="color:var(--txt)">${fmt(cur)}</b>.
-          </div>
-          <div class="nw-proj-cards">${cards}</div>
-          <p style="font-size:10px;color:var(--dim);margin-top:12px;line-height:1.6;">
-            Simple compound model using your actual historical rate. Real returns vary.
-          </p>`;
-      }
+          /* ════════════════════════════════════════════
+             UPCOMING PAYMENTS (portfolio page)
+          ════════════════════════════════════════════ */
+          function renderUpcoming(stpAmt, weights) {
+            const today = new Date();
+            const todayDate = today.getDate();
+            const todayMid = new Date(
+              today.getFullYear(),
+              today.getMonth(),
+              todayDate,
+            );
 
-      /* ════════════════════════════════════════════
-         INIT
-      ════════════════════════════════════════════ */
-      renderMarket();
-      buildNwGrid();
-      el("nwSnapshotBtn").addEventListener("click", takeSnapshot);
-      renderNwHistory();
-      renderNwProjection();
-      render();
+            if (!stpAmt) stpAmt = 0;
+            if (!weights) weights = sipWeights();
+
+            function nextOcc(dayOfMonth) {
+              if (dayOfMonth > todayDate)
+                return new Date(today.getFullYear(), today.getMonth(), dayOfMonth);
+              return new Date(
+                today.getFullYear(),
+                today.getMonth() + 1,
+                dayOfMonth,
+              );
+            }
+
+            function diffLabel(d) {
+              const days = Math.round((d - todayMid) / 86400000);
+              if (days === 0) return "Today";
+              if (days === 1) return "Tomorrow";
+              return "in " + days + " days";
+            }
+
+            const rows = [];
+
+            /* STP row */
+            const stpDate = state.stp.date || 0;
+            const dur = state.stp.duration || 0;
+            const appliedCount = state.stp.appliedCount || 0;
+
+            if (stpAmt > 0 && stpDate > 0 && appliedCount < dur) {
+              const d = nextOcc(stpDate);
+              rows.push({
+                type: "stp",
+                name: "STP Transfer",
+                amount: stpAmt,
+                day: stpDate,
+                month: MONTHS[d.getMonth()],
+                diff: diffLabel(d),
+                ts: d.getTime(),
+              });
+            }
+
+            /* SIP rows */
+            EQ_FUNDS.forEach((f) => {
+              const s = state.equity[f.id];
+              const sipAmt = s.sipAmt || 0;
+              const sipDate = s.sipDate || 0;
+              if (sipAmt > 0 && sipDate > 0) {
+                const d = nextOcc(sipDate);
+                rows.push({
+                  type: "sip",
+                  name: s.name || f.defaultName,
+                  amount: sipAmt,
+                  day: sipDate,
+                  month: MONTHS[d.getMonth()],
+                  diff: diffLabel(d),
+                  ts: d.getTime(),
+                });
+              }
+            });
+
+            rows.sort((a, b) => a.ts - b.ts || (a.type === "stp" ? -1 : 1));
+
+            const sec = el("upcomingSection");
+            if (!rows.length) {
+              sec.innerHTML = "";
+              return;
+            }
+
+            const rowsHTML = rows
+              .map(
+                (r) => `
+              <div class="upcoming-row">
+                <div class="upcoming-dblock">
+                  <div class="upcoming-day">${r.day}</div>
+                  <div class="upcoming-mo">${r.month}</div>
+                </div>
+                <span class="tag ${r.type}">${r.type.toUpperCase()}</span>
+                <div class="upcoming-name">${r.name}</div>
+                <div class="upcoming-amt ${r.type}">${fmt(r.amount)}</div>
+                <div class="upcoming-diff">${r.diff}</div>
+              </div>`,
+              )
+              .join("");
+
+            sec.innerHTML = `<div class="upcoming-card">
+              <div class="upcoming-hd">Upcoming Payments</div>
+              ${rowsHTML}
+            </div>`;
+          }
+
+          /* ════════════════════════════════════════════
+             CALENDAR
+          ════════════════════════════════════════════ */
+          function renderCalendar(stpAmt, weights) {
+            const today = new Date();
+            const todayDate = today.getDate();
+            const stpDate = state.stp.date || 0;
+            const dur = state.stp.duration || 0;
+            const effective =
+              state.stp.override > 0 ? state.stp.override : stpDeployable();
+
+            if (!stpAmt) stpAmt = 0;
+            if (!weights) weights = sipWeights();
+
+            /* Determine if current month's events are all done */
+            const sipFunds = EQ_FUNDS.filter(
+              (f) =>
+                (state.equity[f.id].sipAmt || 0) > 0 &&
+                (state.equity[f.id].sipDate || 0) > 0,
+            );
+            const hasStpNow = stpAmt > 0 && stpDate > 0 && dur > 0;
+            const sipsDone = sipFunds.every(
+              (f) => todayDate > (state.equity[f.id].sipDate || 0),
+            );
+            const stpDone = !hasStpNow || todayDate > stpDate;
+            const curMonthDone =
+              (sipFunds.length > 0 || hasStpNow) && sipsDone && stpDone;
+
+            const calendarTab = document.querySelector('[data-tab="calendar"]');
+            if (calendarTab)
+              calendarTab.textContent =
+                "Calendar" + (curMonthDone ? " — DONE" : "");
+
+            el("calStatus").textContent = curMonthDone
+              ? "This month's investments are complete. Showing upcoming schedule."
+              : "Showing full deployment schedule. Past dates are marked paid.";
+
+            /* Build one card per month from now until deployable reaches 0 */
+            const monthsData = [];
+            let hasAny = false;
+            let remaining = effective;
+
+            for (let i = 0; i < 120; i++) {
+              const stpActive =
+                stpAmt > 0 && stpDate > 0 && i < dur && remaining > 0;
+
+              /* Stop once STP is exhausted (beyond current month) */
+              if (!stpActive && i > 0 && stpAmt > 0) break;
+              /* No STP configured — only show current month's SIPs */
+              if (stpAmt === 0 && i >= 1) break;
+
+              const mDate = new Date(
+                today.getFullYear(),
+                today.getMonth() + i,
+                1,
+              );
+              const isCurrentMonth = i === 0;
+              const monthLabel =
+                MONTHS[mDate.getMonth()] + " " + mDate.getFullYear();
+
+              const events = [];
+
+              /* STP event for this month */
+              if (stpActive) {
+                const thisMonthStp = Math.min(stpAmt, remaining);
+                const stpStatus = isCurrentMonth
+                  ? todayDate > stpDate
+                    ? "paid"
+                    : "pending"
+                  : "pending";
+                const detail = weights
+                  .map((w) => {
+                    const name = (
+                      state.equity[w.id].name ||
+                      EQ_FUNDS.find((f) => f.id === w.id).defaultName
+                    )
+                      .split(" ")
+                      .slice(0, 2)
+                      .join(" ");
+                    return name + ": " + fmt(thisMonthStp * w.w);
+                  })
+                  .join(" • ");
+                events.push({
+                  date: stpDate,
+                  type: "stp",
+                  label: "STP Transfer",
+                  amount: thisMonthStp,
+                  detail,
+                  status: stpStatus,
+                });
+                remaining -= thisMonthStp;
+                hasAny = true;
+              }
+
+              /* SIP events */
+              EQ_FUNDS.forEach((f) => {
+                const s = state.equity[f.id];
+                if ((s.sipAmt || 0) > 0 && (s.sipDate || 0) > 0) {
+                  const sipStatus = isCurrentMonth
+                    ? todayDate > s.sipDate
+                      ? "paid"
+                      : "pending"
+                    : "pending";
+                  events.push({
+                    date: s.sipDate,
+                    type: "sip",
+                    label: s.name || f.defaultName,
+                    amount: s.sipAmt,
+                    detail: "Monthly SIP",
+                    status: sipStatus,
+                  });
+                  hasAny = true;
+                }
+              });
+
+              if (events.length > 0) {
+                events.sort((a, b) => a.date - b.date);
+                const allDone =
+                  isCurrentMonth && events.every((e) => e.status === "paid");
+                monthsData.push({
+                  label: monthLabel,
+                  events,
+                  isCurrentMonth,
+                  allDone,
+                });
+              }
+
+              if (remaining <= 0 && stpAmt > 0) break;
+            }
+
+            el("calEmpty").style.display = hasAny ? "none" : "block";
+            if (!hasAny) {
+              el("calGrid").innerHTML = "";
+              return;
+            }
+
+            el("calGrid").innerHTML = monthsData
+              .map(({ label, events, isCurrentMonth, allDone }) => {
+                const stpTotal = events
+                  .filter((e) => e.type === "stp")
+                  .reduce((s, e) => s + e.amount, 0);
+                const grandTotal = events.reduce((s, e) => s + e.amount, 0);
+
+                const mHead =
+                  stpTotal > 0
+                    ? `<span class="mtotal">${fmt(stpTotal)} STP</span>`
+                    : "";
+
+                const doneTag = allDone
+                  ? ` <span style="font-size:9px;color:var(--mint);letter-spacing:.6px;text-transform:uppercase;">&#x2713; DONE</span>`
+                  : "";
+
+                const evHTML = events
+                  .map(
+                    (ev, i) => `
+                  ${i > 0 && events[i - 1].date !== ev.date ? '<div class="cal-sep"></div>' : ""}
+                  <div class="cal-event ${ev.status}">
+                    <div class="cal-day">${ev.date}</div>
+                    <div class="cal-body">
+                      <div class="cal-type ${ev.type}">${ev.type === "stp" ? "STP" : "SIP"}<span class="cal-status ${ev.status}">${ev.status}</span></div>
+                      <div class="cal-amt ${ev.type}">${fmt(ev.amount)}</div>
+                      <div class="cal-detail">${ev.detail}</div>
+                    </div>
+                  </div>`,
+                  )
+                  .join("");
+
+                const totalRow =
+                  grandTotal > 0
+                    ? `<div class="cal-total-row"><span class="k">Month total</span><span class="v">${fmt(grandTotal)}</span></div>`
+                    : "";
+
+                return `
+              <div class="cal-month"${allDone ? ' style="border-color:var(--mint-dim);"' : ""}>
+                <div class="cal-mhead">
+                  <span class="mname">${label}${doneTag}</span>${mHead}
+                </div>
+                <div class="cal-events">${evHTML}</div>
+                ${totalRow}
+              </div>`;
+              })
+              .join("");
+          }
+
+          /* ════════════════════════════════════════════
+             MARKET SIGNALS
+          ════════════════════════════════════════════ */
+          function renderMarket() {
+            el("mktSnapshotLine").textContent = MARKET_DATA.label;
+
+            el("mktGrid").innerHTML = MARKET_DATA.indices
+              .map((idx) => {
+                const discount = ((idx.pe - idx.medianPe) / idx.medianPe) * 100;
+                let score = 12;
+                if (discount <= -15) score = 95;
+                else if (discount <= -10) score = 86;
+                else if (discount <= -7) score = 76;
+                else if (discount <= -3) score = 58;
+                else if (discount <= 2) score = 45;
+                else if (discount <= 8) score = 28;
+
+                let action = "Wait",
+                  tone = "wait";
+                if (score >= 80) {
+                  action = "Invest now";
+                  tone = "good";
+                } else if (score >= 62) {
+                  action = "Invest in tranches";
+                  tone = "good";
+                } else if (score >= 45) {
+                  action = "Small SIP only";
+                  tone = "watch";
+                }
+
+                const entryPe = idx.medianPe * 0.92;
+                const entryLevel = idx.level * (entryPe / idx.pe);
+                const discColor = discount < 0 ? "var(--mint)" : "var(--amber)";
+
+                return `
+              <div class="mkt-card ${tone}">
+                <div class="mkt-head">
+                  <div>
+                    <div class="mkt-idx">${idx.fund}</div>
+                    <div class="mkt-name">${idx.index}</div>
+                  </div>
+                  <span class="pill ${tone}">${action}</span>
+                </div>
+                <div class="mkt-level">${idx.level.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</div>
+                <div class="mkt-data">
+                  <div class="mkt-box">
+                    <div class="k">PE / 7Y Median</div>
+                    <div class="v">${idx.pe.toFixed(2)} / ${idx.medianPe.toFixed(2)}</div>
+                  </div>
+                  <div class="mkt-box">
+                    <div class="k">Valuation gap</div>
+                    <div class="v" style="color:${discColor}">${discount.toFixed(2)}%</div>
+                  </div>
+                </div>
+                <div class="mkt-note">
+                  ${
+                    action === "Wait"
+                      ? "Wait for " +
+                        idx.index +
+                        " near " +
+                        Math.round(entryLevel).toLocaleString("en-IN") +
+                        " (PE " +
+                        entryPe.toFixed(2) +
+                        ")."
+                      : "Inside entry zone. 1D: " +
+                        (idx.changePct >= 0 ? "+" : "") +
+                        idx.changePct.toFixed(2) +
+                        "%."
+                  }
+                </div>
+              </div>`;
+              })
+              .join("");
+          }
+
+          /* ════════════════════════════════════════════
+             COPY & RESET
+          ════════════════════════════════════════════ */
+          function copySummary() {
+            const effective =
+              state.stp.override > 0 ? state.stp.override : stpDeployable();
+            const dur = state.stp.duration || 0;
+            const stpAmt = dur > 0 && effective > 0 ? effective / dur : 0;
+            const weights = sipWeights();
+
+            const lines = ["*MF Portfolio Plan*", ""];
+            lines.push("EQUITY FUNDS");
+            EQ_FUNDS.forEach((f) => {
+              const s = state.equity[f.id];
+              const name = s.name || f.defaultName;
+              const inv = el("einv-" + f.id).textContent;
+              const sip = s.sipAmt
+                ? " | SIP " + fmt(s.sipAmt) + " on " + s.sipDate + "th"
+                : "";
+              lines.push("  " + name + ": invest " + inv + sip);
+            });
+            lines.push("");
+            lines.push("STP");
+            if (stpAmt > 0) {
+              lines.push(
+                "  " +
+                  fmt(stpAmt) +
+                  "/month × " +
+                  dur +
+                  " months on the " +
+                  (state.stp.date || "?") +
+                  "th",
+              );
+              weights.forEach((w) =>
+                lines.push("    → " + fundName(w.id) + ": " + fmt(stpAmt * w.w)),
+              );
+            } else {
+              lines.push("  Not configured");
+            }
+            lines.push("");
+            lines.push(
+              "Equity now " +
+                el("eqCur").textContent +
+                " → target " +
+                el("eqTgt").textContent,
+            );
+            lines.push("Equity to invest: " + el("eqInv").textContent);
+            lines.push("Monthly SIP: " + el("totalSipDisp").textContent);
+
+            navigator.clipboard
+              .writeText(lines.join("\n"))
+              .then(() => {
+                const b = el("copyBtn"),
+                  o = b.textContent;
+                b.textContent = "Copied ✓";
+                setTimeout(() => (b.textContent = o), 1600);
+              })
+              .catch(() => alert(lines.join("\n")));
+          }
+
+          function resetAll() {
+            if (!confirm("Reset all saved fund data?")) return;
+            state = defaultState();
+            LIQ_FUNDS.forEach((f) => {
+              el("lname-" + f.id).value = f.defaultName;
+              el("lval-" + f.id).value = "";
+              el("lres-" + f.id).value = "";
+            });
+            EQ_FUNDS.forEach((f) => {
+              el("ename-" + f.id).value = f.defaultName;
+              el("epaid-" + f.id).value = "";
+              el("eshown-" + f.id).value = "";
+              el("etgt-" + f.id).value = "";
+              el("esip-" + f.id).value = "";
+              el("esipdate-" + f.id).value = "";
+            });
+            el("stpOverride").value = "";
+            el("stpDuration").value = "";
+            el("stpDate").value = "";
+            NW_FIELDS.forEach((f) => {
+              const i = el("nw-" + f.id);
+              if (i) i.value = "";
+            });
+            try {
+              localStorage.removeItem(STORE_KEY);
+            } catch {}
+            render();
+          }
+
+          /* ════════════════════════════════════════════
+             NET WORTH
+          ════════════════════════════════════════════ */
+          function buildNwGrid() {
+            el("nwFieldsGrid").innerHTML = NW_FIELDS.map(
+              (f) => `
+              <div class="field" style="margin-bottom:0;">
+                <label class="flabel" for="nw-${f.id}">${f.label}${f.id === "mfProfit" ? ' <span style="color:var(--dim);font-size:8px;text-transform:none;letter-spacing:0;">(within MF value)</span>' : ""}</label>
+                <div class="ibox"><span class="pfx">&#8377;</span>
+                  <input class="num" id="nw-${f.id}" type="number" min="0" placeholder="0"
+                    inputmode="numeric" value="${state.networth[f.id] || ""}" />
+                </div>
+              </div>`,
+            ).join("");
+
+            NW_FIELDS.forEach((f) => {
+              el("nw-" + f.id)?.addEventListener("input", (e) => {
+                state.networth[f.id] = num(e.target.value);
+                renderNetWorth();
+                saveState();
+              });
+            });
+          }
+
+          function renderNetWorth() {
+            const mfVal = mfTotalValue();
+            const profit = state.networth.mfProfit || 0;
+            const other = NW_FIELDS.filter((f) => f.id !== "mfProfit").reduce(
+              (s, f) => s + (state.networth[f.id] || 0),
+              0,
+            );
+            const total = mfVal + other;
+
+            el("nwMfVal").textContent = fmt(mfVal);
+            el("nwMfChip").textContent = fmt(mfVal);
+            el("nwMfProfitChip").textContent = fmt(profit);
+            el("nwOtherChip").textContent = fmt(other);
+            el("nwHeroVal").textContent = fmt(total);
+            el("nwSnapshotBtn").textContent =
+              "Save snapshot — " + fmtMonth(snapshotKey());
+
+            const mfCost = Math.max(0, mfVal - profit);
+            const cats = [
+              {
+                label: "MF Invested (cost)",
+                value: mfCost,
+                color: "rgba(74,222,156,0.4)",
+              },
+              { label: "MF Unrealized Gain", value: profit, color: "#4ade9c" },
+              {
+                label: "Bank & Savings",
+                value: state.networth.bank || 0,
+                color: "var(--liq)",
+              },
+              {
+                label: "Fixed Deposit",
+                value: state.networth.fd || 0,
+                color: "#5bc4f5",
+              },
+              {
+                label: "Cash",
+                value: state.networth.cash || 0,
+                color: "var(--amber)",
+              },
+              {
+                label: "PPF / EPF / NPS",
+                value: state.networth.ppf || 0,
+                color: "#8be8ff",
+              },
+            ].filter((c) => c.value > 0);
+
+            if (!cats.length) {
+              el("nwBreakdown").innerHTML =
+                `<div style="color:var(--dim);font-size:12px;">Enter values above to see the breakdown.</div>`;
+              return;
+            }
+            const maxW = Math.max(...cats.map((c) => c.value));
+            el("nwBreakdown").innerHTML = cats
+              .map((c) => {
+                const barW = Math.max(1, Math.round((c.value / maxW) * 100));
+                const share = total > 0 ? Math.round((c.value / total) * 100) : 0;
+                return `<div class="nw-bar-row">
+                <div class="nw-bar-label" title="${c.label}">${c.label}</div>
+                <div class="nw-bar-track"><div class="nw-bar-fill" style="width:${barW}%;background:${c.color};"></div></div>
+                <div class="nw-bar-val">${fmt(c.value)}<span class="nw-bar-pct">${share}%</span></div>
+              </div>`;
+              })
+              .join("");
+          }
+
+          function takeSnapshot() {
+            const key = snapshotKey();
+            const mfVal = mfTotalValue();
+            const other = NW_FIELDS.filter((f) => f.id !== "mfProfit").reduce(
+              (s, f) => s + (state.networth[f.id] || 0),
+              0,
+            );
+            const total = mfVal + other;
+
+            if (!state.networth.snapshots) state.networth.snapshots = {};
+            if (state.networth.snapshots[key]) {
+              if (
+                !confirm("Overwrite existing snapshot for " + fmtMonth(key) + "?")
+              )
+                return;
+            }
+
+            const snap = { mf: mfVal, total, savedAt: new Date().toISOString() };
+            NW_FIELDS.forEach((f) => {
+              snap[f.id] = state.networth[f.id] || 0;
+            });
+            state.networth.snapshots[key] = snap;
+
+            saveState();
+            renderNwHistory();
+            renderNwProjection();
+
+            const msg = el("nwSnapMsg");
+            msg.textContent = "Saved ✓ " + fmtMonth(key);
+            setTimeout(() => {
+              if (msg.textContent.startsWith("Saved")) msg.textContent = "";
+            }, 3000);
+          }
+
+          function renderNwHistory() {
+            const snaps = state.networth.snapshots || {};
+            const sorted = Object.entries(snaps)
+              .map(([k, v]) => ({ key: k, ...v }))
+              .sort((a, b) => b.key.localeCompare(a.key));
+
+            if (!sorted.length) {
+              el("nwHistory").innerHTML =
+                `<div style="color:var(--dim);font-size:12px;">No snapshots yet. Fill in values above and click "Save snapshot".</div>`;
+              return;
+            }
+
+            const rows = sorted
+              .map((s, i) => {
+                const prev = sorted[i + 1];
+                const delta = prev !== undefined ? s.total - prev.total : null;
+                const dStr =
+                  delta !== null
+                    ? `<span style="color:${delta >= 0 ? "var(--mint)" : "var(--coral)"}">${delta >= 0 ? "+" : "−"}${fmt(Math.abs(delta))}</span>`
+                    : "—";
+                const td = (v, c) =>
+                  `<td style="text-align:right;${c ? "color:" + c + ";" : ""}">${fmt(v || 0)}</td>`;
+                return `<tr>
+                <td>${fmtMonth(s.key)}</td>
+                ${td(s.mf)}${td(s.mfProfit, "var(--mint)")}
+                ${td(s.bank)}${td(s.fd)}${td(s.cash)}${td(s.ppf)}
+                <td style="text-align:right;color:var(--mint);font-weight:600;">${fmt(s.total)}</td>
+                <td style="text-align:right;">${dStr}</td>
+              </tr>`;
+              })
+              .join("");
+
+            el("nwHistory").innerHTML = `<div class="nw-hist-wrap">
+              <table class="nw-hist-table">
+                <thead><tr>
+                  <th style="text-align:left;padding-bottom:8px;">Month</th>
+                  <th style="text-align:right;padding-bottom:8px;">MF</th>
+                  <th style="text-align:right;padding-bottom:8px;">Profit</th>
+                  <th style="text-align:right;padding-bottom:8px;">Bank</th>
+                  <th style="text-align:right;padding-bottom:8px;">FD</th>
+                  <th style="text-align:right;padding-bottom:8px;">Cash</th>
+                  <th style="text-align:right;padding-bottom:8px;">PPF</th>
+                  <th style="text-align:right;padding-bottom:8px;">Total</th>
+                  <th style="text-align:right;padding-bottom:8px;">&Delta;</th>
+                </tr></thead>
+                <tbody>${rows}</tbody>
+              </table>
+            </div>`;
+          }
+
+          function renderNwProjection() {
+            const snaps = state.networth.snapshots || {};
+            const sorted = Object.entries(snaps)
+              .map(([k, v]) => ({ key: k, ...v }))
+              .sort((a, b) => a.key.localeCompare(b.key));
+
+            if (sorted.length < 2) {
+              el("nwProjection").innerHTML =
+                `<div style="color:var(--dim);font-size:12px;">
+                Need at least 2 monthly snapshots to project. You have <b style="color:var(--txt)">${sorted.length}</b> so far.
+              </div>`;
+              return;
+            }
+
+            let totalRate = 0,
+              count = 0;
+            for (let i = 1; i < sorted.length; i++) {
+              const prev = sorted[i - 1],
+                curr = sorted[i];
+              if (prev.total > 0) {
+                const [py, pm] = prev.key.split("-").map(Number);
+                const [cy, cm] = curr.key.split("-").map(Number);
+                const months = (cy - py) * 12 + (cm - pm);
+                if (months > 0) {
+                  totalRate += Math.pow(curr.total / prev.total, 1 / months) - 1;
+                  count++;
+                }
+              }
+            }
+            const r = count > 0 ? totalRate / count : 0;
+            const ann = (Math.pow(1 + r, 12) - 1) * 100;
+            const cur = nwTotal();
+
+            const cards = [
+              { label: "3 months", months: 3 },
+              { label: "6 months", months: 6 },
+              { label: "1 year", months: 12 },
+              { label: "2 years", months: 24 },
+              { label: "5 years", months: 60 },
+              { label: "10 years", months: 120 },
+            ]
+              .map((m) => {
+                const proj = cur * Math.pow(1 + r, m.months);
+                return `<div class="nw-proj-card">
+                <div class="pk">${m.label}</div>
+                <div class="pv">${fmt(proj)}</div>
+                <div class="pg">+${fmt(proj - cur)}</div>
+              </div>`;
+              })
+              .join("");
+
+            el("nwProjection").innerHTML = `
+              <div style="font-size:11px;color:var(--dim);margin-bottom:12px;">
+                Based on <b style="color:var(--txt)">${sorted.length} snapshots</b> &mdash;
+                avg <b style="color:var(--mint)">${ann >= 0 ? "+" : ""}${ann.toFixed(1)}%/yr</b>
+                (<b style="color:var(--mint)">${(r * 100).toFixed(2)}%/mo</b>).
+                Projected from current net worth <b style="color:var(--txt)">${fmt(cur)}</b>.
+              </div>
+              <div class="nw-proj-cards">${cards}</div>
+              <p style="font-size:10px;color:var(--dim);margin-top:12px;line-height:1.6;">
+                Simple compound model using your actual historical rate. Real returns vary.
+              </p>`;
+          }
+
+          /* ════════════════════════════════════════════
+             STP AUTO-APPLY
+             When today > stpDate and this month hasn't
+             been applied yet, transfer the funds.
+          ════════════════════════════════════════════ */
+          function applyStpIfDue() {
+            const today = new Date();
+            const todayDate = today.getDate();
+            const stpDate = state.stp.date || 0;
+            const dur = state.stp.duration || 0;
+
+            if (!stpDate || !dur) return;
+
+            const appliedCount = state.stp.appliedCount || 0;
+            if (appliedCount >= dur) return; // All STP months already done
+
+            if (todayDate <= stpDate) return; // STP not yet due this month
+
+            const curMonthKey =
+              today.getFullYear() +
+              "-" +
+              String(today.getMonth() + 1).padStart(2, "0");
+            if (state.stp.lastApplied === curMonthKey) return; // Already applied
+
+            /* Amount to transfer this month */
+            const effective =
+              state.stp.override > 0 ? state.stp.override : stpDeployable();
+            if (effective <= 0) return;
+
+            const stpAmt =
+              dur > 0 && effective > 0 ? Math.ceil(effective / dur) : 0;
+            if (stpAmt === 0) return;
+
+            const weights = sipWeights();
+
+            /* Deduct from liquid source(s) */
+            const src = state.stp.sourceId;
+            const liq1Dep = deployable("liq1");
+            const liq2Dep = deployable("liq2");
+            const totalDep = liq1Dep + liq2Dep;
+            if (totalDep <= 0) return;
+
+            const actualStp = Math.min(stpAmt, totalDep);
+
+            if (src === "both" && totalDep > 0) {
+              const l1Take = Math.round((liq1Dep / totalDep) * actualStp);
+              const l2Take = actualStp - l1Take;
+              state.liquid.liq1.value = Math.max(
+                state.liquid.liq1.reserve || 0,
+                Math.round((state.liquid.liq1.value || 0) - l1Take),
+              );
+              state.liquid.liq2.value = Math.max(
+                state.liquid.liq2.reserve || 0,
+                Math.round((state.liquid.liq2.value || 0) - l2Take),
+              );
+            } else {
+              const primary = src === "liq2" ? "liq2" : "liq1";
+              const secondary = src === "liq2" ? "liq1" : "liq2";
+              const pDep = deployable(primary);
+              if (pDep >= actualStp) {
+                state.liquid[primary].value = Math.max(
+                  state.liquid[primary].reserve || 0,
+                  Math.round((state.liquid[primary].value || 0) - actualStp),
+                );
+              } else {
+                state.liquid[primary].value = state.liquid[primary].reserve || 0;
+                const rem = actualStp - pDep;
+                state.liquid[secondary].value = Math.max(
+                  state.liquid[secondary].reserve || 0,
+                  Math.round((state.liquid[secondary].value || 0) - rem),
+                );
+              }
+            }
+
+            /* Add to equity funds (paid + shown) */
+            weights.forEach((w) => {
+              const fundAmt = Math.round(actualStp * w.w);
+              state.equity[w.id].paid = (state.equity[w.id].paid || 0) + fundAmt;
+              state.equity[w.id].shown = (state.equity[w.id].shown || 0) + fundAmt;
+            });
+
+            /* Sync visible input fields */
+            LIQ_FUNDS.forEach((f) => {
+              const inp = el("lval-" + f.id);
+              if (inp) inp.value = state.liquid[f.id].value || "";
+            });
+            EQ_FUNDS.forEach((f) => {
+              const pInp = el("epaid-" + f.id);
+              const sInp = el("eshown-" + f.id);
+              if (pInp) pInp.value = state.equity[f.id].paid || "";
+              if (sInp) sInp.value = state.equity[f.id].shown || "";
+            });
+
+            state.stp.lastApplied = curMonthKey;
+            state.stp.appliedCount = appliedCount + 1;
+            saveState();
+          }
+
+          /* ════════════════════════════════════════════
+             INIT
+          ════════════════════════════════════════════ */
+          initFirebase();          // must run before anything reads fbEnabled
+          renderMarket();
+          buildNwGrid();
+          el("nwSnapshotBtn").addEventListener("click", takeSnapshot);
+          renderNwHistory();
+          renderNwProjection();
+          applyStpIfDue();
+          render();
+
+          /* After first render, pull cloud state (async) and refresh if needed */
+          if (fbEnabled) {
+            fbSyncUI("syncing");
+            loadFromCloud()
+              .then((raw) => {
+                if (!raw) {
+                  /* No cloud doc yet — push current local state */
+                  saveToCloud();
+                  return;
+                }
+                /* Merge cloud data using the same safe-merge as loadState() */
+                const def = defaultState();
+                state = {
+                  liquid: {
+                    liq1: { ...def.liquid.liq1, ...(raw.liquid?.liq1 || {}) },
+                    liq2: { ...def.liquid.liq2, ...(raw.liquid?.liq2 || {}) },
+                  },
+                  equity: {
+                    eq1: { ...def.equity.eq1, ...(raw.equity?.eq1 || {}) },
+                    eq2: { ...def.equity.eq2, ...(raw.equity?.eq2 || {}) },
+                    eq3: { ...def.equity.eq3, ...(raw.equity?.eq3 || {}) },
+                  },
+                  stp: { ...def.stp, ...(raw.stp || {}) },
+                  networth: {
+                    ...Object.fromEntries(
+                      NW_FIELDS.map((f) => [f.id, raw.networth?.[f.id] ?? 0]),
+                    ),
+                    snapshots: { ...(raw.networth?.snapshots || {}) },
+                  },
+                };
+                localStorage.setItem(STORE_KEY, JSON.stringify(state));
+                syncInputsFromState();
+                applyStpIfDue();
+                render();
+                fbSyncUI("ok", "Loaded from cloud ✓");
+              })
+              .catch(() => fbSyncUI("err", "Cloud unavailable — using local data"));
+          }
     </script>
   </body>
 </html>
