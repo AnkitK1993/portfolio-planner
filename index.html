@@ -6,7 +6,10 @@
     <title>MF Portfolio Planner</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
     <style>
       :root {
         --bg: #0c0f0e;
@@ -23,310 +26,1124 @@
         --amber-dim: #6b4f1f;
         --coral: #f07070;
       }
-      * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-      body { background: var(--bg); color: var(--txt); font-family: "JetBrains Mono", monospace; min-height: 100vh; }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        -webkit-tap-highlight-color: transparent;
+      }
+      body {
+        background: var(--bg);
+        color: var(--txt);
+        font-family: "JetBrains Mono", monospace;
+        min-height: 100vh;
+      }
       input[type="number"]::-webkit-inner-spin-button,
-      input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; appearance: none; }
-      input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+      input[type="number"]::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        appearance: none;
+      }
+      input[type="number"] {
+        -moz-appearance: textfield;
+        appearance: textfield;
+      }
 
       /* ── TABS (top on desktop, bottom on mobile) ── */
       .tabs {
-        display: flex; background: var(--panel); border-bottom: 1px solid var(--line);
-        position: sticky; top: 0; z-index: 100; overflow-x: auto; padding: 0 10px;
+        display: flex;
+        background: var(--panel);
+        border-bottom: 1px solid var(--line);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        overflow-x: auto;
+        padding: 0 10px;
         scrollbar-width: none;
       }
-      .tabs::-webkit-scrollbar { display: none; }
-      .tabs button {
-        background: none; border: none; color: var(--dim); font-family: "JetBrains Mono", monospace;
-        font-size: 10.5px; letter-spacing: 0.8px; text-transform: uppercase;
-        padding: 13px 14px; cursor: pointer; white-space: nowrap;
-        border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s, border-color 0.15s;
+      .tabs::-webkit-scrollbar {
+        display: none;
       }
-      .tabs button.active { color: var(--mint); border-bottom-color: var(--mint); }
-      .tabs button:hover:not(.active) { color: var(--txt); }
+      .tabs button {
+        background: none;
+        border: none;
+        color: var(--dim);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10.5px;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        padding: 13px 14px;
+        cursor: pointer;
+        white-space: nowrap;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+        transition:
+          color 0.15s,
+          border-color 0.15s;
+      }
+      .tabs button.active {
+        color: var(--mint);
+        border-bottom-color: var(--mint);
+      }
+      .tabs button:hover:not(.active) {
+        color: var(--txt);
+      }
 
       /* ── APP SHELL ── */
-      .app { max-width: 1140px; margin: 0 auto; padding: 20px 14px 60px; }
-      .tab-section { display: none; }
-      .tab-section.active { display: block; }
+      .app {
+        max-width: 1140px;
+        margin: 0 auto;
+        padding: 20px 14px 60px;
+      }
+      .tab-section {
+        display: none;
+      }
+      .tab-section.active {
+        display: block;
+      }
 
       /* ── PAGE HEADER ── */
-      .pg-head { margin-bottom: 22px; }
-      .pg-head h1 { font-family: "Fraunces", serif; font-weight: 600; font-size: clamp(22px, 4vw, 36px); line-height: 1.05; }
-      .pg-head h1 .accent { color: var(--mint); font-style: italic; }
-      .pg-head p { color: var(--dim); font-size: 11.5px; margin-top: 7px; line-height: 1.55; max-width: 640px; }
+      .pg-head {
+        margin-bottom: 22px;
+      }
+      .pg-head h1 {
+        font-family: "Fraunces", serif;
+        font-weight: 600;
+        font-size: clamp(22px, 4vw, 36px);
+        line-height: 1.05;
+      }
+      .pg-head h1 .accent {
+        color: var(--mint);
+        font-style: italic;
+      }
+      .pg-head p {
+        color: var(--dim);
+        font-size: 11.5px;
+        margin-top: 7px;
+        line-height: 1.55;
+        max-width: 640px;
+      }
 
       /* ── SECTION HEADER ── */
       .sec-head {
-        font-size: 9.5px; text-transform: uppercase; letter-spacing: 1px; color: var(--dim);
-        border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 14px;
+        font-size: 9.5px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--dim);
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 8px;
+        margin-bottom: 14px;
       }
-      .sec-head.mt { margin-top: 26px; }
+      .sec-head.mt {
+        margin-top: 26px;
+      }
 
       /* ── FUND GRID ── */
-      .fund-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+      .fund-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 12px;
+      }
 
       /* ── CARD ── */
-      .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
-      .card.equity { border-left: 3px solid var(--mint-dim); }
-      .card.liquid { border-left: 3px solid var(--liq-dim); }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 16px;
+      }
+      .card.equity {
+        border-left: 3px solid var(--mint-dim);
+      }
+      .card.liquid {
+        border-left: 3px solid var(--liq-dim);
+      }
 
       /* ── FUND HEAD ── */
-      .fhead { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
-      .fundname {
-        flex: 1; background: transparent; border: none; color: var(--txt);
-        font-family: "Fraunces", serif; font-size: 17px; font-weight: 600;
-        outline: none; border-bottom: 1px solid transparent; padding: 2px 0; min-width: 0;
+      .fhead {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 14px;
       }
-      .fundname:focus { border-bottom-color: var(--line); }
-      .tag { font-size: 9px; letter-spacing: 0.8px; padding: 3px 8px; border-radius: 20px; flex-shrink: 0; }
-      .tag.equity { background: var(--mint-dim); color: #cffae3; }
-      .tag.liquid { background: var(--liq-dim); color: #cfe2fa; }
+      .fundname {
+        flex: 1;
+        background: transparent;
+        border: none;
+        color: var(--txt);
+        font-family: "Fraunces", serif;
+        font-size: 17px;
+        font-weight: 600;
+        outline: none;
+        border-bottom: 1px solid transparent;
+        padding: 2px 0;
+        min-width: 0;
+      }
+      .fundname:focus {
+        border-bottom-color: var(--line);
+      }
+      .tag {
+        font-size: 9px;
+        letter-spacing: 0.8px;
+        padding: 3px 8px;
+        border-radius: 20px;
+        flex-shrink: 0;
+      }
+      .tag.equity {
+        background: var(--mint-dim);
+        color: #cffae3;
+      }
+      .tag.liquid {
+        background: var(--liq-dim);
+        color: #cfe2fa;
+      }
 
       /* ── FIELDS ── */
-      .field { margin-bottom: 10px; }
-      .flabel { display: block; font-size: 9px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--dim); margin-bottom: 5px; }
-      .ibox { position: relative; }
-      .pfx { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--dim); font-size: 13px; pointer-events: none; }
-      .num {
-        width: 100%; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px;
-        color: var(--txt); font-family: "JetBrains Mono", monospace; font-size: 14px;
-        padding: 10px 10px 10px 24px; outline: none; transition: border-color 0.15s;
+      .field {
+        margin-bottom: 10px;
       }
-      .num:focus { border-color: var(--mint); }
-      .num.liq:focus { border-color: var(--liq); }
-      .num.amb:focus { border-color: var(--amber); }
-      .num::placeholder { color: #3a4540; }
-      .num.no-pfx { padding-left: 10px; }
-      .grid2 { display: flex; gap: 8px; }
-      .grid2 .field { flex: 1; min-width: 0; }
+      .flabel {
+        display: block;
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--dim);
+        margin-bottom: 5px;
+      }
+      .ibox {
+        position: relative;
+      }
+      .pfx {
+        position: absolute;
+        left: 11px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--dim);
+        font-size: 13px;
+        pointer-events: none;
+      }
+      .num {
+        width: 100%;
+        background: var(--panel-2);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        color: var(--txt);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 14px;
+        padding: 10px 10px 10px 24px;
+        outline: none;
+        transition: border-color 0.15s;
+      }
+      .num:focus {
+        border-color: var(--mint);
+      }
+      .num.liq:focus {
+        border-color: var(--liq);
+      }
+      .num.amb:focus {
+        border-color: var(--amber);
+      }
+      .num::placeholder {
+        color: #3a4540;
+      }
+      .num.no-pfx {
+        padding-left: 10px;
+      }
+      .grid2 {
+        display: flex;
+        gap: 8px;
+      }
+      .grid2 .field {
+        flex: 1;
+        min-width: 0;
+      }
 
       /* ── CHIPS ── */
       .chip {
-        background: var(--panel-2); border-radius: 8px; padding: 10px 12px; font-size: 12px;
-        color: var(--dim); display: flex; justify-content: space-between; align-items: baseline;
+        background: var(--panel-2);
+        border-radius: 8px;
+        padding: 10px 12px;
+        font-size: 12px;
+        color: var(--dim);
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
         margin-top: 4px;
       }
-      .chip b { font-family: "Fraunces", serif; font-size: 18px; font-weight: 600; }
-      .chip.mint b { color: var(--mint); }
-      .chip.liq b { color: var(--liq); }
-      .chip.amber b { color: var(--amber); }
+      .chip b {
+        font-family: "Fraunces", serif;
+        font-size: 18px;
+        font-weight: 600;
+      }
+      .chip.mint b {
+        color: var(--mint);
+      }
+      .chip.liq b {
+        color: var(--liq);
+      }
+      .chip.amber b {
+        color: var(--amber);
+      }
 
       /* ── PROGRESS BAR ── */
-      .pbar-row { display: flex; justify-content: space-between; font-size: 9.5px; color: var(--dim); margin: 8px 0 4px; }
-      .pbar { height: 5px; background: var(--panel-2); border-radius: 3px; overflow: hidden; }
-      .pbar .fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
-      .pbar .fill.liq { background: var(--liq); }
-      .pbar .fill.mint { background: var(--mint); }
+      .pbar-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 9.5px;
+        color: var(--dim);
+        margin: 8px 0 4px;
+      }
+      .pbar {
+        height: 5px;
+        background: var(--panel-2);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .pbar .fill {
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.3s;
+      }
+      .pbar .fill.liq {
+        background: var(--liq);
+      }
+      .pbar .fill.mint {
+        background: var(--mint);
+      }
 
       /* ── RATE CHIP ── */
-      .ratechip { font-size: 10px; color: var(--dim); margin: 4px 0 8px; }
-      .ratechip b { color: var(--txt); }
+      .ratechip {
+        font-size: 10px;
+        color: var(--dim);
+        margin: 4px 0 8px;
+      }
+      .ratechip b {
+        color: var(--txt);
+      }
 
       /* ── SIP ROW ── */
-      .sip-divider { border-top: 1px solid var(--line); margin: 12px 0 10px; }
-      .sip-row { display: flex; gap: 8px; align-items: flex-end; }
-      .sip-row .field { flex: 1; margin-bottom: 0; min-width: 0; }
-      .sip-row .field.date-field { max-width: 80px; }
-      .sip-pct { font-size: 19px; font-family: "Fraunces", serif; color: var(--mint); min-width: 46px; text-align: right; padding-bottom: 10px; }
+      .sip-divider {
+        border-top: 1px solid var(--line);
+        margin: 12px 0 10px;
+      }
+      .sip-row {
+        display: flex;
+        gap: 8px;
+        align-items: flex-end;
+      }
+      .sip-row .field {
+        flex: 1;
+        margin-bottom: 0;
+        min-width: 0;
+      }
+      .sip-row .field.date-field {
+        max-width: 80px;
+      }
+      .sip-pct {
+        font-size: 19px;
+        font-family: "Fraunces", serif;
+        color: var(--mint);
+        min-width: 46px;
+        text-align: right;
+        padding-bottom: 10px;
+      }
 
       /* ── STP SECTION ── */
-      .stp-layout { display: grid; grid-template-columns: minmax(280px, 380px) 1fr; gap: 14px; align-items: start; }
-      .src-btns { display: flex; gap: 6px; }
-      .src-btn {
-        flex: 1; background: var(--panel-2); border: 1px solid var(--line); color: var(--dim);
-        font-family: "JetBrains Mono", monospace; font-size: 11px; padding: 9px 6px;
-        border-radius: 8px; cursor: pointer; text-align: center; transition: 0.15s;
+      .stp-layout {
+        display: grid;
+        grid-template-columns: minmax(280px, 380px) 1fr;
+        gap: 14px;
+        align-items: start;
       }
-      .src-btn.active { background: var(--liq-dim); border-color: var(--liq); color: #cfe2fa; }
-      .src-btn:hover:not(.active) { border-color: var(--dim); }
+      .src-btns {
+        display: flex;
+        gap: 6px;
+      }
+      .src-btn {
+        flex: 1;
+        background: var(--panel-2);
+        border: 1px solid var(--line);
+        color: var(--dim);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        padding: 9px 6px;
+        border-radius: 8px;
+        cursor: pointer;
+        text-align: center;
+        transition: 0.15s;
+      }
+      .src-btn.active {
+        background: var(--liq-dim);
+        border-color: var(--liq);
+        color: #cfe2fa;
+      }
+      .src-btn:hover:not(.active) {
+        border-color: var(--dim);
+      }
 
-      .stp-result { background: var(--panel); border: 1px solid var(--mint-dim); border-radius: 14px; padding: 18px; }
-      .stp-label { font-size: 9.5px; text-transform: uppercase; letter-spacing: 1px; color: var(--amber); }
-      .stp-big { font-family: "Fraunces", serif; font-size: 38px; font-weight: 600; color: var(--amber); margin: 4px 0 2px; line-height: 1; }
-      .stp-sub { color: var(--dim); font-size: 11px; margin-bottom: 16px; }
-      .stp-split { border-top: 1px solid var(--line); padding-top: 12px; }
-      .stp-split-title { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--dim); margin-bottom: 8px; }
-      .stp-fund-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-top: 1px solid var(--line); font-size: 12px; }
-      .stp-fund-row:first-of-type { border-top: none; }
-      .stp-fund-name { color: var(--dim); }
-      .stp-fund-amt { color: var(--mint); font-weight: 700; font-size: 13px; }
-      .stp-hint { color: var(--dim); font-size: 10px; margin-top: 14px; line-height: 1.6; border-top: 1px solid var(--line); padding-top: 10px; }
+      .stp-result {
+        background: var(--panel);
+        border: 1px solid var(--mint-dim);
+        border-radius: 14px;
+        padding: 18px;
+      }
+      .stp-label {
+        font-size: 9.5px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--amber);
+      }
+      .stp-big {
+        font-family: "Fraunces", serif;
+        font-size: 38px;
+        font-weight: 600;
+        color: var(--amber);
+        margin: 4px 0 2px;
+        line-height: 1;
+      }
+      .stp-sub {
+        color: var(--dim);
+        font-size: 11px;
+        margin-bottom: 16px;
+      }
+      .stp-split {
+        border-top: 1px solid var(--line);
+        padding-top: 12px;
+      }
+      .stp-split-title {
+        font-size: 9.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--dim);
+        margin-bottom: 8px;
+      }
+      .stp-fund-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 7px 0;
+        border-top: 1px solid var(--line);
+        font-size: 12px;
+      }
+      .stp-fund-row:first-of-type {
+        border-top: none;
+      }
+      .stp-fund-name {
+        color: var(--dim);
+      }
+      .stp-fund-amt {
+        color: var(--mint);
+        font-weight: 700;
+        font-size: 13px;
+      }
+      .stp-hint {
+        color: var(--dim);
+        font-size: 10px;
+        margin-top: 14px;
+        line-height: 1.6;
+        border-top: 1px solid var(--line);
+        padding-top: 10px;
+      }
 
       /* ── DEPLOYABLE SUMMARY ── */
       .dep-summary {
-        display: flex; gap: 10px; margin-bottom: 14px; background: rgba(108, 168, 240, 0.06);
-        border: 1px solid var(--liq-dim); border-radius: 10px; padding: 12px 14px;
-        align-items: baseline; flex-wrap: wrap;
+        display: flex;
+        gap: 10px;
+        margin-bottom: 14px;
+        background: rgba(108, 168, 240, 0.06);
+        border: 1px solid var(--liq-dim);
+        border-radius: 10px;
+        padding: 12px 14px;
+        align-items: baseline;
+        flex-wrap: wrap;
       }
-      .dep-summary .k { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--liq); }
-      .dep-summary .v { font-family: "Fraunces", serif; font-size: 22px; color: var(--liq); margin-left: 10px; }
-      .dep-summary .note { color: var(--dim); font-size: 10px; margin-left: auto; }
+      .dep-summary .k {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--liq);
+      }
+      .dep-summary .v {
+        font-family: "Fraunces", serif;
+        font-size: 22px;
+        color: var(--liq);
+        margin-left: 10px;
+      }
+      .dep-summary .note {
+        color: var(--dim);
+        font-size: 10px;
+        margin-left: auto;
+      }
 
       /* ── CALENDAR ── */
-      .cal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
-      .cal-month { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
-      .cal-mhead {
-        background: var(--panel-2); padding: 10px 14px; display: flex;
-        justify-content: space-between; align-items: center;
+      .cal-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 10px;
       }
-      .cal-mhead .mname { font-family: "Fraunces", serif; font-size: 15px; font-weight: 600; }
-      .cal-mhead .mtotal { font-size: 10.5px; color: var(--amber); }
-      .cal-events { padding: 4px 0; }
-      .cal-event { display: flex; gap: 10px; padding: 8px 14px; }
-      .cal-event:hover { background: var(--panel-2); }
-      .cal-day { font-size: 11px; color: var(--dim); min-width: 24px; padding-top: 2px; }
-      .cal-body { flex: 1; min-width: 0; }
-      .cal-type { font-size: 8.5px; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 2px; }
-      .cal-type.stp { color: var(--amber); }
-      .cal-type.sip { color: var(--mint); }
-      .cal-amt { font-size: 13px; font-weight: 700; line-height: 1; }
-      .cal-amt.stp { color: var(--amber); }
-      .cal-amt.sip { color: var(--mint); }
-      .cal-detail { font-size: 9.5px; color: var(--dim); line-height: 1.5; margin-top: 2px; }
-      .cal-sep { height: 1px; background: var(--line); margin: 0 14px; }
-      .cal-empty-month { padding: 14px; color: var(--dim); font-size: 11px; }
+      .cal-month {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .cal-mhead {
+        background: var(--panel-2);
+        padding: 10px 14px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .cal-mhead .mname {
+        font-family: "Fraunces", serif;
+        font-size: 15px;
+        font-weight: 600;
+      }
+      .cal-mhead .mtotal {
+        font-size: 10.5px;
+        color: var(--amber);
+      }
+      .cal-events {
+        padding: 4px 0;
+      }
+      .cal-event {
+        display: flex;
+        gap: 10px;
+        padding: 8px 14px;
+      }
+      .cal-event:hover {
+        background: var(--panel-2);
+      }
+      .cal-day {
+        font-size: 11px;
+        color: var(--dim);
+        min-width: 24px;
+        padding-top: 2px;
+      }
+      .cal-body {
+        flex: 1;
+        min-width: 0;
+      }
+      .cal-type {
+        font-size: 8.5px;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        margin-bottom: 2px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .cal-type.stp {
+        color: var(--amber);
+      }
+      .cal-type.sip {
+        color: var(--mint);
+      }
+      .cal-status {
+        font-size: 9px;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+      }
+      .cal-status.pending {
+        color: var(--amber);
+      }
+      .cal-status.paid {
+        color: var(--mint);
+      }
+      .cal-amt {
+        font-size: 13px;
+        font-weight: 700;
+        line-height: 1;
+      }
+      .cal-amt.stp {
+        color: var(--amber);
+      }
+      .cal-amt.sip {
+        color: var(--mint);
+      }
+      .cal-detail {
+        font-size: 9.5px;
+        color: var(--dim);
+        line-height: 1.5;
+        margin-top: 2px;
+      }
+      .cal-sep {
+        height: 1px;
+        background: var(--line);
+        margin: 0 14px;
+      }
+      .cal-empty-month {
+        padding: 14px;
+        color: var(--dim);
+        font-size: 11px;
+      }
       .cal-total-row {
-        display: flex; justify-content: space-between; align-items: center;
-        padding: 8px 14px 10px; border-top: 1px solid var(--line); margin-top: 2px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 14px 10px;
+        border-top: 1px solid var(--line);
+        margin-top: 2px;
         font-size: 10px;
       }
-      .cal-total-row .k { color: var(--dim); }
-      .cal-total-row .v { font-family: "Fraunces", serif; font-size: 14px; color: var(--txt); }
+      .cal-total-row .k {
+        color: var(--dim);
+      }
+      .cal-total-row .v {
+        font-family: "Fraunces", serif;
+        font-size: 14px;
+        color: var(--txt);
+      }
 
       /* ── MARKET ── */
-      .mkt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
-      .mkt-card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
-      .mkt-card.good { border-color: var(--mint-dim); }
-      .mkt-card.watch { border-color: var(--amber-dim); }
-      .mkt-card.wait { border-color: #4a1e1e; }
-      .mkt-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-      .mkt-idx { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--dim); }
-      .mkt-name { font-family: "Fraunces", serif; font-size: 17px; font-weight: 600; margin-top: 2px; }
-      .pill { font-size: 9px; padding: 4px 9px; border-radius: 20px; font-weight: 700; letter-spacing: 0.5px; }
-      .pill.good { background: var(--mint-dim); color: #cffae3; }
-      .pill.watch { background: var(--amber-dim); color: #fae3cf; }
-      .pill.wait { background: #3a1515; color: #fa9090; }
-      .mkt-level { font-family: "Fraunces", serif; font-size: 28px; font-weight: 600; margin-bottom: 10px; }
-      .mkt-data { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
-      .mkt-box { background: var(--panel-2); border-radius: 7px; padding: 8px 10px; }
-      .mkt-box .k { font-size: 9px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--dim); }
-      .mkt-box .v { font-size: 13px; margin-top: 3px; font-weight: 600; }
-      .mkt-note { font-size: 10px; color: var(--dim); line-height: 1.5; }
+      .mkt-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 12px;
+      }
+      .mkt-card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 16px;
+      }
+      .mkt-card.good {
+        border-color: var(--mint-dim);
+      }
+      .mkt-card.watch {
+        border-color: var(--amber-dim);
+      }
+      .mkt-card.wait {
+        border-color: #4a1e1e;
+      }
+      .mkt-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 10px;
+      }
+      .mkt-idx {
+        font-size: 9.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--dim);
+      }
+      .mkt-name {
+        font-family: "Fraunces", serif;
+        font-size: 17px;
+        font-weight: 600;
+        margin-top: 2px;
+      }
+      .pill {
+        font-size: 9px;
+        padding: 4px 9px;
+        border-radius: 20px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+      }
+      .pill.good {
+        background: var(--mint-dim);
+        color: #cffae3;
+      }
+      .pill.watch {
+        background: var(--amber-dim);
+        color: #fae3cf;
+      }
+      .pill.wait {
+        background: #3a1515;
+        color: #fa9090;
+      }
+      .mkt-level {
+        font-family: "Fraunces", serif;
+        font-size: 28px;
+        font-weight: 600;
+        margin-bottom: 10px;
+      }
+      .mkt-data {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+      .mkt-box {
+        background: var(--panel-2);
+        border-radius: 7px;
+        padding: 8px 10px;
+      }
+      .mkt-box .k {
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: var(--dim);
+      }
+      .mkt-box .v {
+        font-size: 13px;
+        margin-top: 3px;
+        font-weight: 600;
+      }
+      .mkt-note {
+        font-size: 10px;
+        color: var(--dim);
+        line-height: 1.5;
+      }
 
       /* ── SUMMARY ── */
-      .sum-hero-label { font-size: 9.5px; text-transform: uppercase; letter-spacing: 1px; color: var(--mint); }
-      .sum-hero { font-family: "Fraunces", serif; font-size: 42px; font-weight: 600; color: var(--mint); margin: 4px 0 2px; line-height: 1; word-break: break-all; }
-      .sum-hero-sub { color: var(--dim); font-size: 11px; margin-bottom: 20px; }
-      .sum-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 16px; }
-      .sum-table th { font-size: 9px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--dim); font-weight: 400; text-align: right; padding: 0 0 8px; }
-      .sum-table th:first-child { text-align: left; }
-      .sum-table td { text-align: right; padding: 7px 0; border-top: 1px solid var(--line); }
-      .sum-table td:first-child { text-align: left; color: var(--dim); }
-      .sum-table .row-eq td:first-child { color: var(--mint); }
-      .sum-table .row-liq td:first-child { color: var(--liq); }
-      .sum-table .row-tot td { font-weight: 600; border-top: 1px solid var(--mint-dim); }
-      .inv-cell { color: var(--mint); font-weight: 600; }
+      .sum-hero-label {
+        font-size: 9.5px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--mint);
+      }
+      .sum-hero {
+        font-family: "Fraunces", serif;
+        font-size: 42px;
+        font-weight: 600;
+        color: var(--mint);
+        margin: 4px 0 2px;
+        line-height: 1;
+        word-break: break-all;
+      }
+      .sum-hero-sub {
+        color: var(--dim);
+        font-size: 11px;
+        margin-bottom: 20px;
+      }
+      .sum-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+        margin-bottom: 16px;
+      }
+      .sum-table th {
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: var(--dim);
+        font-weight: 400;
+        text-align: right;
+        padding: 0 0 8px;
+      }
+      .sum-table th:first-child {
+        text-align: left;
+      }
+      .sum-table td {
+        text-align: right;
+        padding: 7px 0;
+        border-top: 1px solid var(--line);
+      }
+      .sum-table td:first-child {
+        text-align: left;
+        color: var(--dim);
+      }
+      .sum-table .row-eq td:first-child {
+        color: var(--mint);
+      }
+      .sum-table .row-liq td:first-child {
+        color: var(--liq);
+      }
+      .sum-table .row-tot td {
+        font-weight: 600;
+        border-top: 1px solid var(--mint-dim);
+      }
+      .inv-cell {
+        color: var(--mint);
+        font-weight: 600;
+      }
 
       /* ── SIP SUMMARY TABLE ── */
-      .sip-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 4px; }
-      .sip-table td { padding: 6px 0; border-top: 1px solid var(--line); }
-      .sip-table td:first-child { color: var(--dim); }
-      .sip-table td:last-child { text-align: right; }
-      .sip-table tr:first-child td { border-top: none; }
+      .sip-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+        margin-bottom: 4px;
+      }
+      .sip-table td {
+        padding: 6px 0;
+        border-top: 1px solid var(--line);
+      }
+      .sip-table td:first-child {
+        color: var(--dim);
+      }
+      .sip-table td:last-child {
+        text-align: right;
+      }
+      .sip-table tr:first-child td {
+        border-top: none;
+      }
 
       /* ── ALLOC BAR ── */
-      .alloc-block { margin-bottom: 16px; }
-      .alloc-line { margin-bottom: 10px; }
-      .alloc-cap { display: flex; justify-content: space-between; font-size: 10px; color: var(--dim); margin-bottom: 4px; }
-      .alloc-bar { display: flex; height: 14px; border-radius: 5px; overflow: hidden; background: var(--panel-2); }
-      .alloc-bar .eq-seg { background: var(--mint); }
-      .alloc-bar .liq-seg { background: var(--liq); }
-      .alloc-bar span { display: flex; align-items: center; justify-content: center; font-size: 8px; color: #0c0f0e; font-weight: 700; min-width: 0; overflow: hidden; }
+      .alloc-block {
+        margin-bottom: 16px;
+      }
+      .alloc-line {
+        margin-bottom: 10px;
+      }
+      .alloc-cap {
+        display: flex;
+        justify-content: space-between;
+        font-size: 10px;
+        color: var(--dim);
+        margin-bottom: 4px;
+      }
+      .alloc-bar {
+        display: flex;
+        height: 14px;
+        border-radius: 5px;
+        overflow: hidden;
+        background: var(--panel-2);
+      }
+      .alloc-bar .eq-seg {
+        background: var(--mint);
+      }
+      .alloc-bar .liq-seg {
+        background: var(--liq);
+      }
+      .alloc-bar span {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 8px;
+        color: #0c0f0e;
+        font-weight: 700;
+        min-width: 0;
+        overflow: hidden;
+      }
 
       /* ── STATS ROW ── */
-      .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
-      .stat { background: var(--panel-2); border-radius: 10px; padding: 12px; }
-      .stat .sk { font-size: 9px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--dim); }
-      .stat .sv { font-family: "Fraunces", serif; font-size: 18px; margin-top: 3px; }
-      .stat .sp { height: 4px; background: var(--panel); border-radius: 3px; margin-top: 7px; overflow: hidden; }
-      .stat .sp i { display: block; height: 100%; background: var(--mint); }
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+      .stat {
+        background: var(--panel-2);
+        border-radius: 10px;
+        padding: 12px;
+      }
+      .stat .sk {
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: var(--dim);
+      }
+      .stat .sv {
+        font-family: "Fraunces", serif;
+        font-size: 18px;
+        margin-top: 3px;
+      }
+      .stat .sp {
+        height: 4px;
+        background: var(--panel);
+        border-radius: 3px;
+        margin-top: 7px;
+        overflow: hidden;
+      }
+      .stat .sp i {
+        display: block;
+        height: 100%;
+        background: var(--mint);
+      }
 
       /* ── ACTIONS ── */
-      .actions { display: flex; gap: 8px; }
-      .btn {
-        flex: 1; background: var(--panel-2); border: 1px solid var(--line); color: var(--txt);
-        font-family: "JetBrains Mono", monospace; font-size: 12px; padding: 11px;
-        border-radius: 10px; cursor: pointer; transition: 0.15s;
+      .actions {
+        display: flex;
+        gap: 8px;
       }
-      .btn:active { transform: scale(0.97); }
-      .btn.primary { background: var(--mint-dim); border-color: var(--mint-dim); color: #cffae3; }
+      .btn {
+        flex: 1;
+        background: var(--panel-2);
+        border: 1px solid var(--line);
+        color: var(--txt);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        padding: 11px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: 0.15s;
+      }
+      .btn:active {
+        transform: scale(0.97);
+      }
+      .btn.primary {
+        background: var(--mint-dim);
+        border-color: var(--mint-dim);
+        color: #cffae3;
+      }
 
       /* ── SAVE BAR ── */
-      .savebar { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 10px; color: var(--dim); margin-top: 12px; }
-      .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 6px var(--mint); }
-      .dot.warn { background: var(--amber); box-shadow: none; }
+      .savebar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        font-size: 10px;
+        color: var(--dim);
+        margin-top: 12px;
+      }
+      .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--mint);
+        box-shadow: 0 0 6px var(--mint);
+      }
+      .dot.warn {
+        background: var(--amber);
+        box-shadow: none;
+      }
 
       /* ── FOOTER NOTE ── */
-      .foot { color: var(--dim); font-size: 9.5px; margin-top: 20px; line-height: 1.7; }
+      .foot {
+        color: var(--dim);
+        font-size: 9.5px;
+        margin-top: 20px;
+        line-height: 1.7;
+      }
 
       /* ── RESPONSIVE ── */
       @media (max-width: 760px) {
-        .stp-layout { grid-template-columns: 1fr; }
-        .stats { grid-template-columns: 1fr 1fr; }
+        .stp-layout {
+          grid-template-columns: 1fr;
+        }
+        .stats {
+          grid-template-columns: 1fr 1fr;
+        }
       }
       @media (max-width: 520px) {
-        .fund-grid { grid-template-columns: 1fr; }
-        .mkt-grid { grid-template-columns: 1fr; }
-        .cal-grid { grid-template-columns: 1fr; }
-        .stats { grid-template-columns: 1fr; }
-        .actions { flex-direction: column; }
+        .fund-grid {
+          grid-template-columns: 1fr;
+        }
+        .mkt-grid {
+          grid-template-columns: 1fr;
+        }
+        .cal-grid {
+          grid-template-columns: 1fr;
+        }
+        .stats {
+          grid-template-columns: 1fr;
+        }
+        .actions {
+          flex-direction: column;
+        }
       }
       @media (max-width: 600px) {
-        .tabs { position: fixed; bottom: 0; left: 0; right: 0; top: auto; border-bottom: none; border-top: 1px solid var(--line); padding: 0; justify-content: flex-start; }
-        .tabs button { padding: 11px 10px; font-size: 9px; flex-shrink: 0; border-bottom: none; border-top: 2px solid transparent; margin-bottom: 0; margin-top: -1px; }
-        .tabs button.active { border-top-color: var(--mint); border-bottom-color: transparent; }
-        .app { padding-bottom: 80px; }
+        .tabs {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          top: auto;
+          border-bottom: none;
+          border-top: 1px solid var(--line);
+          padding: 0;
+          justify-content: flex-start;
+        }
+        .tabs button {
+          padding: 11px 10px;
+          font-size: 9px;
+          flex-shrink: 0;
+          border-bottom: none;
+          border-top: 2px solid transparent;
+          margin-bottom: 0;
+          margin-top: -1px;
+        }
+        .tabs button.active {
+          border-top-color: var(--mint);
+          border-bottom-color: transparent;
+        }
+        .app {
+          padding-bottom: 80px;
+        }
       }
 
       /* ── NET WORTH ── */
-      .nw-hero { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
-      .nw-hero-label { font-size: 9.5px; text-transform: uppercase; letter-spacing: 1px; color: var(--dim); margin-bottom: 6px; }
-      .nw-hero-val { font-family: "Fraunces", serif; font-size: clamp(36px, 6vw, 54px); font-weight: 600; color: var(--mint); line-height: 1; margin-bottom: 12px; word-break: break-all; }
-      .nw-hero-meta { display: flex; gap: 16px; flex-wrap: wrap; }
-      .nwpm { font-size: 11px; color: var(--dim); }
-      .nwpm b { color: var(--txt); }
-      .nw-auto-item { background: var(--panel-2); border-radius: 10px; padding: 12px 14px; border-left: 3px solid var(--mint-dim); margin-bottom: 12px; }
-      .nw-auto-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.7px; color: var(--dim); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
-      .nw-auto-val { font-family: "Fraunces", serif; font-size: 22px; color: var(--mint); font-weight: 600; }
-      .nw-auto-sub { font-size: 10px; color: var(--dim); margin-top: 2px; }
-      .nw-fields-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; }
-      .nw-snap-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
-      .nw-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-      .nw-bar-label { font-size: 10.5px; color: var(--dim); min-width: 138px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .nw-bar-track { flex: 1; height: 7px; background: var(--panel-2); border-radius: 4px; overflow: hidden; }
-      .nw-bar-fill { height: 100%; border-radius: 4px; transition: width 0.35s; }
-      .nw-bar-val { font-size: 11px; text-align: right; min-width: 88px; flex-shrink: 0; }
-      .nw-bar-pct { color: var(--dim); font-size: 9.5px; margin-left: 4px; }
-      .nw-hist-wrap { overflow-x: auto; }
-      .nw-hist-table { width: 100%; border-collapse: collapse; font-size: 11px; min-width: 520px; }
-      .nw-hist-table th { font-size: 9px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--dim); font-weight: 400; text-align: right; padding: 0 4px 8px; }
-      .nw-hist-table th:first-child { text-align: left; padding-left: 0; }
-      .nw-hist-table td { text-align: right; padding: 7px 4px; border-top: 1px solid var(--line); }
-      .nw-hist-table td:first-child { text-align: left; padding-left: 0; color: var(--dim); }
-      .nw-proj-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin-top: 12px; }
-      .nw-proj-card { background: var(--panel-2); border-radius: 10px; padding: 12px 14px; }
-      .nw-proj-card .pk { font-size: 9px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--dim); margin-bottom: 6px; }
-      .nw-proj-card .pv { font-family: "Fraunces", serif; font-size: 17px; color: var(--mint); }
-      .nw-proj-card .pg { font-size: 10px; color: var(--amber); margin-top: 3px; }
+      .nw-hero {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 20px 22px;
+        margin-bottom: 14px;
+      }
+      .nw-hero-label {
+        font-size: 9.5px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--dim);
+        margin-bottom: 6px;
+      }
+      .nw-hero-val {
+        font-family: "Fraunces", serif;
+        font-size: clamp(36px, 6vw, 54px);
+        font-weight: 600;
+        color: var(--mint);
+        line-height: 1;
+        margin-bottom: 12px;
+        word-break: break-all;
+      }
+      .nw-hero-meta {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      .nwpm {
+        font-size: 11px;
+        color: var(--dim);
+      }
+      .nwpm b {
+        color: var(--txt);
+      }
+      .nw-auto-item {
+        background: var(--panel-2);
+        border-radius: 10px;
+        padding: 12px 14px;
+        border-left: 3px solid var(--mint-dim);
+        margin-bottom: 12px;
+      }
+      .nw-auto-label {
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 0.7px;
+        color: var(--dim);
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .nw-auto-val {
+        font-family: "Fraunces", serif;
+        font-size: 22px;
+        color: var(--mint);
+        font-weight: 600;
+      }
+      .nw-auto-sub {
+        font-size: 10px;
+        color: var(--dim);
+        margin-top: 2px;
+      }
+      .nw-fields-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+        gap: 8px;
+      }
+      .nw-snap-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 16px;
+        padding-top: 14px;
+        border-top: 1px solid var(--line);
+      }
+      .nw-bar-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+      .nw-bar-label {
+        font-size: 10.5px;
+        color: var(--dim);
+        min-width: 138px;
+        flex-shrink: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .nw-bar-track {
+        flex: 1;
+        height: 7px;
+        background: var(--panel-2);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      .nw-bar-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.35s;
+      }
+      .nw-bar-val {
+        font-size: 11px;
+        text-align: right;
+        min-width: 88px;
+        flex-shrink: 0;
+      }
+      .nw-bar-pct {
+        color: var(--dim);
+        font-size: 9.5px;
+        margin-left: 4px;
+      }
+      .nw-hist-wrap {
+        overflow-x: auto;
+      }
+      .nw-hist-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 11px;
+        min-width: 520px;
+      }
+      .nw-hist-table th {
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: var(--dim);
+        font-weight: 400;
+        text-align: right;
+        padding: 0 4px 8px;
+      }
+      .nw-hist-table th:first-child {
+        text-align: left;
+        padding-left: 0;
+      }
+      .nw-hist-table td {
+        text-align: right;
+        padding: 7px 4px;
+        border-top: 1px solid var(--line);
+      }
+      .nw-hist-table td:first-child {
+        text-align: left;
+        padding-left: 0;
+        color: var(--dim);
+      }
+      .nw-proj-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .nw-proj-card {
+        background: var(--panel-2);
+        border-radius: 10px;
+        padding: 12px 14px;
+      }
+      .nw-proj-card .pk {
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: var(--dim);
+        margin-bottom: 6px;
+      }
+      .nw-proj-card .pv {
+        font-family: "Fraunces", serif;
+        font-size: 17px;
+        color: var(--mint);
+      }
+      .nw-proj-card .pg {
+        font-size: 10px;
+        color: var(--amber);
+        margin-top: 3px;
+      }
       @media (max-width: 680px) {
-        .nw-bar-label { min-width: 100px; font-size: 10px; }
-        .nw-bar-val { min-width: 75px; }
+        .nw-bar-label {
+          min-width: 100px;
+          font-size: 10px;
+        }
+        .nw-bar-val {
+          min-width: 75px;
+        }
       }
     </style>
   </head>
   <body>
-
     <nav class="tabs" id="tabs">
       <button class="active" data-tab="portfolio">Portfolio</button>
       <button data-tab="stp">STP</button>
@@ -337,12 +1154,14 @@
     </nav>
 
     <div class="app">
-
       <!-- ═══════════════ PORTFOLIO ═══════════════ -->
       <section class="tab-section active" id="tab-portfolio">
         <div class="pg-head">
           <h1>MF Portfolio <span class="accent">Planner</span></h1>
-          <p>Enter your current values and target totals. The page calculates exactly how much you must invest to reach your goals.</p>
+          <p>
+            Enter your current values and target totals. The page calculates
+            exactly how much you must invest to reach your goals.
+          </p>
         </div>
 
         <div class="dep-summary" id="depSummary">
@@ -351,7 +1170,15 @@
           <span class="note" id="depNote">—</span>
         </div>
 
-        <div class="sec-head">Liquid Funds — Current, target &amp; deployable</div>
+        <div class="dep-summary" id="stpDueSummary">
+          <span class="k">Monthly STP</span>
+          <span class="v" id="monthlyStpDue">₹0</span>
+          <span class="note" id="stpDueNote">Pay on 15th</span>
+        </div>
+
+        <div class="sec-head">
+          Liquid Funds — Current, target &amp; deployable
+        </div>
         <div class="fund-grid" id="liqGrid"></div>
 
         <div class="sec-head mt">Equity Funds — SIP Configuration</div>
@@ -362,39 +1189,78 @@
       <section class="tab-section" id="tab-stp">
         <div class="pg-head">
           <h1>STP <span class="accent">Planner</span></h1>
-          <p>Systematic Transfer Plan: deploy liquid funds into equity over time. The monthly amount splits by SIP percentage.</p>
+          <p>
+            Systematic Transfer Plan: deploy liquid funds into equity over time.
+            The monthly amount splits by SIP percentage.
+          </p>
         </div>
 
         <div class="stp-layout">
-          <div class="card" style="align-self: start;">
+          <div class="card" style="align-self: start">
             <div class="field">
-              <div class="flabel" style="margin-bottom: 8px;">Source liquid fund</div>
+              <div class="flabel" style="margin-bottom: 8px">
+                Source liquid fund
+              </div>
               <div class="src-btns" id="srcBtns">
-                <button class="src-btn" data-src="liq1" id="sb-liq1">Liquid 1</button>
-                <button class="src-btn" data-src="liq2" id="sb-liq2">Liquid 2</button>
-                <button class="src-btn" data-src="both" id="sb-both">Both</button>
+                <button class="src-btn" data-src="liq1" id="sb-liq1">
+                  Liquid 1
+                </button>
+                <button class="src-btn" data-src="liq2" id="sb-liq2">
+                  Liquid 2
+                </button>
+                <button class="src-btn" data-src="both" id="sb-both">
+                  Both
+                </button>
               </div>
             </div>
 
-            <div class="chip liq" style="margin: 10px 0 14px;">
+            <div class="chip liq" style="margin: 10px 0 14px">
               <span>Auto deployable from source</span><b id="stpAutoDep">₹0</b>
             </div>
 
             <div class="field">
-              <label class="flabel" for="stpOverride">Override deployable (leave blank = auto)</label>
-              <div class="ibox"><span class="pfx">₹</span>
-                <input class="num amb" id="stpOverride" type="number" min="0" placeholder="auto" inputmode="numeric" />
+              <label class="flabel" for="stpOverride"
+                >Override deployable (leave blank = auto)</label
+              >
+              <div class="ibox">
+                <span class="pfx">₹</span>
+                <input
+                  class="num amb"
+                  id="stpOverride"
+                  type="number"
+                  min="0"
+                  placeholder="auto"
+                  inputmode="numeric"
+                />
               </div>
             </div>
 
             <div class="grid2">
               <div class="field">
-                <label class="flabel" for="stpDuration">Duration (months)</label>
-                <input class="num no-pfx" id="stpDuration" type="number" min="1" max="120" placeholder="12" inputmode="numeric" />
+                <label class="flabel" for="stpDuration"
+                  >Duration (months)</label
+                >
+                <input
+                  class="num no-pfx"
+                  id="stpDuration"
+                  type="number"
+                  min="1"
+                  max="120"
+                  placeholder="12"
+                  inputmode="numeric"
+                />
               </div>
               <div class="field">
                 <label class="flabel" for="stpDate">STP date (1–28)</label>
-                <input class="num no-pfx" id="stpDate" type="number" min="1" max="28" placeholder="15" inputmode="numeric" />
+                <input
+                  class="num no-pfx"
+                  id="stpDate"
+                  type="number"
+                  min="1"
+                  max="28"
+                  placeholder="15"
+                  inputmode="numeric"
+                />
               </div>
             </div>
           </div>
@@ -402,12 +1268,17 @@
           <div class="stp-result" id="stpResult">
             <div class="stp-label">STP / Month</div>
             <div class="stp-big" id="stpMonthly">₹0</div>
-            <div class="stp-sub" id="stpSub">Enter duration and date to begin</div>
+            <div class="stp-sub" id="stpSub">
+              Enter duration and date to begin
+            </div>
             <div class="stp-split" id="stpSplit">
               <div class="stp-split-title">Per-fund split (by SIP weight)</div>
               <div id="stpSplitRows"></div>
             </div>
-            <div class="stp-hint">Split proportions mirror your SIP allocation. If no SIPs are set, the STP splits equally across all equity funds.</div>
+            <div class="stp-hint">
+              Split proportions mirror your SIP allocation. If no SIPs are set,
+              the STP splits equally across all equity funds.
+            </div>
           </div>
         </div>
       </section>
@@ -416,9 +1287,20 @@
       <section class="tab-section" id="tab-calendar">
         <div class="pg-head">
           <h1>Deployment <span class="accent">Calendar</span></h1>
-          <p>All STP transfers and SIP investments scheduled for the coming months.</p>
+          <p>
+            All STP transfers and SIP investments scheduled for the coming
+            months.
+          </p>
         </div>
-        <div id="calEmpty" style="color: var(--dim); font-size: 12px; display: none; padding: 10px 0;">
+        <div
+          id="calEmpty"
+          style="
+            color: var(--dim);
+            font-size: 12px;
+            display: none;
+            padding: 10px 0;
+          "
+        >
           Configure SIP dates and/or STP to see the calendar.
         </div>
         <div class="cal-grid" id="calGrid"></div>
@@ -428,10 +1310,16 @@
       <section class="tab-section" id="tab-market">
         <div class="pg-head">
           <h1>Market <span class="accent">Signals</span></h1>
-          <p id="mktSnapshotLine">Index PE vs 7-year median — a valuation guide, not a prediction.</p>
+          <p id="mktSnapshotLine">
+            Index PE vs 7-year median — a valuation guide, not a prediction.
+          </p>
         </div>
         <div class="mkt-grid" id="mktGrid"></div>
-        <p class="foot">Educational model only. Does not account for tax, exit loads, or risk tolerance. Update market snapshot data periodically by editing the MARKET_DATA constant in the source.</p>
+        <p class="foot">
+          Educational model only. Does not account for tax, exit loads, or risk
+          tolerance. Update market snapshot data periodically by editing the
+          MARKET_DATA constant in the source.
+        </p>
       </section>
 
       <!-- ═══════════════ SUMMARY ═══════════════ -->
@@ -441,33 +1329,69 @@
           <p>How much more to invest across all funds to reach your targets.</p>
         </div>
 
-        <div class="card" style="margin-bottom: 12px;">
-          <div class="sum-hero-label" id="heroLabel">Equity funds — you must invest</div>
+        <div class="card" style="margin-bottom: 12px">
+          <div class="sum-hero-label" id="heroLabel">
+            Equity funds — you must invest
+          </div>
           <div class="sum-hero" id="heroVal">₹0</div>
           <div class="sum-hero-sub" id="heroSub">across all equity funds</div>
 
           <table class="sum-table">
             <thead>
               <tr>
-                <th>&nbsp;</th><th>Current</th><th>Target</th><th>Invest</th>
+                <th>&nbsp;</th>
+                <th>Current</th>
+                <th>Target</th>
+                <th>Invest</th>
+                <th>Monthly STP</th>
               </tr>
             </thead>
             <tbody>
-              <tr class="row-eq"><td>Equity</td><td id="eqCur">₹0</td><td id="eqTgt">₹0</td><td class="inv-cell" id="eqInv">₹0</td></tr>
-              <tr class="row-liq"><td>Liquid</td><td id="liqCur">₹0</td><td id="liqTgt">—</td><td id="liqInv">—</td></tr>
-              <tr class="row-tot"><td>Total</td><td id="totCur">₹0</td><td id="totTgt">₹0</td><td class="inv-cell" id="totInv">₹0</td></tr>
+              <tr class="row-eq">
+                <td>Equity</td>
+                <td id="eqCur">₹0</td>
+                <td id="eqTgt">₹0</td>
+                <td class="inv-cell" id="eqInv">₹0</td>
+                <td id="eqStp">—</td>
+              </tr>
+              <tr class="row-liq">
+                <td>Liquid</td>
+                <td id="liqCur">₹0</td>
+                <td id="liqTgt">—</td>
+                <td id="liqInv">—</td>
+                <td>—</td>
+              </tr>
+              <tr class="row-tot">
+                <td>Total</td>
+                <td id="totCur">₹0</td>
+                <td id="totTgt">₹0</td>
+                <td class="inv-cell" id="totInv">₹0</td>
+                <td class="inv-cell" id="totStp">₹0</td>
+              </tr>
             </tbody>
           </table>
 
           <div class="alloc-block">
-            <div class="sec-head" style="font-size:9px; margin-bottom:10px;">Allocation — equity vs liquid</div>
-            <div class="alloc-line">
-              <div class="alloc-cap"><span>Now</span><span id="curSplit">—</span></div>
-              <div class="alloc-bar"><span class="eq-seg" id="curEqSeg"></span><span class="liq-seg" id="curLiqSeg"></span></div>
+            <div class="sec-head" style="font-size: 9px; margin-bottom: 10px">
+              Allocation — equity vs liquid
             </div>
             <div class="alloc-line">
-              <div class="alloc-cap"><span>After targets</span><span id="tgtSplit">—</span></div>
-              <div class="alloc-bar"><span class="eq-seg" id="tgtEqSeg"></span><span class="liq-seg" id="tgtLiqSeg"></span></div>
+              <div class="alloc-cap">
+                <span>Now</span><span id="curSplit">—</span>
+              </div>
+              <div class="alloc-bar">
+                <span class="eq-seg" id="curEqSeg"></span
+                ><span class="liq-seg" id="curLiqSeg"></span>
+              </div>
+            </div>
+            <div class="alloc-line">
+              <div class="alloc-cap">
+                <span>After targets</span><span id="tgtSplit">—</span>
+              </div>
+              <div class="alloc-bar">
+                <span class="eq-seg" id="tgtEqSeg"></span
+                ><span class="liq-seg" id="tgtLiqSeg"></span>
+              </div>
             </div>
           </div>
 
@@ -475,7 +1399,7 @@
             <div class="stat">
               <div class="sk">Equity funded</div>
               <div class="sv" id="fundedPct">0%</div>
-              <div class="sp"><i id="fundedBar" style="width:0%"></i></div>
+              <div class="sp"><i id="fundedBar" style="width: 0%"></i></div>
             </div>
             <div class="stat">
               <div class="sk">Stamp duty (total)</div>
@@ -488,15 +1412,17 @@
           </div>
         </div>
 
-        <div class="card" style="margin-bottom: 12px;">
-          <div class="sec-head" style="margin-bottom: 12px;">SIP Schedule</div>
+        <div class="card" style="margin-bottom: 12px">
+          <div class="sec-head" style="margin-bottom: 12px">SIP Schedule</div>
           <table class="sip-table" id="sipTable"></table>
         </div>
 
         <div class="card">
-          <div class="sec-head" style="margin-bottom:14px;">STP Overview</div>
-          <div id="sumStpOverview" style="color: var(--dim); font-size: 12px;">STP not configured.</div>
-          <div style="margin-top: 14px;" class="actions">
+          <div class="sec-head" style="margin-bottom: 14px">STP Overview</div>
+          <div id="sumStpOverview" style="color: var(--dim); font-size: 12px">
+            STP not configured.
+          </div>
+          <div style="margin-top: 14px" class="actions">
             <button class="btn primary" id="copyBtn">Copy summary</button>
             <button class="btn" id="resetBtn">Reset all</button>
           </div>
@@ -511,7 +1437,10 @@
       <section class="tab-section" id="tab-networth">
         <div class="pg-head">
           <h1>Net <span class="accent">Worth</span></h1>
-          <p>Monthly snapshot tracker. Save each month to build your growth history and unlock projections.</p>
+          <p>
+            Monthly snapshot tracker. Save each month to build your growth
+            history and unlock projections.
+          </p>
         </div>
 
         <!-- Hero -->
@@ -526,44 +1455,83 @@
         </div>
 
         <!-- Inputs + breakdown + save -->
-        <div class="card" style="margin-bottom:12px;">
-          <div class="sec-head" style="margin-bottom:14px;">Enter Values</div>
+        <div class="card" style="margin-bottom: 12px">
+          <div class="sec-head" style="margin-bottom: 14px">Enter Values</div>
 
           <div class="nw-auto-item">
-            <div class="nw-auto-label">Mutual Funds <span class="tag equity" style="font-size:7.5px;padding:2px 6px;">AUTO</span></div>
+            <div class="nw-auto-label">
+              Mutual Funds
+              <span
+                class="tag equity"
+                style="font-size: 7.5px; padding: 2px 6px"
+                >AUTO</span
+              >
+            </div>
             <div class="nw-auto-val" id="nwMfVal">₹0</div>
-            <div class="nw-auto-sub">Liquid + equity synced from Portfolio tab</div>
+            <div class="nw-auto-sub">
+              Liquid + equity synced from Portfolio tab
+            </div>
           </div>
 
           <div class="nw-fields-grid" id="nwFieldsGrid"></div>
 
-          <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);">
-            <div class="sec-head" style="border-bottom:none;padding-bottom:0;margin-bottom:10px;">Asset Breakdown</div>
+          <div
+            style="
+              margin-top: 14px;
+              padding-top: 12px;
+              border-top: 1px solid var(--line);
+            "
+          >
+            <div
+              class="sec-head"
+              style="
+                border-bottom: none;
+                padding-bottom: 0;
+                margin-bottom: 10px;
+              "
+            >
+              Asset Breakdown
+            </div>
             <div id="nwBreakdown"></div>
           </div>
 
           <div class="nw-snap-row">
-            <button class="btn primary" id="nwSnapshotBtn" style="flex:0 0 auto;">Save snapshot</button>
-            <span id="nwSnapMsg" style="font-size:10.5px;color:var(--dim);"></span>
+            <button
+              class="btn primary"
+              id="nwSnapshotBtn"
+              style="flex: 0 0 auto"
+            >
+              Save snapshot
+            </button>
+            <span
+              id="nwSnapMsg"
+              style="font-size: 10.5px; color: var(--dim)"
+            ></span>
           </div>
         </div>
 
         <!-- History -->
-        <div class="card" style="margin-bottom:12px;">
-          <div class="sec-head" style="margin-bottom:12px;">Monthly History</div>
+        <div class="card" style="margin-bottom: 12px">
+          <div class="sec-head" style="margin-bottom: 12px">
+            Monthly History
+          </div>
           <div id="nwHistory"></div>
         </div>
 
         <!-- Projections -->
         <div class="card">
-          <div class="sec-head" style="margin-bottom:12px;">Projections</div>
+          <div class="sec-head" style="margin-bottom: 12px">Projections</div>
           <div id="nwProjection"></div>
         </div>
 
-        <p class="foot">Snapshot is dated to the 1st of the current month. Update and save at the start of each month to build your history. Projections use your actual average monthly growth rate.</p>
+        <p class="foot">
+          Snapshot is dated to the 1st of the current month. Update and save at
+          the start of each month to build your history. Projections use your
+          actual average monthly growth rate.
+        </p>
       </section>
-
-    </div><!-- /app -->
+    </div>
+    <!-- /app -->
 
     <script>
       /* ════════════════════════════════════════════
@@ -583,22 +1551,60 @@
       ];
 
       const MARKET_DATA = {
-        label: "Nifty 50 as of 04 Jun 2026 16:14 IST; Nifty 500 & Midcap 150 as of 04 Jun 2026 15:44 IST; PE updated 03 Jun 2026.",
+        label:
+          "Nifty 50 as of 04 Jun 2026 16:14 IST; Nifty 500 & Midcap 150 as of 04 Jun 2026 15:44 IST; PE updated 03 Jun 2026.",
         indices: [
-          { equityId: "eq1", fund: "Nifty 50 Index", index: "Nifty 50",       level: 23416.55, changePct:  0.05, pe: 20.20, medianPe: 22.63 },
-          { equityId: "eq2", fund: "Flexi Cap",       index: "Nifty 500",      level: 22497.70, changePct:  0.20, pe: 22.28, medianPe: 24.61 },
-          { equityId: "eq3", fund: "Midcap",           index: "Nifty Midcap 150", level: 22315.95, changePct: 0.43, pe: 28.44, medianPe: 31.27 },
-        ]
+          {
+            equityId: "eq1",
+            fund: "Nifty 50 Index",
+            index: "Nifty 50",
+            level: 23416.55,
+            changePct: 0.05,
+            pe: 20.2,
+            medianPe: 22.63,
+          },
+          {
+            equityId: "eq2",
+            fund: "Flexi Cap",
+            index: "Nifty 500",
+            level: 22497.7,
+            changePct: 0.2,
+            pe: 22.28,
+            medianPe: 24.61,
+          },
+          {
+            equityId: "eq3",
+            fund: "Midcap",
+            index: "Nifty Midcap 150",
+            level: 22315.95,
+            changePct: 0.43,
+            pe: 28.44,
+            medianPe: 31.27,
+          },
+        ],
       };
 
-      const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      const MONTHS = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ];
 
       const NW_FIELDS = [
-        { id: "mfProfit", label: "MF Unrealized Profit", color: "#4ade9c"       },
-        { id: "bank",     label: "Bank & Savings",        color: "var(--liq)"   },
-        { id: "fd",       label: "Fixed Deposit",         color: "#5bc4f5"      },
-        { id: "cash",     label: "Cash",                  color: "var(--amber)" },
-        { id: "ppf",      label: "PPF / EPF / NPS",       color: "#8be8ff"      },
+        { id: "mfProfit", label: "MF Unrealized Profit", color: "#4ade9c" },
+        { id: "bank", label: "Bank & Savings", color: "var(--liq)" },
+        { id: "fd", label: "Fixed Deposit", color: "#5bc4f5" },
+        { id: "cash", label: "Cash", color: "var(--amber)" },
+        { id: "ppf", label: "PPF / EPF / NPS", color: "#8be8ff" },
       ];
 
       /* ════════════════════════════════════════════
@@ -611,13 +1617,34 @@
             liq2: { name: "Liquid Fund 2", value: 0, reserve: 0, target: 0 },
           },
           equity: {
-            eq1: { name: "Nifty 50 Index Fund", paid: 0, shown: 0, target: 0, sipAmt: 0, sipDate: 5 },
-            eq2: { name: "Flexi Cap Fund",       paid: 0, shown: 0, target: 0, sipAmt: 0, sipDate: 5 },
-            eq3: { name: "Mid Cap Fund",          paid: 0, shown: 0, target: 0, sipAmt: 0, sipDate: 5 },
+            eq1: {
+              name: "Nifty 50 Index Fund",
+              paid: 0,
+              shown: 0,
+              target: 0,
+              sipAmt: 0,
+              sipDate: 5,
+            },
+            eq2: {
+              name: "Flexi Cap Fund",
+              paid: 0,
+              shown: 0,
+              target: 0,
+              sipAmt: 0,
+              sipDate: 5,
+            },
+            eq3: {
+              name: "Mid Cap Fund",
+              paid: 0,
+              shown: 0,
+              target: 0,
+              sipAmt: 0,
+              sipDate: 5,
+            },
           },
           stp: { sourceId: "liq1", override: 0, duration: 12, date: 15 },
           networth: {
-            ...Object.fromEntries(NW_FIELDS.map(f => [f.id, 0])),
+            ...Object.fromEntries(NW_FIELDS.map((f) => [f.id, 0])),
             snapshots: {},
           },
         };
@@ -641,11 +1668,15 @@
             },
             stp: { ...def.stp, ...(s.stp || {}) },
             networth: {
-              ...Object.fromEntries(NW_FIELDS.map(f => [f.id, s.networth?.[f.id] ?? 0])),
+              ...Object.fromEntries(
+                NW_FIELDS.map((f) => [f.id, s.networth?.[f.id] ?? 0]),
+              ),
               snapshots: { ...(s.networth?.snapshots || {}) },
             },
           };
-        } catch { return def; }
+        } catch {
+          return def;
+        }
       }
 
       let state = loadState();
@@ -654,7 +1685,12 @@
         try {
           localStorage.setItem(STORE_KEY, JSON.stringify(state));
           el("saveDot").className = "dot";
-          el("saveTxt").textContent = "Saved ✓ " + new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+          el("saveTxt").textContent =
+            "Saved ✓ " +
+            new Date().toLocaleTimeString("en-IN", {
+              hour: "2-digit",
+              minute: "2-digit",
+            });
         } catch {
           el("saveDot").className = "dot warn";
           el("saveTxt").textContent = "Storage blocked — data won’t persist";
@@ -664,11 +1700,14 @@
       /* ════════════════════════════════════════════
          HELPERS
       ════════════════════════════════════════════ */
-      const el = id => document.getElementById(id);
-      const fmt = n => "₹" + Math.max(0, Math.round(n)).toLocaleString("en-IN");
-      const num = v => Number(v) || 0;
-      const pct = (a, b) => b > 0 ? (a / b) * 100 : 0;
+      const el = (id) => document.getElementById(id);
+      const fmt = (n) =>
+        "₹" + Math.max(0, Math.round(n)).toLocaleString("en-IN");
+      const num = (v) => Number(v) || 0;
+      const pct = (a, b) => (b > 0 ? (a / b) * 100 : 0);
       const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+      const roundUpInvest = (target, rate) =>
+        target > 0 && rate < 1 ? Math.ceil(target / (1 - rate)) : 0;
 
       function deployable(fid) {
         const s = state.liquid[fid];
@@ -682,27 +1721,42 @@
       }
 
       function sipWeights() {
-        const total = EQ_FUNDS.reduce((s, f) => s + (state.equity[f.id].sipAmt || 0), 0);
-        if (total === 0) return EQ_FUNDS.map(f => ({ id: f.id, w: 1 / EQ_FUNDS.length }));
-        return EQ_FUNDS.map(f => ({ id: f.id, w: (state.equity[f.id].sipAmt || 0) / total }));
+        const total = EQ_FUNDS.reduce(
+          (s, f) => s + (state.equity[f.id].sipAmt || 0),
+          0,
+        );
+        if (total === 0)
+          return EQ_FUNDS.map((f) => ({ id: f.id, w: 1 / EQ_FUNDS.length }));
+        return EQ_FUNDS.map((f) => ({
+          id: f.id,
+          w: (state.equity[f.id].sipAmt || 0) / total,
+        }));
       }
 
       function fundName(id) {
-        const liq = LIQ_FUNDS.find(f => f.id === id);
+        const liq = LIQ_FUNDS.find((f) => f.id === id);
         if (liq) return state.liquid[id]?.name || liq.defaultName;
-        const eq = EQ_FUNDS.find(f => f.id === id);
-        return eq ? (state.equity[id]?.name || eq.defaultName) : id;
+        const eq = EQ_FUNDS.find((f) => f.id === id);
+        return eq ? state.equity[id]?.name || eq.defaultName : id;
       }
 
       function mfTotalValue() {
-        const liq = LIQ_FUNDS.reduce((s, f) => s + (state.liquid[f.id].value || 0), 0);
-        const eq  = EQ_FUNDS.reduce((s,  f) => s + (state.equity[f.id].shown || 0), 0);
+        const liq = LIQ_FUNDS.reduce(
+          (s, f) => s + (state.liquid[f.id].value || 0),
+          0,
+        );
+        const eq = EQ_FUNDS.reduce(
+          (s, f) => s + (state.equity[f.id].shown || 0),
+          0,
+        );
         return liq + eq;
       }
 
       function nwTotal() {
-        const other = NW_FIELDS.filter(f => f.id !== "mfProfit")
-          .reduce((s, f) => s + (state.networth[f.id] || 0), 0);
+        const other = NW_FIELDS.filter((f) => f.id !== "mfProfit").reduce(
+          (s, f) => s + (state.networth[f.id] || 0),
+          0,
+        );
         return mfTotalValue() + other;
       }
 
@@ -713,7 +1767,9 @@
 
       function snapshotKey() {
         const d = new Date();
-        return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+        return (
+          d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0")
+        );
       }
 
       /* ════════════════════════════════════════════
@@ -805,52 +1861,99 @@
          RENDER FUND GRIDS
       ════════════════════════════════════════════ */
       el("liqGrid").innerHTML = LIQ_FUNDS.map(liqCardHTML).join("");
-      el("eqGrid").innerHTML  = EQ_FUNDS.map(eqCardHTML).join("");
+      el("eqGrid").innerHTML = EQ_FUNDS.map(eqCardHTML).join("");
 
       /* ════════════════════════════════════════════
          BIND INPUT EVENTS
       ════════════════════════════════════════════ */
-      LIQ_FUNDS.forEach(f => {
-        el("lname-" + f.id).addEventListener("input", e => { state.liquid[f.id].name = e.target.value; render(); });
-        el("lval-"  + f.id).addEventListener("input", e => { state.liquid[f.id].value   = num(e.target.value); render(); });
-        el("lres-"  + f.id).addEventListener("input", e => { state.liquid[f.id].reserve = num(e.target.value); render(); });
-        el("ltgt-"  + f.id).addEventListener("input", e => { state.liquid[f.id].target  = num(e.target.value); render(); });
-      });
-
-      EQ_FUNDS.forEach(f => {
-        el("ename-"    + f.id).addEventListener("input", e => { state.equity[f.id].name    = e.target.value;      render(); });
-        el("epaid-"    + f.id).addEventListener("input", e => { state.equity[f.id].paid    = num(e.target.value); render(); });
-        el("eshown-"   + f.id).addEventListener("input", e => { state.equity[f.id].shown   = num(e.target.value); render(); });
-        el("etgt-"     + f.id).addEventListener("input", e => { state.equity[f.id].target  = num(e.target.value); render(); });
-        el("esip-"     + f.id).addEventListener("input", e => { state.equity[f.id].sipAmt  = num(e.target.value); render(); });
-        el("esipdate-" + f.id).addEventListener("input", e => { state.equity[f.id].sipDate = num(e.target.value) || 5; render(); });
-      });
-
-      /* STP controls */
-      el("srcBtns").querySelectorAll(".src-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-          state.stp.sourceId = btn.dataset.src;
+      LIQ_FUNDS.forEach((f) => {
+        el("lname-" + f.id).addEventListener("input", (e) => {
+          state.liquid[f.id].name = e.target.value;
+          render();
+        });
+        el("lval-" + f.id).addEventListener("input", (e) => {
+          state.liquid[f.id].value = num(e.target.value);
+          render();
+        });
+        el("lres-" + f.id).addEventListener("input", (e) => {
+          state.liquid[f.id].reserve = num(e.target.value);
+          render();
+        });
+        el("ltgt-" + f.id).addEventListener("input", (e) => {
+          state.liquid[f.id].target = num(e.target.value);
           render();
         });
       });
-      el("stpOverride").addEventListener("input", e => { state.stp.override  = num(e.target.value); render(); });
-      el("stpDuration").addEventListener("input", e => { state.stp.duration  = num(e.target.value); render(); });
-      el("stpDate").addEventListener("input",     e => { state.stp.date      = num(e.target.value); render(); });
+
+      EQ_FUNDS.forEach((f) => {
+        el("ename-" + f.id).addEventListener("input", (e) => {
+          state.equity[f.id].name = e.target.value;
+          render();
+        });
+        el("epaid-" + f.id).addEventListener("input", (e) => {
+          state.equity[f.id].paid = num(e.target.value);
+          render();
+        });
+        el("eshown-" + f.id).addEventListener("input", (e) => {
+          state.equity[f.id].shown = num(e.target.value);
+          render();
+        });
+        el("etgt-" + f.id).addEventListener("input", (e) => {
+          state.equity[f.id].target = num(e.target.value);
+          render();
+        });
+        el("esip-" + f.id).addEventListener("input", (e) => {
+          state.equity[f.id].sipAmt = num(e.target.value);
+          render();
+        });
+        el("esipdate-" + f.id).addEventListener("input", (e) => {
+          state.equity[f.id].sipDate = num(e.target.value) || 5;
+          render();
+        });
+      });
+
+      /* STP controls */
+      el("srcBtns")
+        .querySelectorAll(".src-btn")
+        .forEach((btn) => {
+          btn.addEventListener("click", () => {
+            state.stp.sourceId = btn.dataset.src;
+            render();
+          });
+        });
+      el("stpOverride").addEventListener("input", (e) => {
+        state.stp.override = num(e.target.value);
+        render();
+      });
+      el("stpDuration").addEventListener("input", (e) => {
+        state.stp.duration = num(e.target.value);
+        render();
+      });
+      el("stpDate").addEventListener("input", (e) => {
+        state.stp.date = num(e.target.value);
+        render();
+      });
 
       /* Restore STP input values */
       if (state.stp.override) el("stpOverride").value = state.stp.override;
       el("stpDuration").value = state.stp.duration || "";
-      el("stpDate").value     = state.stp.date     || "";
+      el("stpDate").value = state.stp.date || "";
 
       /* Tabs */
-      el("tabs").querySelectorAll("button").forEach(btn => {
-        btn.addEventListener("click", () => {
-          el("tabs").querySelectorAll("button").forEach(b => b.classList.remove("active"));
-          btn.classList.add("active");
-          document.querySelectorAll(".tab-section").forEach(s => s.classList.remove("active"));
-          el("tab-" + btn.dataset.tab).classList.add("active");
+      el("tabs")
+        .querySelectorAll("button")
+        .forEach((btn) => {
+          btn.addEventListener("click", () => {
+            el("tabs")
+              .querySelectorAll("button")
+              .forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            document
+              .querySelectorAll(".tab-section")
+              .forEach((s) => s.classList.remove("active"));
+            el("tab-" + btn.dataset.tab).classList.add("active");
+          });
         });
-      });
 
       /* Actions */
       el("copyBtn").addEventListener("click", copySummary);
@@ -861,8 +1964,11 @@
       ════════════════════════════════════════════ */
       function render() {
         /* — Liquid funds — */
-        let totalLiqVal = 0, totalDep = 0, totalLiqTgt = 0, totalLiqInv = 0;
-        LIQ_FUNDS.forEach(f => {
+        let totalLiqVal = 0,
+          totalDep = 0,
+          totalLiqTgt = 0,
+          totalLiqInv = 0;
+        LIQ_FUNDS.forEach((f) => {
           const val = state.liquid[f.id].value || 0;
           const res = Math.min(state.liquid[f.id].reserve || 0, val);
           const dep = Math.max(0, val - res);
@@ -871,41 +1977,59 @@
           const required = gap > 0 ? gap : 0;
 
           totalLiqVal += val;
-          totalDep    += dep;
+          totalDep += dep;
           totalLiqTgt += tgt;
           totalLiqInv += required;
 
-          el("ldep-"    + f.id).textContent = fmt(dep);
-          el("linvlbl-" + f.id).textContent = required > 0 ? "Invest now" : (tgt > 0 ? "Goal reached ✓" : "Invest now");
-          el("linv-"     + f.id).textContent = fmt(required);
+          el("ldep-" + f.id).textContent = fmt(dep);
+          el("linvlbl-" + f.id).textContent =
+            required > 0
+              ? "Invest now"
+              : tgt > 0
+                ? "Goal reached ✓"
+                : "Invest now";
+          el("linv-" + f.id).textContent = fmt(required);
           const resPct = val > 0 ? Math.round((res / val) * 100) : 0;
           el("lrespct-" + f.id).textContent = resPct + "% reserved";
-          el("ldepfill-"+ f.id).style.width = val > 0 ? Math.round((dep / val) * 100) + "%" : "0%";
+          el("ldepfill-" + f.id).style.width =
+            val > 0 ? Math.round((dep / val) * 100) + "%" : "0%";
         });
 
         /* Deployable summary bar */
         el("totalDep").textContent = fmt(totalDep);
-        const liqNames = LIQ_FUNDS.map(f => state.liquid[f.id].name || f.defaultName).join(" + ");
-        el("depNote").textContent = totalLiqVal > 0
-          ? fmt(totalLiqVal - totalDep) + " reserved across " + liqNames
-          : "Enter liquid fund values above";
+        const liqNames = LIQ_FUNDS.map(
+          (f) => state.liquid[f.id].name || f.defaultName,
+        ).join(" + ");
+        el("depNote").textContent =
+          totalLiqVal > 0
+            ? fmt(totalLiqVal - totalDep) + " reserved across " + liqNames
+            : "Enter liquid fund values above";
+        el("monthlyStpDue").textContent = stpAmt > 0 ? fmt(stpAmt) : "₹0";
+        el("stpDueNote").textContent = state.stp.date
+          ? `Pay on ${state.stp.date}th`
+          : "Set STP date";
 
         /* — Equity funds — */
-        let eqCur = 0, eqTgt = 0, eqInv = 0, totDuty = 0, totalSip = 0;
+        let eqCur = 0,
+          eqTgt = 0,
+          eqInv = 0,
+          totDuty = 0,
+          totalSip = 0;
 
-        EQ_FUNDS.forEach(f => {
-          const s    = state.equity[f.id];
+        EQ_FUNDS.forEach((f) => {
+          const s = state.equity[f.id];
           const paid = s.paid || 0;
-          const shown= s.shown || 0;
-          const tgt  = s.target || 0;
+          const shown = s.shown || 0;
+          const tgt = s.target || 0;
 
           let rate = 0.00005;
-          if (paid > 0 && shown > 0 && shown <= paid) rate = (paid - shown) / paid;
+          if (paid > 0 && shown > 0 && shown <= paid)
+            rate = (paid - shown) / paid;
 
           const cur = shown > 0 ? shown : 0;
           const targetVal = tgt > 0 ? tgt : cur;
           const gap = targetVal - cur;
-          const required = gap > 0 && rate < 1 ? gap / (1 - rate) : 0;
+          const required = gap > 0 ? roundUpInvest(gap, rate) : 0;
           const duty = required * rate;
           totDuty += duty;
 
@@ -914,54 +2038,69 @@
 
           if (required > 0) {
             el("einvlbl-" + f.id).textContent = "Invest now";
-            el("einv-"    + f.id).textContent = fmt(required);
+            el("einv-" + f.id).textContent = fmt(required);
           } else if (tgt > 0 && cur > 0 && gap <= 0) {
             el("einvlbl-" + f.id).textContent = "Goal reached ✓";
-            el("einv-"    + f.id).textContent = fmt(0);
+            el("einv-" + f.id).textContent = fmt(0);
           } else {
             el("einvlbl-" + f.id).textContent = "Invest now";
-            el("einv-"    + f.id).textContent = fmt(0);
+            el("einv-" + f.id).textContent = fmt(0);
           }
 
-          eqCur += cur; eqTgt += targetVal; eqInv += required;
+          eqCur += cur;
+          eqTgt += targetVal;
+          eqInv += required;
           totalSip += s.sipAmt || 0;
         });
 
         /* SIP weight % on cards */
-        EQ_FUNDS.forEach(f => {
+        EQ_FUNDS.forEach((f) => {
           const sip = state.equity[f.id].sipAmt || 0;
-          const p   = totalSip > 0 ? Math.round((sip / totalSip) * 100) : 0;
+          const p = totalSip > 0 ? Math.round((sip / totalSip) * 100) : 0;
           el("esippct-" + f.id).textContent = p + "%";
         });
 
         /* — STP — */
-        const autoDep   = stpDeployable();
+        const autoDep = stpDeployable();
         const effective = state.stp.override > 0 ? state.stp.override : autoDep;
-        const dur       = state.stp.duration || 0;
-        const stpAmt    = dur > 0 && effective > 0 ? effective / dur : 0;
-        const weights   = sipWeights();
+        const dur = state.stp.duration || 0;
+        const stpAmt = dur > 0 && effective > 0 ? Math.ceil(effective / dur) : 0;
+        const weights = sipWeights();
 
         /* Update STP source buttons */
-        el("srcBtns").querySelectorAll(".src-btn").forEach(b =>
-          b.classList.toggle("active", b.dataset.src === state.stp.sourceId)
-        );
+        el("srcBtns")
+          .querySelectorAll(".src-btn")
+          .forEach((b) =>
+            b.classList.toggle("active", b.dataset.src === state.stp.sourceId),
+          );
         el("stpAutoDep").textContent = fmt(autoDep);
         el("stpMonthly").textContent = fmt(stpAmt);
 
-        const srcLabel = state.stp.sourceId === "both"
-          ? "both liquid funds"
-          : fundName(state.stp.sourceId);
+        const srcLabel =
+          state.stp.sourceId === "both"
+            ? "both liquid funds"
+            : fundName(state.stp.sourceId);
 
-        el("stpSub").textContent = stpAmt > 0
-          ? fmt(effective) + " over " + dur + " month" + (dur !== 1 ? "s" : "") + " from " + srcLabel + " on the " + (state.stp.date || "?") + "th"
-          : "Enter duration and date to begin";
+        el("stpSub").textContent =
+          stpAmt > 0
+            ? fmt(effective) +
+              " over " +
+              dur +
+              " month" +
+              (dur !== 1 ? "s" : "") +
+              " from " +
+              srcLabel +
+              " on the " +
+              (state.stp.date || "?") +
+              "th"
+            : "Enter duration and date to begin";
 
         let splitHTML = "";
         if (stpAmt > 0) {
-          weights.forEach(w => {
+          weights.forEach((w) => {
             const name = fundName(w.id);
-            const amt  = stpAmt * w.w;
-            const p    = Math.round(w.w * 100);
+            const amt = stpAmt * w.w;
+            const p = Math.round(w.w * 100);
             splitHTML += `<div class="stp-fund-row">
               <span class="stp-fund-name">${name} <span style="opacity:.55">(${p}%)</span></span>
               <span class="stp-fund-amt">${fmt(amt)}</span>
@@ -976,9 +2115,9 @@
         const totCur = eqCur + totalLiqVal;
         const totTgt = eqTgt + totalLiqTgt;
         const totInv = eqInv + totalLiqInv;
-        el("eqCur").textContent  = fmt(eqCur);
-        el("eqTgt").textContent  = fmt(eqTgt);
-        el("eqInv").textContent  = fmt(eqInv);
+        el("eqCur").textContent = fmt(eqCur);
+        el("eqTgt").textContent = fmt(eqTgt);
+        el("eqInv").textContent = fmt(eqInv);
         el("liqCur").textContent = fmt(totalLiqVal);
         el("liqTgt").textContent = fmt(totalLiqTgt);
         el("liqInv").textContent = fmt(totalLiqInv);
@@ -989,7 +2128,8 @@
         /* Hero */
         el("heroLabel").textContent = "Total invest required";
         el("heroVal").textContent = fmt(totInv);
-        el("heroSub").textContent = "To reach targets across equity + liquid funds";
+        el("heroSub").textContent =
+          "To reach targets across equity + liquid funds";
 
         /* Allocation bars */
         const nowEqPct = pct(eqCur, totCur);
@@ -999,19 +2139,24 @@
 
         /* Stats */
         const funded = pct(eqCur, eqTgt);
-        el("fundedPct").textContent  = Math.round(funded) + "%";
-        el("fundedBar").style.width  = clamp(funded, 0, 100) + "%";
-        el("totDuty").textContent    = fmt(totDuty);
+        el("fundedPct").textContent = Math.round(funded) + "%";
+        el("fundedBar").style.width = clamp(funded, 0, 100) + "%";
+        el("totDuty").textContent = fmt(totDuty);
         el("totalSipDisp").textContent = fmt(totalSip);
+        el("eqStp").textContent = stpAmt > 0 ? fmt(stpAmt) : "—";
+        el("totStp").textContent = stpAmt > 0 ? fmt(stpAmt) : "—";
 
         /* SIP table */
         let sipRows = "";
-        EQ_FUNDS.forEach(f => {
-          const s   = state.equity[f.id];
-          const name= s.name || f.defaultName;
+        EQ_FUNDS.forEach((f) => {
+          const s = state.equity[f.id];
+          const name = s.name || f.defaultName;
           const sip = s.sipAmt || 0;
-          const d   = s.sipDate || "—";
-          const p   = totalSip > 0 && sip > 0 ? Math.round((sip / totalSip) * 100) + "%" : "—";
+          const d = s.sipDate || "—";
+          const p =
+            totalSip > 0 && sip > 0
+              ? Math.round((sip / totalSip) * 100) + "%"
+              : "—";
           sipRows += `<tr>
             <td>${name}</td>
             <td style="text-align:center">${sip > 0 ? d + (typeof d === "number" ? "th" : "") : "—"}</td>
@@ -1034,7 +2179,8 @@
           stpOv += `</div>`;
           el("sumStpOverview").innerHTML = stpOv;
         } else {
-          el("sumStpOverview").textContent = "STP not configured. Set it up in the STP tab.";
+          el("sumStpOverview").textContent =
+            "STP not configured. Set it up in the STP tab.";
         }
 
         renderNetWorth();
@@ -1044,99 +2190,130 @@
 
       function setAllocBar(eqId, liqId, splitId, eqPct, total) {
         const liqPct = 100 - eqPct;
-        el(eqId).style.width  = eqPct  + "%";
+        el(eqId).style.width = eqPct + "%";
         el(liqId).style.width = liqPct + "%";
-        el(eqId).textContent  = eqPct  >= 14 ? Math.round(eqPct)  + "%" : "";
+        el(eqId).textContent = eqPct >= 14 ? Math.round(eqPct) + "%" : "";
         el(liqId).textContent = liqPct >= 14 ? Math.round(liqPct) + "%" : "";
-        el(splitId).textContent = total > 0
-          ? Math.round(eqPct) + "% eq / " + Math.round(liqPct) + "% liq"
-          : "—";
+        el(splitId).textContent =
+          total > 0
+            ? Math.round(eqPct) + "% eq / " + Math.round(liqPct) + "% liq"
+            : "—";
       }
 
       /* ════════════════════════════════════════════
          CALENDAR
       ════════════════════════════════════════════ */
       function renderCalendar(stpAmt, weights) {
-        const dur     = state.stp.duration || 0;
-        const stpDate = state.stp.date     || 0;
-        const numMonths = Math.max(12, dur);
+        const today = new Date();
+        const showNextMonth = today.getDate() >= 16;
+        const visibleMonth = new Date(
+          today.getFullYear(),
+          today.getMonth() + (showNextMonth ? 1 : 0),
+          1,
+        );
+        const monthLabel =
+          MONTHS[visibleMonth.getMonth()] + " " + visibleMonth.getFullYear();
+        const stpDate = state.stp.date || 0;
+
+        const calendarTab = document.querySelector('[data-tab="calendar"]');
+        if (calendarTab)
+          calendarTab.textContent =
+            "Calendar" + (showNextMonth ? " — DONE" : "");
+
+        const statusText = showNextMonth
+          ? "Previous month is done. Showing next month's pending SIP and STP."
+          : "Showing current month's schedule. SIP after the date is paid; STP clears on the 16th.";
+        el("calStatus").textContent = statusText;
 
         if (!stpAmt) stpAmt = 0;
         if (!weights) weights = sipWeights();
 
-        const now = new Date();
         let hasAny = false;
+        const events = [];
 
-        const months = [];
-        for (let i = 0; i < numMonths; i++) {
-          const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-          const monthLabel = MONTHS[d.getMonth()] + " " + d.getFullYear();
-          const events = [];
-
-          /* STP event */
-          if (stpAmt > 0 && stpDate > 0 && i < dur) {
-            const detail = weights.map(w => {
-              const name = (state.equity[w.id].name || EQ_FUNDS.find(f => f.id === w.id).defaultName).split(" ").slice(0, 2).join(" ");
+        const monthIndex = showNextMonth ? 1 : 0;
+        if (stpAmt > 0 && stpDate > 0 && monthIndex < (state.stp.duration || 0)) {
+          const detail = weights
+            .map((w) => {
+              const name = (state.equity[w.id].name ||
+                EQ_FUNDS.find((f) => f.id === w.id).defaultName)
+                .split(" ")
+                .slice(0, 2)
+                .join(" ");
               return name + ": " + fmt(stpAmt * w.w);
-            }).join(" • ");
-            events.push({ date: stpDate, type: "stp", label: "STP Transfer", amount: stpAmt, detail });
-            hasAny = true;
-          }
-
-          /* SIP events */
-          EQ_FUNDS.forEach(f => {
-            const s = state.equity[f.id];
-            if ((s.sipAmt || 0) > 0 && (s.sipDate || 0) > 0) {
-              events.push({
-                date: s.sipDate, type: "sip",
-                label: s.name || f.defaultName,
-                amount: s.sipAmt,
-                detail: "Monthly SIP",
-              });
-              hasAny = true;
-            }
+            })
+            .join(" • ");
+          events.push({
+            date: stpDate,
+            type: "stp",
+            label: "STP Transfer",
+            amount: stpAmt,
+            detail,
+            status: showNextMonth ? "pending" : today.getDate() >= 16 ? "paid" : "pending",
           });
-
-          events.sort((a, b) => a.date - b.date);
-          months.push({ label: monthLabel, events });
+          hasAny = true;
         }
 
+        EQ_FUNDS.forEach((f) => {
+          const s = state.equity[f.id];
+          if ((s.sipAmt || 0) > 0 && (s.sipDate || 0) > 0) {
+            events.push({
+              date: s.sipDate,
+              type: "sip",
+              label: s.name || f.defaultName,
+              amount: s.sipAmt,
+              detail: "Monthly SIP",
+              status: showNextMonth ? "pending" : today.getDate() > s.sipDate ? "paid" : "pending",
+            });
+            hasAny = true;
+          }
+        });
+
+        events.sort((a, b) => a.date - b.date);
+
         el("calEmpty").style.display = hasAny ? "none" : "block";
-        if (!hasAny) { el("calGrid").innerHTML = ""; return; }
+        if (!hasAny) {
+          el("calGrid").innerHTML = "";
+          return;
+        }
 
-        el("calGrid").innerHTML = months.map(({ label, events }) => {
-          const stpTotal  = events.filter(e => e.type === "stp").reduce((s, e) => s + e.amount, 0);
-          const sipTotal  = events.filter(e => e.type === "sip").reduce((s, e) => s + e.amount, 0);
-          const grandTotal= stpTotal + sipTotal;
+        const stpTotal = events
+          .filter((e) => e.type === "stp")
+          .reduce((s, e) => s + e.amount, 0);
+        const sipTotal = events
+          .filter((e) => e.type === "sip")
+          .reduce((s, e) => s + e.amount, 0);
+        const grandTotal = stpTotal + sipTotal;
 
-          const mHead = stpTotal > 0 ? `<span class="mtotal">${fmt(stpTotal)} STP</span>` : "";
+        const mHead = stpTotal > 0 ? `<span class="mtotal">${fmt(stpTotal)} STP</span>` : "";
 
-          const evHTML = events.length > 0
-            ? events.map((ev, i) => `
-              ${i > 0 && events[i-1].date !== ev.date ? '<div class="cal-sep"></div>' : ""}
+        const evHTML = events.length > 0
+          ? events
+              .map((ev, i) => `
+              ${i > 0 && events[i - 1].date !== ev.date ? '<div class="cal-sep"></div>' : ""}
               <div class="cal-event">
                 <div class="cal-day">${ev.date}</div>
                 <div class="cal-body">
-                  <div class="cal-type ${ev.type}">${ev.type === "stp" ? "STP" : "SIP"}</div>
+                  <div class="cal-type ${ev.type}">${ev.type === "stp" ? "STP" : "SIP"}<span class="cal-status ${ev.status}">${ev.status}</span></div>
                   <div class="cal-amt ${ev.type}">${fmt(ev.amount)}</div>
                   <div class="cal-detail">${ev.detail}</div>
                 </div>
-              </div>`).join("")
-            : `<div class="cal-empty-month">No events</div>`;
+              </div>`)
+              .join("")
+          : `<div class="cal-empty-month">No events</div>`;
 
-          const totalRow = grandTotal > 0
-            ? `<div class="cal-total-row"><span class="k">Month total</span><span class="v">${fmt(grandTotal)}</span></div>`
-            : "";
+        const totalRow = grandTotal > 0
+          ? `<div class="cal-total-row"><span class="k">Month total</span><span class="v">${fmt(grandTotal)}</span></div>`
+          : "";
 
-          return `
+        el("calGrid").innerHTML = `
           <div class="cal-month">
             <div class="cal-mhead">
-              <span class="mname">${label}</span>${mHead}
+              <span class="mname">${monthLabel}</span>${mHead}
             </div>
             <div class="cal-events">${evHTML}</div>
             ${totalRow}
           </div>`;
-        }).join("");
       }
 
       /* ════════════════════════════════════════════
@@ -1145,26 +2322,35 @@
       function renderMarket() {
         el("mktSnapshotLine").textContent = MARKET_DATA.label;
 
-        el("mktGrid").innerHTML = MARKET_DATA.indices.map(idx => {
-          const discount = ((idx.pe - idx.medianPe) / idx.medianPe) * 100;
-          let score = 12;
-          if      (discount <= -15) score = 95;
-          else if (discount <= -10) score = 86;
-          else if (discount <= -7)  score = 76;
-          else if (discount <= -3)  score = 58;
-          else if (discount <= 2)   score = 45;
-          else if (discount <= 8)   score = 28;
+        el("mktGrid").innerHTML = MARKET_DATA.indices
+          .map((idx) => {
+            const discount = ((idx.pe - idx.medianPe) / idx.medianPe) * 100;
+            let score = 12;
+            if (discount <= -15) score = 95;
+            else if (discount <= -10) score = 86;
+            else if (discount <= -7) score = 76;
+            else if (discount <= -3) score = 58;
+            else if (discount <= 2) score = 45;
+            else if (discount <= 8) score = 28;
 
-          let action = "Wait", tone = "wait";
-          if (score >= 80)      { action = "Invest now";        tone = "good"; }
-          else if (score >= 62) { action = "Invest in tranches";tone = "good"; }
-          else if (score >= 45) { action = "Small SIP only";    tone = "watch"; }
+            let action = "Wait",
+              tone = "wait";
+            if (score >= 80) {
+              action = "Invest now";
+              tone = "good";
+            } else if (score >= 62) {
+              action = "Invest in tranches";
+              tone = "good";
+            } else if (score >= 45) {
+              action = "Small SIP only";
+              tone = "watch";
+            }
 
-          const entryPe    = idx.medianPe * 0.92;
-          const entryLevel = idx.level * (entryPe / idx.pe);
-          const discColor  = discount < 0 ? "var(--mint)" : "var(--amber)";
+            const entryPe = idx.medianPe * 0.92;
+            const entryLevel = idx.level * (entryPe / idx.pe);
+            const discColor = discount < 0 ? "var(--mint)" : "var(--amber)";
 
-          return `
+            return `
           <div class="mkt-card ${tone}">
             <div class="mkt-head">
               <div>
@@ -1185,50 +2371,82 @@
               </div>
             </div>
             <div class="mkt-note">
-              ${action === "Wait"
-                ? "Wait for " + idx.index + " near " + Math.round(entryLevel).toLocaleString("en-IN") + " (PE " + entryPe.toFixed(2) + ")."
-                : "Inside entry zone. 1D: " + (idx.changePct >= 0 ? "+" : "") + idx.changePct.toFixed(2) + "%."}
+              ${
+                action === "Wait"
+                  ? "Wait for " +
+                    idx.index +
+                    " near " +
+                    Math.round(entryLevel).toLocaleString("en-IN") +
+                    " (PE " +
+                    entryPe.toFixed(2) +
+                    ")."
+                  : "Inside entry zone. 1D: " +
+                    (idx.changePct >= 0 ? "+" : "") +
+                    idx.changePct.toFixed(2) +
+                    "%."
+              }
             </div>
           </div>`;
-        }).join("");
+          })
+          .join("");
       }
 
       /* ════════════════════════════════════════════
          COPY & RESET
       ════════════════════════════════════════════ */
       function copySummary() {
-        const effective = state.stp.override > 0 ? state.stp.override : stpDeployable();
-        const dur       = state.stp.duration || 0;
-        const stpAmt    = dur > 0 && effective > 0 ? effective / dur : 0;
-        const weights   = sipWeights();
+        const effective =
+          state.stp.override > 0 ? state.stp.override : stpDeployable();
+        const dur = state.stp.duration || 0;
+        const stpAmt = dur > 0 && effective > 0 ? effective / dur : 0;
+        const weights = sipWeights();
 
         const lines = ["*MF Portfolio Plan*", ""];
         lines.push("EQUITY FUNDS");
-        EQ_FUNDS.forEach(f => {
-          const s    = state.equity[f.id];
+        EQ_FUNDS.forEach((f) => {
+          const s = state.equity[f.id];
           const name = s.name || f.defaultName;
-          const inv  = el("einv-" + f.id).textContent;
-          const sip  = s.sipAmt ? " | SIP " + fmt(s.sipAmt) + " on " + s.sipDate + "th" : "";
+          const inv = el("einv-" + f.id).textContent;
+          const sip = s.sipAmt
+            ? " | SIP " + fmt(s.sipAmt) + " on " + s.sipDate + "th"
+            : "";
           lines.push("  " + name + ": invest " + inv + sip);
         });
         lines.push("");
         lines.push("STP");
         if (stpAmt > 0) {
-          lines.push("  " + fmt(stpAmt) + "/month × " + dur + " months on the " + (state.stp.date || "?") + "th");
-          weights.forEach(w => lines.push("    → " + fundName(w.id) + ": " + fmt(stpAmt * w.w)));
+          lines.push(
+            "  " +
+              fmt(stpAmt) +
+              "/month × " +
+              dur +
+              " months on the " +
+              (state.stp.date || "?") +
+              "th",
+          );
+          weights.forEach((w) =>
+            lines.push("    → " + fundName(w.id) + ": " + fmt(stpAmt * w.w)),
+          );
         } else {
           lines.push("  Not configured");
         }
         lines.push("");
-        lines.push("Equity now " + el("eqCur").textContent + " → target " + el("eqTgt").textContent);
+        lines.push(
+          "Equity now " +
+            el("eqCur").textContent +
+            " → target " +
+            el("eqTgt").textContent,
+        );
         lines.push("Equity to invest: " + el("eqInv").textContent);
         lines.push("Monthly SIP: " + el("totalSipDisp").textContent);
 
-        navigator.clipboard.writeText(lines.join("\n"))
+        navigator.clipboard
+          .writeText(lines.join("\n"))
           .then(() => {
-            const b = el("copyBtn"), o = b.textContent;
+            const b = el("copyBtn"),
+              o = b.textContent;
             b.textContent = "Copied ✓";
-            setTimeout(() => b.textContent = o, 1600);
+            setTimeout(() => (b.textContent = o), 1600);
           })
           .catch(() => alert(lines.join("\n")));
       }
@@ -1236,24 +2454,29 @@
       function resetAll() {
         if (!confirm("Reset all saved fund data?")) return;
         state = defaultState();
-        LIQ_FUNDS.forEach(f => {
+        LIQ_FUNDS.forEach((f) => {
           el("lname-" + f.id).value = f.defaultName;
-          el("lval-"  + f.id).value = "";
-          el("lres-"  + f.id).value = "";
+          el("lval-" + f.id).value = "";
+          el("lres-" + f.id).value = "";
         });
-        EQ_FUNDS.forEach(f => {
-          el("ename-"    + f.id).value = f.defaultName;
-          el("epaid-"    + f.id).value = "";
-          el("eshown-"   + f.id).value = "";
-          el("etgt-"     + f.id).value = "";
-          el("esip-"     + f.id).value = "";
+        EQ_FUNDS.forEach((f) => {
+          el("ename-" + f.id).value = f.defaultName;
+          el("epaid-" + f.id).value = "";
+          el("eshown-" + f.id).value = "";
+          el("etgt-" + f.id).value = "";
+          el("esip-" + f.id).value = "";
           el("esipdate-" + f.id).value = "";
         });
         el("stpOverride").value = "";
         el("stpDuration").value = "";
-        el("stpDate").value     = "";
-        NW_FIELDS.forEach(f => { const i = el("nw-" + f.id); if (i) i.value = ""; });
-        try { localStorage.removeItem(STORE_KEY); } catch {}
+        el("stpDate").value = "";
+        NW_FIELDS.forEach((f) => {
+          const i = el("nw-" + f.id);
+          if (i) i.value = "";
+        });
+        try {
+          localStorage.removeItem(STORE_KEY);
+        } catch {}
         render();
       }
 
@@ -1261,17 +2484,19 @@
          NET WORTH
       ════════════════════════════════════════════ */
       function buildNwGrid() {
-        el("nwFieldsGrid").innerHTML = NW_FIELDS.map(f => `
+        el("nwFieldsGrid").innerHTML = NW_FIELDS.map(
+          (f) => `
           <div class="field" style="margin-bottom:0;">
             <label class="flabel" for="nw-${f.id}">${f.label}${f.id === "mfProfit" ? ' <span style="color:var(--dim);font-size:8px;text-transform:none;letter-spacing:0;">(within MF value)</span>' : ""}</label>
             <div class="ibox"><span class="pfx">&#8377;</span>
               <input class="num" id="nw-${f.id}" type="number" min="0" placeholder="0"
                 inputmode="numeric" value="${state.networth[f.id] || ""}" />
             </div>
-          </div>`).join("");
+          </div>`,
+        ).join("");
 
-        NW_FIELDS.forEach(f => {
-          el("nw-" + f.id)?.addEventListener("input", e => {
+        NW_FIELDS.forEach((f) => {
+          el("nw-" + f.id)?.addEventListener("input", (e) => {
             state.networth[f.id] = num(e.target.value);
             renderNetWorth();
             saveState();
@@ -1280,59 +2505,92 @@
       }
 
       function renderNetWorth() {
-        const mfVal  = mfTotalValue();
+        const mfVal = mfTotalValue();
         const profit = state.networth.mfProfit || 0;
-        const other  = NW_FIELDS.filter(f => f.id !== "mfProfit")
-          .reduce((s, f) => s + (state.networth[f.id] || 0), 0);
-        const total  = mfVal + other;
+        const other = NW_FIELDS.filter((f) => f.id !== "mfProfit").reduce(
+          (s, f) => s + (state.networth[f.id] || 0),
+          0,
+        );
+        const total = mfVal + other;
 
-        el("nwMfVal").textContent        = fmt(mfVal);
-        el("nwMfChip").textContent       = fmt(mfVal);
+        el("nwMfVal").textContent = fmt(mfVal);
+        el("nwMfChip").textContent = fmt(mfVal);
         el("nwMfProfitChip").textContent = fmt(profit);
-        el("nwOtherChip").textContent    = fmt(other);
-        el("nwHeroVal").textContent      = fmt(total);
-        el("nwSnapshotBtn").textContent  = "Save snapshot — " + fmtMonth(snapshotKey());
+        el("nwOtherChip").textContent = fmt(other);
+        el("nwHeroVal").textContent = fmt(total);
+        el("nwSnapshotBtn").textContent =
+          "Save snapshot — " + fmtMonth(snapshotKey());
 
         const mfCost = Math.max(0, mfVal - profit);
         const cats = [
-          { label: "MF Invested (cost)",  value: mfCost,  color: "rgba(74,222,156,0.4)" },
-          { label: "MF Unrealized Gain",  value: profit,  color: "#4ade9c"              },
-          { label: "Bank & Savings",      value: state.networth.bank || 0, color: "var(--liq)"   },
-          { label: "Fixed Deposit",       value: state.networth.fd   || 0, color: "#5bc4f5"      },
-          { label: "Cash",                value: state.networth.cash || 0, color: "var(--amber)" },
-          { label: "PPF / EPF / NPS",     value: state.networth.ppf  || 0, color: "#8be8ff"      },
-        ].filter(c => c.value > 0);
+          {
+            label: "MF Invested (cost)",
+            value: mfCost,
+            color: "rgba(74,222,156,0.4)",
+          },
+          { label: "MF Unrealized Gain", value: profit, color: "#4ade9c" },
+          {
+            label: "Bank & Savings",
+            value: state.networth.bank || 0,
+            color: "var(--liq)",
+          },
+          {
+            label: "Fixed Deposit",
+            value: state.networth.fd || 0,
+            color: "#5bc4f5",
+          },
+          {
+            label: "Cash",
+            value: state.networth.cash || 0,
+            color: "var(--amber)",
+          },
+          {
+            label: "PPF / EPF / NPS",
+            value: state.networth.ppf || 0,
+            color: "#8be8ff",
+          },
+        ].filter((c) => c.value > 0);
 
         if (!cats.length) {
-          el("nwBreakdown").innerHTML = `<div style="color:var(--dim);font-size:12px;">Enter values above to see the breakdown.</div>`;
+          el("nwBreakdown").innerHTML =
+            `<div style="color:var(--dim);font-size:12px;">Enter values above to see the breakdown.</div>`;
           return;
         }
-        const maxW = Math.max(...cats.map(c => c.value));
-        el("nwBreakdown").innerHTML = cats.map(c => {
-          const barW  = Math.max(1, Math.round((c.value / maxW) * 100));
-          const share = total > 0 ? Math.round((c.value / total) * 100) : 0;
-          return `<div class="nw-bar-row">
+        const maxW = Math.max(...cats.map((c) => c.value));
+        el("nwBreakdown").innerHTML = cats
+          .map((c) => {
+            const barW = Math.max(1, Math.round((c.value / maxW) * 100));
+            const share = total > 0 ? Math.round((c.value / total) * 100) : 0;
+            return `<div class="nw-bar-row">
             <div class="nw-bar-label" title="${c.label}">${c.label}</div>
             <div class="nw-bar-track"><div class="nw-bar-fill" style="width:${barW}%;background:${c.color};"></div></div>
             <div class="nw-bar-val">${fmt(c.value)}<span class="nw-bar-pct">${share}%</span></div>
           </div>`;
-        }).join("");
+          })
+          .join("");
       }
 
       function takeSnapshot() {
-        const key    = snapshotKey();
-        const mfVal  = mfTotalValue();
-        const other  = NW_FIELDS.filter(f => f.id !== "mfProfit")
-          .reduce((s, f) => s + (state.networth[f.id] || 0), 0);
-        const total  = mfVal + other;
+        const key = snapshotKey();
+        const mfVal = mfTotalValue();
+        const other = NW_FIELDS.filter((f) => f.id !== "mfProfit").reduce(
+          (s, f) => s + (state.networth[f.id] || 0),
+          0,
+        );
+        const total = mfVal + other;
 
         if (!state.networth.snapshots) state.networth.snapshots = {};
         if (state.networth.snapshots[key]) {
-          if (!confirm("Overwrite existing snapshot for " + fmtMonth(key) + "?")) return;
+          if (
+            !confirm("Overwrite existing snapshot for " + fmtMonth(key) + "?")
+          )
+            return;
         }
 
         const snap = { mf: mfVal, total, savedAt: new Date().toISOString() };
-        NW_FIELDS.forEach(f => { snap[f.id] = state.networth[f.id] || 0; });
+        NW_FIELDS.forEach((f) => {
+          snap[f.id] = state.networth[f.id] || 0;
+        });
         state.networth.snapshots[key] = snap;
 
         saveState();
@@ -1341,35 +2599,42 @@
 
         const msg = el("nwSnapMsg");
         msg.textContent = "Saved ✓ " + fmtMonth(key);
-        setTimeout(() => { if (msg.textContent.startsWith("Saved")) msg.textContent = ""; }, 3000);
+        setTimeout(() => {
+          if (msg.textContent.startsWith("Saved")) msg.textContent = "";
+        }, 3000);
       }
 
       function renderNwHistory() {
-        const snaps  = state.networth.snapshots || {};
+        const snaps = state.networth.snapshots || {};
         const sorted = Object.entries(snaps)
           .map(([k, v]) => ({ key: k, ...v }))
           .sort((a, b) => b.key.localeCompare(a.key));
 
         if (!sorted.length) {
-          el("nwHistory").innerHTML = `<div style="color:var(--dim);font-size:12px;">No snapshots yet. Fill in values above and click "Save snapshot".</div>`;
+          el("nwHistory").innerHTML =
+            `<div style="color:var(--dim);font-size:12px;">No snapshots yet. Fill in values above and click "Save snapshot".</div>`;
           return;
         }
 
-        const rows = sorted.map((s, i) => {
-          const prev  = sorted[i + 1];
-          const delta = prev !== undefined ? s.total - prev.total : null;
-          const dStr  = delta !== null
-            ? `<span style="color:${delta >= 0 ? "var(--mint)" : "var(--coral)"}">${delta >= 0 ? "+" : "−"}${fmt(Math.abs(delta))}</span>`
-            : "—";
-          const td = (v, c) => `<td style="text-align:right;${c ? "color:" + c + ";" : ""}">${fmt(v || 0)}</td>`;
-          return `<tr>
+        const rows = sorted
+          .map((s, i) => {
+            const prev = sorted[i + 1];
+            const delta = prev !== undefined ? s.total - prev.total : null;
+            const dStr =
+              delta !== null
+                ? `<span style="color:${delta >= 0 ? "var(--mint)" : "var(--coral)"}">${delta >= 0 ? "+" : "−"}${fmt(Math.abs(delta))}</span>`
+                : "—";
+            const td = (v, c) =>
+              `<td style="text-align:right;${c ? "color:" + c + ";" : ""}">${fmt(v || 0)}</td>`;
+            return `<tr>
             <td>${fmtMonth(s.key)}</td>
             ${td(s.mf)}${td(s.mfProfit, "var(--mint)")}
             ${td(s.bank)}${td(s.fd)}${td(s.cash)}${td(s.ppf)}
             <td style="text-align:right;color:var(--mint);font-weight:600;">${fmt(s.total)}</td>
             <td style="text-align:right;">${dStr}</td>
           </tr>`;
-        }).join("");
+          })
+          .join("");
 
         el("nwHistory").innerHTML = `<div class="nw-hist-wrap">
           <table class="nw-hist-table">
@@ -1390,47 +2655,55 @@
       }
 
       function renderNwProjection() {
-        const snaps  = state.networth.snapshots || {};
+        const snaps = state.networth.snapshots || {};
         const sorted = Object.entries(snaps)
           .map(([k, v]) => ({ key: k, ...v }))
           .sort((a, b) => a.key.localeCompare(b.key));
 
         if (sorted.length < 2) {
-          el("nwProjection").innerHTML = `<div style="color:var(--dim);font-size:12px;">
+          el("nwProjection").innerHTML =
+            `<div style="color:var(--dim);font-size:12px;">
             Need at least 2 monthly snapshots to project. You have <b style="color:var(--txt)">${sorted.length}</b> so far.
           </div>`;
           return;
         }
 
-        let totalRate = 0, count = 0;
+        let totalRate = 0,
+          count = 0;
         for (let i = 1; i < sorted.length; i++) {
-          const prev = sorted[i - 1], curr = sorted[i];
+          const prev = sorted[i - 1],
+            curr = sorted[i];
           if (prev.total > 0) {
             const [py, pm] = prev.key.split("-").map(Number);
             const [cy, cm] = curr.key.split("-").map(Number);
             const months = (cy - py) * 12 + (cm - pm);
-            if (months > 0) { totalRate += Math.pow(curr.total / prev.total, 1 / months) - 1; count++; }
+            if (months > 0) {
+              totalRate += Math.pow(curr.total / prev.total, 1 / months) - 1;
+              count++;
+            }
           }
         }
-        const r   = count > 0 ? totalRate / count : 0;
+        const r = count > 0 ? totalRate / count : 0;
         const ann = (Math.pow(1 + r, 12) - 1) * 100;
         const cur = nwTotal();
 
         const cards = [
-          { label: "3 months", months: 3  },
-          { label: "6 months", months: 6  },
-          { label: "1 year",   months: 12 },
-          { label: "2 years",  months: 24 },
-          { label: "5 years",  months: 60 },
-          { label: "10 years", months: 120},
-        ].map(m => {
-          const proj = cur * Math.pow(1 + r, m.months);
-          return `<div class="nw-proj-card">
+          { label: "3 months", months: 3 },
+          { label: "6 months", months: 6 },
+          { label: "1 year", months: 12 },
+          { label: "2 years", months: 24 },
+          { label: "5 years", months: 60 },
+          { label: "10 years", months: 120 },
+        ]
+          .map((m) => {
+            const proj = cur * Math.pow(1 + r, m.months);
+            return `<div class="nw-proj-card">
             <div class="pk">${m.label}</div>
             <div class="pv">${fmt(proj)}</div>
             <div class="pg">+${fmt(proj - cur)}</div>
           </div>`;
-        }).join("");
+          })
+          .join("");
 
         el("nwProjection").innerHTML = `
           <div style="font-size:11px;color:var(--dim);margin-bottom:12px;">
