@@ -957,16 +957,65 @@
         color: #cffae3;
       }
 
-      /* ── SAVE BAR ── */
-      .savebar {
+      /* ── NAV ACTIONS (save status + edit toggle) ── */
+      .nav-actions {
+        margin-left: auto;
         display: flex;
         align-items: center;
-        justify-content: center;
         gap: 6px;
+        flex-shrink: 0;
+        padding: 0 4px;
+      }
+      #saveTxt {
         font-size: 10px;
         color: var(--dim);
-        margin-top: 12px;
+        white-space: nowrap;
       }
+      .edit-toggle {
+        background: none;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        color: var(--dim);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.5px;
+        padding: 4px 10px;
+        cursor: pointer;
+        transition: border-color 0.15s, color 0.15s, background 0.15s;
+        white-space: nowrap;
+      }
+      .edit-toggle:hover {
+        border-color: var(--mint);
+        color: var(--mint);
+      }
+      .edit-toggle.done {
+        border-color: var(--mint);
+        background: var(--mint);
+        color: #0a0f0d;
+      }
+
+      /* ── VIEW MODE: inputs are display-only ── */
+      body:not(.edit-mode) .num {
+        background: transparent;
+        border-color: transparent;
+        pointer-events: none;
+        cursor: default;
+      }
+      body:not(.edit-mode) .num:not(.no-pfx) {
+        padding-left: 0;
+      }
+      body:not(.edit-mode) .pfx {
+        display: none;
+      }
+      body:not(.edit-mode) .fundname {
+        pointer-events: none;
+        cursor: default;
+      }
+      body:not(.edit-mode) .src-btn {
+        pointer-events: none;
+      }
+
+      /* ── SAVE BAR ── */
       .dot {
         width: 6px;
         height: 6px;
@@ -1252,6 +1301,11 @@
       <button data-tab="market">Market</button>
       <button data-tab="summary">Summary</button>
       <button data-tab="networth">Net Worth</button>
+      <div class="nav-actions">
+        <span class="dot" id="saveDot"></span>
+        <span id="saveTxt">Auto-saved</span>
+        <button class="edit-toggle" id="editToggleBtn">Edit</button>
+      </div>
     </nav>
 
     <div class="app">
@@ -1534,10 +1588,6 @@
             <button class="btn primary" id="copyBtn">Copy summary</button>
             <button class="btn" id="resetBtn">Reset all</button>
           </div>
-          <div class="savebar">
-            <span class="dot" id="saveDot"></span>
-            <span id="saveTxt">Auto-saved to this browser</span>
-          </div>
         </div>
       </section>
 
@@ -1812,6 +1862,24 @@
           }
 
           let state = loadState();
+          let editMode = false;
+
+          function setEditMode(on) {
+            editMode = on;
+            document.body.classList.toggle("edit-mode", on);
+            const btn = el("editToggleBtn");
+            btn.textContent = on ? "Done" : "Edit";
+            btn.classList.toggle("done", on);
+          }
+
+          function toggleEditMode() {
+            if (editMode) {
+              saveState();
+              setEditMode(false);
+            } else {
+              setEditMode(true);
+            }
+          }
 
           function saveState() {
             if (!state._meta) state._meta = { v: 0, savedAt: null, syncedAt: null };
@@ -1885,6 +1953,7 @@
 
           /* Merge cloud state into local, persist, and re-render */
           function applyCloudState(raw) {
+            if (editMode) return; // don't overwrite in-progress edits
             const def = defaultState();
             state = {
               liquid: {
@@ -2342,6 +2411,7 @@
           /* Actions */
           el("copyBtn").addEventListener("click", copySummary);
           el("resetBtn").addEventListener("click", resetAll);
+          el("editToggleBtn").addEventListener("click", toggleEditMode);
 
           /* ════════════════════════════════════════════
              MAIN RENDER
@@ -2583,7 +2653,6 @@
             }
 
             renderNetWorth();
-            saveState();
             renderUpcoming(stpAmt, weights);
             renderCalendar(stpAmt, weights);
           }
@@ -3046,7 +3115,9 @@
             try {
               localStorage.removeItem(STORE_KEY);
             } catch {}
+            setEditMode(false);
             render();
+            saveState();
           }
 
           /* ════════════════════════════════════════════
@@ -3068,7 +3139,6 @@
               el("nw-" + f.id)?.addEventListener("input", (e) => {
                 state.networth[f.id] = num(e.target.value);
                 renderNetWorth();
-                saveState();
               });
             });
           }
