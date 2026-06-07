@@ -1291,7 +1291,11 @@
             All STP transfers and SIP investments scheduled for the coming
             month.
           </p>
-          <p id="calStatus" class="foot" style="margin-top:10px;color:var(--txt);"></p>
+          <p
+            id="calStatus"
+            class="foot"
+            style="margin-top: 10px; color: var(--txt)"
+          ></p>
         </div>
         <div
           id="calEmpty"
@@ -1716,9 +1720,23 @@
       }
 
       function stpDeployable() {
+        const liq1Amt = deployable("liq1");
+        const liq2Amt = deployable("liq2");
         const src = state.stp.sourceId;
-        if (src === "both") return deployable("liq1") + deployable("liq2");
-        return deployable(src);
+        if (src === "both") return liq1Amt + liq2Amt;
+        if (src === "liq1") return liq1Amt > 0 ? liq1Amt : liq2Amt;
+        if (src === "liq2") return liq2Amt > 0 ? liq2Amt : liq1Amt;
+        return liq1Amt + liq2Amt;
+      }
+
+      function stpSourceId() {
+        const liq1Amt = deployable("liq1");
+        const liq2Amt = deployable("liq2");
+        const src = state.stp.sourceId;
+        if (src === "both") return "both";
+        if (src === "liq1") return liq1Amt > 0 ? "liq1" : liq2Amt > 0 ? "liq2" : "liq1";
+        if (src === "liq2") return liq2Amt > 0 ? "liq2" : liq1Amt > 0 ? "liq1" : "liq2";
+        return liq1Amt + liq2Amt > 0 ? "both" : src;
       }
 
       function sipWeights() {
@@ -2078,10 +2096,11 @@
         el("stpAutoDep").textContent = fmt(autoDep);
         el("stpMonthly").textContent = fmt(stpAmt);
 
+        const selectedStpSource = stpSourceId();
         const srcLabel =
-          state.stp.sourceId === "both"
+          selectedStpSource === "both"
             ? "both liquid funds"
-            : fundName(state.stp.sourceId);
+            : fundName(selectedStpSource);
 
         el("stpSub").textContent =
           stpAmt > 0
