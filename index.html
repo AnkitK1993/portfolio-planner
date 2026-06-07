@@ -1297,6 +1297,128 @@
           min-width: 75px;
         }
       }
+      /* ════ TOAST NOTIFICATION SYSTEM ════ */
+      #toastWrap {
+        position: fixed;
+        bottom: 24px;
+        right: 16px;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column-reverse;
+        gap: 8px;
+        pointer-events: none;
+        max-width: min(340px, calc(100vw - 32px));
+      }
+      .toast {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 11px 14px;
+        border-radius: 10px;
+        font-size: 11px;
+        line-height: 1.45;
+        border: 1px solid;
+        pointer-events: all;
+        animation: toastIn 0.24s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+      }
+      .toast.toast-exit { animation: toastOut 0.24s ease forwards; }
+      .toast-success { background: rgba(74,222,156,.1); border-color: var(--mint-dim); color: var(--mint); }
+      .toast-error   { background: rgba(240,112,112,.1); border-color: #7a2f2f;       color: var(--coral); }
+      .toast-info    { background: rgba(108,168,240,.1); border-color: var(--liq-dim); color: var(--liq); }
+      .toast-warn    { background: rgba(240,184,108,.1); border-color: var(--amber-dim);color: var(--amber);}
+      .toast-icon { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+      .toast-msg  { flex: 1; }
+      .toast-x {
+        background: none; border: none; color: inherit; font-size: 17px;
+        cursor: pointer; opacity: 0.5; padding: 0 2px; line-height: 1; flex-shrink: 0;
+      }
+      .toast-x:hover { opacity: 1; }
+      @keyframes toastIn  { from { transform: translateX(110%); opacity: 0; } to { transform: none; opacity: 1; } }
+      @keyframes toastOut { from { transform: none; opacity: 1; } to { transform: translateX(110%); opacity: 0; } }
+      @media (max-width: 600px) {
+        #toastWrap { bottom: 76px; right: 12px; left: 12px; max-width: none; }
+      }
+
+      /* ════ SKELETON LOADING ════ */
+      .skeleton-card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 16px;
+      }
+      .skel {
+        background: linear-gradient(90deg, var(--panel-2) 25%, #252d2f 50%, var(--panel-2) 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.6s ease-in-out infinite;
+        border-radius: 6px;
+        margin-bottom: 10px;
+      }
+      .skel-title { height: 18px; width: 48%; margin-bottom: 14px; }
+      .skel-input { height: 40px; }
+      .skel-chip  { height: 32px; margin-top: 4px; }
+      .skel-short { width: 66%; }
+      @keyframes shimmer {
+        0%   { background-position:  200% 0; }
+        100% { background-position: -200% 0; }
+      }
+
+      /* ════ EMPTY STATE ════ */
+      .empty-state {
+        text-align: center;
+        padding: 48px 24px;
+        color: var(--dim);
+      }
+      .empty-icon  { font-size: 36px; margin-bottom: 14px; opacity: 0.35; }
+      .empty-title { font-family: "Fraunces", serif; font-size: 19px; color: var(--txt); margin-bottom: 8px; }
+      .empty-body  { font-size: 11px; line-height: 1.65; max-width: 280px; margin: 0 auto; }
+
+      /* ════ EDIT MODE BANNER ════ */
+      .edit-banner {
+        display: none;
+        background: rgba(74, 222, 156, 0.06);
+        border-bottom: 1px solid var(--mint-dim);
+        padding: 7px 16px;
+        font-size: 10px;
+        color: var(--mint);
+        letter-spacing: 0.4px;
+        text-align: center;
+        position: sticky;
+        top: 43px;
+        z-index: 80;
+      }
+      body.edit-mode .edit-banner { display: block; }
+      .edit-banner kbd {
+        background: var(--mint-dim);
+        border-radius: 3px;
+        padding: 1px 5px;
+        font-family: inherit;
+        font-size: 9px;
+        letter-spacing: 0;
+      }
+      @media (max-width: 600px) {
+        .edit-banner { top: 0; }
+      }
+
+      /* ════ SMOOTH EDIT TRANSITIONS ════ */
+      .num {
+        transition: background 0.2s ease, border-color 0.2s ease,
+                    padding-left 0.2s ease, opacity 0.2s ease;
+      }
+      .fundname { transition: opacity 0.2s ease; }
+      body:not(.edit-mode) .src-btn { opacity: 0.6; transition: opacity 0.2s; }
+
+      /* ════ FOCUS RINGS ════ */
+      .num:focus-visible {
+        box-shadow: 0 0 0 3px rgba(74, 222, 156, 0.18);
+      }
+      .num.liq:focus-visible { box-shadow: 0 0 0 3px rgba(108, 168, 240, 0.2); }
+      .num.amb:focus-visible { box-shadow: 0 0 0 3px rgba(240, 184, 108, 0.18); }
+      .edit-toggle:focus-visible,
+      .btn:focus-visible,
+      .src-btn:focus-visible {
+        outline: 2px solid var(--mint);
+        outline-offset: 2px;
+      }
     </style>
   </head>
   <body>
@@ -1310,9 +1432,13 @@
       <div class="nav-actions">
         <span class="dot" id="saveDot"></span>
         <span id="saveTxt">Auto-saved</span>
-        <button class="edit-toggle" id="editToggleBtn">Edit</button>
+        <button class="edit-toggle" id="editToggleBtn" aria-pressed="false">Edit</button>
       </div>
     </nav>
+
+    <div class="edit-banner" id="editBanner" role="status" aria-live="polite">
+      ✎ Edit mode &nbsp;·&nbsp; tap <strong>Done</strong> to save &nbsp;·&nbsp; <kbd>Esc</kbd> to cancel
+    </div>
 
     <div class="app">
       <!-- ═══════════════ PORTFOLIO ═══════════════ -->
@@ -1481,17 +1607,7 @@
           </div>
         </div>
 
-        <div
-          id="calEmpty"
-          style="
-            color: var(--dim);
-            font-size: 12px;
-            display: none;
-            padding: 10px 0;
-          "
-        >
-          Configure SIP dates and/or STP to see the calendar.
-        </div>
+        <div id="calEmpty" style="display:none"></div>
         <div class="cal-grid" id="calGrid"></div>
       </section>
 
@@ -1900,6 +2016,7 @@
             const btn = el("editToggleBtn");
             btn.textContent = on ? "Done" : "Edit";
             btn.classList.toggle("done", on);
+            btn.setAttribute("aria-pressed", on ? "true" : "false");
             render(); // rebuild calendar HTML (inputs vs text for paid events)
           }
 
@@ -1907,6 +2024,7 @@
             if (editMode) {
               saveState();
               setEditMode(false);
+              UI.toast("success", "Changes saved", 2200);
             } else {
               setEditMode(true);
             }
@@ -1954,19 +2072,18 @@
             if (!dot || !txt) return;
             if (status === "syncing") {
               dot.className = "dot sync";
-              txt.textContent = "Syncing to cloud…";
+              txt.textContent = "Syncing…";
             } else if (status === "ok") {
               dot.className = "dot";
-              txt.textContent =
-                msg ||
-                "Synced ✓ " +
-                  new Date().toLocaleTimeString("en-IN", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  });
+              txt.textContent = "Saved";
+              /* Toast for meaningful sync events; skip routine cache-fresh skips */
+              if (msg && !msg.startsWith("Cache valid") && !msg.startsWith("Local is current")) {
+                UI.toast("info", msg, 3000);
+              }
             } else if (status === "err") {
               dot.className = "dot warn";
-              txt.textContent = msg || "Cloud sync failed — saved locally";
+              txt.textContent = "Offline";
+              UI.toast("error", msg || "Cloud sync failed — data saved locally", 6000);
             }
           }
 
@@ -2179,6 +2296,53 @@
           const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
           const roundUpInvest = (target, rate) =>
             target > 0 && rate < 1 ? Math.ceil(target / (1 - rate)) : 0;
+
+          /* ════════════════════════════════════════════
+             UI COMPONENT SYSTEM
+          ════════════════════════════════════════════ */
+          const UI = {
+            /* Floating toast notification — type: success | error | info | warn */
+            toast(type, msg, duration = 3500) {
+              const wrap = document.getElementById("toastWrap");
+              if (!wrap) return;
+              const icons = { success: "✓", error: "✕", info: "◉", warn: "!" };
+              const div = document.createElement("div");
+              div.className = "toast toast-" + type;
+              div.setAttribute("role", "status");
+              div.innerHTML =
+                `<span class="toast-icon" aria-hidden="true">${icons[type] ?? "◉"}</span>` +
+                `<span class="toast-msg">${msg}</span>` +
+                `<button class="toast-x" aria-label="Dismiss">×</button>`;
+              const dismiss = () => {
+                div.classList.add("toast-exit");
+                setTimeout(() => div.remove(), 260);
+              };
+              div.querySelector(".toast-x").addEventListener("click", dismiss);
+              wrap.appendChild(div);
+              if (duration > 0) setTimeout(dismiss, duration);
+            },
+
+            /* Shimmer skeleton placeholder — drop into any grid while loading */
+            skeleton(count = 2) {
+              return Array.from({ length: count }, () =>
+                `<div class="skeleton-card" aria-hidden="true">
+                  <div class="skel skel-title"></div>
+                  <div class="skel skel-input"></div>
+                  <div class="skel skel-input skel-short"></div>
+                  <div class="skel skel-chip"></div>
+                </div>`
+              ).join("");
+            },
+
+            /* Consistent empty state block */
+            emptyState(icon, title, body) {
+              return `<div class="empty-state" role="status" aria-label="${title}">
+                <div class="empty-icon" aria-hidden="true">${icon}</div>
+                <p class="empty-title">${title}</p>
+                <p class="empty-body">${body}</p>
+              </div>`;
+            },
+          };
 
           function deployable(fid) {
             const s = state.liquid[fid];
@@ -2987,11 +3151,18 @@
               if (remaining <= 0 && stpAmt > 0) break;
             }
 
-            el("calEmpty").style.display = hasAny ? "none" : "block";
+            const calEmpty = el("calEmpty");
             if (!hasAny) {
+              calEmpty.style.display = "block";
+              calEmpty.innerHTML = UI.emptyState(
+                "📅",
+                "No schedule yet",
+                "Set SIP dates on the Portfolio tab or configure an STP plan to see your deployment calendar.",
+              );
               el("calGrid").innerHTML = "";
               return;
             }
+            calEmpty.style.display = "none";
 
             el("calGrid").innerHTML = monthsData
               .map(({ label, events, isCurrentMonth, allDone }) => {
@@ -3555,8 +3726,15 @@
           el("nwSnapshotBtn").addEventListener("click", takeSnapshot);
           renderNwHistory();
           renderNwProjection();
+          const _hasLocalData = !!localStorage.getItem(STORE_KEY);
           applyStpIfDue();
           render();
+
+          /* Show skeleton while Firebase loads on a fresh device (no local cache) */
+          if (fbEnabled && !_hasLocalData) {
+            el("liqGrid").innerHTML = UI.skeleton(2);
+            el("eqGrid").innerHTML = UI.skeleton(3);
+          }
 
           /* Cache-first cloud sync + real-time listener for cross-device updates */
           if (fbEnabled) {
@@ -3565,6 +3743,16 @@
             );
             subscribeToCloud();
           }
+
+          /* Keyboard: Escape exits edit mode */
+          document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && editMode) {
+              saveState();
+              setEditMode(false);
+              UI.toast("success", "Changes saved", 2200);
+            }
+          });
     </script>
+    <div id="toastWrap" aria-live="polite" aria-atomic="false"></div>
   </body>
 </html>
