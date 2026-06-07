@@ -591,6 +591,12 @@
       .cal-event:hover {
         background: var(--panel-2);
       }
+      .cal-paid-input {
+        width: 100%;
+        max-width: 150px;
+        font-size: 14px;
+        margin: 2px 0;
+      }
       .cal-day {
         font-size: 11px;
         color: var(--dim);
@@ -1825,6 +1831,7 @@
                   target: 0,
                   sipAmt: 0,
                   sipDate: 5,
+                  sipPaidAmounts: {},
                 },
                 eq2: {
                   name: "Flexi Cap Fund",
@@ -1833,6 +1840,7 @@
                   target: 0,
                   sipAmt: 0,
                   sipDate: 5,
+                  sipPaidAmounts: {},
                 },
                 eq3: {
                   name: "Mid Cap Fund",
@@ -1841,9 +1849,10 @@
                   target: 0,
                   sipAmt: 0,
                   sipDate: 5,
+                  sipPaidAmounts: {},
                 },
               },
-              stp: { sourceId: "liq1", override: 0, duration: 12, date: 15, lastApplied: null, appliedCount: 0 },
+              stp: { sourceId: "liq1", override: 0, duration: 12, date: 15, lastApplied: null, appliedCount: 0, paidAmounts: {} },
               networth: {
                 ...Object.fromEntries(NW_FIELDS.map((f) => [f.id, 0])),
                 snapshots: {},
@@ -1891,6 +1900,7 @@
             const btn = el("editToggleBtn");
             btn.textContent = on ? "Done" : "Edit";
             btn.classList.toggle("done", on);
+            render(); // rebuild calendar HTML (inputs vs text for paid events)
           }
 
           function toggleEditMode() {
@@ -2463,6 +2473,21 @@
           el("resetBtn").addEventListener("click", resetAll);
           el("editToggleBtn").addEventListener("click", toggleEditMode);
 
+          /* Calendar paid-amount editing (event delegation — avoids losing focus on re-render) */
+          el("calGrid").addEventListener("input", (e) => {
+            if (!e.target.classList.contains("cal-paid-input")) return;
+            const { evtype, evid, month } = e.target.dataset;
+            const val = Math.max(0, Number(e.target.value) || 0);
+            if (evtype === "stp") {
+              if (!state.stp.paidAmounts) state.stp.paidAmounts = {};
+              state.stp.paidAmounts[month] = val;
+            } else {
+              if (!state.equity[evid]) return;
+              if (!state.equity[evid].sipPaidAmounts) state.equity[evid].sipPaidAmounts = {};
+              state.equity[evid].sipPaidAmounts[month] = val;
+            }
+          });
+
           /* ════════════════════════════════════════════
              MAIN RENDER
           ════════════════════════════════════════════ */
@@ -2882,14 +2907,19 @@
 
               const events = [];
 
+              const monthKey = `${mDate.getFullYear()}-${String(mDate.getMonth() + 1).padStart(2, "0")}`;
+
               /* STP event for this month */
               if (stpActive) {
-                const thisMonthStp = Math.min(stpAmt, remaining);
+                const scheduledStp = Math.min(stpAmt, remaining);
                 const stpStatus = isCurrentMonth
                   ? todayDate > stpDate
                     ? "paid"
                     : "pending"
                   : "pending";
+                const stpOverride = state.stp.paidAmounts?.[monthKey];
+                const displayStp = stpStatus === "paid" && stpOverride !== undefined
+                  ? stpOverride : scheduledStp;
                 const detail = weights
                   .map((w) => {
                     const name = (
@@ -2899,18 +2929,20 @@
                       .split(" ")
                       .slice(0, 2)
                       .join(" ");
-                    return name + ": " + fmt(thisMonthStp * w.w);
+                    return name + ": " + fmt(displayStp * w.w);
                   })
                   .join(" • ");
                 events.push({
                   date: stpDate,
                   type: "stp",
+                  evId: "stp",
+                  monthKey,
                   label: "STP Transfer",
-                  amount: thisMonthStp,
+                  amount: displayStp,
                   detail,
                   status: stpStatus,
                 });
-                remaining -= thisMonthStp;
+                remaining -= scheduledStp;
                 hasAny = true;
               }
 
@@ -2923,11 +2955,16 @@
                       ? "paid"
                       : "pending"
                     : "pending";
+                  const sipOverride = s.sipPaidAmounts?.[monthKey];
+                  const displaySip = sipStatus === "paid" && sipOverride !== undefined
+                    ? sipOverride : s.sipAmt;
                   events.push({
                     date: s.sipDate,
                     type: "sip",
+                    evId: f.id,
+                    monthKey,
                     label: s.name || f.defaultName,
-                    amount: s.sipAmt,
+                    amount: displaySip,
                     detail: "Monthly SIP",
                     status: sipStatus,
                   });
@@ -2980,7 +3017,11 @@
                     <div class="cal-day">${ev.date}</div>
                     <div class="cal-body">
                       <div class="cal-type ${ev.type}">${ev.type === "stp" ? "STP" : "SIP"}<span class="cal-status ${ev.status}">${ev.status}</span></div>
-                      <div class="cal-amt ${ev.type}">${fmt(ev.amount)}</div>
+                      ${ev.status === "paid" && editMode
+                        ? `<input class="num no-pfx cal-paid-input" type="number" min="0" inputmode="numeric"
+                             data-evtype="${ev.type}" data-evid="${ev.evId}" data-month="${ev.monthKey}"
+                             value="${ev.amount}" />`
+                        : `<div class="cal-amt ${ev.type}">${fmt(ev.amount)}</div>`}
                       <div class="cal-detail">${ev.detail}</div>
                     </div>
                   </div>`,
