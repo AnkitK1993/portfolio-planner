@@ -2394,11 +2394,11 @@
 
           /* Tabs */
           el("tabs")
-            .querySelectorAll("button")
+            .querySelectorAll("button[data-tab]")
             .forEach((btn) => {
               btn.addEventListener("click", () => {
                 el("tabs")
-                  .querySelectorAll("button")
+                  .querySelectorAll("button[data-tab]")
                   .forEach((b) => b.classList.remove("active"));
                 btn.classList.add("active");
                 document
