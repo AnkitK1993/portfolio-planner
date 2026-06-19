@@ -144,6 +144,18 @@
         gap: 12px;
       }
 
+      /* ── PORTFOLIO DESKTOP LAYOUT ── */
+      .port-layout {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 28px;
+        align-items: start;
+      }
+      .port-right .sec-head { margin-top: 0; }
+      .port-right #eqGrid {
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      }
+
       /* ── CARD ── */
       .card {
         background: var(--panel);
@@ -1064,6 +1076,14 @@
         .stats {
           grid-template-columns: 1fr 1fr;
         }
+        .port-layout {
+          display: block;
+        }
+        .port-left { margin-bottom: 20px; }
+        .port-right .sec-head { margin-top: 26px; }
+        .port-right #eqGrid {
+          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
       }
       @media (max-width: 520px) {
         .fund-grid {
@@ -1451,27 +1471,32 @@
           </p>
         </div>
 
-        <div class="dep-summary" id="depSummary">
-          <span class="k">Total deployable</span>
-          <span class="v" id="totalDep">₹0</span>
-          <span class="note" id="depNote">—</span>
+        <div class="port-layout">
+          <div class="port-left">
+            <div class="dep-summary" id="depSummary">
+              <span class="k">Total deployable</span>
+              <span class="v" id="totalDep">₹0</span>
+              <span class="note" id="depNote">—</span>
+            </div>
+
+            <div class="dep-summary" id="stpDueSummary">
+              <span class="k">Monthly STP</span>
+              <span class="v" id="monthlyStpDue">₹0</span>
+              <span class="note" id="stpDueNote">Pay on 15th</span>
+            </div>
+
+            <div class="sec-head">
+              Liquid Funds — Current, target &amp; deployable
+            </div>
+            <div class="fund-grid" id="liqGrid"></div>
+          </div>
+
+          <div class="port-right">
+            <div class="sec-head">Equity Funds — SIP Configuration</div>
+            <div class="fund-grid" id="eqGrid"></div>
+            <div id="upcomingSection"></div>
+          </div>
         </div>
-
-        <div class="dep-summary" id="stpDueSummary">
-          <span class="k">Monthly STP</span>
-          <span class="v" id="monthlyStpDue">₹0</span>
-          <span class="note" id="stpDueNote">Pay on 15th</span>
-        </div>
-
-        <div class="sec-head">
-          Liquid Funds — Current, target &amp; deployable
-        </div>
-        <div class="fund-grid" id="liqGrid"></div>
-
-        <div class="sec-head mt">Equity Funds — SIP Configuration</div>
-        <div class="fund-grid" id="eqGrid"></div>
-
-        <div id="upcomingSection"></div>
       </section>
 
       <!-- ═══════════════ STP ═══════════════ -->
