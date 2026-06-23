@@ -52,6 +52,7 @@
       /* ── TABS (top on desktop, bottom on mobile) ── */
       .tabs {
         display: flex;
+        justify-content: center;
         background: var(--panel);
         border-bottom: 1px solid var(--line);
         position: sticky;
@@ -60,6 +61,12 @@
         overflow-x: auto;
         padding: 0 10px;
         scrollbar-width: none;
+      }
+      .nav-actions {
+        position: absolute;
+        right: 14px;
+        top: 50%;
+        transform: translateY(-50%);
       }
       .tabs::-webkit-scrollbar {
         display: none;
@@ -696,98 +703,6 @@
         color: var(--mint);
       }
 
-      /* ── MARKET ── */
-      .mkt-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 12px;
-      }
-      .mkt-card {
-        background: var(--panel);
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        padding: 16px;
-      }
-      .mkt-card.good {
-        border-color: var(--mint-dim);
-      }
-      .mkt-card.watch {
-        border-color: var(--amber-dim);
-      }
-      .mkt-card.wait {
-        border-color: #4a1e1e;
-      }
-      .mkt-head {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 10px;
-      }
-      .mkt-idx {
-        font-size: 9.5px;
-        text-transform: uppercase;
-        letter-spacing: 0.8px;
-        color: var(--dim);
-      }
-      .mkt-name {
-        font-family: "Fraunces", serif;
-        font-size: 17px;
-        font-weight: 600;
-        margin-top: 2px;
-      }
-      .pill {
-        font-size: 9px;
-        padding: 4px 9px;
-        border-radius: 20px;
-        font-weight: 700;
-        letter-spacing: 0.5px;
-      }
-      .pill.good {
-        background: var(--mint-dim);
-        color: #cffae3;
-      }
-      .pill.watch {
-        background: var(--amber-dim);
-        color: #fae3cf;
-      }
-      .pill.wait {
-        background: #3a1515;
-        color: #fa9090;
-      }
-      .mkt-level {
-        font-family: "Fraunces", serif;
-        font-size: 28px;
-        font-weight: 600;
-        margin-bottom: 10px;
-      }
-      .mkt-data {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-        margin-bottom: 10px;
-      }
-      .mkt-box {
-        background: var(--panel-2);
-        border-radius: 7px;
-        padding: 8px 10px;
-      }
-      .mkt-box .k {
-        font-size: 9px;
-        text-transform: uppercase;
-        letter-spacing: 0.6px;
-        color: var(--dim);
-      }
-      .mkt-box .v {
-        font-size: 13px;
-        margin-top: 3px;
-        font-weight: 600;
-      }
-      .mkt-note {
-        font-size: 10px;
-        color: var(--dim);
-        line-height: 1.5;
-      }
-
       /* ── SUMMARY ── */
       .sum-hero-label {
         font-size: 9.5px;
@@ -974,11 +889,9 @@
 
       /* ── NAV ACTIONS (save status + edit toggle) ── */
       .nav-actions {
-        margin-left: auto;
         display: flex;
         align-items: center;
         gap: 6px;
-        flex-shrink: 0;
         padding: 0 4px;
       }
       #saveTxt {
@@ -1078,9 +991,6 @@
         .fund-grid {
           grid-template-columns: 1fr;
         }
-        .mkt-grid {
-          grid-template-columns: 1fr;
-        }
         .cal-grid {
           grid-template-columns: 1fr;
         }
@@ -1102,6 +1012,11 @@
           border-top: 1px solid var(--line);
           padding: 0;
           justify-content: flex-start;
+        }
+        .nav-actions {
+          position: static;
+          transform: none;
+          margin-left: auto;
         }
         .tabs button {
           padding: 11px 10px;
@@ -1435,8 +1350,7 @@
         .tabs button { padding: 15px 20px; font-size: 11px; letter-spacing: 0.9px; }
         .pg-head h1 { font-size: clamp(28px, 3vw, 44px); }
         .pg-head p { font-size: 12.5px; max-width: 720px; }
-        .mkt-grid { grid-template-columns: repeat(4, 1fr); }
-        .cal-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+.cal-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
         .fund-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
         .nw-proj-cards { grid-template-columns: repeat(6, 1fr); }
       }
@@ -1543,8 +1457,7 @@
     <nav class="tabs" id="tabs">
       <button class="active" data-tab="portfolio">Portfolio</button>
       <button data-tab="stp">STP</button>
-      <button data-tab="calendar">Calendar</button>
-      <button data-tab="market">Market</button>
+      <button data-tab="calendar">Schedule</button>
       <button data-tab="summary">Summary</button>
       <button data-tab="networth">Net Worth</button>
       <div class="nav-actions">
@@ -1740,22 +1653,6 @@
 
         <div id="calEmpty" style="display:none"></div>
         <div class="cal-grid" id="calGrid"></div>
-      </section>
-
-      <!-- ═══════════════ MARKET ═══════════════ -->
-      <section class="tab-section" id="tab-market">
-        <div class="pg-head">
-          <h1>Market <span class="accent">Signals</span></h1>
-          <p id="mktSnapshotLine">
-            Index PE vs 7-year median — a valuation guide, not a prediction.
-          </p>
-        </div>
-        <div class="mkt-grid" id="mktGrid"></div>
-        <p class="foot">
-          Educational model only. Does not account for tax, exit loads, or risk
-          tolerance. Update market snapshot data periodically by editing the
-          MARKET_DATA constant in the source.
-        </p>
       </section>
 
       <!-- ═══════════════ SUMMARY ═══════════════ -->
@@ -2003,40 +1900,6 @@
             { id: "eq2", defaultName: "Flexi Cap Fund" },
             { id: "eq3", defaultName: "Mid Cap Fund" },
           ];
-
-          const MARKET_DATA = {
-            label:
-              "Nifty 50 as of 04 Jun 2026 16:14 IST; Nifty 500 & Midcap 150 as of 04 Jun 2026 15:44 IST; PE updated 03 Jun 2026.",
-            indices: [
-              {
-                equityId: "eq1",
-                fund: "Nifty 50 Index",
-                index: "Nifty 50",
-                level: 23416.55,
-                changePct: 0.05,
-                pe: 20.2,
-                medianPe: 22.63,
-              },
-              {
-                equityId: "eq2",
-                fund: "Flexi Cap",
-                index: "Nifty 500",
-                level: 22497.7,
-                changePct: 0.2,
-                pe: 22.28,
-                medianPe: 24.61,
-              },
-              {
-                equityId: "eq3",
-                fund: "Midcap",
-                index: "Nifty Midcap 150",
-                level: 22315.95,
-                changePct: 0.43,
-                pe: 28.44,
-                medianPe: 31.27,
-              },
-            ],
-          };
 
           const MONTHS = [
             "Jan",
@@ -3192,7 +3055,7 @@
             const calendarTab = document.querySelector('[data-tab="calendar"]');
             if (calendarTab)
               calendarTab.textContent =
-                "Calendar" + (curMonthDone ? " — DONE" : "");
+                "Schedule" + (curMonthDone ? " — DONE" : "");
 
             el("calStatus").textContent = curMonthDone
               ? "This month's investments are complete. Showing upcoming schedule."
@@ -3363,81 +3226,6 @@
                 </div>
                 <div class="cal-events">${evHTML}</div>
                 ${totalRow}
-              </div>`;
-              })
-              .join("");
-          }
-
-          /* ════════════════════════════════════════════
-             MARKET SIGNALS
-          ════════════════════════════════════════════ */
-          function renderMarket() {
-            el("mktSnapshotLine").textContent = MARKET_DATA.label;
-
-            el("mktGrid").innerHTML = MARKET_DATA.indices
-              .map((idx) => {
-                const discount = ((idx.pe - idx.medianPe) / idx.medianPe) * 100;
-                let score = 12;
-                if (discount <= -15) score = 95;
-                else if (discount <= -10) score = 86;
-                else if (discount <= -7) score = 76;
-                else if (discount <= -3) score = 58;
-                else if (discount <= 2) score = 45;
-                else if (discount <= 8) score = 28;
-
-                let action = "Wait",
-                  tone = "wait";
-                if (score >= 80) {
-                  action = "Invest now";
-                  tone = "good";
-                } else if (score >= 62) {
-                  action = "Invest in tranches";
-                  tone = "good";
-                } else if (score >= 45) {
-                  action = "Small SIP only";
-                  tone = "watch";
-                }
-
-                const entryPe = idx.medianPe * 0.92;
-                const entryLevel = idx.level * (entryPe / idx.pe);
-                const discColor = discount < 0 ? "var(--mint)" : "var(--amber)";
-
-                return `
-              <div class="mkt-card ${tone}">
-                <div class="mkt-head">
-                  <div>
-                    <div class="mkt-idx">${idx.fund}</div>
-                    <div class="mkt-name">${idx.index}</div>
-                  </div>
-                  <span class="pill ${tone}">${action}</span>
-                </div>
-                <div class="mkt-level">${idx.level.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</div>
-                <div class="mkt-data">
-                  <div class="mkt-box">
-                    <div class="k">PE / 7Y Median</div>
-                    <div class="v">${idx.pe.toFixed(2)} / ${idx.medianPe.toFixed(2)}</div>
-                  </div>
-                  <div class="mkt-box">
-                    <div class="k">Valuation gap</div>
-                    <div class="v" style="color:${discColor}">${discount.toFixed(2)}%</div>
-                  </div>
-                </div>
-                <div class="mkt-note">
-                  ${
-                    action === "Wait"
-                      ? "Wait for " +
-                        idx.index +
-                        " near " +
-                        Math.round(entryLevel).toLocaleString("en-IN") +
-                        " (PE " +
-                        entryPe.toFixed(2) +
-                        ")."
-                      : "Inside entry zone. 1D: " +
-                        (idx.changePct >= 0 ? "+" : "") +
-                        idx.changePct.toFixed(2) +
-                        "%."
-                  }
-                </div>
               </div>`;
               })
               .join("");
@@ -3874,7 +3662,6 @@
              INIT
           ════════════════════════════════════════════ */
           initFirebase();          // must run before anything reads fbEnabled
-          renderMarket();
           buildNwGrid();
           el("nwSnapshotBtn").addEventListener("click", takeSnapshot);
           renderNwHistory();
