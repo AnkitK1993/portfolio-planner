@@ -454,6 +454,19 @@
 
       /* ── FORECAST ── */
       .fc-inputs { margin-bottom: 14px; }
+      /* Forecast inputs always act as a calculator — never locked by edit mode */
+      body:not(.edit-mode) #tab-forecast .num {
+        background: var(--panel-2);
+        border-color: var(--line);
+        pointer-events: auto;
+        cursor: text;
+      }
+      body:not(.edit-mode) #tab-forecast .num:not(.no-pfx) {
+        padding-left: 32px;
+      }
+      body:not(.edit-mode) #tab-forecast .pfx {
+        display: block;
+      }
       .fc-display {
         text-align: center;
         padding: 24px 20px 20px;
@@ -3824,18 +3837,22 @@
           el("fcBank").addEventListener("input", (e) => {
             state.forecast.bankBalance = num(e.target.value);
             renderForecast();
+            saveState();
           });
           el("fcInvest").addEventListener("input", (e) => {
             state.forecast.investments = num(e.target.value);
             renderForecast();
+            saveState();
           });
           el("fcMonthly").addEventListener("input", (e) => {
             state.forecast.monthlyInvest = num(e.target.value);
             renderForecast();
+            saveState();
           });
           el("fcRate").addEventListener("input", (e) => {
             state.forecast.annualRate = parseFloat(e.target.value) || 0;
             renderForecast();
+            saveState();
           });
           el("fcSlider").addEventListener("input", () => renderForecast());
 
