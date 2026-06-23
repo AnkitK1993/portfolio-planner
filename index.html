@@ -485,27 +485,53 @@
         text-transform: uppercase;
         color: var(--dim);
         padding: 4px 12px;
-        margin-bottom: 10px;
+        margin-bottom: 16px;
         transition: background 0.2s;
       }
-      .fc-big {
+      .fc-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 1px;
+        background: var(--line);
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .fc-stat {
+        background: var(--panel);
+        padding: 14px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .fc-stat-center {
+        background: var(--panel-2);
+        text-align: center;
+        align-items: center;
+      }
+      .fc-stat-right { text-align: right; align-items: flex-end; }
+      .fc-stat-label {
+        font-size: 9px;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        color: var(--dim);
+      }
+      .fc-stat-val {
         font-family: "Fraunces", serif;
-        font-size: 44px;
+        font-size: 18px;
         font-weight: 600;
         color: var(--txt);
-        margin-bottom: 4px;
-        line-height: 1;
+        line-height: 1.1;
       }
-      .fc-delta {
-        font-size: 12px;
-        color: var(--dim);
-        margin-bottom: 8px;
-        transition: color 0.2s;
+      .fc-big {
+        font-size: 24px;
+        color: var(--mint);
       }
-      .fc-breakdown {
-        font-size: 10.5px;
-        color: var(--dim);
+      .fc-profit { color: var(--mint); }
+      .fc-profit-pct {
+        font-size: 11px;
+        color: var(--mint);
         letter-spacing: 0.3px;
+        margin-top: 2px;
       }
       .fc-chart-wrap {
         background: var(--panel);
@@ -1946,9 +1972,21 @@
 
         <div class="fc-display" id="fcDisplay">
           <div class="fc-time-badge" id="fcTimeBadge">Now</div>
-          <div class="fc-big" id="fcBig">&#8377;0</div>
-          <div class="fc-delta" id="fcDelta">Enter values above to begin</div>
-          <div class="fc-breakdown" id="fcBreakdown"></div>
+          <div class="fc-stats">
+            <div class="fc-stat">
+              <div class="fc-stat-label">Invested</div>
+              <div class="fc-stat-val" id="fcInvested">&#8377;0</div>
+            </div>
+            <div class="fc-stat fc-stat-center">
+              <div class="fc-stat-label">Projected</div>
+              <div class="fc-stat-val fc-big" id="fcBig">&#8377;0</div>
+            </div>
+            <div class="fc-stat fc-stat-right">
+              <div class="fc-stat-label">Profit</div>
+              <div class="fc-stat-val fc-profit" id="fcProfit">&#8377;0</div>
+              <div class="fc-profit-pct" id="fcProfitPct">—</div>
+            </div>
+          </div>
         </div>
 
         <div class="fc-chart-wrap">
@@ -3634,19 +3672,21 @@
 
           function renderForecast() {
             const { bankBalance, investments, monthlyInvest, annualRate } = state.forecast || {};
-            const bank    = bankBalance    || 0;
-            const invest  = investments   || 0;
+            const bank    = bankBalance   || 0;
+            const invest  = investments  || 0;
             const monthly = monthlyInvest || 0;
-            const rate    = annualRate    != null ? annualRate : 12;
+            const rate    = annualRate   != null ? annualRate : 12;
 
             const sliderEl = el("fcSlider");
-            const step = sliderEl ? parseInt(sliderEl.value, 10) : 0;
-            const T = step * 0.5; // years
+            const step  = sliderEl ? parseInt(sliderEl.value, 10) : 0;
+            const T     = step * 0.5; // years
+            const months = Math.round(T * 12);
 
-            const current   = bank + invest;
-            const projected = fcProjected(bank, invest, monthly, rate, T);
-            const gain      = projected - current;
-            const gainPct   = current > 0 ? (gain / current) * 100 : 0;
+            // Total capital deployed (no growth — just money put in)
+            const totalInvested = bank + invest + monthly * months;
+            const projected     = fcProjected(bank, invest, monthly, rate, T);
+            const profit        = projected - totalInvested;
+            const profitPct     = totalInvested > 0 ? (profit / totalInvested) * 100 : 0;
 
             // Time label
             let timeLabel;
@@ -3655,36 +3695,28 @@
             else if (T === Math.floor(T)) timeLabel = T + " year" + (T !== 1 ? "s" : "");
             else                          timeLabel = T + " years";
 
-            const timeBadge = el("fcTimeBadge");
-            const bigEl     = el("fcBig");
-            const deltaEl   = el("fcDelta");
-            const breakEl   = el("fcBreakdown");
+            const timeBadge  = el("fcTimeBadge");
             if (!timeBadge) return;
 
             timeBadge.textContent = timeLabel;
-            bigEl.textContent = fmt(Math.round(projected));
 
-            if (step === 0 || current === 0) {
-              deltaEl.textContent = current === 0 ? "Enter values above to begin" : "Starting value";
-              deltaEl.style.color = "var(--dim)";
+            el("fcInvested").textContent = fmt(Math.round(totalInvested));
+            el("fcBig").textContent      = fmt(Math.round(projected));
+
+            const profitEl  = el("fcProfit");
+            const pctEl     = el("fcProfitPct");
+            if (step === 0 || totalInvested === 0) {
+              profitEl.textContent   = "—";
+              profitEl.style.color   = "var(--dim)";
+              pctEl.textContent      = "";
+              pctEl.style.color      = "var(--dim)";
             } else {
-              const sign = gain >= 0 ? "+" : "";
-              deltaEl.textContent = sign + fmt(Math.round(gain)) + "  ·  " + sign + gainPct.toFixed(1) + "%";
-              deltaEl.style.color = gain >= 0 ? "var(--mint)" : "var(--coral)";
+              const sign = profit >= 0 ? "+" : "";
+              profitEl.textContent   = sign + fmt(Math.round(profit));
+              profitEl.style.color   = profit >= 0 ? "var(--mint)" : "var(--coral)";
+              pctEl.textContent      = sign + profitPct.toFixed(1) + "%";
+              pctEl.style.color      = profit >= 0 ? "var(--mint)" : "var(--coral)";
             }
-
-            // Breakdown: lump invest growth + monthly contributions FV
-            const investAtT = invest * Math.pow(1 + rate / 100, T);
-            const months    = T * 12;
-            const monthRate = rate / 100 / 12;
-            const sipFV = monthly > 0 && T > 0
-              ? (monthRate > 0 ? monthly * (Math.pow(1 + monthRate, months) - 1) / monthRate : monthly * months)
-              : 0;
-            let breakParts = "Bank " + fmt(bank) + "  +  Invest " + fmt(Math.round(investAtT));
-            if (monthly > 0 && step > 0) breakParts += "  +  Monthly " + fmt(Math.round(sipFV));
-            breakEl.textContent = step === 0
-              ? "Bank " + fmt(bank) + "  +  Invest " + fmt(invest) + (monthly > 0 ? "  +  Monthly " + fmt(monthly) + "/mo" : "")
-              : breakParts;
 
             drawForecastChart(bank, invest, monthly, rate, step);
             updateFcSliderFill(step);
