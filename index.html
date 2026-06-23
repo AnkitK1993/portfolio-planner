@@ -388,32 +388,6 @@
         gap: 14px;
         align-items: start;
       }
-      .src-btns {
-        display: flex;
-        gap: 6px;
-      }
-      .src-btn {
-        flex: 1;
-        background: var(--panel-2);
-        border: 1px solid var(--line);
-        color: var(--dim);
-        font-family: "JetBrains Mono", monospace;
-        font-size: 11px;
-        padding: 9px 6px;
-        border-radius: 8px;
-        cursor: pointer;
-        text-align: center;
-        transition: 0.15s;
-      }
-      .src-btn.active {
-        background: var(--liq-dim);
-        border-color: var(--liq);
-        color: #cfe2fa;
-      }
-      .src-btn:hover:not(.active) {
-        border-color: var(--dim);
-      }
-
       .stp-result {
         background: var(--panel);
         border: 1px solid var(--mint-dim);
@@ -947,9 +921,6 @@
         pointer-events: none;
         cursor: default;
       }
-      body:not(.edit-mode) .src-btn {
-        pointer-events: none;
-      }
 
       /* ── SAVE BAR ── */
       .dot {
@@ -1342,7 +1313,6 @@
                     padding-left 0.2s ease, opacity 0.2s ease;
       }
       .fundname { transition: opacity 0.2s ease; }
-      body:not(.edit-mode) .src-btn { opacity: 0.6; transition: opacity 0.2s; }
 
       /* ════ FOCUS RINGS ════ */
       .num:focus-visible {
@@ -1351,8 +1321,7 @@
       .num.liq:focus-visible { box-shadow: 0 0 0 3px rgba(108, 168, 240, 0.2); }
       .num.amb:focus-visible { box-shadow: 0 0 0 3px rgba(240, 184, 108, 0.18); }
       .edit-toggle:focus-visible,
-      .btn:focus-visible,
-      .src-btn:focus-visible {
+      .btn:focus-visible {
         outline: 2px solid var(--mint);
         outline-offset: 2px;
       }
@@ -1544,30 +1513,7 @@
         <div class="stp-layout">
           <div class="card" style="align-self: start">
             <div class="field">
-              <div class="flabel" style="margin-bottom: 8px">
-                Source liquid fund
-              </div>
-              <div class="src-btns" id="srcBtns">
-                <button class="src-btn" data-src="liq1" id="sb-liq1">
-                  Liquid 1
-                </button>
-                <button class="src-btn" data-src="liq2" id="sb-liq2">
-                  Liquid 2
-                </button>
-                <button class="src-btn" data-src="both" id="sb-both">
-                  Both
-                </button>
-              </div>
-            </div>
-
-            <div class="chip liq" style="margin: 10px 0 14px">
-              <span>Auto deployable from source</span><b id="stpAutoDep">₹0</b>
-            </div>
-
-            <div class="field">
-              <label class="flabel" for="stpOverride"
-                >Override deployable (leave blank = auto)</label
-              >
+              <label class="flabel" for="stpOverride">STP Amount (total to deploy)</label>
               <div class="ibox">
                 <span class="pfx">₹</span>
                 <input
@@ -1575,17 +1521,26 @@
                   id="stpOverride"
                   type="number"
                   min="0"
-                  placeholder="auto"
+                  placeholder="0"
                   inputmode="numeric"
                 />
               </div>
             </div>
 
-            <div class="grid2">
+            <div class="grid2" style="margin-top: 14px">
               <div class="field">
-                <label class="flabel" for="stpDuration"
-                  >Duration (months)</label
-                >
+                <label class="flabel" for="stpStartDate">Start date <span style="opacity:.55">(optional)</span></label>
+                <input class="num no-pfx" id="stpStartDate" type="date" />
+              </div>
+              <div class="field">
+                <label class="flabel" for="stpEndDate">End date <span style="opacity:.55">(optional)</span></label>
+                <input class="num no-pfx" id="stpEndDate" type="date" />
+              </div>
+            </div>
+
+            <div class="grid2" style="margin-top: 14px">
+              <div class="field">
+                <label class="flabel" for="stpDuration">Duration (months)</label>
                 <input
                   class="num no-pfx"
                   id="stpDuration"
@@ -1975,7 +1930,7 @@
                   sipPaidAmounts: {},
                 },
               },
-              stp: { sourceId: "liq1", override: 0, duration: 12, date: 15, lastApplied: null, appliedCount: 0, paidAmounts: {} },
+              stp: { override: 0, startDate: "", endDate: "", duration: 12, date: 15, lastApplied: null, appliedCount: 0, paidAmounts: {} },
               networth: {
                 ...Object.fromEntries(NW_FIELDS.map((f) => [f.id, 0])),
                 snapshots: {},
@@ -2272,25 +2227,23 @@
             const stpOv = el("stpOverride");
             const stpDur = el("stpDuration");
             const stpDt = el("stpDate");
+            const stpSD = el("stpStartDate");
+            const stpED = el("stpEndDate");
             if (stpOv) stpOv.value = state.stp.override || "";
-            if (stpDur) stpDur.value = state.stp.duration || "";
+            if (stpSD) stpSD.value = state.stp.startDate || "";
+            if (stpED) stpED.value = state.stp.endDate || "";
+            if (stpDur) stpDur.value = computeStpDuration();
             if (stpDt) stpDt.value = state.stp.date || "";
             const calOv = el("calStpOverride");
             const calDur = el("calStpDuration");
             const calDt = el("calStpDate");
             if (calOv) calOv.value = state.stp.override || "";
-            if (calDur) calDur.value = state.stp.duration || "";
+            if (calDur) calDur.value = computeStpDuration();
             if (calDt) calDt.value = state.stp.date || "";
             NW_FIELDS.forEach((f) => {
               const inp = el("nw-" + f.id);
               if (inp) inp.value = state.networth[f.id] || "";
             });
-            /* Restore active STP source button */
-            el("srcBtns")
-              .querySelectorAll(".src-btn")
-              .forEach((b) =>
-                b.classList.toggle("active", b.dataset.src === state.stp.sourceId),
-              );
           }
 
           /* ════════════════════════════════════════════
@@ -2357,26 +2310,15 @@
             return Math.max(0, (s.value || 0) - (s.reserve || 0));
           }
 
-          function stpDeployable() {
-            const liq1Amt = deployable("liq1");
-            const liq2Amt = deployable("liq2");
-            const src = state.stp.sourceId;
-            if (src === "both") return liq1Amt + liq2Amt;
-            if (src === "liq1") return liq1Amt > 0 ? liq1Amt : liq2Amt;
-            if (src === "liq2") return liq2Amt > 0 ? liq2Amt : liq1Amt;
-            return liq1Amt + liq2Amt;
-          }
-
-          function stpSourceId() {
-            const liq1Amt = deployable("liq1");
-            const liq2Amt = deployable("liq2");
-            const src = state.stp.sourceId;
-            if (src === "both") return "both";
-            if (src === "liq1")
-              return liq1Amt > 0 ? "liq1" : liq2Amt > 0 ? "liq2" : "liq1";
-            if (src === "liq2")
-              return liq2Amt > 0 ? "liq2" : liq1Amt > 0 ? "liq1" : "liq2";
-            return liq1Amt + liq2Amt > 0 ? "both" : src;
+          function computeStpDuration() {
+            const { startDate, endDate, duration } = state.stp;
+            if (startDate && endDate) {
+              const s = new Date(startDate);
+              const e = new Date(endDate);
+              const months = (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth());
+              return Math.max(1, months);
+            }
+            return duration || 12;
           }
 
           function sipWeights() {
@@ -2588,17 +2530,25 @@
           });
 
           /* STP controls */
-          el("srcBtns")
-            .querySelectorAll(".src-btn")
-            .forEach((btn) => {
-              btn.addEventListener("click", () => {
-                state.stp.sourceId = btn.dataset.src;
-                render();
-              });
-            });
           el("stpOverride").addEventListener("input", (e) => {
             state.stp.override = num(e.target.value);
             el("calStpOverride").value = e.target.value;
+            render();
+          });
+          el("stpStartDate").addEventListener("input", (e) => {
+            state.stp.startDate = e.target.value;
+            const d = computeStpDuration();
+            state.stp.duration = d;
+            el("stpDuration").value = d;
+            el("calStpDuration").value = d;
+            render();
+          });
+          el("stpEndDate").addEventListener("input", (e) => {
+            state.stp.endDate = e.target.value;
+            const d = computeStpDuration();
+            state.stp.duration = d;
+            el("stpDuration").value = d;
+            el("calStpDuration").value = d;
             render();
           });
           el("stpDuration").addEventListener("input", (e) => {
@@ -2631,10 +2581,12 @@
 
           /* Restore STP input values */
           if (state.stp.override) el("stpOverride").value = state.stp.override;
-          el("stpDuration").value = state.stp.duration || "";
+          el("stpStartDate").value = state.stp.startDate || "";
+          el("stpEndDate").value = state.stp.endDate || "";
+          el("stpDuration").value = computeStpDuration();
           el("stpDate").value = state.stp.date || "";
           if (state.stp.override) el("calStpOverride").value = state.stp.override;
-          el("calStpDuration").value = state.stp.duration || "";
+          el("calStpDuration").value = computeStpDuration();
           el("calStpDate").value = state.stp.date || "";
 
           /* Tabs */
@@ -2726,9 +2678,8 @@
                 ? fmt(totalLiqVal - totalDep) + " reserved across " + liqNames
                 : "Enter liquid fund values above";
 
-            const autoDep = stpDeployable();
-            const effective = state.stp.override > 0 ? state.stp.override : autoDep;
-            const dur = state.stp.duration || 0;
+            const effective = state.stp.override || 0;
+            const dur = computeStpDuration();
             const stpAmt =
               dur > 0 && effective > 0 ? Math.ceil(effective / dur) : 0;
 
@@ -2791,21 +2742,7 @@
             /* — STP — */
             const weights = sipWeights();
 
-            /* Update STP source buttons */
-            el("srcBtns")
-              .querySelectorAll(".src-btn")
-              .forEach((b) =>
-                b.classList.toggle("active", b.dataset.src === state.stp.sourceId),
-              );
-            el("stpAutoDep").textContent = fmt(autoDep);
             el("stpMonthly").textContent = fmt(stpAmt);
-
-            const selectedStpSource = stpSourceId();
-            const srcLabel =
-              selectedStpSource === "both"
-                ? "both liquid funds"
-                : fundName(selectedStpSource);
-
             el("stpSub").textContent =
               stpAmt > 0
                 ? fmt(effective) +
@@ -2813,12 +2750,10 @@
                   dur +
                   " month" +
                   (dur !== 1 ? "s" : "") +
-                  " from " +
-                  srcLabel +
                   " on the " +
                   (state.stp.date || "?") +
                   "th"
-                : "Enter duration and date to begin";
+                : "Enter amount and date to begin";
 
             let splitHTML = "";
             if (stpAmt > 0) {
@@ -2911,7 +2846,7 @@
             /* STP overview in summary */
             if (stpAmt > 0) {
               let stpOv = `<div style="font-size:12px;line-height:2;color:var(--dim);">`;
-              stpOv += `<span style="color:var(--amber)">${fmt(stpAmt)}/month</span> on the <span style="color:var(--txt)">${state.stp.date || "?"}th</span> for <span style="color:var(--txt)">${dur} months</span> from <span style="color:var(--liq)">${srcLabel}</span>`;
+              stpOv += `<span style="color:var(--amber)">${fmt(stpAmt)}/month</span> on the <span style="color:var(--txt)">${state.stp.date || "?"}th</span> for <span style="color:var(--txt)">${dur} months</span>`;
               stpOv += `</div>`;
               el("sumStpOverview").innerHTML = stpOv;
             } else {
@@ -2972,7 +2907,7 @@
 
             /* STP row */
             const stpDate = state.stp.date || 0;
-            const dur = state.stp.duration || 0;
+            const dur = computeStpDuration();
             const appliedCount = state.stp.appliedCount || 0;
 
             if (stpAmt > 0 && stpDate > 0 && appliedCount < dur) {
@@ -3044,9 +2979,8 @@
             const today = new Date();
             const todayDate = today.getDate();
             const stpDate = state.stp.date || 0;
-            const dur = state.stp.duration || 0;
-            const effective =
-              state.stp.override > 0 ? state.stp.override : stpDeployable();
+            const dur = computeStpDuration();
+            const effective = state.stp.override || 0;
 
             if (!stpAmt) stpAmt = 0;
             if (!weights) weights = sipWeights();
@@ -3247,9 +3181,8 @@
              COPY & RESET
           ════════════════════════════════════════════ */
           function copySummary() {
-            const effective =
-              state.stp.override > 0 ? state.stp.override : stpDeployable();
-            const dur = state.stp.duration || 0;
+            const effective = state.stp.override || 0;
+            const dur = computeStpDuration();
             const stpAmt = dur > 0 && effective > 0 ? effective / dur : 0;
             const weights = sipWeights();
 
@@ -3581,42 +3514,35 @@
             const today = new Date();
             const todayDate = today.getDate();
             const stpDate = state.stp.date || 0;
-            const dur = state.stp.duration || 0;
+            const dur = computeStpDuration();
 
             if (!stpDate || !dur) return;
 
             const appliedCount = state.stp.appliedCount || 0;
-            if (appliedCount >= dur) return; // All STP months already done
+            if (appliedCount >= dur) return;
 
-            if (todayDate <= stpDate) return; // STP not yet due this month
+            if (todayDate <= stpDate) return;
 
             const curMonthKey =
               today.getFullYear() +
               "-" +
               String(today.getMonth() + 1).padStart(2, "0");
-            if (state.stp.lastApplied === curMonthKey) return; // Already applied
+            if (state.stp.lastApplied === curMonthKey) return;
 
-            /* Amount to transfer this month */
-            const effective =
-              state.stp.override > 0 ? state.stp.override : stpDeployable();
+            const effective = state.stp.override || 0;
             if (effective <= 0) return;
 
-            const stpAmt =
-              dur > 0 && effective > 0 ? Math.ceil(effective / dur) : 0;
+            const stpAmt = Math.ceil(effective / dur);
             if (stpAmt === 0) return;
 
             const weights = sipWeights();
 
-            /* Deduct from liquid source(s) */
-            const src = state.stp.sourceId;
+            /* Deduct proportionally from both liquid funds */
             const liq1Dep = deployable("liq1");
             const liq2Dep = deployable("liq2");
             const totalDep = liq1Dep + liq2Dep;
-            if (totalDep <= 0) return;
-
-            const actualStp = Math.min(stpAmt, totalDep);
-
-            if (src === "both" && totalDep > 0) {
+            if (totalDep > 0) {
+              const actualStp = Math.min(stpAmt, totalDep);
               const l1Take = Math.round((liq1Dep / totalDep) * actualStp);
               const l2Take = actualStp - l1Take;
               state.liquid.liq1.value = Math.max(
@@ -3627,23 +3553,6 @@
                 state.liquid.liq2.reserve || 0,
                 Math.round((state.liquid.liq2.value || 0) - l2Take),
               );
-            } else {
-              const primary = src === "liq2" ? "liq2" : "liq1";
-              const secondary = src === "liq2" ? "liq1" : "liq2";
-              const pDep = deployable(primary);
-              if (pDep >= actualStp) {
-                state.liquid[primary].value = Math.max(
-                  state.liquid[primary].reserve || 0,
-                  Math.round((state.liquid[primary].value || 0) - actualStp),
-                );
-              } else {
-                state.liquid[primary].value = state.liquid[primary].reserve || 0;
-                const rem = actualStp - pDep;
-                state.liquid[secondary].value = Math.max(
-                  state.liquid[secondary].reserve || 0,
-                  Math.round((state.liquid[secondary].value || 0) - rem),
-                );
-              }
             }
 
             /* Add to equity funds (paid + shown) */
