@@ -452,6 +452,101 @@
         padding-top: 10px;
       }
 
+      /* ── FORECAST ── */
+      .fc-inputs { margin-bottom: 14px; }
+      .fc-display {
+        text-align: center;
+        padding: 24px 20px 20px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        margin-bottom: 14px;
+      }
+      .fc-time-badge {
+        display: inline-block;
+        background: var(--panel-2);
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        font-size: 10px;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        color: var(--dim);
+        padding: 4px 12px;
+        margin-bottom: 10px;
+        transition: background 0.2s;
+      }
+      .fc-big {
+        font-family: "Fraunces", serif;
+        font-size: 44px;
+        font-weight: 600;
+        color: var(--txt);
+        margin-bottom: 4px;
+        line-height: 1;
+      }
+      .fc-delta {
+        font-size: 12px;
+        color: var(--dim);
+        margin-bottom: 8px;
+        transition: color 0.2s;
+      }
+      .fc-breakdown {
+        font-size: 10.5px;
+        color: var(--dim);
+        letter-spacing: 0.3px;
+      }
+      .fc-chart-wrap {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 12px 0 0;
+        margin-bottom: 10px;
+        overflow: hidden;
+      }
+      .fc-chart {
+        width: 100%;
+        height: 110px;
+        display: block;
+      }
+      .fc-slider-wrap { padding: 4px 2px 0; }
+      .fc-slider {
+        width: 100%;
+        -webkit-appearance: none;
+        appearance: none;
+        height: 4px;
+        background: var(--line);
+        border-radius: 2px;
+        outline: none;
+        cursor: pointer;
+        margin-bottom: 8px;
+        display: block;
+      }
+      .fc-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--mint);
+        cursor: pointer;
+        box-shadow: 0 0 8px rgba(74,222,156,0.4);
+      }
+      .fc-slider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--mint);
+        cursor: pointer;
+        border: none;
+      }
+      .fc-ticks {
+        display: flex;
+        justify-content: space-between;
+        font-size: 9px;
+        color: var(--dim);
+        letter-spacing: 0.4px;
+        padding: 0 1px;
+      }
+
       /* ── DEPLOYABLE SUMMARY ── */
       .dep-summary {
         display: flex;
@@ -1438,14 +1533,14 @@
   <body>
     <nav class="tabs" id="tabs">
       <button class="active" data-tab="portfolio">Portfolio</button>
-      <button data-tab="stp">STP</button>
       <button data-tab="calendar">Schedule</button>
       <button data-tab="summary">Summary</button>
       <button data-tab="networth">Net Worth</button>
+      <button data-tab="forecast">Forecast</button>
       <div class="nav-actions">
-        <span class="dot" id="saveDot"></span>
-        <span id="saveTxt">Auto-saved</span>
-        <button class="edit-toggle" id="editToggleBtn" aria-pressed="false">Edit</button>
+        <span class="dot" id="saveDot" style="display:none"></span>
+        <span id="saveTxt" style="display:none">Auto-saved</span>
+        <button class="edit-toggle" id="editToggleBtn" aria-pressed="false">EDIT</button>
       </div>
     </nav>
 
@@ -1456,7 +1551,7 @@
     </div>
 
     <div class="edit-banner" id="editBanner" role="status" aria-live="polite">
-      ✎ Edit mode &nbsp;·&nbsp; tap <strong>Done</strong> to save &nbsp;·&nbsp; <kbd>Esc</kbd> to cancel
+      ✎ Edit mode &nbsp;·&nbsp; tap <strong>SAVE</strong> to save &nbsp;·&nbsp; <kbd>Esc</kbd> to cancel
     </div>
 
     <div class="app">
@@ -1500,22 +1595,24 @@
         </div>
       </section>
 
-      <!-- ═══════════════ STP ═══════════════ -->
-      <section class="tab-section" id="tab-stp">
+      <!-- ═══════════════ CALENDAR / SCHEDULE ═══════════════ -->
+      <section class="tab-section" id="tab-calendar">
         <div class="pg-head">
-          <h1>STP <span class="accent">Planner</span></h1>
-          <p>
-            Systematic Transfer Plan: deploy liquid funds into equity over time.
-            The monthly amount splits by SIP percentage.
-          </p>
+          <h1>Deployment <span class="accent">Schedule</span></h1>
+          <p>Configure your STP and view the deployment calendar.</p>
+          <p
+            id="calStatus"
+            class="foot"
+            style="margin-top: 10px; color: var(--txt)"
+          ></p>
         </div>
 
-        <div class="stp-layout">
+        <div class="stp-layout" style="margin-bottom: 14px">
           <div class="card" style="align-self: start">
             <div class="field">
               <label class="flabel" for="stpOverride">STP Amount (total to deploy)</label>
               <div class="ibox">
-                <span class="pfx">₹</span>
+                <span class="pfx">&#8377;</span>
                 <input
                   class="num amb"
                   id="stpOverride"
@@ -1579,42 +1676,6 @@
             <div class="stp-hint">
               Split proportions mirror your SIP allocation. If no SIPs are set,
               the STP splits equally across all equity funds.
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ═══════════════ CALENDAR ═══════════════ -->
-      <section class="tab-section" id="tab-calendar">
-        <div class="pg-head">
-          <h1>Deployment <span class="accent">Calendar</span></h1>
-          <p>
-            All STP transfers and SIP investments scheduled for the coming
-            month.
-          </p>
-          <p
-            id="calStatus"
-            class="foot"
-            style="margin-top: 10px; color: var(--txt)"
-          ></p>
-        </div>
-
-        <div class="card" style="margin-bottom: 14px">
-          <div class="grid2" style="gap: 10px; flex-wrap: wrap">
-            <div class="field" style="flex: 1; min-width: 120px">
-              <label class="flabel" for="calStpDate">STP Transfer Date</label>
-              <input class="num no-pfx" id="calStpDate" type="number" min="1" max="28" inputmode="numeric" placeholder="15" />
-            </div>
-            <div class="field" style="flex: 1; min-width: 120px">
-              <label class="flabel" for="calStpDuration">Duration (months)</label>
-              <input class="num no-pfx" id="calStpDuration" type="number" min="1" inputmode="numeric" placeholder="12" />
-            </div>
-            <div class="field" style="flex: 1; min-width: 120px">
-              <label class="flabel" for="calStpOverride">Override Amount</label>
-              <div class="ibox">
-                <span class="pfx">&#8377;</span>
-                <input class="num amb" id="calStpOverride" type="number" min="0" inputmode="numeric" placeholder="auto" />
-              </div>
             </div>
           </div>
         </div>
@@ -1827,6 +1888,67 @@
           actual average monthly growth rate.
         </p>
       </section>
+
+      <!-- ═══════════════ FORECAST ═══════════════ -->
+      <section class="tab-section" id="tab-forecast">
+        <div class="pg-head">
+          <h1>Net Worth <span class="accent">Forecast</span></h1>
+          <p>30-year projection based on your starting values and investment growth rate.</p>
+        </div>
+
+        <div class="fc-inputs">
+          <div class="card">
+            <div class="sec-head" style="margin-bottom: 14px">Starting Values</div>
+            <div class="grid2">
+              <div class="field">
+                <label class="flabel" for="fcBank">Bank Balance</label>
+                <div class="ibox"><span class="pfx">&#8377;</span>
+                  <input class="num" id="fcBank" type="number" min="0" placeholder="0" inputmode="numeric" />
+                </div>
+              </div>
+              <div class="field">
+                <label class="flabel" for="fcInvest">Investments</label>
+                <div class="ibox"><span class="pfx">&#8377;</span>
+                  <input class="num" id="fcInvest" type="number" min="0" placeholder="0" inputmode="numeric" />
+                </div>
+              </div>
+            </div>
+            <div class="grid2" style="margin-top: 12px">
+              <div class="field">
+                <label class="flabel" for="fcMonthly">Monthly Investment</label>
+                <div class="ibox"><span class="pfx">&#8377;</span>
+                  <input class="num" id="fcMonthly" type="number" min="0" placeholder="0" inputmode="numeric" />
+                </div>
+              </div>
+              <div class="field">
+                <label class="flabel" for="fcRate">Annual return (%)</label>
+                <div class="ibox">
+                  <input class="num no-pfx" id="fcRate" type="number" min="0" max="100" step="0.5" placeholder="12" inputmode="decimal" style="padding-right: 28px;" />
+                  <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:13px;pointer-events:none;">%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="fc-display" id="fcDisplay">
+          <div class="fc-time-badge" id="fcTimeBadge">Now</div>
+          <div class="fc-big" id="fcBig">&#8377;0</div>
+          <div class="fc-delta" id="fcDelta">Enter values above to begin</div>
+          <div class="fc-breakdown" id="fcBreakdown"></div>
+        </div>
+
+        <div class="fc-chart-wrap">
+          <svg id="fcChart" class="fc-chart" viewBox="0 0 600 110" preserveAspectRatio="none"></svg>
+        </div>
+
+        <div class="fc-slider-wrap">
+          <input type="range" id="fcSlider" min="0" max="60" value="0" step="1" class="fc-slider" />
+          <div class="fc-ticks">
+            <span>Now</span><span>5y</span><span>10y</span><span>15y</span><span>20y</span><span>25y</span><span>30y</span>
+          </div>
+        </div>
+      </section>
     </div>
     <!-- /app -->
 
@@ -1935,6 +2057,7 @@
                 ...Object.fromEntries(NW_FIELDS.map((f) => [f.id, 0])),
                 snapshots: {},
               },
+              forecast: { bankBalance: 0, investments: 0, monthlyInvest: 0, annualRate: 12 },
               _meta: { v: 0, savedAt: null, syncedAt: null },
             };
           }
@@ -1962,6 +2085,7 @@
                   ),
                   snapshots: { ...(s.networth?.snapshots || {}) },
                 },
+                forecast: { ...def.forecast, ...(s.forecast || {}) },
                 _meta: { ...def._meta, ...(s._meta || {}) },
               };
             } catch {
@@ -1976,7 +2100,7 @@
             editMode = on;
             document.body.classList.toggle("edit-mode", on);
             const btn = el("editToggleBtn");
-            btn.textContent = on ? "Done" : "Edit";
+            btn.textContent = on ? "SAVE" : "EDIT";
             btn.classList.toggle("done", on);
             btn.setAttribute("aria-pressed", on ? "true" : "false");
             render(); // rebuild calendar HTML (inputs vs text for paid events)
@@ -2082,6 +2206,7 @@
                 ),
                 snapshots: { ...(raw.networth?.snapshots || {}) },
               },
+              forecast: { ...def.forecast, ...(raw.forecast || {}) },
               _meta: {
                 ...def._meta,
                 ...(raw._meta || {}),
@@ -2234,12 +2359,6 @@
             if (stpED) stpED.value = state.stp.endDate || "";
             if (stpDur) stpDur.value = computeStpDuration();
             if (stpDt) stpDt.value = state.stp.date || "";
-            const calOv = el("calStpOverride");
-            const calDur = el("calStpDuration");
-            const calDt = el("calStpDate");
-            if (calOv) calOv.value = state.stp.override || "";
-            if (calDur) calDur.value = computeStpDuration();
-            if (calDt) calDt.value = state.stp.date || "";
             NW_FIELDS.forEach((f) => {
               const inp = el("nw-" + f.id);
               if (inp) inp.value = state.networth[f.id] || "";
@@ -2532,7 +2651,6 @@
           /* STP controls */
           el("stpOverride").addEventListener("input", (e) => {
             state.stp.override = num(e.target.value);
-            el("calStpOverride").value = e.target.value;
             render();
           });
           el("stpStartDate").addEventListener("input", (e) => {
@@ -2540,7 +2658,6 @@
             const d = computeStpDuration();
             state.stp.duration = d;
             el("stpDuration").value = d;
-            el("calStpDuration").value = d;
             render();
           });
           el("stpEndDate").addEventListener("input", (e) => {
@@ -2548,34 +2665,14 @@
             const d = computeStpDuration();
             state.stp.duration = d;
             el("stpDuration").value = d;
-            el("calStpDuration").value = d;
             render();
           });
           el("stpDuration").addEventListener("input", (e) => {
             state.stp.duration = num(e.target.value);
-            el("calStpDuration").value = e.target.value;
             render();
           });
           el("stpDate").addEventListener("input", (e) => {
             state.stp.date = num(e.target.value);
-            el("calStpDate").value = e.target.value;
-            render();
-          });
-
-          /* Calendar-tab mirrors of STP fields */
-          el("calStpOverride").addEventListener("input", (e) => {
-            state.stp.override = num(e.target.value);
-            el("stpOverride").value = e.target.value;
-            render();
-          });
-          el("calStpDuration").addEventListener("input", (e) => {
-            state.stp.duration = num(e.target.value);
-            el("stpDuration").value = e.target.value;
-            render();
-          });
-          el("calStpDate").addEventListener("input", (e) => {
-            state.stp.date = num(e.target.value);
-            el("stpDate").value = e.target.value;
             render();
           });
 
@@ -2585,9 +2682,6 @@
           el("stpEndDate").value = state.stp.endDate || "";
           el("stpDuration").value = computeStpDuration();
           el("stpDate").value = state.stp.date || "";
-          if (state.stp.override) el("calStpOverride").value = state.stp.override;
-          el("calStpDuration").value = computeStpDuration();
-          el("calStpDate").value = state.stp.date || "";
 
           /* Tabs */
           el("tabs")
@@ -2851,10 +2945,11 @@
               el("sumStpOverview").innerHTML = stpOv;
             } else {
               el("sumStpOverview").textContent =
-                "STP not configured. Set it up in the STP tab.";
+                "STP not configured. Set it up in the Schedule tab.";
             }
 
             renderNetWorth();
+            renderForecast();
             renderUpcoming(stpAmt, weights);
             renderCalendar(stpAmt, weights);
           }
@@ -2998,10 +3093,6 @@
             const stpDone = !hasStpNow || todayDate > stpDate;
             const curMonthDone =
               (sipFunds.length > 0 || hasStpNow) && sipsDone && stpDone;
-
-            const calendarTab = document.querySelector('[data-tab="calendar"]');
-            if (calendarTab)
-              calendarTab.textContent = "Schedule";
 
             el("calStatus").textContent = curMonthDone
               ? "This month's investments are complete. Showing upcoming schedule."
@@ -3256,6 +3347,12 @@
             el("stpOverride").value = "";
             el("stpDuration").value = "";
             el("stpDate").value = "";
+            el("stpStartDate").value = "";
+            el("stpEndDate").value = "";
+            el("fcBank").value = "";
+            el("fcInvest").value = "";
+            el("fcMonthly").value = "";
+            el("fcRate").value = "12";
             NW_FIELDS.forEach((f) => {
               const i = el("nw-" + f.id);
               if (i) i.value = "";
@@ -3506,6 +3603,145 @@
           }
 
           /* ════════════════════════════════════════════
+             FORECAST
+          ════════════════════════════════════════════ */
+          function fcProjected(bank, invest, monthly, rate, T) {
+            // FV of lump sum + FV of annuity (monthly contributions)
+            const lump  = bank + invest * Math.pow(1 + rate / 100, T);
+            if (monthly <= 0 || T <= 0) return lump;
+            const months    = T * 12;
+            const monthRate = rate / 100 / 12;
+            const fvAnnuity = monthRate > 0
+              ? monthly * (Math.pow(1 + monthRate, months) - 1) / monthRate
+              : monthly * months;
+            return lump + fvAnnuity;
+          }
+
+          function renderForecast() {
+            const { bankBalance, investments, monthlyInvest, annualRate } = state.forecast || {};
+            const bank    = bankBalance    || 0;
+            const invest  = investments   || 0;
+            const monthly = monthlyInvest || 0;
+            const rate    = annualRate    != null ? annualRate : 12;
+
+            const sliderEl = el("fcSlider");
+            const step = sliderEl ? parseInt(sliderEl.value, 10) : 0;
+            const T = step * 0.5; // years
+
+            const current   = bank + invest;
+            const projected = fcProjected(bank, invest, monthly, rate, T);
+            const gain      = projected - current;
+            const gainPct   = current > 0 ? (gain / current) * 100 : 0;
+
+            // Time label
+            let timeLabel;
+            if (step === 0)               timeLabel = "Now";
+            else if (T < 1)               timeLabel = "6 months";
+            else if (T === Math.floor(T)) timeLabel = T + " year" + (T !== 1 ? "s" : "");
+            else                          timeLabel = T + " years";
+
+            const timeBadge = el("fcTimeBadge");
+            const bigEl     = el("fcBig");
+            const deltaEl   = el("fcDelta");
+            const breakEl   = el("fcBreakdown");
+            if (!timeBadge) return;
+
+            timeBadge.textContent = timeLabel;
+            bigEl.textContent = fmt(Math.round(projected));
+
+            if (step === 0 || current === 0) {
+              deltaEl.textContent = current === 0 ? "Enter values above to begin" : "Starting value";
+              deltaEl.style.color = "var(--dim)";
+            } else {
+              const sign = gain >= 0 ? "+" : "";
+              deltaEl.textContent = sign + fmt(Math.round(gain)) + "  ·  " + sign + gainPct.toFixed(1) + "%";
+              deltaEl.style.color = gain >= 0 ? "var(--mint)" : "var(--coral)";
+            }
+
+            // Breakdown: lump invest growth + monthly contributions FV
+            const investAtT = invest * Math.pow(1 + rate / 100, T);
+            const months    = T * 12;
+            const monthRate = rate / 100 / 12;
+            const sipFV = monthly > 0 && T > 0
+              ? (monthRate > 0 ? monthly * (Math.pow(1 + monthRate, months) - 1) / monthRate : monthly * months)
+              : 0;
+            let breakParts = "Bank " + fmt(bank) + "  +  Invest " + fmt(Math.round(investAtT));
+            if (monthly > 0 && step > 0) breakParts += "  +  Monthly " + fmt(Math.round(sipFV));
+            breakEl.textContent = step === 0
+              ? "Bank " + fmt(bank) + "  +  Invest " + fmt(invest) + (monthly > 0 ? "  +  Monthly " + fmt(monthly) + "/mo" : "")
+              : breakParts;
+
+            drawForecastChart(bank, invest, monthly, rate, step);
+            updateFcSliderFill(step);
+
+            // Sync forecast input values (don't overwrite focused input)
+            const fcBankEl    = el("fcBank");
+            const fcInvestEl  = el("fcInvest");
+            const fcMonthlyEl = el("fcMonthly");
+            const fcRateEl    = el("fcRate");
+            if (fcBankEl    && document.activeElement !== fcBankEl)    fcBankEl.value    = bank    || "";
+            if (fcInvestEl  && document.activeElement !== fcInvestEl)  fcInvestEl.value  = invest  || "";
+            if (fcMonthlyEl && document.activeElement !== fcMonthlyEl) fcMonthlyEl.value = monthly || "";
+            if (fcRateEl    && document.activeElement !== fcRateEl)    fcRateEl.value    = rate    != null ? rate : "";
+          }
+
+          function drawForecastChart(bank, invest, monthly, rate, currentStep) {
+            const svg = el("fcChart");
+            if (!svg) return;
+            const W = 600, H = 110, PAD_T = 12, PAD_B = 18;
+
+            const pts = [];
+            for (let i = 0; i <= 60; i++) {
+              pts.push(fcProjected(bank, invest, monthly, rate, i * 0.5));
+            }
+
+            const minV = pts[0];
+            const maxV = pts[60];
+            const range = maxV - minV || 1;
+
+            const toX = (i) => (i / 60) * W;
+            const toY = (v) => H - PAD_B - ((v - minV) / range) * (H - PAD_T - PAD_B);
+
+            const lineStr  = pts.map((v, i) => `${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(" ");
+            const areaPath = `M ${toX(0).toFixed(1)},${H} ` +
+              pts.map((v, i) => `L ${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(" ") +
+              ` L ${W},${H} Z`;
+
+            const cx = toX(currentStep);
+            const cy = toY(pts[currentStep]);
+
+            // Year tick labels inside chart
+            const tickLabels = [0,10,20,30,40,50,60].map(i => {
+              const x = toX(i);
+              const yr = i / 2;
+              const lbl = yr === 0 ? "Now" : yr + "y";
+              return `<text x="${x.toFixed(1)}" y="${H - 3}" text-anchor="${i === 0 ? "start" : i === 60 ? "end" : "middle"}" font-size="8" fill="var(--dim)" font-family="JetBrains Mono, monospace">${lbl}</text>`;
+            }).join("");
+
+            svg.innerHTML = `
+              <defs>
+                <linearGradient id="fcAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="var(--mint)" stop-opacity="0.3"/>
+                  <stop offset="100%" stop-color="var(--mint)" stop-opacity="0.02"/>
+                </linearGradient>
+              </defs>
+              <path d="${areaPath}" fill="url(#fcAreaGrad)"/>
+              <polyline points="${lineStr}" fill="none" stroke="var(--mint)" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+              <line x1="${cx.toFixed(1)}" y1="${PAD_T}" x2="${cx.toFixed(1)}" y2="${H - PAD_B}" stroke="var(--mint)" stroke-width="1" stroke-dasharray="3,3" opacity="0.6"/>
+              <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="4.5" fill="var(--mint)" filter="drop-shadow(0 0 4px var(--mint))"/>
+              ${tickLabels}
+            `;
+          }
+
+          function updateFcSliderFill(step) {
+            const slider = el("fcSlider");
+            if (!slider) return;
+            const pct = (step / 60) * 100;
+            slider.style.background =
+              `linear-gradient(to right, var(--mint) 0%, var(--mint) ${pct}%, var(--line) ${pct}%, var(--line) 100%)`;
+          }
+
+          /* ════════════════════════════════════════════
              STP AUTO-APPLY
              When today > stpDate and this month hasn't
              been applied yet, transfer the funds.
@@ -3582,6 +3818,25 @@
           /* ════════════════════════════════════════════
              INIT
           ════════════════════════════════════════════ */
+          /* Forecast inputs */
+          el("fcBank").addEventListener("input", (e) => {
+            state.forecast.bankBalance = num(e.target.value);
+            renderForecast();
+          });
+          el("fcInvest").addEventListener("input", (e) => {
+            state.forecast.investments = num(e.target.value);
+            renderForecast();
+          });
+          el("fcMonthly").addEventListener("input", (e) => {
+            state.forecast.monthlyInvest = num(e.target.value);
+            renderForecast();
+          });
+          el("fcRate").addEventListener("input", (e) => {
+            state.forecast.annualRate = parseFloat(e.target.value) || 0;
+            renderForecast();
+          });
+          el("fcSlider").addEventListener("input", () => renderForecast());
+
           initFirebase();          // must run before anything reads fbEnabled
           buildNwGrid();
           el("nwSnapshotBtn").addEventListener("click", takeSnapshot);
