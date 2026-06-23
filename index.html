@@ -3606,15 +3606,17 @@
              FORECAST
           ════════════════════════════════════════════ */
           function fcProjected(bank, invest, monthly, rate, T) {
-            // FV of lump sum + FV of annuity (monthly contributions)
-            const lump  = bank + invest * Math.pow(1 + rate / 100, T);
-            if (monthly <= 0 || T <= 0) return lump;
-            const months    = T * 12;
+            // Monthly compounding: each month balance × (1 + rate/12) + monthly_invest
+            // T is in years; slider steps are 6-month increments so months is always integer
+            const months    = Math.round(T * 12);
             const monthRate = rate / 100 / 12;
-            const fvAnnuity = monthRate > 0
-              ? monthly * (Math.pow(1 + monthRate, months) - 1) / monthRate
-              : monthly * months;
-            return lump + fvAnnuity;
+            const fvLump    = invest * Math.pow(1 + monthRate, months);
+            const fvAnnuity = monthly <= 0 || months === 0
+              ? 0
+              : monthRate > 0
+                ? monthly * (Math.pow(1 + monthRate, months) - 1) / monthRate
+                : monthly * months;
+            return bank + fvLump + fvAnnuity;
           }
 
           function renderForecast() {
