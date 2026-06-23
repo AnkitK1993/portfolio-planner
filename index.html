@@ -2067,8 +2067,8 @@
           function defaultState() {
             return {
               liquid: {
-                liq1: { name: "Liquid Fund 1", value: 0, reserve: 0, target: 0 },
-                liq2: { name: "Liquid Fund 2", value: 0, reserve: 0, target: 0 },
+                liq1: { name: "Liquid Fund 1", paid: 0, value: 0, reserve: 0, target: 0 },
+                liq2: { name: "Liquid Fund 2", paid: 0, value: 0, reserve: 0, target: 0 },
               },
               equity: {
                 eq1: {
@@ -2379,6 +2379,7 @@
             LIQ_FUNDS.forEach((f) => {
               const s = state.liquid[f.id];
               el("lname-" + f.id).value = s.name || "";
+              el("lpaid-" + f.id).value = s.paid || "";
               el("lval-" + f.id).value = s.value || "";
               el("lres-" + f.id).value = s.reserve || "";
               el("ltgt-" + f.id).value = s.target || "";
@@ -2567,9 +2568,24 @@
               </div>
               <div class="grid2">
                 <div class="field">
-                  <label class="flabel" for="lval-${f.id}">Current value</label>
+                  <label class="flabel" for="lpaid-${f.id}">Invested (paid)</label>
+                  <div class="ibox"><span class="pfx">&#8377;</span>
+                    <input class="num liq" id="lpaid-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.paid || ""}" />
+                  </div>
+                </div>
+                <div class="field">
+                  <label class="flabel" for="lval-${f.id}">After expense</label>
                   <div class="ibox"><span class="pfx">&#8377;</span>
                     <input class="num liq" id="lval-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.value || ""}" />
+                  </div>
+                </div>
+              </div>
+              <div class="ratechip">Expense rate: <b id="lrate-${f.id}">—</b></div>
+              <div class="grid2">
+                <div class="field">
+                  <label class="flabel" for="ltgt-${f.id}">Target total</label>
+                  <div class="ibox"><span class="pfx">&#8377;</span>
+                    <input class="num liq" id="ltgt-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.target || ""}" />
                   </div>
                 </div>
                 <div class="field">
@@ -2577,12 +2593,6 @@
                   <div class="ibox"><span class="pfx">&#8377;</span>
                     <input class="num liq" id="lres-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.reserve || ""}" />
                   </div>
-                </div>
-              </div>
-              <div class="field">
-                <label class="flabel" for="ltgt-${f.id}">Target total</label>
-                <div class="ibox"><span class="pfx">&#8377;</span>
-                  <input class="num liq" id="ltgt-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.target || ""}" />
                 </div>
               </div>
               <div class="chip liq"><span>Deployable</span><b id="ldep-${f.id}">&#8377;0</b></div>
@@ -2654,6 +2664,10 @@
           LIQ_FUNDS.forEach((f) => {
             el("lname-" + f.id).addEventListener("input", (e) => {
               state.liquid[f.id].name = e.target.value;
+              render();
+            });
+            el("lpaid-" + f.id).addEventListener("input", (e) => {
+              state.liquid[f.id].paid = num(e.target.value);
               render();
             });
             el("lval-" + f.id).addEventListener("input", (e) => {
@@ -2793,6 +2807,7 @@
               totalLiqTgt = 0,
               totalLiqInv = 0;
             LIQ_FUNDS.forEach((f) => {
+              const paid = state.liquid[f.id].paid || 0;
               const val = state.liquid[f.id].value || 0;
               const res = Math.min(state.liquid[f.id].reserve || 0, val);
               const dep = Math.max(0, val - res);
@@ -2804,6 +2819,12 @@
               totalDep += dep;
               totalLiqTgt += tgt;
               totalLiqInv += required;
+
+              const liqRate = paid > 0 && val <= paid ? (paid - val) / paid : 0;
+              el("lrate-" + f.id).textContent =
+                paid > 0
+                  ? (liqRate * 100).toFixed(5).replace(/0+$/, "").replace(/\.$/, "") + "%"
+                  : "—";
 
               el("ldep-" + f.id).textContent = fmt(dep);
               el("linvlbl-" + f.id).textContent =
@@ -3487,6 +3508,7 @@
             state = defaultState();
             LIQ_FUNDS.forEach((f) => {
               el("lname-" + f.id).value = f.defaultName;
+              el("lpaid-" + f.id).value = "";
               el("lval-" + f.id).value = "";
               el("lres-" + f.id).value = "";
             });
