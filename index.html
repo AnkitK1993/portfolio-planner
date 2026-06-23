@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0c0f0e" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>MF Portfolio Planner</title>
     <link rel="icon" id="faviconEl" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230c0f0e'/%3E%3Cpolyline points='4,24 10,15 15,19 21,9 28,13' fill='none' stroke='%234ade9c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='4' cy='24' r='1.8' fill='%234ade9c'/%3E%3Ccircle cx='28' cy='13' r='1.8' fill='%234ade9c'/%3E%3C/svg%3E" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -38,6 +41,11 @@
         color: var(--txt);
         font-family: "JetBrains Mono", monospace;
         min-height: 100vh;
+        min-height: 100dvh;
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+        overscroll-behavior-y: contain;
+        color-scheme: dark;
       }
       input[type="number"]::-webkit-inner-spin-button,
       input[type="number"]::-webkit-outer-spin-button {
@@ -1010,7 +1018,7 @@
           top: auto;
           border-bottom: none;
           border-top: 1px solid var(--line);
-          padding: 0;
+          padding: 0 0 env(safe-area-inset-bottom);
           justify-content: flex-start;
         }
         .nav-actions {
@@ -1019,7 +1027,8 @@
           margin-left: auto;
         }
         .tabs button {
-          padding: 11px 10px;
+          padding: 12px 10px;
+          min-height: 44px;
           font-size: 9px;
           flex-shrink: 0;
           border-bottom: none;
@@ -1032,7 +1041,11 @@
           border-bottom-color: transparent;
         }
         .app {
-          padding-bottom: 80px;
+          padding-bottom: calc(80px + env(safe-area-inset-bottom));
+        }
+        /* Prevent iOS zoom on input focus (requires font-size ≥ 16px) */
+        .num, .fundname, .cal-paid-input {
+          font-size: 16px;
         }
       }
 
@@ -1320,7 +1333,7 @@
         letter-spacing: 0;
       }
       @media (max-width: 600px) {
-        .edit-banner { top: 0; }
+        .edit-banner { top: env(safe-area-inset-top); }
       }
 
       /* ════ SMOOTH EDIT TRANSITIONS ════ */
