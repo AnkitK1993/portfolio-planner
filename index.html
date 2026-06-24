@@ -1702,6 +1702,32 @@
         text-transform: uppercase;
         letter-spacing: 1px;
         flex: 1;
+        min-width: 0;
+      }
+      /* When coll-title is an input, strip all input chrome in view mode */
+      input.coll-title {
+        background: transparent;
+        border: none;
+        outline: none;
+        color: inherit;
+        font-family: inherit;
+        padding: 0;
+        pointer-events: none;
+        cursor: pointer;
+        width: 100%;
+      }
+      body.edit-mode input.coll-title {
+        pointer-events: auto;
+        cursor: text;
+        border-bottom: 1px solid var(--line);
+        padding: 1px 6px;
+        border-radius: 3px;
+        background: rgba(255, 255, 255, 0.03);
+        transition: border-color 0.15s;
+      }
+      body.edit-mode input.coll-title:focus {
+        border-bottom-color: var(--mint);
+        outline: none;
       }
       .coll-meta {
         font-family: "Fraunces", serif;
@@ -1802,7 +1828,7 @@
         <!-- Collapsible: Liquid Fund 1 -->
         <div class="coll-section">
           <button class="coll-head" id="coll-head-liq1" aria-expanded="false">
-            <span class="coll-title" id="coll-name-liq1">Liquid Fund 1</span>
+            <input class="coll-title coll-name-input" id="coll-name-liq1" value="Liquid Fund 1" readonly />
             <span class="coll-meta" id="coll-val-liq1"></span>
             <span class="coll-chevron">▾</span>
           </button>
@@ -1813,7 +1839,7 @@
         <!-- Collapsible: Liquid Fund 2 -->
         <div class="coll-section">
           <button class="coll-head" id="coll-head-liq2" aria-expanded="false">
-            <span class="coll-title" id="coll-name-liq2">Liquid Fund 2</span>
+            <input class="coll-title coll-name-input" id="coll-name-liq2" value="Liquid Fund 2" readonly />
             <span class="coll-meta" id="coll-val-liq2"></span>
             <span class="coll-chevron">▾</span>
           </button>
@@ -1830,7 +1856,7 @@
         <!-- Collapsible: Equity Fund 1 -->
         <div class="coll-section">
           <button class="coll-head" id="coll-head-eq1" aria-expanded="false">
-            <span class="coll-title" id="coll-name-eq1">Nifty 50 Index Fund</span>
+            <input class="coll-title coll-name-input" id="coll-name-eq1" value="Nifty 50 Index Fund" readonly />
             <span class="coll-meta" id="coll-val-eq1"></span>
             <span class="coll-chevron">▾</span>
           </button>
@@ -1841,7 +1867,7 @@
         <!-- Collapsible: Equity Fund 2 -->
         <div class="coll-section">
           <button class="coll-head" id="coll-head-eq2" aria-expanded="false">
-            <span class="coll-title" id="coll-name-eq2">Flexi Cap Fund</span>
+            <input class="coll-title coll-name-input" id="coll-name-eq2" value="Flexi Cap Fund" readonly />
             <span class="coll-meta" id="coll-val-eq2"></span>
             <span class="coll-chevron">▾</span>
           </button>
@@ -1852,7 +1878,7 @@
         <!-- Collapsible: Equity Fund 3 -->
         <div class="coll-section">
           <button class="coll-head" id="coll-head-eq3" aria-expanded="false">
-            <span class="coll-title" id="coll-name-eq3">Mid Cap Fund</span>
+            <input class="coll-title coll-name-input" id="coll-name-eq3" value="Mid Cap Fund" readonly />
             <span class="coll-meta" id="coll-val-eq3"></span>
             <span class="coll-chevron">▾</span>
           </button>
@@ -2399,6 +2425,7 @@
             btn.textContent = on ? "SAVE" : "EDIT";
             btn.classList.toggle("done", on);
             btn.setAttribute("aria-pressed", on ? "true" : "false");
+            updateCollNameReadonly();
             render(); // rebuild calendar HTML (inputs vs text for paid events)
           }
 
@@ -3083,7 +3110,7 @@
             LIQ_FUNDS.forEach(f => {
               const nameEl = el("coll-name-" + f.id);
               const valEl = el("coll-val-" + f.id);
-              if (nameEl) nameEl.textContent = state.liquid[f.id].name || f.defaultName;
+              if (nameEl && document.activeElement !== nameEl) nameEl.value = state.liquid[f.id].name || f.defaultName;
               if (valEl) valEl.textContent = (state.liquid[f.id].value || 0) > 0 ? fmt(state.liquid[f.id].value) : "";
             });
 
@@ -3144,7 +3171,7 @@
               const s = state.equity[f.id];
               const nameEl = el("coll-name-" + f.id);
               const valEl = el("coll-val-" + f.id);
-              if (nameEl) nameEl.textContent = s.name || f.defaultName;
+              if (nameEl && document.activeElement !== nameEl) nameEl.value = s.name || f.defaultName;
               if (valEl) valEl.textContent = (s.shown || 0) > 0 ? fmt(s.shown) : "";
             });
 
@@ -4166,6 +4193,38 @@
             const head = el("coll-head-" + id);
             if (head) head.addEventListener("click", () => toggleColl(id));
           });
+
+          /* Collapsible header name editing */
+          LIQ_FUNDS.forEach(f => {
+            const inp = el("coll-name-" + f.id);
+            if (!inp) return;
+            inp.addEventListener("mousedown", e => { if (editMode) e.stopPropagation(); });
+            inp.addEventListener("click",     e => { if (editMode) e.stopPropagation(); });
+            inp.addEventListener("input", e => {
+              state.liquid[f.id].name = e.target.value;
+              const inner = el("lname-" + f.id);
+              if (inner) inner.value = e.target.value;
+            });
+          });
+          EQ_FUNDS.forEach(f => {
+            const inp = el("coll-name-" + f.id);
+            if (!inp) return;
+            inp.addEventListener("mousedown", e => { if (editMode) e.stopPropagation(); });
+            inp.addEventListener("click",     e => { if (editMode) e.stopPropagation(); });
+            inp.addEventListener("input", e => {
+              state.equity[f.id].name = e.target.value;
+              const inner = el("ename-" + f.id);
+              if (inner) inner.value = e.target.value;
+            });
+          });
+
+          /* Toggle readonly on coll-name inputs with edit mode */
+          function updateCollNameReadonly() {
+            [...LIQ_FUNDS, ...EQ_FUNDS].forEach(f => {
+              const inp = el("coll-name-" + f.id);
+              if (inp) inp.readOnly = !editMode;
+            });
+          }
 
           initFirebase();          // must run before anything reads fbEnabled
           buildNwGrid();
