@@ -1726,6 +1726,29 @@
       }
       .coll-body.open { max-height: 2400px; }
       .coll-body-inner { padding: 4px 14px 16px; }
+
+      /* ══════════════════════════════════════
+         FUND DIVISION ROWS
+      ══════════════════════════════════════ */
+      .fund-division {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 4px 6px;
+        margin-top: 6px;
+      }
+      .fund-div-title {
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: var(--dim);
+      }
+      .fund-div-total {
+        font-family: "Fraunces", serif;
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--txt);
+      }
     </style>
   </head>
   <body>
@@ -1758,11 +1781,7 @@
 
         <!-- Hero banner -->
         <div class="portfolio-hero">
-          <div class="portfolio-hero-eyebrow">MF · Portfolio</div>
           <h1>Portfolio <span class="accent">Planner</span></h1>
-          <p class="portfolio-hero-sub">
-            Track your funds, targets and monthly SIP investments.
-          </p>
         </div>
 
         <!-- Hidden dep-summary anchors kept for JS compatibility -->
@@ -1775,31 +1794,70 @@
           <span id="stpDueNote"></span>
         </div>
 
-        <!-- Collapsible: Liquid Funds -->
+        <!-- Division row: Liquid Funds -->
+        <div class="fund-division">
+          <span class="fund-div-title">Liquid Funds</span>
+          <span class="fund-div-total" id="liqDivTotal">—</span>
+        </div>
+        <!-- Collapsible: Liquid Fund 1 -->
         <div class="coll-section">
-          <button class="coll-head" id="coll-head-liquid" aria-expanded="false">
-            <span class="coll-title">Liquid Funds</span>
-            <span class="coll-meta" id="coll-meta-liquid"></span>
+          <button class="coll-head" id="coll-head-liq1" aria-expanded="false">
+            <span class="coll-title" id="coll-name-liq1">Liquid Fund 1</span>
+            <span class="coll-meta" id="coll-val-liq1"></span>
             <span class="coll-chevron">▾</span>
           </button>
-          <div class="coll-body" id="coll-body-liquid">
-            <div class="coll-body-inner">
-              <div class="fund-grid" id="liqGrid"></div>
-            </div>
+          <div class="coll-body" id="coll-body-liq1">
+            <div class="coll-body-inner" id="liq-wrap-liq1"></div>
+          </div>
+        </div>
+        <!-- Collapsible: Liquid Fund 2 -->
+        <div class="coll-section">
+          <button class="coll-head" id="coll-head-liq2" aria-expanded="false">
+            <span class="coll-title" id="coll-name-liq2">Liquid Fund 2</span>
+            <span class="coll-meta" id="coll-val-liq2"></span>
+            <span class="coll-chevron">▾</span>
+          </button>
+          <div class="coll-body" id="coll-body-liq2">
+            <div class="coll-body-inner" id="liq-wrap-liq2"></div>
           </div>
         </div>
 
-        <!-- Collapsible: Equity Funds -->
+        <!-- Division row: Equity Funds -->
+        <div class="fund-division">
+          <span class="fund-div-title">Equity Funds</span>
+          <span class="fund-div-total" id="eqDivTotal">—</span>
+        </div>
+        <!-- Collapsible: Equity Fund 1 -->
         <div class="coll-section">
-          <button class="coll-head" id="coll-head-equity" aria-expanded="false">
-            <span class="coll-title">Equity Funds</span>
-            <span class="coll-meta" id="coll-meta-equity"></span>
+          <button class="coll-head" id="coll-head-eq1" aria-expanded="false">
+            <span class="coll-title" id="coll-name-eq1">Nifty 50 Index Fund</span>
+            <span class="coll-meta" id="coll-val-eq1"></span>
             <span class="coll-chevron">▾</span>
           </button>
-          <div class="coll-body" id="coll-body-equity">
-            <div class="coll-body-inner">
-              <div class="fund-grid" id="eqGrid"></div>
-            </div>
+          <div class="coll-body" id="coll-body-eq1">
+            <div class="coll-body-inner" id="eq-wrap-eq1"></div>
+          </div>
+        </div>
+        <!-- Collapsible: Equity Fund 2 -->
+        <div class="coll-section">
+          <button class="coll-head" id="coll-head-eq2" aria-expanded="false">
+            <span class="coll-title" id="coll-name-eq2">Flexi Cap Fund</span>
+            <span class="coll-meta" id="coll-val-eq2"></span>
+            <span class="coll-chevron">▾</span>
+          </button>
+          <div class="coll-body" id="coll-body-eq2">
+            <div class="coll-body-inner" id="eq-wrap-eq2"></div>
+          </div>
+        </div>
+        <!-- Collapsible: Equity Fund 3 -->
+        <div class="coll-section">
+          <button class="coll-head" id="coll-head-eq3" aria-expanded="false">
+            <span class="coll-title" id="coll-name-eq3">Mid Cap Fund</span>
+            <span class="coll-meta" id="coll-val-eq3"></span>
+            <span class="coll-chevron">▾</span>
+          </button>
+          <div class="coll-body" id="coll-body-eq3">
+            <div class="coll-body-inner" id="eq-wrap-eq3"></div>
           </div>
         </div>
 
@@ -2830,8 +2888,8 @@
           /* ════════════════════════════════════════════
              RENDER FUND GRIDS
           ════════════════════════════════════════════ */
-          el("liqGrid").innerHTML = LIQ_FUNDS.map(liqCardHTML).join("");
-          el("eqGrid").innerHTML = EQ_FUNDS.map(eqCardHTML).join("");
+          LIQ_FUNDS.forEach(f => { el("liq-wrap-" + f.id).innerHTML = liqCardHTML(f); });
+          EQ_FUNDS.forEach(f => { el("eq-wrap-" + f.id).innerHTML = eqCardHTML(f); });
 
           /* ════════════════════════════════════════════
              BIND INPUT EVENTS
@@ -3020,6 +3078,15 @@
               ? `Pay on ${state.stp.date}th`
               : "Set STP date";
 
+            /* — Liquid division row + per-fund collapsible headers — */
+            el("liqDivTotal").textContent = totalLiqVal > 0 ? fmt(totalLiqVal) : "—";
+            LIQ_FUNDS.forEach(f => {
+              const nameEl = el("coll-name-" + f.id);
+              const valEl = el("coll-val-" + f.id);
+              if (nameEl) nameEl.textContent = state.liquid[f.id].name || f.defaultName;
+              if (valEl) valEl.textContent = (state.liquid[f.id].value || 0) > 0 ? fmt(state.liquid[f.id].value) : "";
+            });
+
             /* — Equity funds — */
             let eqCur = 0,
               eqTgt = 0,
@@ -3069,6 +3136,16 @@
               const sip = state.equity[f.id].sipAmt || 0;
               const p = totalSip > 0 ? Math.round((sip / totalSip) * 100) : 0;
               el("esippct-" + f.id).textContent = p + "%";
+            });
+
+            /* — Equity division row + per-fund collapsible headers — */
+            el("eqDivTotal").textContent = eqCur > 0 ? fmt(eqCur) : "—";
+            EQ_FUNDS.forEach(f => {
+              const s = state.equity[f.id];
+              const nameEl = el("coll-name-" + f.id);
+              const valEl = el("coll-val-" + f.id);
+              if (nameEl) nameEl.textContent = s.name || f.defaultName;
+              if (valEl) valEl.textContent = (s.shown || 0) > 0 ? fmt(s.shown) : "";
             });
 
             /* — STP — */
@@ -4085,7 +4162,7 @@
             head.classList.toggle("open", opening);
             head.setAttribute("aria-expanded", String(opening));
           }
-          ["liquid", "equity", "upcoming"].forEach((id) => {
+          ["liq1", "liq2", "eq1", "eq2", "eq3", "upcoming"].forEach((id) => {
             const head = el("coll-head-" + id);
             if (head) head.addEventListener("click", () => toggleColl(id));
           });
@@ -4101,8 +4178,8 @@
 
           /* Show skeleton while Firebase loads on a fresh device (no local cache) */
           if (fbEnabled && !_hasLocalData) {
-            el("liqGrid").innerHTML = UI.skeleton(2);
-            el("eqGrid").innerHTML = UI.skeleton(3);
+            LIQ_FUNDS.forEach(f => { el("liq-wrap-" + f.id).innerHTML = UI.skeleton(1); });
+            EQ_FUNDS.forEach(f => { el("eq-wrap-" + f.id).innerHTML = UI.skeleton(1); });
           }
 
           /* Cache-first cloud sync + real-time listener for cross-device updates */
