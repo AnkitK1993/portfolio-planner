@@ -1860,15 +1860,52 @@
       .privacy-btn:hover { color: var(--txt); border-color: rgba(255,255,255,0.2); }
       .privacy-btn svg { width: 18px; height: 18px; display: block; }
 
+      /* hide text, show bullets */
       body.privacy-mode #tab-portfolio .fund-div-total,
-      body.privacy-mode #tab-portfolio .coll-meta,
-      body.privacy-mode #tab-portfolio .chip b,
+      body.privacy-mode #tab-portfolio .coll-meta { font-size: 0; }
+      body.privacy-mode #tab-portfolio .fund-div-total::after,
+      body.privacy-mode #tab-portfolio .coll-meta::after {
+        content: "• • • •";
+        font-family: "Space Mono", monospace;
+        font-size: 13px;
+        color: var(--txt);
+        opacity: 0.4;
+      }
+      body.privacy-mode #tab-portfolio .chip b { font-size: 0; }
+      body.privacy-mode #tab-portfolio .chip b::after {
+        content: "• • • •";
+        font-family: "Space Mono", monospace;
+        font-size: 16px;
+        color: inherit;
+        opacity: 0.5;
+      }
+      body.privacy-mode #tab-portfolio .upcoming-amt { font-size: 0; }
+      body.privacy-mode #tab-portfolio .upcoming-amt::after {
+        content: "• • • •";
+        font-family: "Space Mono", monospace;
+        font-size: 14px;
+        color: inherit;
+        opacity: 0.5;
+      }
+      /* inputs in view mode — transparent text, bullet overlay */
       body.privacy-mode:not(.edit-mode) #tab-portfolio .num {
-        filter: blur(8px);
-        user-select: none;
+        color: transparent;
+        -webkit-text-fill-color: transparent;
+      }
+      body.privacy-mode:not(.edit-mode) #tab-portfolio .pfx { opacity: 0; }
+      body.privacy-mode:not(.edit-mode) #tab-portfolio .ibox::after {
+        content: "• • • •";
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-family: "Space Mono", monospace;
+        font-size: 13px;
+        color: var(--txt);
+        opacity: 0.4;
         pointer-events: none;
       }
-      body.privacy-mode .privacy-btn { color: var(--mint); border-color: var(--mint); opacity: 0.8; }
+      body.privacy-mode .privacy-btn { color: var(--mint); border-color: rgba(0,245,160,0.4); }
     </style>
   </head>
   <body>
