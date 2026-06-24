@@ -2349,12 +2349,13 @@
           function defaultState() {
             return {
               liquid: {
-                liq1: { name: "Liquid Fund 1", paid: 0, value: 0, reserve: 0, target: 0 },
-                liq2: { name: "Liquid Fund 2", paid: 0, value: 0, reserve: 0, target: 0 },
+                liq1: { name: "Liquid Fund 1", label: "Liquid Fund 1", paid: 0, value: 0, reserve: 0, target: 0 },
+                liq2: { name: "Liquid Fund 2", label: "Liquid Fund 2", paid: 0, value: 0, reserve: 0, target: 0 },
               },
               equity: {
                 eq1: {
                   name: "Nifty 50 Index Fund",
+                  label: "Nifty 50 Index Fund",
                   paid: 0,
                   shown: 0,
                   target: 0,
@@ -2364,6 +2365,7 @@
                 },
                 eq2: {
                   name: "Flexi Cap Fund",
+                  label: "Flexi Cap Fund",
                   paid: 0,
                   shown: 0,
                   target: 0,
@@ -2373,6 +2375,7 @@
                 },
                 eq3: {
                   name: "Mid Cap Fund",
+                  label: "Mid Cap Fund",
                   paid: 0,
                   shown: 0,
                   target: 0,
@@ -2669,6 +2672,8 @@
               el("lval-" + f.id).value = s.value || "";
               el("lres-" + f.id).value = s.reserve || "";
               el("ltgt-" + f.id).value = s.target || "";
+              const hdr = el("coll-name-" + f.id);
+              if (hdr) hdr.value = s.label || f.defaultName;
             });
             EQ_FUNDS.forEach((f) => {
               const s = state.equity[f.id];
@@ -2678,6 +2683,8 @@
               el("etgt-" + f.id).value = s.target || "";
               el("esip-" + f.id).value = s.sipAmt || "";
               el("esipdate-" + f.id).value = s.sipDate || "";
+              const hdr = el("coll-name-" + f.id);
+              if (hdr) hdr.value = s.label || f.defaultName;
             });
             const stpOv = el("stpOverride");
             const stpDur = el("stpDuration");
@@ -2931,8 +2938,6 @@
           LIQ_FUNDS.forEach((f) => {
             el("lname-" + f.id).addEventListener("input", (e) => {
               state.liquid[f.id].name = e.target.value;
-              const hdr = el("coll-name-" + f.id);
-              if (hdr) hdr.value = e.target.value;
               render();
             });
             el("lpaid-" + f.id).addEventListener("input", (e) => {
@@ -2956,8 +2961,6 @@
           EQ_FUNDS.forEach((f) => {
             el("ename-" + f.id).addEventListener("input", (e) => {
               state.equity[f.id].name = e.target.value;
-              const hdr = el("coll-name-" + f.id);
-              if (hdr) hdr.value = e.target.value;
               render();
             });
             el("epaid-" + f.id).addEventListener("input", (e) => {
@@ -3121,7 +3124,7 @@
             LIQ_FUNDS.forEach(f => {
               const nameEl = el("coll-name-" + f.id);
               const valEl = el("coll-val-" + f.id);
-              if (nameEl && document.activeElement !== nameEl) nameEl.value = state.liquid[f.id].name || f.defaultName;
+              if (nameEl && document.activeElement !== nameEl) nameEl.value = state.liquid[f.id].label || f.defaultName;
               if (valEl) valEl.textContent = (state.liquid[f.id].value || 0) > 0 ? fmt(state.liquid[f.id].value) : "";
             });
 
@@ -3182,7 +3185,7 @@
               const s = state.equity[f.id];
               const nameEl = el("coll-name-" + f.id);
               const valEl = el("coll-val-" + f.id);
-              if (nameEl && document.activeElement !== nameEl) nameEl.value = s.name || f.defaultName;
+              if (nameEl && document.activeElement !== nameEl) nameEl.value = s.label || f.defaultName;
               if (valEl) valEl.textContent = (s.shown || 0) > 0 ? fmt(s.shown) : "";
             });
 
@@ -3688,10 +3691,14 @@
               el("lpaid-" + f.id).value = "";
               el("lval-" + f.id).value = "";
               el("lres-" + f.id).value = "";
+              const hdrL = el("coll-name-" + f.id);
+              if (hdrL) hdrL.value = f.defaultName;
             });
             EQ_FUNDS.forEach((f) => {
               el("ename-" + f.id).value = f.defaultName;
               el("epaid-" + f.id).value = "";
+              const hdrE = el("coll-name-" + f.id);
+              if (hdrE) hdrE.value = f.defaultName;
               el("eshown-" + f.id).value = "";
               el("etgt-" + f.id).value = "";
               el("esip-" + f.id).value = "";
@@ -4212,9 +4219,7 @@
             inp.addEventListener("mousedown", e => { if (editMode) e.stopPropagation(); });
             inp.addEventListener("click",     e => { if (editMode) e.stopPropagation(); });
             inp.addEventListener("input", e => {
-              state.liquid[f.id].name = e.target.value;
-              const inner = el("lname-" + f.id);
-              if (inner) inner.value = e.target.value;
+              state.liquid[f.id].label = e.target.value;
             });
           });
           EQ_FUNDS.forEach(f => {
@@ -4223,9 +4228,7 @@
             inp.addEventListener("mousedown", e => { if (editMode) e.stopPropagation(); });
             inp.addEventListener("click",     e => { if (editMode) e.stopPropagation(); });
             inp.addEventListener("input", e => {
-              state.equity[f.id].name = e.target.value;
-              const inner = el("ename-" + f.id);
-              if (inner) inner.value = e.target.value;
+              state.equity[f.id].label = e.target.value;
             });
           });
 
