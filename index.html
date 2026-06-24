@@ -11,24 +11,24 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&family=Fraunces:opsz,wght@9..144,300;9..144,600&display=swap"
       rel="stylesheet"
     />
     <style>
       :root {
-        --bg: #0c0f0e;
-        --panel: #15191a;
-        --panel-2: #1c2123;
-        --line: #2a3133;
-        --txt: #e8ede9;
-        --dim: #7d8a86;
-        --mint: #4ade9c;
-        --mint-dim: #1f7a55;
-        --liq: #6ca8f0;
-        --liq-dim: #24426e;
-        --amber: #f0b86c;
-        --amber-dim: #6b4f1f;
-        --coral: #f07070;
+        --bg: #07070f;
+        --panel: #0e0e1e;
+        --panel-2: #141428;
+        --line: #1e1e38;
+        --txt: #dde8ff;
+        --dim: #5050a0;
+        --mint: #00f5a0;
+        --mint-dim: #0a3530;
+        --liq: #38bdf8;
+        --liq-dim: #0c2a47;
+        --amber: #fbbf24;
+        --amber-dim: #5c3b0a;
+        --coral: #f87171;
       }
       * {
         box-sizing: border-box;
@@ -40,7 +40,7 @@
       body {
         background: var(--bg);
         color: var(--txt);
-        font-family: "JetBrains Mono", monospace;
+        font-family: "Outfit", sans-serif;
         min-height: 100vh;
         min-height: 100dvh;
         -webkit-text-size-adjust: 100%;
@@ -62,8 +62,10 @@
       .tabs {
         display: flex;
         justify-content: center;
-        background: var(--panel);
-        border-bottom: 1px solid var(--line);
+        background: rgba(7, 7, 15, 0.88);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-bottom: 1px solid rgba(255,255,255,0.06);
         position: sticky;
         top: 0;
         z-index: 100;
@@ -84,7 +86,7 @@
         background: none;
         border: none;
         color: var(--dim);
-        font-family: "JetBrains Mono", monospace;
+        font-family: "Outfit", sans-serif;
         font-size: 10.5px;
         letter-spacing: 0.8px;
         text-transform: uppercase;
@@ -171,16 +173,19 @@
 
       /* ── CARD ── */
       .card {
-        background: var(--panel);
-        border: 1px solid var(--line);
-        border-radius: 14px;
+        background: rgba(14, 14, 30, 0.65);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        border-radius: 16px;
         padding: 16px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04);
       }
       .card.equity {
-        border-left: 3px solid var(--mint-dim);
+        border-left: 3px solid rgba(0, 245, 160, 0.35);
       }
       .card.liquid {
-        border-left: 3px solid var(--liq-dim);
+        border-left: 3px solid rgba(56, 189, 248, 0.35);
       }
 
       /* ── FUND HEAD ── */
@@ -258,15 +263,15 @@
       }
       .num {
         width: 100%;
-        background: var(--panel-2);
-        border: 1px solid var(--line);
-        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
         color: var(--txt);
-        font-family: "JetBrains Mono", monospace;
+        font-family: "Space Mono", monospace;
         font-size: 14px;
         padding: 10px 10px 10px 24px;
         outline: none;
-        transition: border-color 0.15s;
+        transition: border-color 0.15s, background 0.15s;
       }
       .num:focus {
         border-color: var(--mint);
@@ -294,20 +299,23 @@
 
       /* ── CHIPS ── */
       .chip {
-        background: var(--panel-2);
-        border-radius: 8px;
-        padding: 10px 12px;
-        font-size: 12px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        padding: 11px 14px;
+        font-size: 11px;
         color: var(--dim);
         display: flex;
         justify-content: space-between;
         align-items: baseline;
-        margin-top: 4px;
+        margin-top: 6px;
+        letter-spacing: 0.3px;
       }
       .chip b {
-        font-family: "Fraunces", serif;
-        font-size: 18px;
-        font-weight: 600;
+        font-family: "Space Mono", monospace;
+        font-size: 17px;
+        font-weight: 700;
+        letter-spacing: -0.5px;
       }
       .chip.mint b {
         color: var(--mint);
@@ -375,7 +383,7 @@
       }
       .sip-pct {
         font-size: 19px;
-        font-family: "Fraunces", serif;
+        font-family: "Space Mono", monospace;
         color: var(--mint);
         min-width: 46px;
         text-align: right;
@@ -402,13 +410,14 @@
         color: var(--amber);
       }
       .stp-big {
-        font-family: "Fraunces", serif;
-        font-size: clamp(22px, 7vw, 38px);
-        font-weight: 600;
+        font-family: "Space Mono", monospace;
+        font-size: clamp(20px, 6vw, 34px);
+        font-weight: 700;
         color: var(--amber);
         margin: 4px 0 2px;
         line-height: 1;
         word-break: break-all;
+        letter-spacing: -1px;
       }
       .stp-sub {
         color: var(--dim);
@@ -521,12 +530,13 @@
       }
       .fc-hero .fc-stat-label { color: var(--mint); opacity: 0.65; }
       .fc-stat-val {
-        font-family: "Fraunces", serif;
-        font-size: clamp(15px, 4vw, 20px);
-        font-weight: 600;
+        font-family: "Space Mono", monospace;
+        font-size: clamp(13px, 3.5vw, 18px);
+        font-weight: 700;
         color: var(--txt);
         text-align: right;
         line-height: 1.1;
+        letter-spacing: -0.5px;
       }
       .fc-big {
         font-size: clamp(22px, 5.8vw, 32px);
@@ -631,11 +641,13 @@
 
       /* ── UPCOMING PAYMENTS ── */
       .upcoming-card {
-        background: var(--panel);
-        border: 1px solid var(--line);
-        border-radius: 12px;
+        background: rgba(14, 14, 30, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        border-radius: 14px;
         overflow: hidden;
         margin-bottom: 14px;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
       }
       .upcoming-hd {
         background: var(--panel-2);
@@ -656,8 +668,9 @@
         min-width: 46px;
       }
       .upcoming-day {
-        font-family: "Fraunces", serif;
+        font-family: "Space Mono", monospace;
         font-size: 20px;
+        font-weight: 700;
         line-height: 1;
         color: var(--txt);
       }
@@ -678,10 +691,11 @@
         min-width: 0;
       }
       .upcoming-amt {
-        font-family: "Fraunces", serif;
-        font-size: 15px;
-        font-weight: 600;
+        font-family: "Space Mono", monospace;
+        font-size: 14px;
+        font-weight: 700;
         white-space: nowrap;
+        letter-spacing: -0.3px;
       }
       .upcoming-amt.stp {
         color: var(--amber);
@@ -717,9 +731,10 @@
         align-items: center;
       }
       .cal-mhead .mname {
-        font-family: "Fraunces", serif;
+        font-family: "Outfit", sans-serif;
         font-size: 15px;
-        font-weight: 600;
+        font-weight: 700;
+        letter-spacing: 0.2px;
       }
       .cal-mhead .mtotal {
         font-size: 10.5px;
@@ -818,9 +833,11 @@
         color: var(--dim);
       }
       .cal-total-row .v {
-        font-family: "Fraunces", serif;
-        font-size: 14px;
+        font-family: "Space Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
         color: var(--txt);
+        letter-spacing: -0.3px;
       }
       .cal-event.pending {
         opacity: 0.42;
@@ -840,13 +857,15 @@
         color: var(--mint);
       }
       .sum-hero {
-        font-family: "Fraunces", serif;
-        font-size: 42px;
-        font-weight: 600;
+        font-family: "Space Mono", monospace;
+        font-size: 38px;
+        font-weight: 700;
         color: var(--mint);
         margin: 4px 0 2px;
         line-height: 1;
         word-break: break-all;
+        letter-spacing: -1px;
+        text-shadow: 0 0 40px rgba(0,245,160,0.3);
       }
       .sum-hero-sub {
         color: var(--dim);
@@ -973,9 +992,11 @@
         color: var(--dim);
       }
       .stat .sv {
-        font-family: "Fraunces", serif;
-        font-size: 18px;
+        font-family: "Space Mono", monospace;
+        font-size: 16px;
+        font-weight: 700;
         margin-top: 3px;
+        letter-spacing: -0.5px;
       }
       .stat .sp {
         height: 4px;
@@ -1000,7 +1021,7 @@
         background: var(--panel-2);
         border: 1px solid var(--line);
         color: var(--txt);
-        font-family: "JetBrains Mono", monospace;
+        font-family: "Outfit", sans-serif;
         font-size: 12px;
         padding: 11px;
         border-radius: 10px;
@@ -1033,7 +1054,7 @@
         border: 1px solid var(--line);
         border-radius: 6px;
         color: var(--dim);
-        font-family: "JetBrains Mono", monospace;
+        font-family: "Outfit", sans-serif;
         font-size: 10px;
         letter-spacing: 0.5px;
         padding: 4px 10px;
@@ -1577,7 +1598,7 @@
         border: 1.5px solid transparent;
         background: var(--panel-2);
         transition: border-color 0.15s, background 0.15s;
-        font-family: "JetBrains Mono", monospace;
+        font-family: "Outfit", sans-serif;
       }
       .theme-swatch:hover {
         background: var(--bg);
@@ -1605,13 +1626,14 @@
          PORTFOLIO HERO BANNER
       ══════════════════════════════════════ */
       .portfolio-hero {
-        background: linear-gradient(155deg, var(--panel) 0%, var(--panel-2) 100%);
-        border: 1px solid var(--line);
+        background: linear-gradient(135deg, rgba(14,14,30,0.9) 0%, rgba(7,7,15,0.95) 100%);
+        border: 1px solid rgba(0, 245, 160, 0.12);
         border-radius: 20px;
         padding: 28px 24px 24px;
         margin-bottom: 16px;
         position: relative;
         overflow: hidden;
+        box-shadow: 0 0 80px rgba(0,245,160,0.04), inset 0 1px 0 rgba(255,255,255,0.05);
       }
       .portfolio-hero::before {
         content: '';
@@ -1683,11 +1705,13 @@
          COLLAPSIBLE SECTIONS
       ══════════════════════════════════════ */
       .coll-section {
-        border: 1px solid var(--line);
+        border: 1px solid rgba(255, 255, 255, 0.07);
         border-radius: 14px;
         overflow: hidden;
-        margin-bottom: 10px;
-        background: var(--panel);
+        margin-bottom: 8px;
+        background: rgba(14, 14, 30, 0.6);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
       }
       .coll-head {
         width: 100%;
@@ -1697,7 +1721,7 @@
         background: none;
         border: none;
         cursor: pointer;
-        font-family: "JetBrains Mono", monospace;
+        font-family: "Outfit", sans-serif;
         color: var(--dim);
         gap: 10px;
         transition: color 0.15s;
@@ -1737,12 +1761,13 @@
         outline: none;
       }
       .coll-meta {
-        font-family: "Fraunces", serif;
+        font-family: "Space Mono", monospace;
         font-size: 13px;
-        font-weight: 600;
+        font-weight: 700;
         color: var(--txt);
-        opacity: 0.7;
+        opacity: 0.85;
         white-space: nowrap;
+        letter-spacing: -0.3px;
       }
       .coll-chevron {
         font-size: 11px;
@@ -1750,7 +1775,10 @@
         flex-shrink: 0;
         line-height: 1;
       }
-      .coll-head.open { color: var(--txt); }
+      .coll-head.open {
+        color: var(--txt);
+        background: linear-gradient(90deg, rgba(0,245,160,0.05) 0%, transparent 70%);
+      }
       .coll-head.open .coll-chevron { transform: rotate(180deg); }
       .coll-body {
         max-height: 0;
@@ -1771,7 +1799,7 @@
         background: transparent;
         border: 1px dashed var(--line);
         color: var(--dim);
-        font-family: "JetBrains Mono", monospace;
+        font-family: "Outfit", sans-serif;
         font-size: 11px;
         letter-spacing: 0.5px;
         text-transform: uppercase;
@@ -1792,21 +1820,55 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 10px 4px 6px;
-        margin-top: 6px;
+        padding: 14px 8px 8px;
+        margin-top: 8px;
+        border-bottom: 1px solid rgba(255,255,255,0.04);
+        margin-bottom: 4px;
       }
       .fund-div-title {
+        font-family: "Outfit", sans-serif;
         font-size: 9px;
+        font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 1.5px;
+        letter-spacing: 2px;
         color: var(--dim);
       }
       .fund-div-total {
-        font-family: "Fraunces", serif;
+        font-family: "Space Mono", monospace;
         font-size: 15px;
-        font-weight: 600;
+        font-weight: 700;
         color: var(--txt);
+        letter-spacing: -0.3px;
       }
+      /* ── PRIVACY MODE ── */
+      .privacy-btn {
+        background: none;
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 8px;
+        color: var(--dim);
+        cursor: pointer;
+        padding: 6px 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: color 0.15s, border-color 0.15s;
+        flex-shrink: 0;
+        position: absolute;
+        top: 24px;
+        right: 24px;
+      }
+      .privacy-btn:hover { color: var(--txt); border-color: rgba(255,255,255,0.2); }
+      .privacy-btn svg { width: 18px; height: 18px; display: block; }
+
+      body.privacy-mode #tab-portfolio .fund-div-total,
+      body.privacy-mode #tab-portfolio .coll-meta,
+      body.privacy-mode #tab-portfolio .chip b,
+      body.privacy-mode:not(.edit-mode) #tab-portfolio .num {
+        filter: blur(8px);
+        user-select: none;
+        pointer-events: none;
+      }
+      body.privacy-mode .privacy-btn { color: var(--mint); border-color: var(--mint); opacity: 0.8; }
     </style>
   </head>
   <body>
@@ -1839,6 +1901,12 @@
 
         <!-- Hero banner -->
         <div class="portfolio-hero">
+          <button class="privacy-btn" id="privacyBtn" title="Toggle value visibility" aria-label="Toggle value visibility">
+            <svg id="privacyIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
           <h1>Portfolio <span class="accent">Planner</span></h1>
         </div>
 
@@ -4191,6 +4259,16 @@
             saveState();
           });
           el("fcSlider").addEventListener("input", () => renderForecast());
+
+          /* Privacy toggle */
+          let privacyMode = false;
+          const EYE_OPEN = `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`;
+          const EYE_SHUT = `<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>`;
+          el("privacyBtn").addEventListener("click", () => {
+            privacyMode = !privacyMode;
+            document.body.classList.toggle("privacy-mode", privacyMode);
+            el("privacyIcon").innerHTML = privacyMode ? EYE_SHUT : EYE_OPEN;
+          });
 
           /* ════ COLLAPSIBLE SECTIONS ════ */
           function toggleColl(id) {
