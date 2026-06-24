@@ -1840,8 +1840,17 @@
         color: var(--txt);
         letter-spacing: -0.3px;
       }
-      /* ── PRIVACY MODE ── */
-      .privacy-btn {
+      /* ── PRIVACY MODE + THEME BUTTON ── */
+      .hero-actions {
+        position: absolute;
+        top: 24px;
+        right: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        z-index: 2;
+      }
+      .privacy-btn, .hero-theme-btn {
         background: none;
         border: 1px solid rgba(255,255,255,0.1);
         border-radius: 8px;
@@ -1853,12 +1862,9 @@
         justify-content: center;
         transition: color 0.15s, border-color 0.15s;
         flex-shrink: 0;
-        position: absolute;
-        top: 24px;
-        right: 24px;
       }
-      .privacy-btn:hover { color: var(--txt); border-color: rgba(255,255,255,0.2); }
-      .privacy-btn svg { width: 18px; height: 18px; display: block; }
+      .privacy-btn:hover, .hero-theme-btn:hover { color: var(--txt); border-color: rgba(255,255,255,0.2); }
+      .privacy-btn svg, .hero-theme-btn svg { width: 18px; height: 18px; display: block; }
 
       /* hide text, show bullets */
       body.privacy-mode #tab-portfolio .fund-div-total,
@@ -1938,12 +1944,21 @@
 
         <!-- Hero banner -->
         <div class="portfolio-hero">
-          <button class="privacy-btn" id="privacyBtn" title="Toggle value visibility" aria-label="Toggle value visibility">
-            <svg id="privacyIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-              <circle cx="12" cy="12" r="3"/>
-            </svg>
-          </button>
+          <div class="hero-actions">
+            <button class="privacy-btn" id="privacyBtn" title="Toggle value visibility" aria-label="Toggle value visibility">
+              <svg id="privacyIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+            <button class="hero-theme-btn" id="heroThemeBtn" title="Change accent theme" aria-label="Change accent theme">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <circle cx="12" cy="12" r="1" fill="currentColor"/>
+                <path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/>
+              </svg>
+            </button>
+          </div>
           <h1>Portfolio <span class="accent">Planner</span></h1>
         </div>
 
@@ -4305,6 +4320,10 @@
             privacyMode = !privacyMode;
             document.body.classList.toggle("privacy-mode", privacyMode);
             el("privacyIcon").innerHTML = privacyMode ? EYE_SHUT : EYE_OPEN;
+          });
+          el("heroThemeBtn").addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (themeMatrixOpen) { hideThemeMatrix(); } else { showThemeMatrix(el("heroThemeBtn")); }
           });
 
           /* ════ COLLAPSIBLE SECTIONS ════ */
