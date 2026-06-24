@@ -843,7 +843,7 @@
         opacity: 0.42;
       }
       .cal-event.paid {
-        background: rgba(74, 222, 156, 0.05);
+        background: color-mix(in srgb, var(--mint) 5%, transparent);
       }
       .cal-event.paid .cal-day {
         color: var(--mint);
@@ -1471,7 +1471,7 @@
       /* ════ EDIT MODE BANNER ════ */
       .edit-banner {
         display: none;
-        background: rgba(74, 222, 156, 0.06);
+        background: color-mix(in srgb, var(--mint) 6%, transparent);
         border-bottom: 1px solid var(--mint-dim);
         padding: 7px 16px;
         font-size: 10px;
@@ -1504,9 +1504,9 @@
 
       /* ════ FOCUS RINGS ════ */
       .num:focus-visible {
-        box-shadow: 0 0 0 3px rgba(74, 222, 156, 0.18);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--mint) 18%, transparent);
       }
-      .num.liq:focus-visible { box-shadow: 0 0 0 3px rgba(108, 168, 240, 0.2); }
+      .num.liq:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--liq) 20%, transparent); }
       .num.amb:focus-visible { box-shadow: 0 0 0 3px rgba(240, 184, 108, 0.18); }
       .edit-toggle:focus-visible,
       .btn:focus-visible {
@@ -1782,13 +1782,13 @@
       ══════════════════════════════════════ */
       .portfolio-hero {
         background: linear-gradient(135deg, rgba(14,14,30,0.9) 0%, rgba(7,7,15,0.95) 100%);
-        border: 1px solid rgba(0, 245, 160, 0.12);
+        border: 1px solid color-mix(in srgb, var(--mint) 14%, transparent);
         border-radius: 20px;
         padding: 28px 24px 24px;
         margin-bottom: 16px;
         position: relative;
         overflow: hidden;
-        box-shadow: 0 0 80px rgba(0,245,160,0.04), inset 0 1px 0 rgba(255,255,255,0.05);
+        box-shadow: 0 0 80px color-mix(in srgb, var(--mint) 5%, transparent), inset 0 1px 0 rgba(255,255,255,0.05);
       }
       .portfolio-hero::before {
         content: '';
@@ -1798,7 +1798,7 @@
         width: 240px;
         height: 240px;
         border-radius: 50%;
-        background: radial-gradient(circle, rgba(74,222,156,0.08) 0%, transparent 60%);
+        background: radial-gradient(circle, color-mix(in srgb, var(--mint) 10%, transparent) 0%, transparent 60%);
         pointer-events: none;
       }
       .portfolio-hero::after {
@@ -1809,7 +1809,7 @@
         width: 160px;
         height: 160px;
         border-radius: 50%;
-        background: radial-gradient(circle, rgba(108,168,240,0.05) 0%, transparent 65%);
+        background: radial-gradient(circle, color-mix(in srgb, var(--liq) 6%, transparent) 0%, transparent 65%);
         pointer-events: none;
       }
       .portfolio-hero-eyebrow {
@@ -1844,7 +1844,7 @@
         color: var(--mint);
         font-style: italic;
         transition: color 0.3s, opacity 0.15s;
-        text-shadow: 0 0 40px rgba(74,222,156,0.2);
+        text-shadow: 0 0 40px color-mix(in srgb, var(--mint) 22%, transparent);
       }
       .portfolio-hero h1:hover .accent { opacity: 0.8; }
       .portfolio-hero-sub {
@@ -1932,7 +1932,7 @@
       }
       .coll-head.open {
         color: var(--txt);
-        background: linear-gradient(90deg, rgba(0,245,160,0.05) 0%, transparent 70%);
+        background: linear-gradient(90deg, color-mix(in srgb, var(--mint) 8%, transparent) 0%, transparent 70%);
       }
       .coll-head.open .coll-chevron { transform: rotate(180deg); }
       .coll-body {
@@ -2066,7 +2066,128 @@
         opacity: 0.4;
         pointer-events: none;
       }
-      body.privacy-mode .privacy-btn { color: var(--mint); border-color: rgba(0,245,160,0.4); }
+      body.privacy-mode .privacy-btn { color: var(--mint); border-color: color-mix(in srgb, var(--mint) 40%, transparent); }
+
+      /* ════════════════════════════════════════════════════
+         THEME: NEO CYBER GRID
+         Full aesthetic override — grid background, glowing
+         cyan borders, electric nav highlight, corner accents
+      ════════════════════════════════════════════════════ */
+
+      /* ── Body: faint grid lines ── */
+      body[data-theme="neo-cyber-grid"] {
+        background-image:
+          linear-gradient(rgba(0,229,255,0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0,229,255,0.04) 1px, transparent 1px);
+        background-size: 44px 44px;
+        background-position: center top;
+      }
+
+      /* ── Nav bar ── */
+      body[data-theme="neo-cyber-grid"] .tabs {
+        background: rgba(4,4,15,0.96);
+        border-bottom: 1px solid rgba(0,229,255,0.22);
+        box-shadow: 0 1px 16px rgba(0,229,255,0.06);
+      }
+      body[data-theme="neo-cyber-grid"] .tabs button.active {
+        text-shadow: 0 0 14px rgba(0,229,255,0.6);
+        letter-spacing: 1.1px;
+      }
+      @media (max-width: 600px) {
+        body[data-theme="neo-cyber-grid"] .tabs {
+          border-top: 1px solid rgba(0,229,255,0.28);
+          border-bottom: none;
+          box-shadow: 0 -1px 16px rgba(0,229,255,0.07);
+        }
+        body[data-theme="neo-cyber-grid"] .tabs button.active {
+          border-top-color: #00e5ff;
+          border-bottom-color: transparent;
+        }
+      }
+
+      /* ── Portfolio hero ── */
+      body[data-theme="neo-cyber-grid"] .portfolio-hero {
+        background-image:
+          linear-gradient(rgba(0,229,255,0.055) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0,229,255,0.055) 1px, transparent 1px),
+          linear-gradient(135deg, rgba(10,10,32,0.95) 0%, rgba(4,4,15,0.98) 100%);
+        background-size: 28px 28px, 28px 28px, 100% 100%;
+        border-color: rgba(0,229,255,0.24);
+        box-shadow: 0 0 0 1px rgba(0,229,255,0.1), 0 0 48px rgba(0,229,255,0.07), inset 0 1px 0 rgba(0,229,255,0.12);
+      }
+      /* Cyan corner radial glow (replaces green orbs) */
+      body[data-theme="neo-cyber-grid"] .portfolio-hero::before {
+        background: radial-gradient(circle, rgba(0,229,255,0.14) 0%, transparent 65%);
+        width: 280px;
+        height: 280px;
+      }
+      body[data-theme="neo-cyber-grid"] .portfolio-hero::after {
+        background: radial-gradient(circle, rgba(64,124,255,0.1) 0%, transparent 65%);
+      }
+      body[data-theme="neo-cyber-grid"] .portfolio-hero h1 .accent {
+        text-shadow: 0 0 36px rgba(0,229,255,0.4);
+      }
+
+      /* ── Cards ── */
+      body[data-theme="neo-cyber-grid"] .card {
+        background: rgba(10,10,32,0.75);
+        border-color: rgba(0,229,255,0.14);
+        box-shadow:
+          0 0 0 1px rgba(0,229,255,0.06),
+          0 4px 24px rgba(0,0,0,0.6),
+          inset 0 1px 0 rgba(0,229,255,0.08);
+      }
+
+      /* ── Chips ── */
+      body[data-theme="neo-cyber-grid"] .chip {
+        border-color: rgba(0,229,255,0.1);
+        background: rgba(0,229,255,0.04);
+      }
+
+      /* ── Collapsible sections ── */
+      body[data-theme="neo-cyber-grid"] .coll-section {
+        border-color: rgba(0,229,255,0.12);
+        background: rgba(10,10,32,0.68);
+      }
+      body[data-theme="neo-cyber-grid"] .coll-section:has(.coll-head.open) {
+        border-color: rgba(0,229,255,0.3);
+        box-shadow: 0 0 0 1px rgba(0,229,255,0.08), 0 0 20px rgba(0,229,255,0.04);
+      }
+      body[data-theme="neo-cyber-grid"] .coll-head.open {
+        background: linear-gradient(90deg, rgba(0,229,255,0.09) 0%, transparent 72%);
+        box-shadow: inset 3px 0 0 rgba(0,229,255,0.55);
+      }
+
+      /* ── Section heads ── */
+      body[data-theme="neo-cyber-grid"] .sec-head {
+        border-bottom-color: rgba(0,229,255,0.18);
+        color: rgba(0,229,255,0.45);
+      }
+
+      /* ── Fund division rows ── */
+      body[data-theme="neo-cyber-grid"] .fund-division {
+        border-bottom-color: rgba(0,229,255,0.08);
+      }
+
+      /* ── Edit banner ── */
+      body[data-theme="neo-cyber-grid"] .edit-banner {
+        background: rgba(0,229,255,0.06);
+        border-bottom-color: rgba(0,229,255,0.2);
+        color: #00e5ff;
+      }
+      body[data-theme="neo-cyber-grid"] .edit-banner kbd {
+        background: rgba(0,229,255,0.15);
+        color: #00e5ff;
+      }
+
+      /* ── Summary / NW / Forecast panels ── */
+      body[data-theme="neo-cyber-grid"] .coll-section,
+      body[data-theme="neo-cyber-grid"] [class*="snap-card"],
+      body[data-theme="neo-cyber-grid"] [class*="stat-"],
+      body[data-theme="neo-cyber-grid"] [class*="nw-"] {
+        border-color: rgba(0,229,255,0.12);
+      }
+
     </style>
   </head>
   <body>
@@ -4708,6 +4829,7 @@
             r.setProperty("--amber",     t.amber);
             r.setProperty("--amber-dim", t.amberDim);
             r.setProperty("--coral",     t.coral);
+            document.body.dataset.theme = t.key;
             currentAccentIdx = idx;
             localStorage.setItem("accent_theme", t.key);
 
