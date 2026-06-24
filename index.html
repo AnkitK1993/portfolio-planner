@@ -1593,6 +1593,139 @@
         color: var(--dim);
         white-space: nowrap;
       }
+
+      /* ══════════════════════════════════════
+         PORTFOLIO HERO BANNER
+      ══════════════════════════════════════ */
+      .portfolio-hero {
+        background: linear-gradient(155deg, var(--panel) 0%, var(--panel-2) 100%);
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        padding: 28px 24px 24px;
+        margin-bottom: 16px;
+        position: relative;
+        overflow: hidden;
+      }
+      .portfolio-hero::before {
+        content: '';
+        position: absolute;
+        top: -70px;
+        right: -70px;
+        width: 240px;
+        height: 240px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(74,222,156,0.08) 0%, transparent 60%);
+        pointer-events: none;
+      }
+      .portfolio-hero::after {
+        content: '';
+        position: absolute;
+        bottom: -40px;
+        left: -40px;
+        width: 160px;
+        height: 160px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(108,168,240,0.05) 0%, transparent 65%);
+        pointer-events: none;
+      }
+      .portfolio-hero-eyebrow {
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 2.5px;
+        color: var(--dim);
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .portfolio-hero-eyebrow::before {
+        content: '';
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--mint);
+        box-shadow: 0 0 8px var(--mint);
+        flex-shrink: 0;
+        animation: dotpulse 2.4s ease-in-out infinite;
+      }
+      .portfolio-hero h1 {
+        font-family: "Fraunces", serif;
+        font-weight: 600;
+        font-size: clamp(32px, 9vw, 54px);
+        line-height: 1.0;
+        cursor: pointer;
+        letter-spacing: -0.5px;
+      }
+      .portfolio-hero h1 .accent {
+        color: var(--mint);
+        font-style: italic;
+        transition: color 0.3s, opacity 0.15s;
+        text-shadow: 0 0 40px rgba(74,222,156,0.2);
+      }
+      .portfolio-hero h1:hover .accent { opacity: 0.8; }
+      .portfolio-hero-sub {
+        color: var(--dim);
+        font-size: 10.5px;
+        margin-top: 12px;
+        line-height: 1.6;
+        max-width: 360px;
+        border-bottom: 1.5px dotted rgba(255,255,255,0.15);
+      }
+
+      /* ══════════════════════════════════════
+         COLLAPSIBLE SECTIONS
+      ══════════════════════════════════════ */
+      .coll-section {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        overflow: hidden;
+        margin-bottom: 10px;
+        background: var(--panel);
+      }
+      .coll-head {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        padding: 13px 16px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-family: "JetBrains Mono", monospace;
+        color: var(--dim);
+        gap: 10px;
+        transition: color 0.15s;
+        text-align: left;
+      }
+      .coll-head:hover { color: var(--txt); }
+      .coll-title {
+        font-size: 9.5px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        flex: 1;
+      }
+      .coll-meta {
+        font-family: "Fraunces", serif;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--txt);
+        opacity: 0.7;
+        white-space: nowrap;
+      }
+      .coll-chevron {
+        font-size: 11px;
+        transition: transform 0.25s ease;
+        flex-shrink: 0;
+        line-height: 1;
+      }
+      .coll-head.open { color: var(--txt); }
+      .coll-head.open .coll-chevron { transform: rotate(180deg); }
+      .coll-body {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.32s ease;
+      }
+      .coll-body.open { max-height: 2400px; }
+      .coll-body-inner { padding: 4px 14px 16px; }
     </style>
   </head>
   <body>
@@ -1622,42 +1755,68 @@
     <div class="app">
       <!-- ═══════════════ PORTFOLIO ═══════════════ -->
       <section class="tab-section active" id="tab-portfolio">
-        <div class="pg-head">
-          <h1>MF Portfolio <span class="accent">Planner</span></h1>
-          <p>
-            Enter your current values and target totals. The page calculates
-            exactly how much you must invest to reach your goals.
+
+        <!-- Hero banner -->
+        <div class="portfolio-hero">
+          <div class="portfolio-hero-eyebrow">MF · Portfolio</div>
+          <h1>Portfolio <span class="accent">Planner</span></h1>
+          <p class="portfolio-hero-sub">
+            Track your funds, targets and monthly SIP investments.
           </p>
         </div>
 
-        <div class="portfolio-layout">
-          <!-- ── Left column: liquid summaries + liquid funds ── -->
-          <div class="portfolio-left">
-            <div class="dep-summary" id="depSummary">
-              <span class="k">Total deployable</span>
-              <span class="v" id="totalDep">₹0</span>
-              <span class="note" id="depNote">—</span>
-            </div>
+        <!-- Hidden dep-summary anchors kept for JS compatibility -->
+        <div id="depSummary" style="display:none">
+          <span class="v" id="totalDep"></span>
+          <span id="depNote"></span>
+        </div>
+        <div id="stpDueSummary" style="display:none">
+          <span class="v" id="monthlyStpDue"></span>
+          <span id="stpDueNote"></span>
+        </div>
 
-            <div class="dep-summary" id="stpDueSummary">
-              <span class="k">Monthly STP</span>
-              <span class="v" id="monthlyStpDue">₹0</span>
-              <span class="note" id="stpDueNote">Pay on 15th</span>
+        <!-- Collapsible: Liquid Funds -->
+        <div class="coll-section">
+          <button class="coll-head" id="coll-head-liquid" aria-expanded="false">
+            <span class="coll-title">Liquid Funds</span>
+            <span class="coll-meta" id="coll-meta-liquid"></span>
+            <span class="coll-chevron">▾</span>
+          </button>
+          <div class="coll-body" id="coll-body-liquid">
+            <div class="coll-body-inner">
+              <div class="fund-grid" id="liqGrid"></div>
             </div>
-
-            <div class="sec-head mt">
-              Liquid Funds — Current, target &amp; deployable
-            </div>
-            <div class="fund-grid" id="liqGrid"></div>
-          </div>
-
-          <!-- ── Right column: equity funds + upcoming ── -->
-          <div class="portfolio-right">
-            <div class="sec-head" style="margin-top: 0">Equity Funds — SIP Configuration</div>
-            <div class="fund-grid" id="eqGrid"></div>
-            <div id="upcomingSection"></div>
           </div>
         </div>
+
+        <!-- Collapsible: Equity Funds -->
+        <div class="coll-section">
+          <button class="coll-head" id="coll-head-equity" aria-expanded="false">
+            <span class="coll-title">Equity Funds</span>
+            <span class="coll-meta" id="coll-meta-equity"></span>
+            <span class="coll-chevron">▾</span>
+          </button>
+          <div class="coll-body" id="coll-body-equity">
+            <div class="coll-body-inner">
+              <div class="fund-grid" id="eqGrid"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Collapsible: Upcoming Payments -->
+        <div class="coll-section">
+          <button class="coll-head" id="coll-head-upcoming" aria-expanded="false">
+            <span class="coll-title">Upcoming Payments</span>
+            <span class="coll-meta" id="coll-meta-upcoming"></span>
+            <span class="coll-chevron">▾</span>
+          </button>
+          <div class="coll-body" id="coll-body-upcoming">
+            <div class="coll-body-inner">
+              <div id="upcomingSection"></div>
+            </div>
+          </div>
+        </div>
+
       </section>
 
       <!-- ═══════════════ CALENDAR / SCHEDULE ═══════════════ -->
@@ -3915,6 +4074,21 @@
             saveState();
           });
           el("fcSlider").addEventListener("input", () => renderForecast());
+
+          /* ════ COLLAPSIBLE SECTIONS ════ */
+          function toggleColl(id) {
+            const head = el("coll-head-" + id);
+            const body = el("coll-body-" + id);
+            if (!head || !body) return;
+            const opening = !body.classList.contains("open");
+            body.classList.toggle("open", opening);
+            head.classList.toggle("open", opening);
+            head.setAttribute("aria-expanded", String(opening));
+          }
+          ["liquid", "equity", "upcoming"].forEach((id) => {
+            const head = el("coll-head-" + id);
+            if (head) head.addEventListener("click", () => toggleColl(id));
+          });
 
           initFirebase();          // must run before anything reads fbEnabled
           buildNwGrid();
