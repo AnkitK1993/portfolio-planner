@@ -1759,6 +1759,31 @@
       }
       .coll-body.open { max-height: 2400px; }
       .coll-body-inner { padding: 4px 14px 16px; }
+      .add-fund-row {
+        display: none;
+        padding: 4px 0 10px;
+      }
+      body.edit-mode .add-fund-row {
+        display: block;
+      }
+      .add-fund-btn {
+        width: 100%;
+        background: transparent;
+        border: 1px dashed var(--line);
+        color: var(--dim);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        padding: 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: border-color 0.15s, color 0.15s;
+      }
+      body.edit-mode .add-fund-btn:hover {
+        border-color: var(--mint);
+        color: var(--mint);
+      }
 
       /* ══════════════════════════════════════
          FUND DIVISION ROWS
@@ -1832,27 +1857,9 @@
           <span class="fund-div-title">Liquid Funds</span>
           <span class="fund-div-total" id="liqDivTotal">—</span>
         </div>
-        <!-- Collapsible: Liquid Fund 1 -->
-        <div class="coll-section">
-          <button class="coll-head" id="coll-head-liq1" aria-expanded="false">
-            <input class="coll-title coll-name-input" id="coll-name-liq1" value="Liquid Fund 1" readonly />
-            <span class="coll-meta" id="coll-val-liq1"></span>
-            <span class="coll-chevron">▾</span>
-          </button>
-          <div class="coll-body" id="coll-body-liq1">
-            <div class="coll-body-inner" id="liq-wrap-liq1"></div>
-          </div>
-        </div>
-        <!-- Collapsible: Liquid Fund 2 -->
-        <div class="coll-section">
-          <button class="coll-head" id="coll-head-liq2" aria-expanded="false">
-            <input class="coll-title coll-name-input" id="coll-name-liq2" value="Liquid Fund 2" readonly />
-            <span class="coll-meta" id="coll-val-liq2"></span>
-            <span class="coll-chevron">▾</span>
-          </button>
-          <div class="coll-body" id="coll-body-liq2">
-            <div class="coll-body-inner" id="liq-wrap-liq2"></div>
-          </div>
+        <div id="liqFundsList"></div>
+        <div class="add-fund-row">
+          <button class="add-fund-btn" id="addLiqBtn">＋ Add Liquid Fund</button>
         </div>
 
         <!-- Division row: Equity Funds -->
@@ -1860,38 +1867,9 @@
           <span class="fund-div-title">Equity Funds</span>
           <span class="fund-div-total" id="eqDivTotal">—</span>
         </div>
-        <!-- Collapsible: Equity Fund 1 -->
-        <div class="coll-section">
-          <button class="coll-head" id="coll-head-eq1" aria-expanded="false">
-            <input class="coll-title coll-name-input" id="coll-name-eq1" value="Nifty 50 Index Fund" readonly />
-            <span class="coll-meta" id="coll-val-eq1"></span>
-            <span class="coll-chevron">▾</span>
-          </button>
-          <div class="coll-body" id="coll-body-eq1">
-            <div class="coll-body-inner" id="eq-wrap-eq1"></div>
-          </div>
-        </div>
-        <!-- Collapsible: Equity Fund 2 -->
-        <div class="coll-section">
-          <button class="coll-head" id="coll-head-eq2" aria-expanded="false">
-            <input class="coll-title coll-name-input" id="coll-name-eq2" value="Flexi Cap Fund" readonly />
-            <span class="coll-meta" id="coll-val-eq2"></span>
-            <span class="coll-chevron">▾</span>
-          </button>
-          <div class="coll-body" id="coll-body-eq2">
-            <div class="coll-body-inner" id="eq-wrap-eq2"></div>
-          </div>
-        </div>
-        <!-- Collapsible: Equity Fund 3 -->
-        <div class="coll-section">
-          <button class="coll-head" id="coll-head-eq3" aria-expanded="false">
-            <input class="coll-title coll-name-input" id="coll-name-eq3" value="Mid Cap Fund" readonly />
-            <span class="coll-meta" id="coll-val-eq3"></span>
-            <span class="coll-chevron">▾</span>
-          </button>
-          <div class="coll-body" id="coll-body-eq3">
-            <div class="coll-body-inner" id="eq-wrap-eq3"></div>
-          </div>
+        <div id="eqFundsList"></div>
+        <div class="add-fund-row">
+          <button class="add-fund-btn" id="addEqBtn">＋ Add Equity Fund</button>
         </div>
 
         <!-- Collapsible: Upcoming Payments -->
@@ -2309,16 +2287,28 @@
             measurementId:     "G-GNXQJMH7W8",
           };
 
-          const LIQ_FUNDS = [
-            { id: "liq1", defaultName: "Liquid Fund 1" },
-            { id: "liq2", defaultName: "Liquid Fund 2" },
-          ];
+          const BASE_LIQ_DEFAULTS = {
+            liq1: "Liquid Fund 1",
+            liq2: "Liquid Fund 2",
+          };
+          const BASE_EQ_DEFAULTS = {
+            eq1: "Nifty 50 Index Fund",
+            eq2: "Flexi Cap Fund",
+            eq3: "Mid Cap Fund",
+          };
+          let LIQ_FUNDS = [];
+          let EQ_FUNDS = [];
 
-          const EQ_FUNDS = [
-            { id: "eq1", defaultName: "Nifty 50 Index Fund" },
-            { id: "eq2", defaultName: "Flexi Cap Fund" },
-            { id: "eq3", defaultName: "Mid Cap Fund" },
-          ];
+          function syncFundArrays() {
+            LIQ_FUNDS = (state.liquidOrder || Object.keys(BASE_LIQ_DEFAULTS)).map(id => ({
+              id,
+              defaultName: BASE_LIQ_DEFAULTS[id] || state.liquid[id]?.name || "Liquid Fund",
+            }));
+            EQ_FUNDS = (state.equityOrder || Object.keys(BASE_EQ_DEFAULTS)).map(id => ({
+              id,
+              defaultName: BASE_EQ_DEFAULTS[id] || state.equity[id]?.name || "Equity Fund",
+            }));
+          }
 
           const MONTHS = [
             "Jan",
@@ -2384,6 +2374,8 @@
                   sipPaidAmounts: {},
                 },
               },
+              liquidOrder: ['liq1', 'liq2'],
+              equityOrder: ['eq1', 'eq2', 'eq3'],
               stp: { override: 0, startDate: "", endDate: "", duration: 12, date: 15, lastApplied: null, appliedCount: 0, paidAmounts: {} },
               networth: {
                 ...Object.fromEntries(NW_FIELDS.map((f) => [f.id, 0])),
@@ -2400,21 +2392,18 @@
               const raw = localStorage.getItem(STORE_KEY);
               if (!raw) return def;
               const s = JSON.parse(raw);
+              const liqOrder = s.liquidOrder || ['liq1', 'liq2'];
+              const eqOrder = s.equityOrder || ['eq1', 'eq2', 'eq3'];
+              const liqBase = { name: '', label: '', paid: 0, value: 0, reserve: 0, target: 0 };
+              const eqBase = { name: '', label: '', paid: 0, shown: 0, target: 0, sipAmt: 0, sipDate: 5, sipPaidAmounts: {} };
               return {
-                liquid: {
-                  liq1: { ...def.liquid.liq1, ...(s.liquid?.liq1 || {}) },
-                  liq2: { ...def.liquid.liq2, ...(s.liquid?.liq2 || {}) },
-                },
-                equity: {
-                  eq1: { ...def.equity.eq1, ...(s.equity?.eq1 || {}) },
-                  eq2: { ...def.equity.eq2, ...(s.equity?.eq2 || {}) },
-                  eq3: { ...def.equity.eq3, ...(s.equity?.eq3 || {}) },
-                },
+                liquid: Object.fromEntries(liqOrder.map(id => [id, { ...liqBase, ...(s.liquid?.[id] || {}) }])),
+                equity: Object.fromEntries(eqOrder.map(id => [id, { ...eqBase, ...(s.equity?.[id] || {}) }])),
+                liquidOrder: liqOrder,
+                equityOrder: eqOrder,
                 stp: { ...def.stp, ...(s.stp || {}) },
                 networth: {
-                  ...Object.fromEntries(
-                    NW_FIELDS.map((f) => [f.id, s.networth?.[f.id] ?? 0]),
-                  ),
+                  ...Object.fromEntries(NW_FIELDS.map((f) => [f.id, s.networth?.[f.id] ?? 0])),
                   snapshots: { ...(s.networth?.snapshots || {}) },
                 },
                 forecast: { ...def.forecast, ...(s.forecast || {}) },
@@ -2520,33 +2509,28 @@
 
           /* Merge cloud state into local, persist, and re-render */
           function applyCloudState(raw) {
-            if (editMode) return; // don't overwrite in-progress edits
+            if (editMode) return;
             const def = defaultState();
+            const liqOrder = raw.liquidOrder || ['liq1', 'liq2'];
+            const eqOrder = raw.equityOrder || ['eq1', 'eq2', 'eq3'];
+            const liqBase = { name: '', label: '', paid: 0, value: 0, reserve: 0, target: 0 };
+            const eqBase = { name: '', label: '', paid: 0, shown: 0, target: 0, sipAmt: 0, sipDate: 5, sipPaidAmounts: {} };
             state = {
-              liquid: {
-                liq1: { ...def.liquid.liq1, ...(raw.liquid?.liq1 || {}) },
-                liq2: { ...def.liquid.liq2, ...(raw.liquid?.liq2 || {}) },
-              },
-              equity: {
-                eq1: { ...def.equity.eq1, ...(raw.equity?.eq1 || {}) },
-                eq2: { ...def.equity.eq2, ...(raw.equity?.eq2 || {}) },
-                eq3: { ...def.equity.eq3, ...(raw.equity?.eq3 || {}) },
-              },
+              liquid: Object.fromEntries(liqOrder.map(id => [id, { ...liqBase, ...(raw.liquid?.[id] || {}) }])),
+              equity: Object.fromEntries(eqOrder.map(id => [id, { ...eqBase, ...(raw.equity?.[id] || {}) }])),
+              liquidOrder: liqOrder,
+              equityOrder: eqOrder,
               stp: { ...def.stp, ...(raw.stp || {}) },
               networth: {
-                ...Object.fromEntries(
-                  NW_FIELDS.map((f) => [f.id, raw.networth?.[f.id] ?? 0]),
-                ),
+                ...Object.fromEntries(NW_FIELDS.map((f) => [f.id, raw.networth?.[f.id] ?? 0])),
                 snapshots: { ...(raw.networth?.snapshots || {}) },
               },
               forecast: { ...def.forecast, ...(raw.forecast || {}) },
-              _meta: {
-                ...def._meta,
-                ...(raw._meta || {}),
-                syncedAt: new Date().toISOString(),
-              },
+              _meta: { ...def._meta, ...(raw._meta || {}), syncedAt: new Date().toISOString() },
             };
             localStorage.setItem(STORE_KEY, JSON.stringify(state));
+            syncFundArrays();
+            rebuildFundCollapsibles();
             syncInputsFromState();
             applyStpIfDue();
             render();
@@ -2927,63 +2911,90 @@
           }
 
           /* ════════════════════════════════════════════
-             RENDER FUND GRIDS
+             DYNAMIC FUND COLLAPSIBLES
           ════════════════════════════════════════════ */
-          LIQ_FUNDS.forEach(f => { el("liq-wrap-" + f.id).innerHTML = liqCardHTML(f); });
-          EQ_FUNDS.forEach(f => { el("eq-wrap-" + f.id).innerHTML = eqCardHTML(f); });
+          function bindFundEvents() {
+            [...LIQ_FUNDS, ...EQ_FUNDS].forEach(f => {
+              const head = el("coll-head-" + f.id);
+              if (head) head.addEventListener("click", () => toggleColl(f.id));
+            });
+            LIQ_FUNDS.forEach(f => {
+              const inp = el("coll-name-" + f.id);
+              if (!inp) return;
+              inp.addEventListener("mousedown", e => { if (editMode) e.stopPropagation(); });
+              inp.addEventListener("click",     e => { if (editMode) e.stopPropagation(); });
+              inp.addEventListener("input", e => { state.liquid[f.id].label = e.target.value; });
+            });
+            EQ_FUNDS.forEach(f => {
+              const inp = el("coll-name-" + f.id);
+              if (!inp) return;
+              inp.addEventListener("mousedown", e => { if (editMode) e.stopPropagation(); });
+              inp.addEventListener("click",     e => { if (editMode) e.stopPropagation(); });
+              inp.addEventListener("input", e => { state.equity[f.id].label = e.target.value; });
+            });
+            LIQ_FUNDS.forEach(f => {
+              el("lname-" + f.id)?.addEventListener("input", e => { state.liquid[f.id].name = e.target.value; render(); });
+              el("lpaid-" + f.id)?.addEventListener("input", e => { state.liquid[f.id].paid = num(e.target.value); render(); });
+              el("lval-"  + f.id)?.addEventListener("input", e => { state.liquid[f.id].value = num(e.target.value); render(); });
+              el("lres-"  + f.id)?.addEventListener("input", e => { state.liquid[f.id].reserve = num(e.target.value); render(); });
+              el("ltgt-"  + f.id)?.addEventListener("input", e => { state.liquid[f.id].target = num(e.target.value); render(); });
+            });
+            EQ_FUNDS.forEach(f => {
+              el("ename-"   + f.id)?.addEventListener("input", e => { state.equity[f.id].name = e.target.value; render(); });
+              el("epaid-"   + f.id)?.addEventListener("input", e => { state.equity[f.id].paid = num(e.target.value); render(); });
+              el("eshown-"  + f.id)?.addEventListener("input", e => { state.equity[f.id].shown = num(e.target.value); render(); });
+              el("etgt-"    + f.id)?.addEventListener("input", e => { state.equity[f.id].target = num(e.target.value); render(); });
+              el("esip-"    + f.id)?.addEventListener("input", e => { state.equity[f.id].sipAmt = num(e.target.value); render(); });
+              el("esipdate-"+ f.id)?.addEventListener("input", e => { state.equity[f.id].sipDate = num(e.target.value) || 5; render(); });
+            });
+          }
 
-          /* ════════════════════════════════════════════
-             BIND INPUT EVENTS
-          ════════════════════════════════════════════ */
-          LIQ_FUNDS.forEach((f) => {
-            el("lname-" + f.id).addEventListener("input", (e) => {
-              state.liquid[f.id].name = e.target.value;
-              render();
+          function rebuildFundCollapsibles() {
+            const liqContainer = el("liqFundsList");
+            const eqContainer  = el("eqFundsList");
+            liqContainer.innerHTML = "";
+            eqContainer.innerHTML  = "";
+            LIQ_FUNDS.forEach(f => {
+              if (!state.liquid[f.id]) {
+                state.liquid[f.id] = { name: f.defaultName, label: f.defaultName, paid: 0, value: 0, reserve: 0, target: 0 };
+              }
+              const sec = document.createElement("div");
+              sec.className = "coll-section";
+              const lbl = state.liquid[f.id].label || f.defaultName;
+              sec.innerHTML = `
+                <button class="coll-head" id="coll-head-${f.id}" aria-expanded="false">
+                  <input class="coll-title coll-name-input" id="coll-name-${f.id}" value="${lbl}" ${editMode ? "" : "readonly"} />
+                  <span class="coll-meta" id="coll-val-${f.id}"></span>
+                  <span class="coll-chevron">▾</span>
+                </button>
+                <div class="coll-body" id="coll-body-${f.id}">
+                  <div class="coll-body-inner" id="liq-wrap-${f.id}"></div>
+                </div>`;
+              liqContainer.appendChild(sec);
+              el("liq-wrap-" + f.id).innerHTML = liqCardHTML(f);
             });
-            el("lpaid-" + f.id).addEventListener("input", (e) => {
-              state.liquid[f.id].paid = num(e.target.value);
-              render();
+            EQ_FUNDS.forEach(f => {
+              if (!state.equity[f.id]) {
+                state.equity[f.id] = { name: f.defaultName, label: f.defaultName, paid: 0, shown: 0, target: 0, sipAmt: 0, sipDate: 5, sipPaidAmounts: {} };
+              }
+              const sec = document.createElement("div");
+              sec.className = "coll-section";
+              const lbl = state.equity[f.id].label || f.defaultName;
+              sec.innerHTML = `
+                <button class="coll-head" id="coll-head-${f.id}" aria-expanded="false">
+                  <input class="coll-title coll-name-input" id="coll-name-${f.id}" value="${lbl}" ${editMode ? "" : "readonly"} />
+                  <span class="coll-meta" id="coll-val-${f.id}"></span>
+                  <span class="coll-chevron">▾</span>
+                </button>
+                <div class="coll-body" id="coll-body-${f.id}">
+                  <div class="coll-body-inner" id="eq-wrap-${f.id}"></div>
+                </div>`;
+              eqContainer.appendChild(sec);
+              el("eq-wrap-" + f.id).innerHTML = eqCardHTML(f);
             });
-            el("lval-" + f.id).addEventListener("input", (e) => {
-              state.liquid[f.id].value = num(e.target.value);
-              render();
-            });
-            el("lres-" + f.id).addEventListener("input", (e) => {
-              state.liquid[f.id].reserve = num(e.target.value);
-              render();
-            });
-            el("ltgt-" + f.id).addEventListener("input", (e) => {
-              state.liquid[f.id].target = num(e.target.value);
-              render();
-            });
-          });
-
-          EQ_FUNDS.forEach((f) => {
-            el("ename-" + f.id).addEventListener("input", (e) => {
-              state.equity[f.id].name = e.target.value;
-              render();
-            });
-            el("epaid-" + f.id).addEventListener("input", (e) => {
-              state.equity[f.id].paid = num(e.target.value);
-              render();
-            });
-            el("eshown-" + f.id).addEventListener("input", (e) => {
-              state.equity[f.id].shown = num(e.target.value);
-              render();
-            });
-            el("etgt-" + f.id).addEventListener("input", (e) => {
-              state.equity[f.id].target = num(e.target.value);
-              render();
-            });
-            el("esip-" + f.id).addEventListener("input", (e) => {
-              state.equity[f.id].sipAmt = num(e.target.value);
-              render();
-            });
-            el("esipdate-" + f.id).addEventListener("input", (e) => {
-              state.equity[f.id].sipDate = num(e.target.value) || 5;
-              render();
-            });
-          });
+            bindFundEvents();
+            updateCollNameReadonly();
+          }
 
           /* STP controls */
           el("stpOverride").addEventListener("input", (e) => {
@@ -3686,24 +3697,8 @@
           function resetAll() {
             if (!confirm("Reset all saved fund data?")) return;
             state = defaultState();
-            LIQ_FUNDS.forEach((f) => {
-              el("lname-" + f.id).value = f.defaultName;
-              el("lpaid-" + f.id).value = "";
-              el("lval-" + f.id).value = "";
-              el("lres-" + f.id).value = "";
-              const hdrL = el("coll-name-" + f.id);
-              if (hdrL) hdrL.value = f.defaultName;
-            });
-            EQ_FUNDS.forEach((f) => {
-              el("ename-" + f.id).value = f.defaultName;
-              el("epaid-" + f.id).value = "";
-              const hdrE = el("coll-name-" + f.id);
-              if (hdrE) hdrE.value = f.defaultName;
-              el("eshown-" + f.id).value = "";
-              el("etgt-" + f.id).value = "";
-              el("esip-" + f.id).value = "";
-              el("esipdate-" + f.id).value = "";
-            });
+            syncFundArrays();
+            rebuildFundCollapsibles();
             el("stpOverride").value = "";
             el("stpDuration").value = "";
             el("stpDate").value = "";
@@ -4207,30 +4202,9 @@
             head.classList.toggle("open", opening);
             head.setAttribute("aria-expanded", String(opening));
           }
-          ["liq1", "liq2", "eq1", "eq2", "eq3", "upcoming"].forEach((id) => {
-            const head = el("coll-head-" + id);
-            if (head) head.addEventListener("click", () => toggleColl(id));
-          });
-
-          /* Collapsible header name editing */
-          LIQ_FUNDS.forEach(f => {
-            const inp = el("coll-name-" + f.id);
-            if (!inp) return;
-            inp.addEventListener("mousedown", e => { if (editMode) e.stopPropagation(); });
-            inp.addEventListener("click",     e => { if (editMode) e.stopPropagation(); });
-            inp.addEventListener("input", e => {
-              state.liquid[f.id].label = e.target.value;
-            });
-          });
-          EQ_FUNDS.forEach(f => {
-            const inp = el("coll-name-" + f.id);
-            if (!inp) return;
-            inp.addEventListener("mousedown", e => { if (editMode) e.stopPropagation(); });
-            inp.addEventListener("click",     e => { if (editMode) e.stopPropagation(); });
-            inp.addEventListener("input", e => {
-              state.equity[f.id].label = e.target.value;
-            });
-          });
+          /* Upcoming collapsible toggle (static — not a fund) */
+          const _upcomingHead = el("coll-head-upcoming");
+          if (_upcomingHead) _upcomingHead.addEventListener("click", () => toggleColl("upcoming"));
 
           /* Toggle readonly on coll-name inputs with edit mode */
           function updateCollNameReadonly() {
@@ -4240,7 +4214,37 @@
             });
           }
 
+          el("addLiqBtn").addEventListener("click", () => {
+            const order = state.liquidOrder || [];
+            let n = order.length + 1;
+            while (order.includes("liq" + n)) n++;
+            const newId = "liq" + n;
+            const defaultName = "Liquid Fund " + n;
+            state.liquid[newId] = { name: defaultName, label: defaultName, paid: 0, value: 0, reserve: 0, target: 0 };
+            state.liquidOrder = [...order, newId];
+            syncFundArrays();
+            rebuildFundCollapsibles();
+            render();
+            setTimeout(() => toggleColl(newId), 50);
+          });
+
+          el("addEqBtn").addEventListener("click", () => {
+            const order = state.equityOrder || [];
+            let n = order.length + 1;
+            while (order.includes("eq" + n)) n++;
+            const newId = "eq" + n;
+            const defaultName = "Equity Fund " + n;
+            state.equity[newId] = { name: defaultName, label: defaultName, paid: 0, shown: 0, target: 0, sipAmt: 0, sipDate: 5, sipPaidAmounts: {} };
+            state.equityOrder = [...order, newId];
+            syncFundArrays();
+            rebuildFundCollapsibles();
+            render();
+            setTimeout(() => toggleColl(newId), 50);
+          });
+
           initFirebase();          // must run before anything reads fbEnabled
+          syncFundArrays();
+          rebuildFundCollapsibles();
           buildNwGrid();
           el("nwSnapshotBtn").addEventListener("click", takeSnapshot);
           renderNwHistory();
