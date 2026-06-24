@@ -1068,6 +1068,13 @@
         pointer-events: none;
         cursor: default;
       }
+      body.edit-mode .fundname {
+        border-bottom-color: var(--line);
+        cursor: text;
+      }
+      body.edit-mode .fundname:focus {
+        border-bottom-color: var(--mint);
+      }
 
       /* ── SAVE BAR ── */
       .dot {
@@ -2924,6 +2931,8 @@
           LIQ_FUNDS.forEach((f) => {
             el("lname-" + f.id).addEventListener("input", (e) => {
               state.liquid[f.id].name = e.target.value;
+              const hdr = el("coll-name-" + f.id);
+              if (hdr) hdr.value = e.target.value;
               render();
             });
             el("lpaid-" + f.id).addEventListener("input", (e) => {
@@ -2947,6 +2956,8 @@
           EQ_FUNDS.forEach((f) => {
             el("ename-" + f.id).addEventListener("input", (e) => {
               state.equity[f.id].name = e.target.value;
+              const hdr = el("coll-name-" + f.id);
+              if (hdr) hdr.value = e.target.value;
               render();
             });
             el("epaid-" + f.id).addEventListener("input", (e) => {
