@@ -2188,6 +2188,136 @@
         border-color: rgba(0,229,255,0.12);
       }
 
+      /* ════════════════════════════════════════════════════
+         THEME: AI COMMAND CENTER
+         Teal terminal aesthetic — persistent left-bar on all
+         panels, scanline body, electric active-tab highlight,
+         teal day numbers, crisp navy card surfaces
+      ════════════════════════════════════════════════════ */
+
+      /* ── Body: very faint horizontal scanlines ── */
+      body[data-theme="ai-command-center"] {
+        background-image: repeating-linear-gradient(
+          0deg,
+          transparent 0px,
+          transparent 3px,
+          rgba(0,255,212,0.013) 3px,
+          rgba(0,255,212,0.013) 4px
+        );
+      }
+
+      /* ── Nav bar ── */
+      body[data-theme="ai-command-center"] .tabs {
+        background: rgba(2,8,16,0.97);
+        border-bottom: 1px solid rgba(0,255,212,0.2);
+        box-shadow: 0 1px 18px rgba(0,255,212,0.07);
+      }
+      body[data-theme="ai-command-center"] .tabs button.active {
+        text-shadow: 0 0 12px rgba(0,255,212,0.6);
+      }
+      @media (max-width: 600px) {
+        body[data-theme="ai-command-center"] .tabs {
+          border-top: 1px solid rgba(0,255,212,0.28);
+          border-bottom: none;
+          background: rgba(2,8,16,0.98);
+          box-shadow: 0 -1px 18px rgba(0,255,212,0.07);
+        }
+        body[data-theme="ai-command-center"] .tabs button.active {
+          background: rgba(0,255,212,0.06);
+          border-radius: 8px 8px 0 0;
+        }
+      }
+
+      /* ── Portfolio hero ── */
+      body[data-theme="ai-command-center"] .portfolio-hero {
+        background: linear-gradient(135deg, rgba(7,15,28,0.97) 0%, rgba(2,8,16,0.99) 100%);
+        border-color: rgba(0,255,212,0.2);
+        box-shadow:
+          0 0 0 1px rgba(0,255,212,0.07),
+          0 0 52px rgba(0,255,212,0.06),
+          inset 0 1px 0 rgba(0,255,212,0.12);
+      }
+      body[data-theme="ai-command-center"] .portfolio-hero h1 .accent {
+        text-shadow: 0 0 36px rgba(0,255,212,0.45);
+      }
+
+      /* ── Cards ── */
+      body[data-theme="ai-command-center"] .card {
+        background: rgba(7,15,28,0.82);
+        border-color: rgba(0,255,212,0.11);
+        box-shadow:
+          0 0 0 1px rgba(0,255,212,0.05),
+          0 4px 24px rgba(0,0,0,0.6),
+          inset 0 1px 0 rgba(0,255,212,0.07);
+      }
+
+      /* ── Chips ── */
+      body[data-theme="ai-command-center"] .chip {
+        border-color: rgba(0,255,212,0.1);
+        background: rgba(0,255,212,0.03);
+      }
+
+      /* ── Collapsible sections — persistent left-bar indicator ── */
+      body[data-theme="ai-command-center"] .coll-section {
+        background: rgba(7,15,28,0.78);
+        border-color: rgba(0,255,212,0.1);
+        box-shadow: inset 3px 0 0 rgba(0,255,212,0.3);
+      }
+      body[data-theme="ai-command-center"] .coll-section:has(.coll-head.open) {
+        border-color: rgba(0,255,212,0.22);
+        box-shadow:
+          inset 3px 0 0 rgba(0,255,212,0.7),
+          -2px 0 14px rgba(0,255,212,0.08),
+          0 0 22px rgba(0,255,212,0.03);
+      }
+      body[data-theme="ai-command-center"] .coll-head.open {
+        background: linear-gradient(90deg, rgba(0,255,212,0.07) 0%, transparent 74%);
+      }
+
+      /* ── Section heads ── */
+      body[data-theme="ai-command-center"] .sec-head {
+        border-bottom-color: rgba(0,255,212,0.2);
+        color: rgba(0,255,212,0.45);
+      }
+
+      /* ── Fund division rows ── */
+      body[data-theme="ai-command-center"] .fund-division {
+        border-bottom-color: rgba(0,255,212,0.08);
+      }
+
+      /* ── Upcoming Payments card ── */
+      body[data-theme="ai-command-center"] .upcoming-card {
+        background: rgba(7,15,28,0.78);
+        border-color: rgba(0,255,212,0.1);
+        box-shadow: inset 3px 0 0 rgba(0,255,212,0.3);
+      }
+      /* Day numbers in teal — terminal readout feel */
+      body[data-theme="ai-command-center"] .upcoming-day {
+        color: var(--mint);
+        text-shadow: 0 0 10px rgba(0,255,212,0.4);
+      }
+      body[data-theme="ai-command-center"] .upcoming-row {
+        border-top-color: rgba(0,255,212,0.08);
+      }
+
+      /* ── Calendar months ── */
+      body[data-theme="ai-command-center"] .cal-month {
+        background: rgba(7,15,28,0.78);
+        border-color: rgba(0,255,212,0.1);
+        box-shadow: inset 3px 0 0 rgba(0,255,212,0.22);
+      }
+
+      /* ── Edit banner ── */
+      body[data-theme="ai-command-center"] .edit-banner {
+        background: rgba(0,255,212,0.05);
+        border-bottom-color: rgba(0,255,212,0.18);
+        color: #00ffd4;
+      }
+      body[data-theme="ai-command-center"] .edit-banner kbd {
+        background: rgba(0,255,212,0.14);
+        color: #00ffd4;
+      }
+
     </style>
   </head>
   <body>
