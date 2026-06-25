@@ -355,13 +355,39 @@
 
       /* ── RATE CHIP ── */
       .ratechip {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
         font-size: 10px;
         color: var(--dim);
         margin: 4px 0 8px;
       }
-      .ratechip b {
-        color: var(--txt);
+      .ratechip b { color: var(--txt); }
+      .rate-inp-wrap {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        background: var(--panel-2);
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        padding: 2px 6px;
       }
+      .rate-inp {
+        background: none;
+        border: none;
+        outline: none;
+        color: var(--txt);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        width: 54px;
+        -webkit-appearance: none;
+        -moz-appearance: textfield;
+      }
+      .rate-inp::-webkit-outer-spin-button,
+      .rate-inp::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+      .rate-sfx { color: var(--dim); font-family: "JetBrains Mono", monospace; font-size: 11px; }
+      .rate-cost-sep { color: var(--line); }
 
       /* ── SIP ROW ── */
       .sip-divider {
@@ -2332,6 +2358,69 @@
         transition: opacity 0.15s;
       }
       .btn-primary:hover { opacity: 0.82; }
+      /* ── FUND PICKER (custom select) ── */
+      .fund-picker { position: relative; }
+      .fund-picker-btn {
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        color: var(--txt);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        padding: 9px 12px;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        cursor: pointer;
+        text-align: left;
+        transition: border-color 0.15s;
+      }
+      .fund-picker-btn.open, .fund-picker-btn:focus { border-color: var(--mint); outline: none; }
+      .fund-picker-chevron { width: 10px; height: 10px; flex-shrink: 0; transition: transform 0.15s; color: var(--dim); }
+      .fund-picker-btn.open .fund-picker-chevron { transform: rotate(180deg); }
+      .fund-picker-label { flex: 1; display: flex; align-items: center; gap: 8px; overflow: hidden; min-width: 0; }
+      .fund-picker-label-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .fund-picker-list {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0; right: 0;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        overflow: hidden;
+        z-index: 1100;
+        animation: matrixIn 0.12s cubic-bezier(0.34,1.2,0.64,1) both;
+      }
+      .fund-picker-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        cursor: pointer;
+        color: var(--txt);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        border-bottom: 1px solid var(--line);
+        transition: background 0.1s;
+      }
+      .fund-picker-item:last-child { border-bottom: none; }
+      .fund-picker-item:hover { background: var(--panel-2); }
+      .fund-picker-item.selected { color: var(--mint); }
+      .fund-picker-item-name { flex: 1; }
+      .fp-tag {
+        font-size: 8px;
+        font-weight: 700;
+        letter-spacing: 0.8px;
+        border-radius: 4px;
+        padding: 2px 5px;
+        text-transform: uppercase;
+        flex-shrink: 0;
+      }
+      .fp-tag.liq { background: rgba(111,207,151,0.15); color: var(--liq); }
+      .fp-tag.eq  { background: rgba(100,220,255,0.08); color: var(--mint); }
       .btn-ghost {
         background: none;
         border: 1px solid var(--line);
@@ -2921,7 +3010,17 @@
           <input type="hidden" id="txnEditId" />
           <div class="form-row">
             <label class="form-lbl">Fund</label>
-            <select class="form-sel" id="txnFund"></select>
+            <div class="fund-picker" id="txnFundPicker">
+              <button class="fund-picker-btn" id="txnFundBtn" type="button" aria-haspopup="listbox">
+                <span class="fund-picker-label">
+                  <span class="fp-tag" id="txnFundTag" style="display:none"></span>
+                  <span class="fund-picker-label-text" id="txnFundText">Select fund…</span>
+                </span>
+                <svg class="fund-picker-chevron" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3l4 4 4-4"/></svg>
+              </button>
+              <div class="fund-picker-list" id="txnFundList" style="display:none" role="listbox"></div>
+            </div>
+            <input type="hidden" id="txnFund" />
           </div>
           <div class="form-row">
             <label class="form-lbl">Date</label>
@@ -3023,8 +3122,8 @@
           function defaultState() {
             return {
               liquid: {
-                liq1: { name: "Liquid Fund 1", label: "Liquid Fund 1", paid: 0, value: 0, reserve: 0, target: 0 },
-                liq2: { name: "Liquid Fund 2", label: "Liquid Fund 2", paid: 0, value: 0, reserve: 0, target: 0 },
+                liq1: { name: "Liquid Fund 1", label: "Liquid Fund 1", paid: 0, value: 0, reserve: 0, target: 0, expenseRatio: 0 },
+                liq2: { name: "Liquid Fund 2", label: "Liquid Fund 2", paid: 0, value: 0, reserve: 0, target: 0, expenseRatio: 0 },
               },
               equity: {
                 eq1: {
@@ -3036,6 +3135,7 @@
                   sipAmt: 0,
                   sipDate: 5,
                   sipPaidAmounts: {},
+                  expenseRatio: 0,
                 },
                 eq2: {
                   name: "Flexi Cap Fund",
@@ -3046,6 +3146,7 @@
                   sipAmt: 0,
                   sipDate: 5,
                   sipPaidAmounts: {},
+                  expenseRatio: 0,
                 },
                 eq3: {
                   name: "Mid Cap Fund",
@@ -3056,6 +3157,7 @@
                   sipAmt: 0,
                   sipDate: 5,
                   sipPaidAmounts: {},
+                  expenseRatio: 0,
                 },
               },
               liquidOrder: ['liq1', 'liq2'],
@@ -3079,8 +3181,8 @@
               const s = JSON.parse(raw);
               const liqOrder = s.liquidOrder || ['liq1', 'liq2'];
               const eqOrder = s.equityOrder || ['eq1', 'eq2', 'eq3'];
-              const liqBase = { name: '', label: '', paid: 0, value: 0, reserve: 0, target: 0 };
-              const eqBase = { name: '', label: '', paid: 0, shown: 0, target: 0, sipAmt: 0, sipDate: 5, sipPaidAmounts: {} };
+              const liqBase = { name: '', label: '', paid: 0, value: 0, reserve: 0, target: 0, expenseRatio: 0 };
+              const eqBase = { name: '', label: '', paid: 0, shown: 0, target: 0, sipAmt: 0, sipDate: 5, sipPaidAmounts: {}, expenseRatio: 0 };
               return {
                 liquid: Object.fromEntries(liqOrder.map(id => [id, { ...liqBase, ...(s.liquid?.[id] || {}) }])),
                 equity: Object.fromEntries(eqOrder.map(id => [id, { ...eqBase, ...(s.equity?.[id] || {}) }])),
@@ -3524,7 +3626,16 @@
                   </div>
                 </div>
               </div>
-              <div class="ratechip">Expense rate: <b id="lrate-${f.id}">—</b></div>
+              <div class="ratechip">
+                <span>Expense ratio</span>
+                <div class="rate-inp-wrap">
+                  <input id="lexpense-${f.id}" class="rate-inp" type="number" min="0" max="10" step="0.001"
+                    placeholder="0.00" inputmode="decimal" value="${s.expenseRatio || ""}" />
+                  <span class="rate-sfx">%</span>
+                </div>
+                <span class="rate-cost-sep">·</span>
+                <span>Annual cost: <b id="lrate-${f.id}">—</b></span>
+              </div>
               <div class="grid2">
                 <div class="field">
                   <label class="flabel" for="ltgt-${f.id}">Target total</label>
@@ -3568,7 +3679,16 @@
                   </div>
                 </div>
               </div>
-              <div class="ratechip">Expense rate: <b id="erate-${f.id}">—</b></div>
+              <div class="ratechip">
+                <span>Expense ratio</span>
+                <div class="rate-inp-wrap">
+                  <input id="eexpense-${f.id}" class="rate-inp" type="number" min="0" max="10" step="0.001"
+                    placeholder="0.00" inputmode="decimal" value="${s.expenseRatio || ""}" />
+                  <span class="rate-sfx">%</span>
+                </div>
+                <span class="rate-cost-sep">·</span>
+                <span>Annual cost: <b id="erate-${f.id}">—</b></span>
+              </div>
               <div class="field">
                 <label class="flabel" for="etgt-${f.id}">Target total</label>
                 <div class="ibox"><span class="pfx">&#8377;</span>
@@ -3619,19 +3739,21 @@
               inp.addEventListener("input", e => { state.equity[f.id].label = e.target.value; });
             });
             LIQ_FUNDS.forEach(f => {
-              el("lname-" + f.id)?.addEventListener("input", e => { state.liquid[f.id].name = e.target.value; render(); });
-              el("lpaid-" + f.id)?.addEventListener("input", e => { state.liquid[f.id].paid = num(e.target.value); render(); });
-              el("lval-"  + f.id)?.addEventListener("input", e => { state.liquid[f.id].value = num(e.target.value); render(); });
-              el("lres-"  + f.id)?.addEventListener("input", e => { state.liquid[f.id].reserve = num(e.target.value); render(); });
-              el("ltgt-"  + f.id)?.addEventListener("input", e => { state.liquid[f.id].target = num(e.target.value); render(); });
+              el("lname-"    + f.id)?.addEventListener("input", e => { state.liquid[f.id].name = e.target.value; render(); });
+              el("lpaid-"    + f.id)?.addEventListener("input", e => { state.liquid[f.id].paid = num(e.target.value); render(); });
+              el("lval-"     + f.id)?.addEventListener("input", e => { state.liquid[f.id].value = num(e.target.value); render(); });
+              el("lres-"     + f.id)?.addEventListener("input", e => { state.liquid[f.id].reserve = num(e.target.value); render(); });
+              el("ltgt-"     + f.id)?.addEventListener("input", e => { state.liquid[f.id].target = num(e.target.value); render(); });
+              el("lexpense-" + f.id)?.addEventListener("input", e => { state.liquid[f.id].expenseRatio = parseFloat(e.target.value) || 0; render(); });
             });
             EQ_FUNDS.forEach(f => {
-              el("ename-"   + f.id)?.addEventListener("input", e => { state.equity[f.id].name = e.target.value; render(); });
-              el("epaid-"   + f.id)?.addEventListener("input", e => { state.equity[f.id].paid = num(e.target.value); render(); });
-              el("eshown-"  + f.id)?.addEventListener("input", e => { state.equity[f.id].shown = num(e.target.value); render(); });
-              el("etgt-"    + f.id)?.addEventListener("input", e => { state.equity[f.id].target = num(e.target.value); render(); });
-              el("esip-"    + f.id)?.addEventListener("input", e => { state.equity[f.id].sipAmt = num(e.target.value); render(); });
-              el("esipdate-"+ f.id)?.addEventListener("input", e => { state.equity[f.id].sipDate = num(e.target.value) || 5; render(); });
+              el("ename-"    + f.id)?.addEventListener("input", e => { state.equity[f.id].name = e.target.value; render(); });
+              el("epaid-"    + f.id)?.addEventListener("input", e => { state.equity[f.id].paid = num(e.target.value); render(); });
+              el("eshown-"   + f.id)?.addEventListener("input", e => { state.equity[f.id].shown = num(e.target.value); render(); });
+              el("etgt-"     + f.id)?.addEventListener("input", e => { state.equity[f.id].target = num(e.target.value); render(); });
+              el("esip-"     + f.id)?.addEventListener("input", e => { state.equity[f.id].sipAmt = num(e.target.value); render(); });
+              el("esipdate-" + f.id)?.addEventListener("input", e => { state.equity[f.id].sipDate = num(e.target.value) || 5; render(); });
+              el("eexpense-" + f.id)?.addEventListener("input", e => { state.equity[f.id].expenseRatio = parseFloat(e.target.value) || 0; render(); });
             });
           }
 
@@ -3788,6 +3910,15 @@
           el("txnSaveBtn").addEventListener("click", saveTxn);
           el("txnAddFromListBtn").addEventListener("click", () => openTxnModal());
           el("txnModal").addEventListener("click", e => { if (e.target === el("txnModal")) closeTxnModal(); });
+          el("txnFundBtn").addEventListener("click", e => {
+            e.stopPropagation();
+            const list = el("txnFundList");
+            const isOpen = list.style.display !== "none";
+            if (isOpen) { closeFundPicker(); } else { list.style.display = "block"; el("txnFundBtn").classList.add("open"); }
+          });
+          document.addEventListener("click", e => {
+            if (!el("txnFundPicker")?.contains(e.target)) closeFundPicker();
+          });
           el("editToggleBtn").addEventListener("click", () => { closeNavDropdowns(); toggleEditMode(); });
           el("ddThemeBtn").addEventListener("click", e => {
             e.stopPropagation();
@@ -3835,24 +3966,64 @@
             });
           }
 
+          function setFundPickerValue(id, type, name) {
+            el("txnFund").value = id;
+            const text = el("txnFundText");
+            const tag = el("txnFundTag");
+            if (id) {
+              text.textContent = name;
+              tag.textContent = type === "liq" ? "LIQUID" : "EQUITY";
+              tag.className = "fp-tag " + type;
+              tag.style.display = "";
+              el("txnFundList").querySelectorAll(".fund-picker-item").forEach(item => {
+                item.classList.toggle("selected", item.dataset.id === id);
+              });
+            } else {
+              text.textContent = "Select fund…";
+              tag.style.display = "none";
+            }
+          }
+
+          function closeFundPicker() {
+            el("txnFundList").style.display = "none";
+            el("txnFundBtn").classList.remove("open");
+          }
+
           function openTxnModal(txnId) {
             const editId = txnId || null;
             el("txnEditId").value = editId || "";
             el("txnModalTitle").textContent = editId ? "Edit Transaction" : "Add Transaction";
-            const sel = el("txnFund");
-            sel.innerHTML = [
-              ...LIQ_FUNDS.map(f => `<option value="${f.id}">${state.liquid[f.id].name || f.defaultName}</option>`),
-              ...EQ_FUNDS.map(f => `<option value="${f.id}">${state.equity[f.id].name || f.defaultName}</option>`)
-            ].join("");
+
+            const allFunds = [
+              ...LIQ_FUNDS.map(f => ({ id: f.id, name: state.liquid[f.id].name || f.defaultName, type: "liq" })),
+              ...EQ_FUNDS.map(f => ({ id: f.id, name: state.equity[f.id].name || f.defaultName, type: "eq" }))
+            ];
+            const list = el("txnFundList");
+            list.innerHTML = allFunds.map(f =>
+              `<div class="fund-picker-item" data-id="${f.id}" data-type="${f.type}" role="option">
+                <span class="fp-tag ${f.type}">${f.type === "liq" ? "LIQUID" : "EQUITY"}</span>
+                <span class="fund-picker-item-name">${f.name}</span>
+              </div>`
+            ).join("");
+            list.querySelectorAll(".fund-picker-item").forEach(item => {
+              item.addEventListener("click", () => {
+                setFundPickerValue(item.dataset.id, item.dataset.type, item.querySelector(".fund-picker-item-name").textContent);
+                closeFundPicker();
+              });
+            });
+
+            closeFundPicker();
             if (editId) {
               const txn = (state.transactions || []).find(t => t.id === editId);
               if (txn) {
-                sel.value = txn.fundId;
+                const fund = allFunds.find(f => f.id === txn.fundId);
+                if (fund) setFundPickerValue(fund.id, fund.type, fund.name);
                 el("txnDate").value = txn.date || "";
                 el("txnInvested").value = txn.invested || "";
                 el("txnNotes").value = txn.notes || "";
               }
             } else {
+              setFundPickerValue("", "", "");
               const today = new Date();
               el("txnDate").value = today.toISOString().split("T")[0];
               el("txnInvested").value = "";
@@ -3970,10 +4141,10 @@
               totalLiqTgt += tgt;
               totalLiqInv += required;
 
-              const liqRate = paid > 0 && val <= paid ? (paid - val) / paid : 0;
+              const expRatioL = state.liquid[f.id].expenseRatio || 0;
               el("lrate-" + f.id).textContent =
-                paid > 0
-                  ? (liqRate * 100).toFixed(5).replace(/0+$/, "").replace(/\.$/, "") + "%"
+                expRatioL > 0 && val > 0
+                  ? fmt(Math.round(val * expRatioL / 100)) + "/yr"
                   : "—";
 
               el("ldep-" + f.id).textContent = fmt(dep);
@@ -4032,9 +4203,8 @@
               const shown = s.shown || 0;
               const tgt = s.target || 0;
 
-              let rate = 0.00005;
-              if (paid > 0 && shown > 0 && shown <= paid)
-                rate = (paid - shown) / paid;
+              const expRatioE = state.equity[f.id].expenseRatio || 0;
+              const rate = expRatioE / 100;
 
               const cur = shown > 0 ? shown : 0;
               const targetVal = tgt > 0 ? tgt : cur;
@@ -4044,7 +4214,9 @@
               totDuty += duty;
 
               el("erate-" + f.id).textContent =
-                (rate * 100).toFixed(5).replace(/0+$/, "").replace(/\.$/, "") + "%";
+                expRatioE > 0 && shown > 0
+                  ? fmt(Math.round(shown * expRatioE / 100)) + "/yr"
+                  : "—";
 
               if (required > 0) {
                 el("einvlbl-" + f.id).textContent = "Invest now";
