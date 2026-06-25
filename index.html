@@ -1794,6 +1794,50 @@
       }
       .coll-body.open { max-height: 2400px; }
       .coll-body-inner { padding: 4px 14px 16px; }
+
+      /* ═══ NAV DROPDOWNS ═══ */
+      .nav-dd-trigger { display: flex; align-items: center; gap: 4px; }
+      .nav-chevron { font-size: 7px; opacity: 0.55; pointer-events: none; transition: transform 0.2s; }
+      .nav-dd-trigger.dd-open .nav-chevron { transform: rotate(180deg); }
+      .nav-dropdown {
+        position: fixed;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 6px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);
+        z-index: 500;
+        min-width: 148px;
+        animation: matrixIn 0.15s cubic-bezier(0.34,1.4,0.64,1) both;
+      }
+      .nav-dd-item {
+        display: block;
+        width: 100%;
+        background: none;
+        border: none;
+        color: var(--dim);
+        font-family: "Outfit", sans-serif;
+        font-size: 12px;
+        font-weight: 500;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        padding: 11px 14px;
+        cursor: pointer;
+        text-align: left;
+        border-radius: 8px;
+        transition: background 0.12s, color 0.12s;
+      }
+      .nav-dd-item:hover { background: rgba(255,255,255,0.05); color: var(--txt); }
+      .nav-dd-item.active { color: var(--mint); }
+      .nav-dd-item.done { color: var(--mint); background: rgba(74,222,156,0.06); }
+
+      /* hero title row */
+      .hero-title-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
       .add-fund-row {
         display: none;
         padding: 4px 0 10px;
@@ -2174,22 +2218,30 @@
   </head>
   <body>
     <nav class="tabs" id="tabs">
-      <button class="active" data-tab="portfolio">Portfolio</button>
-      <button data-tab="calendar">Schedule</button>
-      <button data-tab="summary">Summary</button>
-      <button data-tab="networth">Net Worth</button>
-      <button data-tab="forecast">Forecast</button>
-      <div class="nav-actions">
-        <span class="dot" id="saveDot" style="display:none"></span>
-        <span id="saveTxt" style="display:none">Auto-saved</span>
-        <button class="edit-toggle" id="editToggleBtn" aria-pressed="false">EDIT</button>
-      </div>
+      <button class="nav-dd-trigger active" id="overviewBtn">Overview <span class="nav-chevron">▾</span></button>
+      <button id="scheduleBtn" data-tab="calendar">Schedule</button>
+      <button id="forecastBtn" data-tab="forecast">Forecast</button>
+      <button class="nav-dd-trigger" id="adminBtn">Admin <span class="nav-chevron">▾</span></button>
+      <span class="dot" id="saveDot" style="display:none"></span>
+      <span id="saveTxt" style="display:none"></span>
     </nav>
 
     <!-- Theme matrix popup -->
     <div id="themeMatrix" class="theme-matrix" style="display:none" role="dialog" aria-label="Accent theme picker">
       <div class="theme-matrix-title">Theme</div>
       <div class="theme-matrix-grid" id="themeMatrixGrid"></div>
+    </div>
+
+    <!-- Overview dropdown -->
+    <div id="overviewDropdown" class="nav-dropdown" style="display:none" role="menu">
+      <button class="nav-dd-item active" data-tab="portfolio">Portfolio</button>
+      <button class="nav-dd-item" data-tab="summary">Summary</button>
+      <button class="nav-dd-item" data-tab="networth">Net Worth</button>
+    </div>
+    <!-- Admin dropdown -->
+    <div id="adminDropdown" class="nav-dropdown" style="display:none" role="menu">
+      <button class="nav-dd-item" id="editToggleBtn" aria-pressed="false">Edit</button>
+      <button class="nav-dd-item" id="ddThemeBtn">Themes</button>
     </div>
 
     <div class="edit-banner" id="editBanner" role="status" aria-live="polite">
@@ -2202,19 +2254,12 @@
 
         <!-- Hero banner -->
         <div class="portfolio-hero">
-          <h1>Portfolio <span class="accent">Planner</span></h1>
-          <div class="hero-actions">
+          <div class="hero-title-row">
+            <h1>Portfolio <span class="accent">Planner</span></h1>
             <button class="privacy-btn" id="privacyBtn" title="Toggle value visibility" aria-label="Toggle value visibility">
               <svg id="privacyIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                 <circle cx="12" cy="12" r="3"/>
-              </svg>
-            </button>
-            <button class="hero-theme-btn" id="heroThemeBtn" title="Change accent theme" aria-label="Change accent theme">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <circle cx="12" cy="12" r="1" fill="currentColor"/>
-                <path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/>
               </svg>
             </button>
           </div>
@@ -3409,26 +3454,73 @@
           el("stpDuration").value = computeStpDuration();
           el("stpDate").value = state.stp.date || "";
 
-          /* Tabs */
-          el("tabs")
-            .querySelectorAll("button[data-tab]")
-            .forEach((btn) => {
-              btn.addEventListener("click", () => {
-                el("tabs")
-                  .querySelectorAll("button[data-tab]")
-                  .forEach((b) => b.classList.remove("active"));
-                btn.classList.add("active");
-                document
-                  .querySelectorAll(".tab-section")
-                  .forEach((s) => s.classList.remove("active"));
-                el("tab-" + btn.dataset.tab).classList.add("active");
-              });
+          /* Nav tabs & dropdowns */
+          const OVERVIEW_TABS = ["portfolio", "summary", "networth"];
+          let _openNavDd = null;
+
+          function navigateTo(tabId) {
+            document.querySelectorAll(".tab-section").forEach(s => s.classList.remove("active"));
+            el("tab-" + tabId).classList.add("active");
+            el("overviewBtn").classList.toggle("active", OVERVIEW_TABS.includes(tabId));
+            el("scheduleBtn").classList.toggle("active", tabId === "calendar");
+            el("forecastBtn").classList.toggle("active", tabId === "forecast");
+            el("adminBtn").classList.remove("active");
+            document.querySelectorAll("#overviewDropdown .nav-dd-item[data-tab]").forEach(item => {
+              item.classList.toggle("active", item.dataset.tab === tabId);
             });
+            closeNavDropdowns();
+          }
+
+          function openNavDropdown(ddId, triggerEl) {
+            if (_openNavDd === ddId) { closeNavDropdowns(); return; }
+            closeNavDropdowns();
+            _openNavDd = ddId;
+            const dd = el(ddId);
+            dd.style.display = "block";
+            const rect = triggerEl.getBoundingClientRect();
+            const ddW = dd.offsetWidth || 160;
+            const isMobile = window.innerWidth <= 600;
+            let left = rect.left;
+            if (left + ddW > window.innerWidth - 8) left = window.innerWidth - ddW - 8;
+            if (left < 8) left = 8;
+            dd.style.left = left + "px";
+            if (isMobile) {
+              dd.style.bottom = (window.innerHeight - rect.top + 8) + "px";
+              dd.style.top = "auto";
+            } else {
+              dd.style.top = (rect.bottom + 6) + "px";
+              dd.style.bottom = "auto";
+            }
+            triggerEl.classList.add("dd-open");
+          }
+
+          function closeNavDropdowns() {
+            if (_openNavDd) { const d = el(_openNavDd); if (d) d.style.display = "none"; _openNavDd = null; }
+            ["overviewBtn","adminBtn"].forEach(id => { const b = el(id); if (b) b.classList.remove("dd-open"); });
+          }
+
+          el("overviewBtn").addEventListener("click", e => { e.stopPropagation(); openNavDropdown("overviewDropdown", el("overviewBtn")); });
+          el("scheduleBtn").addEventListener("click", () => navigateTo("calendar"));
+          el("forecastBtn").addEventListener("click", () => navigateTo("forecast"));
+          el("adminBtn").addEventListener("click", e => { e.stopPropagation(); openNavDropdown("adminDropdown", el("adminBtn")); });
+
+          document.querySelectorAll("#overviewDropdown .nav-dd-item[data-tab]").forEach(item => {
+            item.addEventListener("click", () => navigateTo(item.dataset.tab));
+          });
+
+          document.addEventListener("click", e => {
+            if (!e.target.closest("#overviewDropdown") && !e.target.closest("#adminDropdown")) closeNavDropdowns();
+          });
 
           /* Actions */
           el("copyBtn").addEventListener("click", copySummary);
           el("resetBtn").addEventListener("click", resetAll);
-          el("editToggleBtn").addEventListener("click", toggleEditMode);
+          el("editToggleBtn").addEventListener("click", () => { closeNavDropdowns(); toggleEditMode(); });
+          el("ddThemeBtn").addEventListener("click", e => {
+            e.stopPropagation();
+            closeNavDropdowns();
+            if (themeMatrixOpen) { hideThemeMatrix(); } else { showThemeMatrix(el("adminBtn")); }
+          });
 
           /* Calendar paid-amount editing (event delegation — avoids losing focus on re-render) */
           el("calGrid").addEventListener("input", (e) => {
@@ -4578,10 +4670,6 @@
             privacyMode = !privacyMode;
             document.body.classList.toggle("privacy-mode", privacyMode);
             el("privacyIcon").innerHTML = privacyMode ? EYE_SHUT : EYE_OPEN;
-          });
-          el("heroThemeBtn").addEventListener("click", (e) => {
-            e.stopPropagation();
-            if (themeMatrixOpen) { hideThemeMatrix(); } else { showThemeMatrix(el("heroThemeBtn")); }
           });
 
           /* ════ COLLAPSIBLE SECTIONS ════ */
