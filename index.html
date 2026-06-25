@@ -5163,7 +5163,6 @@
               UI.toast("success", "Changes saved", 2200);
             } else if (e.key === "Escape") {
               hideThemeMatrix();
-              closeSidebar();
             }
           });
 
@@ -5336,14 +5335,20 @@
             if (!matrix) return;
             themeMatrixOpen = true;
 
-            /* Position below the anchor using viewport coords (position:fixed) */
             const rect = anchorEl.getBoundingClientRect();
             const mw = 308;
             let left = rect.left;
             if (left + mw > window.innerWidth - 16) left = window.innerWidth - mw - 16;
             if (left < 8) left = 8;
             matrix.style.left = left + "px";
-            matrix.style.top  = (rect.bottom + 8) + "px";
+            /* If anchor is in bottom half of screen (mobile nav), open upward */
+            if (rect.top > window.innerHeight / 2) {
+              matrix.style.top = "auto";
+              matrix.style.bottom = (window.innerHeight - rect.top + 8) + "px";
+            } else {
+              matrix.style.bottom = "auto";
+              matrix.style.top = (rect.bottom + 8) + "px";
+            }
             matrix.style.display = "block";
           }
 
