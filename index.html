@@ -355,39 +355,11 @@
 
       /* ── RATE CHIP ── */
       .ratechip {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex-wrap: wrap;
         font-size: 10px;
         color: var(--dim);
         margin: 4px 0 8px;
       }
       .ratechip b { color: var(--txt); }
-      .rate-inp-wrap {
-        display: flex;
-        align-items: center;
-        gap: 2px;
-        background: var(--panel-2);
-        border: 1px solid var(--line);
-        border-radius: 5px;
-        padding: 2px 6px;
-      }
-      .rate-inp {
-        background: none;
-        border: none;
-        outline: none;
-        color: var(--txt);
-        font-family: "JetBrains Mono", monospace;
-        font-size: 11px;
-        width: 54px;
-        -webkit-appearance: none;
-        -moz-appearance: textfield;
-      }
-      .rate-inp::-webkit-outer-spin-button,
-      .rate-inp::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-      .rate-sfx { color: var(--dim); font-family: "JetBrains Mono", monospace; font-size: 11px; }
-      .rate-cost-sep { color: var(--line); }
 
       /* ── SIP ROW ── */
       .sip-divider {
@@ -3166,8 +3138,8 @@
           function defaultState() {
             return {
               liquid: {
-                liq1: { name: "Liquid Fund 1", label: "Liquid Fund 1", paid: 0, value: 0, reserve: 0, target: 0, expenseRatio: 0 },
-                liq2: { name: "Liquid Fund 2", label: "Liquid Fund 2", paid: 0, value: 0, reserve: 0, target: 0, expenseRatio: 0 },
+                liq1: { name: "Liquid Fund 1", label: "Liquid Fund 1", paid: 0, value: 0, reserve: 0, target: 0 },
+                liq2: { name: "Liquid Fund 2", label: "Liquid Fund 2", paid: 0, value: 0, reserve: 0, target: 0 },
               },
               equity: {
                 eq1: {
@@ -3179,7 +3151,6 @@
                   sipAmt: 0,
                   sipDate: 5,
                   sipPaidAmounts: {},
-                  expenseRatio: 0,
                 },
                 eq2: {
                   name: "Flexi Cap Fund",
@@ -3190,7 +3161,6 @@
                   sipAmt: 0,
                   sipDate: 5,
                   sipPaidAmounts: {},
-                  expenseRatio: 0,
                 },
                 eq3: {
                   name: "Mid Cap Fund",
@@ -3201,7 +3171,6 @@
                   sipAmt: 0,
                   sipDate: 5,
                   sipPaidAmounts: {},
-                  expenseRatio: 0,
                 },
               },
               liquidOrder: ['liq1', 'liq2'],
@@ -3225,8 +3194,8 @@
               const s = JSON.parse(raw);
               const liqOrder = s.liquidOrder || ['liq1', 'liq2'];
               const eqOrder = s.equityOrder || ['eq1', 'eq2', 'eq3'];
-              const liqBase = { name: '', label: '', paid: 0, value: 0, reserve: 0, target: 0, expenseRatio: 0 };
-              const eqBase = { name: '', label: '', paid: 0, shown: 0, target: 0, sipAmt: 0, sipDate: 5, sipPaidAmounts: {}, expenseRatio: 0 };
+              const liqBase = { name: '', label: '', paid: 0, value: 0, reserve: 0, target: 0 };
+              const eqBase = { name: '', label: '', paid: 0, shown: 0, target: 0, sipAmt: 0, sipDate: 5, sipPaidAmounts: {} };
               return {
                 liquid: Object.fromEntries(liqOrder.map(id => [id, { ...liqBase, ...(s.liquid?.[id] || {}) }])),
                 equity: Object.fromEntries(eqOrder.map(id => [id, { ...eqBase, ...(s.equity?.[id] || {}) }])),
@@ -3670,16 +3639,7 @@
                   </div>
                 </div>
               </div>
-              <div class="ratechip">
-                <span>Expense ratio</span>
-                <div class="rate-inp-wrap">
-                  <input id="lexpense-${f.id}" class="rate-inp" type="number" min="0" max="10" step="0.001"
-                    placeholder="0.00" inputmode="decimal" value="${s.expenseRatio || ""}" />
-                  <span class="rate-sfx">%</span>
-                </div>
-                <span class="rate-cost-sep">·</span>
-                <span>Annual cost: <b id="lrate-${f.id}">—</b></span>
-              </div>
+              <div class="ratechip">Expense ratio: <b id="lrate-${f.id}">—</b></div>
               <div class="grid2">
                 <div class="field">
                   <label class="flabel" for="ltgt-${f.id}">Target total</label>
@@ -3723,16 +3683,7 @@
                   </div>
                 </div>
               </div>
-              <div class="ratechip">
-                <span>Expense ratio</span>
-                <div class="rate-inp-wrap">
-                  <input id="eexpense-${f.id}" class="rate-inp" type="number" min="0" max="10" step="0.001"
-                    placeholder="0.00" inputmode="decimal" value="${s.expenseRatio || ""}" />
-                  <span class="rate-sfx">%</span>
-                </div>
-                <span class="rate-cost-sep">·</span>
-                <span>Annual cost: <b id="erate-${f.id}">—</b></span>
-              </div>
+              <div class="ratechip">Expense ratio: <b id="erate-${f.id}">—</b></div>
               <div class="field">
                 <label class="flabel" for="etgt-${f.id}">Target total</label>
                 <div class="ibox"><span class="pfx">&#8377;</span>
@@ -3788,7 +3739,6 @@
               el("lval-"     + f.id)?.addEventListener("input", e => { state.liquid[f.id].value = num(e.target.value); render(); });
               el("lres-"     + f.id)?.addEventListener("input", e => { state.liquid[f.id].reserve = num(e.target.value); render(); });
               el("ltgt-"     + f.id)?.addEventListener("input", e => { state.liquid[f.id].target = num(e.target.value); render(); });
-              el("lexpense-" + f.id)?.addEventListener("input", e => { state.liquid[f.id].expenseRatio = parseFloat(e.target.value) || 0; render(); saveState(); });
             });
             EQ_FUNDS.forEach(f => {
               el("ename-"    + f.id)?.addEventListener("input", e => { state.equity[f.id].name = e.target.value; render(); });
@@ -3797,7 +3747,6 @@
               el("etgt-"     + f.id)?.addEventListener("input", e => { state.equity[f.id].target = num(e.target.value); render(); });
               el("esip-"     + f.id)?.addEventListener("input", e => { state.equity[f.id].sipAmt = num(e.target.value); render(); });
               el("esipdate-" + f.id)?.addEventListener("input", e => { state.equity[f.id].sipDate = num(e.target.value) || 5; render(); });
-              el("eexpense-" + f.id)?.addEventListener("input", e => { state.equity[f.id].expenseRatio = parseFloat(e.target.value) || 0; render(); saveState(); });
             });
           }
 
@@ -4206,11 +4155,10 @@
               totalLiqTgt += tgt;
               totalLiqInv += required;
 
-              const expRatioL = state.liquid[f.id].expenseRatio || 0;
-              const baseL = val > 0 ? val : paid;
+              const liqRatePct = paid > 0 && val > 0 ? ((paid - val) / paid) * 100 : null;
               el("lrate-" + f.id).textContent =
-                expRatioL > 0 && baseL > 0
-                  ? fmt(Math.round(baseL * expRatioL / 100)) + "/yr"
+                liqRatePct !== null
+                  ? liqRatePct.toFixed(2).replace(/\.?0+$/, "") + "%"
                   : "—";
 
               el("ldep-" + f.id).textContent = fmt(dep);
@@ -4269,8 +4217,8 @@
               const shown = s.shown || 0;
               const tgt = s.target || 0;
 
-              const expRatioE = state.equity[f.id].expenseRatio || 0;
-              const rate = expRatioE / 100;
+              const eqRatePct = paid > 0 && shown > 0 ? ((paid - shown) / paid) * 100 : null;
+              const rate = eqRatePct !== null ? eqRatePct / 100 : 0;
 
               const cur = shown > 0 ? shown : 0;
               const targetVal = tgt > 0 ? tgt : cur;
@@ -4279,10 +4227,9 @@
               const duty = required * rate;
               totDuty += duty;
 
-              const baseE = shown > 0 ? shown : paid;
               el("erate-" + f.id).textContent =
-                expRatioE > 0 && baseE > 0
-                  ? fmt(Math.round(baseE * expRatioE / 100)) + "/yr"
+                eqRatePct !== null
+                  ? eqRatePct.toFixed(2).replace(/\.?0+$/, "") + "%"
                   : "—";
 
               if (required > 0) {
