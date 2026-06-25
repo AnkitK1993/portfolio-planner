@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&family=Fraunces:opsz,wght@9..144,300;9..144,600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Space+Mono:wght@400;700&family=Fraunces:opsz,wght@9..144,300;9..144,600&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -3025,9 +3025,7 @@
       </div>
     </div>
 
-    <!-- Firebase SDK (compat) — loaded only when FIREBASE_CONFIG.apiKey is set -->
-    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <!-- Firebase SDK loaded lazily by initFirebase() only when apiKey is configured -->
 
     <script>
           /* ════════════════════════════════════════════
@@ -3265,14 +3263,24 @@
 
           function initFirebase() {
             if (!FIREBASE_CONFIG.apiKey) return;
-            try {
-              firebase.initializeApp(FIREBASE_CONFIG);
-              db = firebase.firestore();
-              db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
-              fbEnabled = true;
-            } catch (e) {
-              console.warn("Firebase init:", e.message);
-            }
+            const loadScript = src => new Promise((resolve, reject) => {
+              const s = document.createElement("script");
+              s.src = src; s.onload = resolve; s.onerror = reject;
+              document.head.appendChild(s);
+            });
+            loadScript("https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js")
+              .then(() => loadScript("https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"))
+              .then(() => {
+                try {
+                  firebase.initializeApp(FIREBASE_CONFIG);
+                  db = firebase.firestore();
+                  db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+                  fbEnabled = true;
+                } catch (e) {
+                  console.warn("Firebase init:", e.message);
+                }
+              })
+              .catch(e => console.warn("Firebase SDK load failed:", e));
           }
 
           /* Merge cloud state into local, persist, and re-render */
@@ -3701,19 +3709,19 @@
               inp.addEventListener("input", e => { state.equity[f.id].label = e.target.value; });
             });
             LIQ_FUNDS.forEach(f => {
-              el("lname-"    + f.id)?.addEventListener("input", e => { state.liquid[f.id].name = e.target.value; render(); });
-              el("lpaid-"    + f.id)?.addEventListener("input", e => { state.liquid[f.id].paid = num(e.target.value); render(); });
-              el("lval-"     + f.id)?.addEventListener("input", e => { state.liquid[f.id].value = num(e.target.value); render(); });
-              el("lres-"     + f.id)?.addEventListener("input", e => { state.liquid[f.id].reserve = num(e.target.value); render(); });
-              el("ltgt-"     + f.id)?.addEventListener("input", e => { state.liquid[f.id].target = num(e.target.value); render(); });
+              el("lname-"    + f.id)?.addEventListener("input", e => { state.liquid[f.id].name = e.target.value; scheduleRender(); });
+              el("lpaid-"    + f.id)?.addEventListener("input", e => { state.liquid[f.id].paid = num(e.target.value); scheduleRender(); });
+              el("lval-"     + f.id)?.addEventListener("input", e => { state.liquid[f.id].value = num(e.target.value); scheduleRender(); });
+              el("lres-"     + f.id)?.addEventListener("input", e => { state.liquid[f.id].reserve = num(e.target.value); scheduleRender(); });
+              el("ltgt-"     + f.id)?.addEventListener("input", e => { state.liquid[f.id].target = num(e.target.value); scheduleRender(); });
             });
             EQ_FUNDS.forEach(f => {
-              el("ename-"    + f.id)?.addEventListener("input", e => { state.equity[f.id].name = e.target.value; render(); });
-              el("epaid-"    + f.id)?.addEventListener("input", e => { state.equity[f.id].paid = num(e.target.value); render(); });
-              el("eshown-"   + f.id)?.addEventListener("input", e => { state.equity[f.id].shown = num(e.target.value); render(); });
-              el("etgt-"     + f.id)?.addEventListener("input", e => { state.equity[f.id].target = num(e.target.value); render(); });
-              el("esip-"     + f.id)?.addEventListener("input", e => { state.equity[f.id].sipAmt = num(e.target.value); render(); });
-              el("esipdate-" + f.id)?.addEventListener("input", e => { state.equity[f.id].sipDate = num(e.target.value) || 5; render(); });
+              el("ename-"    + f.id)?.addEventListener("input", e => { state.equity[f.id].name = e.target.value; scheduleRender(); });
+              el("epaid-"    + f.id)?.addEventListener("input", e => { state.equity[f.id].paid = num(e.target.value); scheduleRender(); });
+              el("eshown-"   + f.id)?.addEventListener("input", e => { state.equity[f.id].shown = num(e.target.value); scheduleRender(); });
+              el("etgt-"     + f.id)?.addEventListener("input", e => { state.equity[f.id].target = num(e.target.value); scheduleRender(); });
+              el("esip-"     + f.id)?.addEventListener("input", e => { state.equity[f.id].sipAmt = num(e.target.value); scheduleRender(); });
+              el("esipdate-" + f.id)?.addEventListener("input", e => { state.equity[f.id].sipDate = num(e.target.value) || 5; scheduleRender(); });
             });
           }
 
@@ -3767,25 +3775,25 @@
           /* STP controls */
           el("stpOverride").addEventListener("input", (e) => {
             state.stp.override = num(e.target.value);
-            render();
+            scheduleRender();
           });
           el("stpStartDate").addEventListener("input", (e) => {
             state.stp.startDate = e.target.value;
             const d = computeStpDuration();
             state.stp.duration = d;
             el("stpDuration").value = d;
-            render();
+            scheduleRender();
           });
           el("stpEndDate").addEventListener("input", (e) => {
             state.stp.endDate = e.target.value;
             const d = computeStpDuration();
             state.stp.duration = d;
             el("stpDuration").value = d;
-            render();
+            scheduleRender();
           });
           el("stpDuration").addEventListener("input", (e) => {
             state.stp.duration = num(e.target.value);
-            render();
+            scheduleRender();
           });
           el("stpDate").addEventListener("input", (e) => {
             state.stp.date = num(e.target.value);
@@ -3815,6 +3823,8 @@
               item.classList.toggle("active", item.dataset.tab === tabId);
             });
             if (tabId === "transactions") renderTxns();
+            if (tabId === "forecast") renderForecast();
+            if (tabId === "calendar") render();
             closeNavDropdowns();
           }
 
@@ -4102,6 +4112,12 @@
           /* ════════════════════════════════════════════
              MAIN RENDER
           ════════════════════════════════════════════ */
+          /* Debounced render: coalesces rapid input events into one frame */
+          let _raf = 0;
+          function scheduleRender() {
+            cancelAnimationFrame(_raf);
+            _raf = requestAnimationFrame(render);
+          }
           function render() {
             /* — Liquid funds — */
             let totalLiqVal = 0,
@@ -4349,9 +4365,10 @@
             }
 
             renderNetWorth();
-            renderForecast();
             renderUpcoming(stpAmt, weights);
-            renderCalendar(stpAmt, weights);
+            const _activeTab = document.querySelector(".tab-section.active")?.id;
+            if (_activeTab === "tab-forecast") renderForecast();
+            if (_activeTab === "tab-calendar") renderCalendar(stpAmt, weights);
           }
 
           function setAllocBar(eqId, liqId, splitId, eqPct, total) {
