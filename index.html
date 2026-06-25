@@ -3788,7 +3788,7 @@
               el("lval-"     + f.id)?.addEventListener("input", e => { state.liquid[f.id].value = num(e.target.value); render(); });
               el("lres-"     + f.id)?.addEventListener("input", e => { state.liquid[f.id].reserve = num(e.target.value); render(); });
               el("ltgt-"     + f.id)?.addEventListener("input", e => { state.liquid[f.id].target = num(e.target.value); render(); });
-              el("lexpense-" + f.id)?.addEventListener("input", e => { state.liquid[f.id].expenseRatio = parseFloat(e.target.value) || 0; render(); });
+              el("lexpense-" + f.id)?.addEventListener("input", e => { state.liquid[f.id].expenseRatio = parseFloat(e.target.value) || 0; render(); saveState(); });
             });
             EQ_FUNDS.forEach(f => {
               el("ename-"    + f.id)?.addEventListener("input", e => { state.equity[f.id].name = e.target.value; render(); });
@@ -3797,7 +3797,7 @@
               el("etgt-"     + f.id)?.addEventListener("input", e => { state.equity[f.id].target = num(e.target.value); render(); });
               el("esip-"     + f.id)?.addEventListener("input", e => { state.equity[f.id].sipAmt = num(e.target.value); render(); });
               el("esipdate-" + f.id)?.addEventListener("input", e => { state.equity[f.id].sipDate = num(e.target.value) || 5; render(); });
-              el("eexpense-" + f.id)?.addEventListener("input", e => { state.equity[f.id].expenseRatio = parseFloat(e.target.value) || 0; render(); });
+              el("eexpense-" + f.id)?.addEventListener("input", e => { state.equity[f.id].expenseRatio = parseFloat(e.target.value) || 0; render(); saveState(); });
             });
           }
 
@@ -4207,9 +4207,10 @@
               totalLiqInv += required;
 
               const expRatioL = state.liquid[f.id].expenseRatio || 0;
+              const baseL = val > 0 ? val : paid;
               el("lrate-" + f.id).textContent =
-                expRatioL > 0 && val > 0
-                  ? fmt(Math.round(val * expRatioL / 100)) + "/yr"
+                expRatioL > 0 && baseL > 0
+                  ? fmt(Math.round(baseL * expRatioL / 100)) + "/yr"
                   : "—";
 
               el("ldep-" + f.id).textContent = fmt(dep);
@@ -4278,9 +4279,10 @@
               const duty = required * rate;
               totDuty += duty;
 
+              const baseE = shown > 0 ? shown : paid;
               el("erate-" + f.id).textContent =
-                expRatioE > 0 && shown > 0
-                  ? fmt(Math.round(shown * expRatioE / 100)) + "/yr"
+                expRatioE > 0 && baseE > 0
+                  ? fmt(Math.round(baseE * expRatioE / 100)) + "/yr"
                   : "—";
 
               if (required > 0) {
