@@ -1849,12 +1849,12 @@
       }
       /* ── PRIVACY MODE + THEME BUTTON ── */
       .hero-actions {
-        position: absolute;
-        top: 24px;
-        right: 24px;
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
         gap: 8px;
+        justify-content: flex-end;
+        margin-top: 20px;
+        position: relative;
         z-index: 2;
       }
       .privacy-btn, .hero-theme-btn {
@@ -2202,6 +2202,7 @@
 
         <!-- Hero banner -->
         <div class="portfolio-hero">
+          <h1>Portfolio <span class="accent">Planner</span></h1>
           <div class="hero-actions">
             <button class="privacy-btn" id="privacyBtn" title="Toggle value visibility" aria-label="Toggle value visibility">
               <svg id="privacyIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -2217,7 +2218,6 @@
               </svg>
             </button>
           </div>
-          <h1>Portfolio <span class="accent">Planner</span></h1>
         </div>
 
         <!-- Hidden dep-summary anchors kept for JS compatibility -->
@@ -2252,12 +2252,12 @@
 
         <!-- Collapsible: Upcoming Payments -->
         <div class="coll-section">
-          <button class="coll-head open" id="coll-head-upcoming" aria-expanded="true">
+          <button class="coll-head" id="coll-head-upcoming" aria-expanded="false">
             <span class="coll-title">Upcoming Payments</span>
             <span class="coll-meta" id="coll-meta-upcoming"></span>
             <span class="coll-chevron">▾</span>
           </button>
-          <div class="coll-body open" id="coll-body-upcoming">
+          <div class="coll-body" id="coll-body-upcoming">
             <div class="coll-body-inner">
               <div id="upcomingSection"></div>
             </div>
