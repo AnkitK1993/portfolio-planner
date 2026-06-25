@@ -2242,6 +2242,179 @@
         color: #00c8ff;
       }
 
+
+      /* ═══ TRANSACTION MODAL ═══ */
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.72);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+      }
+      .modal-card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        width: 100%;
+        max-width: 400px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+        animation: matrixIn 0.18s cubic-bezier(0.34,1.2,0.64,1) both;
+      }
+      .modal-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 20px 14px;
+        border-bottom: 1px solid var(--line);
+      }
+      .modal-title {
+        font-family: "Fraunces", serif;
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--txt);
+      }
+      .modal-close {
+        background: none;
+        border: none;
+        color: var(--dim);
+        font-size: 16px;
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 6px;
+        transition: color 0.15s;
+      }
+      .modal-close:hover { color: var(--txt); }
+      .modal-body { padding: 16px 20px; display: flex; flex-direction: column; gap: 13px; }
+      .modal-foot {
+        display: flex;
+        gap: 10px;
+        padding: 14px 20px;
+        border-top: 1px solid var(--line);
+        justify-content: flex-end;
+      }
+      .form-row { display: flex; flex-direction: column; gap: 6px; }
+      .form-lbl {
+        font-size: 9.5px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--dim);
+        font-family: "JetBrains Mono", monospace;
+      }
+      .form-inp, .form-sel {
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        color: var(--txt);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 14px;
+        padding: 9px 12px;
+        width: 100%;
+        outline: none;
+        transition: border-color 0.15s;
+        -webkit-appearance: none;
+      }
+      .form-inp:focus, .form-sel:focus { border-color: var(--mint); }
+      .btn-primary {
+        background: var(--mint);
+        color: #000;
+        border: none;
+        border-radius: 8px;
+        padding: 9px 20px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        cursor: pointer;
+        text-transform: uppercase;
+        transition: opacity 0.15s;
+      }
+      .btn-primary:hover { opacity: 0.82; }
+      .btn-ghost {
+        background: none;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        color: var(--dim);
+        padding: 9px 16px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+        cursor: pointer;
+        text-transform: uppercase;
+        transition: color 0.15s, border-color 0.15s;
+      }
+      .btn-ghost:hover { color: var(--txt); border-color: var(--txt); }
+
+      /* ═══ TRANSACTION LIST ═══ */
+      .txn-empty {
+        text-align: center;
+        color: var(--dim);
+        font-size: 13px;
+        padding: 48px 20px;
+        line-height: 1.8;
+      }
+      .txn-month-head {
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: var(--dim);
+        padding: 14px 4px 6px;
+        border-bottom: 1px solid rgba(255,255,255,0.04);
+        margin-bottom: 6px;
+        font-family: "JetBrains Mono", monospace;
+      }
+      .txn-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 14px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        margin-bottom: 6px;
+      }
+      .txn-date-col {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        color: var(--dim);
+        white-space: nowrap;
+        min-width: 56px;
+        line-height: 1.4;
+        text-align: center;
+      }
+      .txn-date-day { font-size: 18px; font-weight: 700; color: var(--txt); display: block; }
+      .txn-info { flex: 1; min-width: 0; }
+      .txn-fund-name {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--txt);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .txn-sub { font-size: 10px; color: var(--dim); margin-top: 2px; }
+      .txn-right { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex-shrink: 0; }
+      .txn-amt {
+        font-family: "Fraunces", serif;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--txt);
+      }
+      .txn-acts { display: flex; gap: 5px; }
+      .txn-act-btn {
+        background: none;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        color: var(--dim);
+        font-size: 11px;
+        padding: 3px 8px;
+        cursor: pointer;
+        transition: color 0.12s, border-color 0.12s;
+      }
+      .txn-act-btn.edit:hover { color: var(--mint); border-color: var(--mint); }
+      .txn-act-btn.del:hover { color: var(--coral); border-color: var(--coral); }
     </style>
   </head>
   <body>
@@ -2272,6 +2445,9 @@
     <div id="adminDropdown" class="nav-dropdown" style="display:none" role="menu">
       <button class="nav-dd-item" id="editToggleBtn" aria-pressed="false">Edit</button>
       <button class="nav-dd-item" id="ddThemeBtn">Themes</button>
+      <div class="nav-dd-sep"></div>
+      <button class="nav-dd-item" id="ddAddTxnBtn">Add Transaction</button>
+      <button class="nav-dd-item" id="ddTxnsBtn">Transactions</button>
     </div>
 
     <div class="edit-banner" id="editBanner" role="status" aria-live="polite">
@@ -2709,8 +2885,56 @@
           </div>
         </div>
       </section>
+
+      <!-- ═══════════════ TRANSACTIONS ═══════════════ -->
+      <section class="tab-section" id="tab-transactions">
+        <div class="pg-head">
+          <h1>Transaction <span class="accent">History</span></h1>
+          <p>All recorded fund investments. Tap a row to edit or delete.</p>
+          <button class="btn btn-primary" id="txnAddFromListBtn" style="margin-top:12px;display:inline-flex;align-items:center;gap:6px;">+ Add Transaction</button>
+        </div>
+        <div id="txnList"></div>
+      </section>
+
     </div>
     <!-- /app -->
+
+    <!-- ═══ ADD / EDIT TRANSACTION MODAL ═══ -->
+    <div id="txnModal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <div class="modal-head">
+          <span class="modal-title" id="txnModalTitle">Add Transaction</span>
+          <button class="modal-close" id="txnModalClose" aria-label="Close">✕</button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="txnEditId" />
+          <div class="form-row">
+            <label class="form-lbl">Fund</label>
+            <select class="form-sel" id="txnFund"></select>
+          </div>
+          <div class="form-row">
+            <label class="form-lbl">Date</label>
+            <input class="form-inp" id="txnDate" type="date" />
+          </div>
+          <div class="form-row">
+            <label class="form-lbl">Amount Invested (₹)</label>
+            <input class="form-inp" id="txnInvested" type="number" placeholder="0" inputmode="numeric" min="0" />
+          </div>
+          <div class="form-row">
+            <label class="form-lbl">Value After Expense (₹)</label>
+            <input class="form-inp" id="txnAfterExp" type="number" placeholder="0" inputmode="numeric" min="0" />
+          </div>
+          <div class="form-row">
+            <label class="form-lbl">Notes (optional)</label>
+            <input class="form-inp" id="txnNotes" type="text" placeholder="e.g. SIP Jan 2025" />
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn btn-ghost" id="txnCancelBtn">Cancel</button>
+          <button class="btn btn-primary" id="txnSaveBtn">Save</button>
+        </div>
+      </div>
+    </div>
 
     <!-- Firebase SDK (compat) — loaded only when FIREBASE_CONFIG.apiKey is set -->
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -2835,6 +3059,7 @@
                 snapshots: {},
               },
               forecast: { bankBalance: 0, investments: 0, monthlyInvest: 0, annualRate: 12 },
+              transactions: [],
               _meta: { v: 0, savedAt: null, syncedAt: null },
             };
           }
@@ -2860,6 +3085,7 @@
                   snapshots: { ...(s.networth?.snapshots || {}) },
                 },
                 forecast: { ...def.forecast, ...(s.forecast || {}) },
+                transactions: Array.isArray(s.transactions) ? s.transactions : [],
                 _meta: { ...def._meta, ...(s._meta || {}) },
               };
             } catch {
@@ -3499,6 +3725,7 @@
             document.querySelectorAll("#overviewDropdown .nav-dd-item[data-tab]").forEach(item => {
               item.classList.toggle("active", item.dataset.tab === tabId);
             });
+            if (tabId === "transactions") renderTxns();
             closeNavDropdowns();
           }
 
@@ -3547,6 +3774,13 @@
           /* Actions */
           el("copyBtn").addEventListener("click", copySummary);
           el("resetBtn").addEventListener("click", resetAll);
+          el("ddAddTxnBtn").addEventListener("click", () => { closeNavDropdowns(); openTxnModal(); });
+          el("ddTxnsBtn").addEventListener("click", () => { closeNavDropdowns(); navigateTo("transactions"); });
+          el("txnModalClose").addEventListener("click", closeTxnModal);
+          el("txnCancelBtn").addEventListener("click", closeTxnModal);
+          el("txnSaveBtn").addEventListener("click", saveTxn);
+          el("txnAddFromListBtn").addEventListener("click", () => openTxnModal());
+          el("txnModal").addEventListener("click", e => { if (e.target === el("txnModal")) closeTxnModal(); });
           el("editToggleBtn").addEventListener("click", () => { closeNavDropdowns(); toggleEditMode(); });
           el("ddThemeBtn").addEventListener("click", e => {
             e.stopPropagation();
@@ -3568,6 +3802,147 @@
               state.equity[evid].sipPaidAmounts[month] = val;
             }
           });
+
+          /* ════════════════════════════════════════════
+             TRANSACTIONS
+          ════════════════════════════════════════════ */
+          function applyTxnTotals() {
+            if (!state.transactions || !state.transactions.length) return;
+            const totals = {};
+            state.transactions.forEach(t => {
+              totals[t.fundId] = (totals[t.fundId] || 0) + (Number(t.invested) || 0);
+            });
+            LIQ_FUNDS.forEach(f => {
+              if (totals[f.id] !== undefined) {
+                state.liquid[f.id].paid = totals[f.id];
+                const inp = document.getElementById("lpaid-" + f.id);
+                if (inp && document.activeElement !== inp) inp.value = totals[f.id] || "";
+              }
+            });
+            EQ_FUNDS.forEach(f => {
+              if (totals[f.id] !== undefined) {
+                state.equity[f.id].paid = totals[f.id];
+                const inp = document.getElementById("epaid-" + f.id);
+                if (inp && document.activeElement !== inp) inp.value = totals[f.id] || "";
+              }
+            });
+          }
+
+          function openTxnModal(txnId) {
+            const editId = txnId || null;
+            el("txnEditId").value = editId || "";
+            el("txnModalTitle").textContent = editId ? "Edit Transaction" : "Add Transaction";
+            const sel = el("txnFund");
+            sel.innerHTML = [
+              ...LIQ_FUNDS.map(f => `<option value="${f.id}">${state.liquid[f.id].name || f.defaultName}</option>`),
+              ...EQ_FUNDS.map(f => `<option value="${f.id}">${state.equity[f.id].name || f.defaultName}</option>`)
+            ].join("");
+            if (editId) {
+              const txn = (state.transactions || []).find(t => t.id === editId);
+              if (txn) {
+                sel.value = txn.fundId;
+                el("txnDate").value = txn.date || "";
+                el("txnInvested").value = txn.invested || "";
+                el("txnAfterExp").value = txn.afterExpense || "";
+                el("txnNotes").value = txn.notes || "";
+              }
+            } else {
+              const today = new Date();
+              el("txnDate").value = today.toISOString().split("T")[0];
+              el("txnInvested").value = "";
+              el("txnAfterExp").value = "";
+              el("txnNotes").value = "";
+            }
+            el("txnModal").style.display = "flex";
+          }
+
+          function closeTxnModal() {
+            el("txnModal").style.display = "none";
+          }
+
+          function saveTxn() {
+            const fundId = el("txnFund").value;
+            const date = el("txnDate").value;
+            const invested = Number(el("txnInvested").value) || 0;
+            const afterExpense = Number(el("txnAfterExp").value) || 0;
+            const notes = el("txnNotes").value.trim();
+            const editId = el("txnEditId").value;
+            if (!fundId || !date || !invested) {
+              UI.toast("error", "Fund, date and amount are required", 2500);
+              return;
+            }
+            if (!state.transactions) state.transactions = [];
+            if (editId) {
+              const idx = state.transactions.findIndex(t => t.id === editId);
+              if (idx !== -1) state.transactions[idx] = { id: editId, fundId, date, invested, afterExpense, notes };
+            } else {
+              state.transactions.push({ id: String(Date.now()), fundId, date, invested, afterExpense, notes });
+            }
+            applyTxnTotals();
+            saveState();
+            render();
+            renderTxns();
+            closeTxnModal();
+            UI.toast("success", editId ? "Transaction updated" : "Transaction added", 2000);
+          }
+
+          function deleteTxn(id) {
+            if (!confirm("Delete this transaction?")) return;
+            state.transactions = (state.transactions || []).filter(t => t.id !== id);
+            applyTxnTotals();
+            saveState();
+            render();
+            renderTxns();
+          }
+
+          function renderTxns() {
+            const container = document.getElementById("txnList");
+            if (!container) return;
+            const txns = [...(state.transactions || [])].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+            if (!txns.length) {
+              container.innerHTML = `<div class="txn-empty">No transactions yet.<br>Use Admin → Add Transaction to record one.</div>`;
+              return;
+            }
+            const months = {};
+            txns.forEach(t => {
+              const key = t.date ? t.date.slice(0, 7) : "unknown";
+              if (!months[key]) months[key] = [];
+              months[key].push(t);
+            });
+            let html = "";
+            Object.entries(months).forEach(([key, list]) => {
+              const label = key !== "unknown"
+                ? new Date(key + "-01T00:00:00").toLocaleDateString("en-IN", { month: "long", year: "numeric" })
+                : "Unknown Date";
+              html += `<div class="txn-month-head">${label}</div>`;
+              list.forEach(t => {
+                const day = t.date ? t.date.slice(8, 10) : "—";
+                const mo = t.date ? new Date(t.date + "T00:00:00").toLocaleDateString("en-IN", { month: "short" }) : "";
+                html += `<div class="txn-row">
+                  <div class="txn-date-col"><span class="txn-date-day">${day}</span>${mo}</div>
+                  <div class="txn-info">
+                    <div class="txn-fund-name">${fundName(t.fundId)}</div>
+                    ${t.afterExpense ? `<div class="txn-sub">After expense: ${fmt(t.afterExpense)}</div>` : ""}
+                    ${t.notes ? `<div class="txn-sub">${t.notes}</div>` : ""}
+                  </div>
+                  <div class="txn-right">
+                    <div class="txn-amt">${fmt(t.invested)}</div>
+                    <div class="txn-acts">
+                      <button class="txn-act-btn edit" data-id="${t.id}">Edit</button>
+                      <button class="txn-act-btn del" data-id="${t.id}">Del</button>
+                    </div>
+                  </div>
+                </div>`;
+              });
+            });
+            container.innerHTML = html;
+            container.querySelectorAll(".txn-act-btn.edit").forEach(btn => {
+              btn.addEventListener("click", e => { e.stopPropagation(); openTxnModal(btn.dataset.id); });
+            });
+            container.querySelectorAll(".txn-act-btn.del").forEach(btn => {
+              btn.addEventListener("click", e => { e.stopPropagation(); deleteTxn(btn.dataset.id); });
+            });
+          }
 
           /* ════════════════════════════════════════════
              MAIN RENDER
