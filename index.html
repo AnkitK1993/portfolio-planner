@@ -2347,6 +2347,17 @@
       }
       .btn-ghost:hover { color: var(--txt); border-color: var(--txt); }
 
+      /* ═══ TRANSACTION-DRIVEN FIELDS (read-only) ═══ */
+      .txn-driven { opacity: 0.6; cursor: default; }
+      .txn-lock {
+        font-size: 7.5px;
+        color: var(--mint);
+        opacity: 0.6;
+        letter-spacing: 0.2px;
+        text-transform: none;
+        font-family: "JetBrains Mono", monospace;
+      }
+
       /* ═══ TRANSACTION LIST ═══ */
       .txn-empty {
         text-align: center;
@@ -3505,15 +3516,15 @@
               </div>
               <div class="grid2">
                 <div class="field">
-                  <label class="flabel" for="lpaid-${f.id}">Invested (paid)</label>
+                  <label class="flabel" for="lpaid-${f.id}">Invested <span class="txn-lock">via transactions</span></label>
                   <div class="ibox"><span class="pfx">&#8377;</span>
-                    <input class="num liq" id="lpaid-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.paid || ""}" />
+                    <input class="num liq txn-driven" id="lpaid-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.paid || ""}" readonly />
                   </div>
                 </div>
                 <div class="field">
-                  <label class="flabel" for="lval-${f.id}">After expense</label>
+                  <label class="flabel" for="lval-${f.id}">After expense <span class="txn-lock">via transactions</span></label>
                   <div class="ibox"><span class="pfx">&#8377;</span>
-                    <input class="num liq" id="lval-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.value || ""}" />
+                    <input class="num liq txn-driven" id="lval-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.value || ""}" readonly />
                   </div>
                 </div>
               </div>
@@ -3549,15 +3560,15 @@
               </div>
               <div class="grid2">
                 <div class="field">
-                  <label class="flabel" for="epaid-${f.id}">Invested (paid)</label>
+                  <label class="flabel" for="epaid-${f.id}">Invested <span class="txn-lock">via transactions</span></label>
                   <div class="ibox"><span class="pfx">&#8377;</span>
-                    <input class="num" id="epaid-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.paid || ""}" />
+                    <input class="num txn-driven" id="epaid-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.paid || ""}" readonly />
                   </div>
                 </div>
                 <div class="field">
-                  <label class="flabel" for="eshown-${f.id}">After expense</label>
+                  <label class="flabel" for="eshown-${f.id}">After expense <span class="txn-lock">via transactions</span></label>
                   <div class="ibox"><span class="pfx">&#8377;</span>
-                    <input class="num" id="eshown-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.shown || ""}" />
+                    <input class="num txn-driven" id="eshown-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.shown || ""}" readonly />
                   </div>
                 </div>
               </div>
@@ -3808,22 +3819,33 @@
           ════════════════════════════════════════════ */
           function applyTxnTotals() {
             if (!state.transactions || !state.transactions.length) return;
-            const totals = {};
+            const invested = {}, afterExp = {};
             state.transactions.forEach(t => {
-              totals[t.fundId] = (totals[t.fundId] || 0) + (Number(t.invested) || 0);
+              invested[t.fundId] = (invested[t.fundId] || 0) + (Number(t.invested) || 0);
+              afterExp[t.fundId] = (afterExp[t.fundId] || 0) + (Number(t.afterExpense) || 0);
             });
             LIQ_FUNDS.forEach(f => {
-              if (totals[f.id] !== undefined) {
-                state.liquid[f.id].paid = totals[f.id];
+              if (invested[f.id] !== undefined) {
+                state.liquid[f.id].paid = invested[f.id];
                 const inp = document.getElementById("lpaid-" + f.id);
-                if (inp && document.activeElement !== inp) inp.value = totals[f.id] || "";
+                if (inp) inp.value = invested[f.id] || "";
+              }
+              if (afterExp[f.id] !== undefined) {
+                state.liquid[f.id].value = afterExp[f.id];
+                const inp = document.getElementById("lval-" + f.id);
+                if (inp) inp.value = afterExp[f.id] || "";
               }
             });
             EQ_FUNDS.forEach(f => {
-              if (totals[f.id] !== undefined) {
-                state.equity[f.id].paid = totals[f.id];
+              if (invested[f.id] !== undefined) {
+                state.equity[f.id].paid = invested[f.id];
                 const inp = document.getElementById("epaid-" + f.id);
-                if (inp && document.activeElement !== inp) inp.value = totals[f.id] || "";
+                if (inp) inp.value = invested[f.id] || "";
+              }
+              if (afterExp[f.id] !== undefined) {
+                state.equity[f.id].shown = afterExp[f.id];
+                const inp = document.getElementById("eshown-" + f.id);
+                if (inp) inp.value = afterExp[f.id] || "";
               }
             });
           }
