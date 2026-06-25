@@ -2380,7 +2380,7 @@
     <div id="adminDropdown" class="nav-dropdown" style="display:none" role="menu">
       <button class="nav-dd-item" id="editToggleBtn" aria-pressed="false">Edit</button>
       <button class="nav-dd-item" id="ddThemeBtn">Themes</button>
-      <div class="nav-dd-sep"></div>
+      <div class="nav-dd-sep" id="ddSep1"></div>
       <button class="nav-dd-item" id="ddAddTxnBtn">Add Transaction</button>
       <button class="nav-dd-item" id="ddTxnsBtn">Transactions</button>
       <div class="nav-dd-sep"></div>
@@ -3567,9 +3567,18 @@
           }
 
           el("homeBtn").addEventListener("click", () => navigateTo("portfolio"));
-          el("summaryBtn").addEventListener("click", () => navigateTo("summary"));
-          el("networthBtn").addEventListener("click", () => navigateTo("networth"));
-          el("forecastBtn").addEventListener("click", () => navigateTo("forecast"));
+          el("summaryBtn").addEventListener("click", () => {
+            if (!authUser) { UI.toast("err", "Unauthorized — please sign in to access this section", 4000); return; }
+            navigateTo("summary");
+          });
+          el("networthBtn").addEventListener("click", () => {
+            if (!authUser) { UI.toast("err", "Unauthorized — please sign in to access this section", 4000); return; }
+            navigateTo("networth");
+          });
+          el("forecastBtn").addEventListener("click", () => {
+            if (!authUser) { UI.toast("err", "Unauthorized — please sign in to access this section", 4000); return; }
+            navigateTo("forecast");
+          });
           el("adminBtn").addEventListener("click", e => { e.stopPropagation(); openNavDropdown("adminDropdown", el("adminBtn")); });
 
           document.addEventListener("click", e => {
@@ -3600,6 +3609,19 @@
           function updateAuthUI() {
             const userInfo = el("ddUserInfo");
             const authBtn  = el("ddAuthBtn");
+            const isGuest  = !authUser;
+
+            // Admin-only dropdown items — hide for guests
+            ["editToggleBtn", "ddSep1", "ddAddTxnBtn", "ddTxnsBtn"].forEach(id => {
+              const el2 = el(id); if (el2) el2.style.display = isGuest ? "none" : "";
+            });
+
+            // Force privacy mode on for guests; cannot be toggled
+            if (isGuest) {
+              privacyMode = true;
+              document.body.classList.add("privacy-mode");
+            }
+
             if (authUser) {
               el("ddUserName").textContent = authUser.displayName || authUser.email || "Signed in";
               const avatar = el("ddUserAvatar");
@@ -4593,6 +4615,7 @@
           let privacyMode = true;
           document.body.classList.add("privacy-mode");
           el("privacyBtn").addEventListener("click", () => {
+            if (!authUser) return;
             privacyMode = !privacyMode;
             document.body.classList.toggle("privacy-mode", privacyMode);
           });
