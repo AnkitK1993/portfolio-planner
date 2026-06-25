@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#0c0f0e" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -58,16 +58,18 @@
         appearance: textfield;
       }
 
-      /* ── TABS (top on desktop, bottom on mobile) ── */
+      /* ── TABS (always fixed at bottom) ── */
       .tabs {
         display: flex;
         justify-content: center;
         background: rgba(7, 7, 15, 0.88);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
-        border-bottom: 1px solid rgba(255,255,255,0.06);
-        position: sticky;
-        top: 0;
+        border-top: 1px solid rgba(255,255,255,0.06);
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
         z-index: 100;
         overflow-x: auto;
         padding: 0 10px;
@@ -93,15 +95,15 @@
         padding: 13px 14px;
         cursor: pointer;
         white-space: nowrap;
-        border-bottom: 2px solid transparent;
-        margin-bottom: -1px;
+        border-top: 2px solid transparent;
+        margin-top: -1px;
         transition:
           color 0.15s,
           border-color 0.15s;
       }
       .tabs button.active {
         color: var(--mint);
-        border-bottom-color: var(--mint);
+        border-top-color: var(--mint);
       }
       .tabs button:hover:not(.active) {
         color: var(--txt);
@@ -111,7 +113,7 @@
       .app {
         max-width: 1440px;
         margin: 0 auto;
-        padding: 20px 14px 60px;
+        padding: 20px 14px 90px;
       }
       .tab-section {
         display: none;
@@ -1155,13 +1157,6 @@
       }
       @media (max-width: 600px) {
         .tabs {
-          position: fixed;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          top: auto;
-          border-bottom: none;
-          border-top: 1px solid var(--line);
           padding: 0 0 env(safe-area-inset-bottom);
           justify-content: stretch;
           overflow: hidden;
@@ -1179,17 +1174,9 @@
           font-size: 8px;
           letter-spacing: 0.4px;
           flex-shrink: 1;
-          border-bottom: none;
-          border-top: 2px solid transparent;
-          margin-bottom: 0;
-          margin-top: -1px;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
-        }
-        .tabs button.active {
-          border-top-color: var(--mint);
-          border-bottom-color: transparent;
         }
         /* Hide save indicator text on mobile — frees space for tab labels */
         .dot, #saveTxt { display: none; }
@@ -2008,23 +1995,15 @@
       /* ── Nav bar ── */
       body[data-theme="neo-cyber-grid"] .tabs {
         background: rgba(4,4,15,0.96);
-        border-bottom: 1px solid rgba(0,229,255,0.22);
-        box-shadow: 0 1px 16px rgba(0,229,255,0.06);
+        border-top: 1px solid rgba(0,229,255,0.28);
+        box-shadow: 0 -1px 16px rgba(0,229,255,0.07);
       }
       body[data-theme="neo-cyber-grid"] .tabs button.active {
         text-shadow: 0 0 14px rgba(0,229,255,0.6);
         letter-spacing: 1.1px;
       }
-      @media (max-width: 600px) {
-        body[data-theme="neo-cyber-grid"] .tabs {
-          border-top: 1px solid rgba(0,229,255,0.28);
-          border-bottom: none;
-          box-shadow: 0 -1px 16px rgba(0,229,255,0.07);
-        }
-        body[data-theme="neo-cyber-grid"] .tabs button.active {
-          border-top-color: #00e5ff;
-          border-bottom-color: transparent;
-        }
+      body[data-theme="neo-cyber-grid"] .tabs button.active {
+        border-top-color: #00e5ff;
       }
 
       /* ── Portfolio hero ── */
@@ -2130,24 +2109,12 @@
 
       /* ── Nav bar ── */
       body[data-theme="ai-command-center"] .tabs {
-        background: rgba(2,8,16,0.97);
-        border-bottom: 1px solid rgba(0,200,255,0.2);
-        box-shadow: 0 1px 18px rgba(0,200,255,0.07);
+        background: rgba(2,8,16,0.98);
+        border-top: 1px solid rgba(0,200,255,0.28);
+        box-shadow: 0 -1px 18px rgba(0,200,255,0.07);
       }
       body[data-theme="ai-command-center"] .tabs button.active {
         text-shadow: 0 0 12px rgba(0,200,255,0.6);
-      }
-      @media (max-width: 600px) {
-        body[data-theme="ai-command-center"] .tabs {
-          border-top: 1px solid rgba(0,200,255,0.28);
-          border-bottom: none;
-          background: rgba(2,8,16,0.98);
-          box-shadow: 0 -1px 18px rgba(0,200,255,0.07);
-        }
-        body[data-theme="ai-command-center"] .tabs button.active {
-          background: rgba(0,200,255,0.06);
-          border-radius: 8px 8px 0 0;
-        }
       }
 
       /* ── Portfolio hero ── */
