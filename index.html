@@ -1640,6 +1640,38 @@
       .nav-dd-item:hover { background: rgba(255,255,255,0.05); color: var(--txt); }
       .nav-dd-item.active { color: var(--mint); }
       .nav-dd-item.done { color: var(--mint); background: rgba(74,222,156,0.06); }
+      .nav-dd-sep { height: 1px; background: var(--line); margin: 4px 6px; }
+      .nav-dd-user {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 8px 14px 4px;
+        font-size: 11px;
+        color: var(--dim);
+        font-family: "Outfit", sans-serif;
+      }
+      .nav-dd-avatar {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        object-fit: cover;
+        flex-shrink: 0;
+        border: 1px solid rgba(255,255,255,0.12);
+      }
+      .nav-dd-user-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 130px;
+      }
+      .nav-dd-auth {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-transform: none;
+        letter-spacing: 0;
+        font-size: 12px;
+      }
 
       /* hero title row */
       .hero-title-row {
@@ -2351,6 +2383,15 @@
       <div class="nav-dd-sep"></div>
       <button class="nav-dd-item" id="ddAddTxnBtn">Add Transaction</button>
       <button class="nav-dd-item" id="ddTxnsBtn">Transactions</button>
+      <div class="nav-dd-sep"></div>
+      <div class="nav-dd-user" id="ddUserInfo" style="display:none">
+        <img class="nav-dd-avatar" id="ddUserAvatar" src="" alt=""/>
+        <span class="nav-dd-user-name" id="ddUserName"></span>
+      </div>
+      <button class="nav-dd-item nav-dd-auth" id="ddAuthBtn">
+        <svg viewBox="0 0 18 18" width="15" height="15" style="flex-shrink:0"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/><path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>
+        Sign in with Google
+      </button>
     </div>
 
     <div class="edit-banner" id="editBanner" role="status" aria-live="polite">
@@ -2964,6 +3005,8 @@
 
           let db            = null;
           let fbEnabled     = false;
+          let fbAuthReady   = false;
+          let authUser      = null;
           let fbSaveTimer   = null;
           let fbDirty       = false;  // true when local state hasn't reached Firestore yet
           let fbRetryDelay  = 2000;   // doubles on each failed retry (exponential backoff)
@@ -2998,13 +3041,21 @@
               document.head.appendChild(s);
             });
             loadScript("https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js")
-              .then(() => loadScript("https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"))
+              .then(() => Promise.all([
+                loadScript("https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"),
+                loadScript("https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"),
+              ]))
               .then(() => {
                 try {
                   firebase.initializeApp(FIREBASE_CONFIG);
                   db = firebase.firestore();
                   db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
                   fbEnabled = true;
+                  fbAuthReady = true;
+                  firebase.auth().onAuthStateChanged(user => {
+                    authUser = user;
+                    updateAuthUI();
+                  });
                 } catch (e) {
                   console.warn("Firebase init:", e.message);
                 }
@@ -3540,6 +3591,36 @@
             if (!el("txnFundPicker")?.contains(e.target)) closeFundPicker();
           });
           el("editToggleBtn").addEventListener("click", () => { closeNavDropdowns(); toggleEditMode(); });
+
+          function updateAuthUI() {
+            const userInfo = el("ddUserInfo");
+            const authBtn  = el("ddAuthBtn");
+            if (authUser) {
+              el("ddUserName").textContent = authUser.displayName || authUser.email || "Signed in";
+              const avatar = el("ddUserAvatar");
+              avatar.src = authUser.photoURL || "";
+              avatar.style.display = authUser.photoURL ? "block" : "none";
+              userInfo.style.display = "flex";
+              authBtn.innerHTML = "Sign out";
+            } else {
+              userInfo.style.display = "none";
+              authBtn.innerHTML = `<svg viewBox="0 0 18 18" width="15" height="15" style="flex-shrink:0"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/><path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" fill="#EA4335"/></svg> Sign in with Google`;
+            }
+          }
+
+          el("ddAuthBtn").addEventListener("click", async () => {
+            if (!fbAuthReady) return;
+            closeNavDropdowns();
+            if (authUser) {
+              await firebase.auth().signOut().catch(e => console.warn("Sign-out:", e.message));
+            } else {
+              try {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                await firebase.auth().signInWithPopup(provider);
+              } catch (e) { console.warn("Sign-in:", e.message); }
+            }
+          });
+
           el("ddThemeBtn").addEventListener("click", e => {
             e.stopPropagation();
             closeNavDropdowns();
@@ -4491,7 +4572,8 @@
           el("fcSlider").addEventListener("input", () => renderForecast());
 
           /* Privacy toggle */
-          let privacyMode = false;
+          let privacyMode = true;
+          document.body.classList.add("privacy-mode");
           el("privacyBtn").addEventListener("click", () => {
             privacyMode = !privacyMode;
             document.body.classList.toggle("privacy-mode", privacyMode);
