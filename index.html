@@ -3052,7 +3052,12 @@
                   db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
                   fbEnabled = true;
                   fbAuthReady = true;
-                  firebase.auth().onAuthStateChanged(user => {
+                  firebase.auth().onAuthStateChanged(async user => {
+                    if (user && user.email !== "ankit.konchady@gmail.com") {
+                      await firebase.auth().signOut();
+                      UI.toast("err", "Unauthorized — access restricted to admin only", 5000);
+                      return;
+                    }
                     authUser = user;
                     updateAuthUI();
                   });
