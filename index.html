@@ -4158,7 +4158,7 @@
               const liqRatePct = paid > 0 && val > 0 ? ((paid - val) / paid) * 100 : null;
               el("lrate-" + f.id).textContent =
                 liqRatePct !== null
-                  ? liqRatePct.toFixed(2).replace(/\.?0+$/, "") + "%"
+                  ? liqRatePct.toFixed(4).replace(/\.?0+$/, "") + "%"
                   : "—";
 
               el("ldep-" + f.id).textContent = fmt(dep);
@@ -4229,7 +4229,7 @@
 
               el("erate-" + f.id).textContent =
                 eqRatePct !== null
-                  ? eqRatePct.toFixed(2).replace(/\.?0+$/, "") + "%"
+                  ? eqRatePct.toFixed(4).replace(/\.?0+$/, "") + "%"
                   : "—";
 
               if (required > 0) {
