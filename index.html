@@ -390,79 +390,6 @@
         padding-bottom: 10px;
       }
 
-      /* ── STP SECTION ── */
-      .stp-layout {
-        display: grid;
-        grid-template-columns: minmax(280px, 380px) 1fr;
-        gap: 14px;
-        align-items: start;
-      }
-      .stp-result {
-        background: var(--panel);
-        border: 1px solid var(--mint-dim);
-        border-radius: 14px;
-        padding: 18px;
-      }
-      .stp-label {
-        font-size: 9.5px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        color: var(--amber);
-      }
-      .stp-big {
-        font-family: "Space Mono", monospace;
-        font-size: clamp(20px, 6vw, 34px);
-        font-weight: 700;
-        color: var(--amber);
-        margin: 4px 0 2px;
-        line-height: 1;
-        word-break: break-all;
-        letter-spacing: -1px;
-      }
-      .stp-sub {
-        color: var(--dim);
-        font-size: 11px;
-        margin-bottom: 16px;
-      }
-      .stp-split {
-        border-top: 1px solid var(--line);
-        padding-top: 12px;
-      }
-      .stp-split-title {
-        font-size: 9.5px;
-        text-transform: uppercase;
-        letter-spacing: 0.8px;
-        color: var(--dim);
-        margin-bottom: 8px;
-      }
-      .stp-fund-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 7px 0;
-        border-top: 1px solid var(--line);
-        font-size: 12px;
-      }
-      .stp-fund-row:first-of-type {
-        border-top: none;
-      }
-      .stp-fund-name {
-        color: var(--dim);
-      }
-      .stp-fund-amt {
-        color: var(--mint);
-        font-weight: 700;
-        font-size: 13px;
-      }
-      .stp-hint {
-        color: var(--dim);
-        font-size: 10px;
-        margin-top: 14px;
-        line-height: 1.6;
-        border-top: 1px solid var(--line);
-        padding-top: 10px;
-      }
-
       /* ── FORECAST ── */
       .fc-inputs { margin-bottom: 14px; }
       /* Forecast inputs always act as a calculator — never locked by edit mode */
@@ -709,144 +636,6 @@
         min-width: 58px;
         text-align: right;
         white-space: nowrap;
-      }
-
-      /* ── CALENDAR ── */
-      .cal-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-        gap: 10px;
-      }
-      .cal-month {
-        background: var(--panel);
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        overflow: hidden;
-      }
-      .cal-mhead {
-        background: var(--panel-2);
-        padding: 10px 14px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-      .cal-mhead .mname {
-        font-family: "Outfit", sans-serif;
-        font-size: 15px;
-        font-weight: 700;
-        letter-spacing: 0.2px;
-      }
-      .cal-mhead .mtotal {
-        font-size: 10.5px;
-        color: var(--amber);
-      }
-      .cal-events {
-        padding: 4px 0;
-      }
-      .cal-event {
-        display: flex;
-        gap: 10px;
-        padding: 8px 14px;
-      }
-      .cal-event:hover {
-        background: var(--panel-2);
-      }
-      .cal-paid-input {
-        width: 100%;
-        max-width: 150px;
-        font-size: 14px;
-        margin: 2px 0;
-      }
-      .cal-day {
-        font-size: 11px;
-        color: var(--dim);
-        min-width: 24px;
-        padding-top: 2px;
-      }
-      .cal-body {
-        flex: 1;
-        min-width: 0;
-      }
-      .cal-type {
-        font-size: 8.5px;
-        letter-spacing: 0.8px;
-        text-transform: uppercase;
-        margin-bottom: 2px;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-      }
-      .cal-type.stp {
-        color: var(--amber);
-      }
-      .cal-type.sip {
-        color: var(--mint);
-      }
-      .cal-status {
-        font-size: 9px;
-        letter-spacing: 0.6px;
-        text-transform: uppercase;
-      }
-      .cal-status.pending {
-        color: var(--amber);
-      }
-      .cal-status.paid {
-        color: var(--mint);
-      }
-      .cal-amt {
-        font-size: 13px;
-        font-weight: 700;
-        line-height: 1;
-      }
-      .cal-amt.stp {
-        color: var(--amber);
-      }
-      .cal-amt.sip {
-        color: var(--mint);
-      }
-      .cal-detail {
-        font-size: 9.5px;
-        color: var(--dim);
-        line-height: 1.5;
-        margin-top: 2px;
-      }
-      .cal-sep {
-        height: 1px;
-        background: var(--line);
-        margin: 0 14px;
-      }
-      .cal-empty-month {
-        padding: 14px;
-        color: var(--dim);
-        font-size: 11px;
-      }
-      .cal-total-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 8px 14px 10px;
-        border-top: 1px solid var(--line);
-        margin-top: 2px;
-        font-size: 10px;
-      }
-      .cal-total-row .k {
-        color: var(--dim);
-      }
-      .cal-total-row .v {
-        font-family: "Space Mono", monospace;
-        font-size: 13px;
-        font-weight: 700;
-        color: var(--txt);
-        letter-spacing: -0.3px;
-      }
-      .cal-event.pending {
-        opacity: 0.42;
-      }
-      .cal-event.paid {
-        background: color-mix(in srgb, var(--mint) 5%, transparent);
-      }
-      .cal-event.paid .cal-day {
-        color: var(--mint);
       }
 
       /* ── SUMMARY ── */
@@ -1134,18 +923,12 @@
 
       /* ── RESPONSIVE ── */
       @media (max-width: 760px) {
-        .stp-layout {
-          grid-template-columns: 1fr;
-        }
         .stats {
           grid-template-columns: 1fr 1fr;
         }
       }
       @media (max-width: 520px) {
         .fund-grid {
-          grid-template-columns: 1fr;
-        }
-        .cal-grid {
           grid-template-columns: 1fr;
         }
         .stats {
@@ -1505,7 +1288,6 @@
         .tabs button { padding: 15px 20px; font-size: 11px; letter-spacing: 0.9px; }
         .pg-head h1 { font-size: clamp(28px, 3vw, 44px); }
         .pg-head p { font-size: 12.5px; max-width: 720px; }
-.cal-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
         .fund-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
         .nw-proj-cards { grid-template-columns: repeat(6, 1fr); }
       }
@@ -2189,13 +1971,6 @@
         border-top-color: rgba(0,200,255,0.08);
       }
 
-      /* ── Calendar months ── */
-      body[data-theme="ai-command-center"] .cal-month {
-        background: rgba(7,15,28,0.78);
-        border-color: rgba(0,200,255,0.1);
-        box-shadow: inset 3px 0 0 rgba(0,200,255,0.22);
-      }
-
       /* ── Edit banner ── */
       body[data-theme="ai-command-center"] .edit-banner {
         background: rgba(0,200,255,0.05);
@@ -2506,7 +2281,6 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/><polyline points="9 21 9 12 15 12 15 21"/></svg>
       </button>
       <button class="nav-dd-trigger" id="overviewBtn">Overview <span class="nav-chevron">▾</span></button>
-      <button id="scheduleBtn" data-tab="calendar">Schedule</button>
       <button id="forecastBtn" data-tab="forecast">Forecast</button>
       <button class="nav-dd-trigger" id="adminBtn">Admin <span class="nav-chevron">▾</span></button>
       <span class="dot" id="saveDot" style="display:none"></span>
@@ -2559,11 +2333,6 @@
           <span class="v" id="totalDep"></span>
           <span id="depNote"></span>
         </div>
-        <div id="stpDueSummary" style="display:none">
-          <span class="v" id="monthlyStpDue"></span>
-          <span id="stpDueNote"></span>
-        </div>
-
         <!-- Division row: Liquid Funds -->
         <div class="fund-division">
           <span class="fund-div-title">Liquid Funds</span>
@@ -2598,95 +2367,6 @@
           </div>
         </div>
 
-      </section>
-
-      <!-- ═══════════════ CALENDAR / SCHEDULE ═══════════════ -->
-      <section class="tab-section" id="tab-calendar">
-        <div class="pg-head">
-          <h1>Deployment <span class="accent">Schedule</span></h1>
-          <p>Configure your STP and view the deployment calendar.</p>
-          <p
-            id="calStatus"
-            class="foot"
-            style="margin-top: 10px; color: var(--txt)"
-          ></p>
-        </div>
-
-        <div class="stp-layout" style="margin-bottom: 14px">
-          <div class="card" style="align-self: start">
-            <div class="field">
-              <label class="flabel" for="stpOverride">STP Amount (total to deploy)</label>
-              <div class="ibox">
-                <span class="pfx">&#8377;</span>
-                <input
-                  class="num amb"
-                  id="stpOverride"
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  inputmode="numeric"
-                />
-              </div>
-            </div>
-
-            <div class="grid2" style="margin-top: 14px">
-              <div class="field">
-                <label class="flabel" for="stpStartDate">Start date <span style="opacity:.55">(optional)</span></label>
-                <input class="num no-pfx" id="stpStartDate" type="date" />
-              </div>
-              <div class="field">
-                <label class="flabel" for="stpEndDate">End date <span style="opacity:.55">(optional)</span></label>
-                <input class="num no-pfx" id="stpEndDate" type="date" />
-              </div>
-            </div>
-
-            <div class="grid2" style="margin-top: 14px">
-              <div class="field">
-                <label class="flabel" for="stpDuration">Duration (months)</label>
-                <input
-                  class="num no-pfx"
-                  id="stpDuration"
-                  type="number"
-                  min="1"
-                  max="120"
-                  placeholder="12"
-                  inputmode="numeric"
-                />
-              </div>
-              <div class="field">
-                <label class="flabel" for="stpDate">STP date (1–28)</label>
-                <input
-                  class="num no-pfx"
-                  id="stpDate"
-                  type="number"
-                  min="1"
-                  max="28"
-                  placeholder="15"
-                  inputmode="numeric"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div class="stp-result" id="stpResult">
-            <div class="stp-label">STP / Month</div>
-            <div class="stp-big" id="stpMonthly">₹0</div>
-            <div class="stp-sub" id="stpSub">
-              Enter duration and date to begin
-            </div>
-            <div class="stp-split" id="stpSplit">
-              <div class="stp-split-title">Per-fund split (by SIP weight)</div>
-              <div id="stpSplitRows"></div>
-            </div>
-            <div class="stp-hint">
-              Split proportions mirror your SIP allocation. If no SIPs are set,
-              the STP splits equally across all equity funds.
-            </div>
-          </div>
-        </div>
-
-        <div id="calEmpty" style="display:none"></div>
-        <div class="cal-grid" id="calGrid"></div>
       </section>
 
       <!-- ═══════════════ SUMMARY ═══════════════ -->
@@ -3140,7 +2820,6 @@
               },
               liquidOrder: ['liq1', 'liq2'],
               equityOrder: ['eq1', 'eq2', 'eq3'],
-              stp: { override: 0, startDate: "", endDate: "", duration: 12, date: 15, lastApplied: null, appliedCount: 0, paidAmounts: {} },
               networth: {
                 ...Object.fromEntries(NW_FIELDS.map((f) => [f.id, 0])),
                 snapshots: {},
@@ -3166,7 +2845,6 @@
                 equity: Object.fromEntries(eqOrder.map(id => [id, { ...eqBase, ...(s.equity?.[id] || {}) }])),
                 liquidOrder: liqOrder,
                 equityOrder: eqOrder,
-                stp: { ...def.stp, ...(s.stp || {}) },
                 networth: {
                   ...Object.fromEntries(NW_FIELDS.map((f) => [f.id, s.networth?.[f.id] ?? 0])),
                   snapshots: { ...(s.networth?.snapshots || {}) },
@@ -3308,7 +2986,6 @@
             syncFundArrays();
             rebuildFundCollapsibles();
             syncInputsFromState();
-            applyStpIfDue();
             render();
           }
 
@@ -3446,16 +3123,6 @@
               const hdr = el("coll-name-" + f.id);
               if (hdr) hdr.value = s.label || f.defaultName;
             });
-            const stpOv = el("stpOverride");
-            const stpDur = el("stpDuration");
-            const stpDt = el("stpDate");
-            const stpSD = el("stpStartDate");
-            const stpED = el("stpEndDate");
-            if (stpOv) stpOv.value = state.stp.override || "";
-            if (stpSD) stpSD.value = state.stp.startDate || "";
-            if (stpED) stpED.value = state.stp.endDate || "";
-            if (stpDur) stpDur.value = computeStpDuration();
-            if (stpDt) stpDt.value = state.stp.date || "";
             NW_FIELDS.forEach((f) => {
               const inp = el("nw-" + f.id);
               if (inp) inp.value = state.networth[f.id] || "";
@@ -3524,30 +3191,6 @@
           function deployable(fid) {
             const s = state.liquid[fid];
             return Math.max(0, (s.value || 0) - (s.reserve || 0));
-          }
-
-          function computeStpDuration() {
-            const { startDate, endDate, duration } = state.stp;
-            if (startDate && endDate) {
-              const s = new Date(startDate);
-              const e = new Date(endDate);
-              const months = (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth());
-              return Math.max(1, months);
-            }
-            return duration || 12;
-          }
-
-          function sipWeights() {
-            const total = EQ_FUNDS.reduce(
-              (s, f) => s + (state.equity[f.id].sipAmt || 0),
-              0,
-            );
-            if (total === 0)
-              return EQ_FUNDS.map((f) => ({ id: f.id, w: 1 / EQ_FUNDS.length }));
-            return EQ_FUNDS.map((f) => ({
-              id: f.id,
-              w: (state.equity[f.id].sipAmt || 0) / total,
-            }));
           }
 
           function fundName(id) {
@@ -3772,41 +3415,6 @@
             updateCollNameReadonly();
           }
 
-          /* STP controls */
-          el("stpOverride").addEventListener("input", (e) => {
-            state.stp.override = num(e.target.value);
-            scheduleRender();
-          });
-          el("stpStartDate").addEventListener("input", (e) => {
-            state.stp.startDate = e.target.value;
-            const d = computeStpDuration();
-            state.stp.duration = d;
-            el("stpDuration").value = d;
-            scheduleRender();
-          });
-          el("stpEndDate").addEventListener("input", (e) => {
-            state.stp.endDate = e.target.value;
-            const d = computeStpDuration();
-            state.stp.duration = d;
-            el("stpDuration").value = d;
-            scheduleRender();
-          });
-          el("stpDuration").addEventListener("input", (e) => {
-            state.stp.duration = num(e.target.value);
-            scheduleRender();
-          });
-          el("stpDate").addEventListener("input", (e) => {
-            state.stp.date = num(e.target.value);
-            render();
-          });
-
-          /* Restore STP input values */
-          if (state.stp.override) el("stpOverride").value = state.stp.override;
-          el("stpStartDate").value = state.stp.startDate || "";
-          el("stpEndDate").value = state.stp.endDate || "";
-          el("stpDuration").value = computeStpDuration();
-          el("stpDate").value = state.stp.date || "";
-
           /* Nav tabs & dropdowns */
           const OVERVIEW_TABS = ["summary", "networth"];
           let _openNavDd = null;
@@ -3816,7 +3424,6 @@
             el("tab-" + tabId).classList.add("active");
             el("homeBtn").classList.toggle("active", tabId === "portfolio");
             el("overviewBtn").classList.toggle("active", OVERVIEW_TABS.includes(tabId));
-            el("scheduleBtn").classList.toggle("active", tabId === "calendar");
             el("forecastBtn").classList.toggle("active", tabId === "forecast");
             el("adminBtn").classList.remove("active");
             document.querySelectorAll("#overviewDropdown .nav-dd-item[data-tab]").forEach(item => {
@@ -3824,7 +3431,6 @@
             });
             if (tabId === "transactions") renderTxns();
             if (tabId === "forecast") renderForecast();
-            if (tabId === "calendar") render();
             closeNavDropdowns();
           }
 
@@ -3858,7 +3464,6 @@
 
           el("homeBtn").addEventListener("click", () => navigateTo("portfolio"));
           el("overviewBtn").addEventListener("click", e => { e.stopPropagation(); openNavDropdown("overviewDropdown", el("overviewBtn")); });
-          el("scheduleBtn").addEventListener("click", () => navigateTo("calendar"));
           el("forecastBtn").addEventListener("click", () => navigateTo("forecast"));
           el("adminBtn").addEventListener("click", e => { e.stopPropagation(); openNavDropdown("adminDropdown", el("adminBtn")); });
 
@@ -3894,21 +3499,6 @@
             e.stopPropagation();
             closeNavDropdowns();
             if (themeMatrixOpen) { hideThemeMatrix(); } else { showThemeMatrix(el("adminBtn")); }
-          });
-
-          /* Calendar paid-amount editing (event delegation — avoids losing focus on re-render) */
-          el("calGrid").addEventListener("input", (e) => {
-            if (!e.target.classList.contains("cal-paid-input")) return;
-            const { evtype, evid, month } = e.target.dataset;
-            const val = Math.max(0, Number(e.target.value) || 0);
-            if (evtype === "stp") {
-              if (!state.stp.paidAmounts) state.stp.paidAmounts = {};
-              state.stp.paidAmounts[month] = val;
-            } else {
-              if (!state.equity[evid]) return;
-              if (!state.equity[evid].sipPaidAmounts) state.equity[evid].sipPaidAmounts = {};
-              state.equity[evid].sipPaidAmounts[month] = val;
-            }
           });
 
           /* ════════════════════════════════════════════
@@ -4168,16 +3758,6 @@
                 ? fmt(totalLiqVal - totalDep) + " reserved across " + liqNames
                 : "Enter liquid fund values above";
 
-            const effective = state.stp.override || 0;
-            const dur = computeStpDuration();
-            const stpAmt =
-              dur > 0 && effective > 0 ? Math.ceil(effective / dur) : 0;
-
-            el("monthlyStpDue").textContent = stpAmt > 0 ? fmt(stpAmt) : "₹0";
-            el("stpDueNote").textContent = state.stp.date
-              ? `Pay on ${state.stp.date}th`
-              : "Set STP date";
-
             /* — Liquid division row + per-fund collapsible headers — */
             el("liqDivTotal").textContent = totalLiqVal > 0 ? fmt(totalLiqVal) : "—";
             LIQ_FUNDS.forEach(f => {
@@ -4249,49 +3829,6 @@
               if (valEl) valEl.textContent = (s.shown || 0) > 0 ? fmt(s.shown) : "";
             });
 
-            /* — STP — */
-            const weights = sipWeights();
-
-            el("stpMonthly").textContent = fmt(stpAmt);
-            el("stpSub").textContent =
-              stpAmt > 0
-                ? fmt(effective) +
-                  " over " +
-                  dur +
-                  " month" +
-                  (dur !== 1 ? "s" : "") +
-                  " on the " +
-                  (state.stp.date || "?") +
-                  "th"
-                : "Enter amount and date to begin";
-
-            let splitHTML = "";
-            if (stpAmt > 0) {
-              weights.forEach((w) => {
-                const name = fundName(w.id);
-                const amt = stpAmt * w.w;
-                const p = Math.round(w.w * 100);
-                splitHTML += `<div class="stp-fund-row">
-                  <span class="stp-fund-name">${name} <span style="opacity:.55">(${p}%)</span></span>
-                  <span class="stp-fund-amt">${fmt(amt)}</span>
-                </div>`;
-              });
-            } else {
-              splitHTML = `<div style="color:var(--dim);font-size:12px;">Configure SIP amounts to see the per-fund split.</div>`;
-            }
-            el("stpSplitRows").innerHTML = splitHTML;
-
-            /* Per-fund STP chips on portfolio equity cards */
-            EQ_FUNDS.forEach((f) => {
-              const w = weights.find((wt) => wt.id === f.id);
-              const fundStp = stpAmt > 0 && w ? Math.round(stpAmt * w.w) : 0;
-              const chipEl = el("estpchip-" + f.id);
-              if (chipEl) {
-                chipEl.style.display = fundStp > 0 ? "flex" : "none";
-                el("estp-" + f.id).textContent = fmt(fundStp);
-              }
-            });
-
             /* — Summary table — */
             const totCur = eqCur + totalLiqVal;
             const totTgt = eqTgt + totalLiqTgt;
@@ -4324,8 +3861,8 @@
             el("fundedBar").style.width = clamp(funded, 0, 100) + "%";
             el("totDuty").textContent = fmt(totDuty);
             el("totalSipDisp").textContent = fmt(totalSip);
-            el("eqStp").textContent = stpAmt > 0 ? fmt(stpAmt) : "—";
-            el("totStp").textContent = stpAmt > 0 ? fmt(stpAmt) : "—";
+            el("eqStp").textContent = "—";
+            el("totStp").textContent = "—";
 
             /* SIP table */
             let sipRows = "";
@@ -4353,22 +3890,12 @@
             </tr>`;
             el("sipTable").innerHTML = sipHead + sipRows;
 
-            /* STP overview in summary */
-            if (stpAmt > 0) {
-              let stpOv = `<div style="font-size:12px;line-height:2;color:var(--dim);">`;
-              stpOv += `<span style="color:var(--amber)">${fmt(stpAmt)}/month</span> on the <span style="color:var(--txt)">${state.stp.date || "?"}th</span> for <span style="color:var(--txt)">${dur} months</span>`;
-              stpOv += `</div>`;
-              el("sumStpOverview").innerHTML = stpOv;
-            } else {
-              el("sumStpOverview").textContent =
-                "STP not configured. Set it up in the Schedule tab.";
-            }
+            el("sumStpOverview").textContent = "STP not configured.";
 
             renderNetWorth();
-            renderUpcoming(stpAmt, weights);
+            renderUpcoming();
             const _activeTab = document.querySelector(".tab-section.active")?.id;
             if (_activeTab === "tab-forecast") renderForecast();
-            if (_activeTab === "tab-calendar") renderCalendar(stpAmt, weights);
           }
 
           function setAllocBar(eqId, liqId, splitId, eqPct, total) {
@@ -4386,7 +3913,7 @@
           /* ════════════════════════════════════════════
              UPCOMING PAYMENTS (portfolio page)
           ════════════════════════════════════════════ */
-          function renderUpcoming(stpAmt, weights) {
+          function renderUpcoming() {
             const today = new Date();
             const todayDate = today.getDate();
             const todayMid = new Date(
@@ -4394,9 +3921,6 @@
               today.getMonth(),
               todayDate,
             );
-
-            if (!stpAmt) stpAmt = 0;
-            if (!weights) weights = sipWeights();
 
             function nextOcc(dayOfMonth) {
               if (dayOfMonth > todayDate)
@@ -4416,24 +3940,6 @@
             }
 
             const rows = [];
-
-            /* STP row */
-            const stpDate = state.stp.date || 0;
-            const dur = computeStpDuration();
-            const appliedCount = state.stp.appliedCount || 0;
-
-            if (stpAmt > 0 && stpDate > 0 && appliedCount < dur) {
-              const d = nextOcc(stpDate);
-              rows.push({
-                type: "stp",
-                name: "STP Transfer",
-                amount: stpAmt,
-                day: stpDate,
-                month: MONTHS[d.getMonth()],
-                diff: diffLabel(d),
-                ts: d.getTime(),
-              });
-            }
 
             /* SIP rows */
             EQ_FUNDS.forEach((f) => {
@@ -4485,215 +3991,9 @@
           }
 
           /* ════════════════════════════════════════════
-             CALENDAR
-          ════════════════════════════════════════════ */
-          function renderCalendar(stpAmt, weights) {
-            const today = new Date();
-            const todayDate = today.getDate();
-            const stpDate = state.stp.date || 0;
-            const dur = computeStpDuration();
-            const effective = state.stp.override || 0;
-
-            if (!stpAmt) stpAmt = 0;
-            if (!weights) weights = sipWeights();
-
-            /* Determine if current month's events are all done */
-            const sipFunds = EQ_FUNDS.filter(
-              (f) =>
-                (state.equity[f.id].sipAmt || 0) > 0 &&
-                (state.equity[f.id].sipDate || 0) > 0,
-            );
-            const hasStpNow = stpAmt > 0 && stpDate > 0 && dur > 0;
-            const sipsDone = sipFunds.every(
-              (f) => todayDate > (state.equity[f.id].sipDate || 0),
-            );
-            const stpDone = !hasStpNow || todayDate > stpDate;
-            const curMonthDone =
-              (sipFunds.length > 0 || hasStpNow) && sipsDone && stpDone;
-
-            el("calStatus").textContent = curMonthDone
-              ? "This month's investments are complete. Showing upcoming schedule."
-              : "Showing full deployment schedule. Past dates are marked paid.";
-
-            /* Build one card per month from now until deployable reaches 0 */
-            const monthsData = [];
-            let hasAny = false;
-            let remaining = effective;
-
-            for (let i = 0; i < 120; i++) {
-              const stpActive =
-                stpAmt > 0 && stpDate > 0 && i < dur && remaining > 0;
-
-              /* Stop once STP is exhausted (beyond current month) */
-              if (!stpActive && i > 0 && stpAmt > 0) break;
-              /* No STP configured — only show current month's SIPs */
-              if (stpAmt === 0 && i >= 1) break;
-
-              const mDate = new Date(
-                today.getFullYear(),
-                today.getMonth() + i,
-                1,
-              );
-              const isCurrentMonth = i === 0;
-              const monthLabel =
-                MONTHS[mDate.getMonth()] + " " + mDate.getFullYear();
-
-              const events = [];
-
-              const monthKey = `${mDate.getFullYear()}-${String(mDate.getMonth() + 1).padStart(2, "0")}`;
-
-              /* STP event for this month */
-              if (stpActive) {
-                const scheduledStp = Math.min(stpAmt, remaining);
-                const stpStatus = isCurrentMonth
-                  ? todayDate > stpDate
-                    ? "paid"
-                    : "pending"
-                  : "pending";
-                const stpOverride = state.stp.paidAmounts?.[monthKey];
-                const displayStp = stpStatus === "paid" && stpOverride !== undefined
-                  ? stpOverride : scheduledStp;
-                const detail = weights
-                  .map((w) => {
-                    const name = (
-                      state.equity[w.id].name ||
-                      EQ_FUNDS.find((f) => f.id === w.id).defaultName
-                    )
-                      .split(" ")
-                      .slice(0, 2)
-                      .join(" ");
-                    return name + ": " + fmt(displayStp * w.w);
-                  })
-                  .join(" • ");
-                events.push({
-                  date: stpDate,
-                  type: "stp",
-                  evId: "stp",
-                  monthKey,
-                  label: "STP Transfer",
-                  amount: displayStp,
-                  detail,
-                  status: stpStatus,
-                });
-                remaining -= scheduledStp;
-                hasAny = true;
-              }
-
-              /* SIP events */
-              EQ_FUNDS.forEach((f) => {
-                const s = state.equity[f.id];
-                if ((s.sipAmt || 0) > 0 && (s.sipDate || 0) > 0) {
-                  const sipStatus = isCurrentMonth
-                    ? todayDate > s.sipDate
-                      ? "paid"
-                      : "pending"
-                    : "pending";
-                  const sipOverride = s.sipPaidAmounts?.[monthKey];
-                  const displaySip = sipStatus === "paid" && sipOverride !== undefined
-                    ? sipOverride : s.sipAmt;
-                  events.push({
-                    date: s.sipDate,
-                    type: "sip",
-                    evId: f.id,
-                    monthKey,
-                    label: s.name || f.defaultName,
-                    amount: displaySip,
-                    detail: "Monthly SIP",
-                    status: sipStatus,
-                  });
-                  hasAny = true;
-                }
-              });
-
-              if (events.length > 0) {
-                events.sort((a, b) => a.date - b.date);
-                const allDone =
-                  isCurrentMonth && events.every((e) => e.status === "paid");
-                monthsData.push({
-                  label: monthLabel,
-                  events,
-                  isCurrentMonth,
-                  allDone,
-                });
-              }
-
-              if (remaining <= 0 && stpAmt > 0) break;
-            }
-
-            const calEmpty = el("calEmpty");
-            if (!hasAny) {
-              calEmpty.style.display = "block";
-              calEmpty.innerHTML = UI.emptyState(
-                "📅",
-                "No schedule yet",
-                "Set SIP dates on the Portfolio tab or configure an STP plan to see your deployment calendar.",
-              );
-              el("calGrid").innerHTML = "";
-              return;
-            }
-            calEmpty.style.display = "none";
-
-            el("calGrid").innerHTML = monthsData
-              .map(({ label, events, isCurrentMonth, allDone }) => {
-                const stpTotal = events
-                  .filter((e) => e.type === "stp")
-                  .reduce((s, e) => s + e.amount, 0);
-                const grandTotal = events.reduce((s, e) => s + e.amount, 0);
-
-                const mHead =
-                  stpTotal > 0
-                    ? `<span class="mtotal">${fmt(stpTotal)} STP</span>`
-                    : "";
-
-                const doneTag = allDone
-                  ? ` <span style="font-size:9px;color:var(--mint);letter-spacing:.6px;text-transform:uppercase;">&#x2713; DONE</span>`
-                  : "";
-
-                const evHTML = events
-                  .map(
-                    (ev, i) => `
-                  ${i > 0 && events[i - 1].date !== ev.date ? '<div class="cal-sep"></div>' : ""}
-                  <div class="cal-event ${ev.status}">
-                    <div class="cal-day">${ev.date}</div>
-                    <div class="cal-body">
-                      <div class="cal-type ${ev.type}">${ev.type === "stp" ? "STP" : "SIP"}<span class="cal-status ${ev.status}">${ev.status}</span></div>
-                      ${ev.status === "paid" && editMode
-                        ? `<input class="num no-pfx cal-paid-input" type="number" min="0" inputmode="numeric"
-                             data-evtype="${ev.type}" data-evid="${ev.evId}" data-month="${ev.monthKey}"
-                             value="${ev.amount}" />`
-                        : `<div class="cal-amt ${ev.type}">${fmt(ev.amount)}</div>`}
-                      <div class="cal-detail">${ev.detail}</div>
-                    </div>
-                  </div>`,
-                  )
-                  .join("");
-
-                const totalRow =
-                  grandTotal > 0
-                    ? `<div class="cal-total-row"><span class="k">Month total</span><span class="v">${fmt(grandTotal)}</span></div>`
-                    : "";
-
-                return `
-              <div class="cal-month"${allDone ? ' style="border-color:var(--mint-dim);"' : ""}>
-                <div class="cal-mhead">
-                  <span class="mname">${label}${doneTag}</span>${mHead}
-                </div>
-                <div class="cal-events">${evHTML}</div>
-                ${totalRow}
-              </div>`;
-              })
-              .join("");
-          }
-
-          /* ════════════════════════════════════════════
              COPY & RESET
           ════════════════════════════════════════════ */
           function copySummary() {
-            const effective = state.stp.override || 0;
-            const dur = computeStpDuration();
-            const stpAmt = dur > 0 && effective > 0 ? effective / dur : 0;
-            const weights = sipWeights();
-
             const lines = ["*MF Portfolio Plan*", ""];
             lines.push("EQUITY FUNDS");
             EQ_FUNDS.forEach((f) => {
@@ -4705,24 +4005,6 @@
                 : "";
               lines.push("  " + name + ": invest " + inv + sip);
             });
-            lines.push("");
-            lines.push("STP");
-            if (stpAmt > 0) {
-              lines.push(
-                "  " +
-                  fmt(stpAmt) +
-                  "/month × " +
-                  dur +
-                  " months on the " +
-                  (state.stp.date || "?") +
-                  "th",
-              );
-              weights.forEach((w) =>
-                lines.push("    → " + fundName(w.id) + ": " + fmt(stpAmt * w.w)),
-              );
-            } else {
-              lines.push("  Not configured");
-            }
             lines.push("");
             lines.push(
               "Equity now " +
@@ -4749,11 +4031,6 @@
             state = defaultState();
             syncFundArrays();
             rebuildFundCollapsibles();
-            el("stpOverride").value = "";
-            el("stpDuration").value = "";
-            el("stpDate").value = "";
-            el("stpStartDate").value = "";
-            el("stpEndDate").value = "";
             el("fcBank").value = "";
             el("fcInvest").value = "";
             el("fcMonthly").value = "";
@@ -5143,80 +4420,6 @@
           }
 
           /* ════════════════════════════════════════════
-             STP AUTO-APPLY
-             When today > stpDate and this month hasn't
-             been applied yet, transfer the funds.
-          ════════════════════════════════════════════ */
-          function applyStpIfDue() {
-            const today = new Date();
-            const todayDate = today.getDate();
-            const stpDate = state.stp.date || 0;
-            const dur = computeStpDuration();
-
-            if (!stpDate || !dur) return;
-
-            const appliedCount = state.stp.appliedCount || 0;
-            if (appliedCount >= dur) return;
-
-            if (todayDate <= stpDate) return;
-
-            const curMonthKey =
-              today.getFullYear() +
-              "-" +
-              String(today.getMonth() + 1).padStart(2, "0");
-            if (state.stp.lastApplied === curMonthKey) return;
-
-            const effective = state.stp.override || 0;
-            if (effective <= 0) return;
-
-            const stpAmt = Math.ceil(effective / dur);
-            if (stpAmt === 0) return;
-
-            const weights = sipWeights();
-
-            /* Deduct proportionally from both liquid funds */
-            const liq1Dep = deployable("liq1");
-            const liq2Dep = deployable("liq2");
-            const totalDep = liq1Dep + liq2Dep;
-            if (totalDep > 0) {
-              const actualStp = Math.min(stpAmt, totalDep);
-              const l1Take = Math.round((liq1Dep / totalDep) * actualStp);
-              const l2Take = actualStp - l1Take;
-              state.liquid.liq1.value = Math.max(
-                state.liquid.liq1.reserve || 0,
-                Math.round((state.liquid.liq1.value || 0) - l1Take),
-              );
-              state.liquid.liq2.value = Math.max(
-                state.liquid.liq2.reserve || 0,
-                Math.round((state.liquid.liq2.value || 0) - l2Take),
-              );
-            }
-
-            /* Add to equity funds (paid + shown) */
-            weights.forEach((w) => {
-              const fundAmt = Math.round(actualStp * w.w);
-              state.equity[w.id].paid = (state.equity[w.id].paid || 0) + fundAmt;
-              state.equity[w.id].shown = (state.equity[w.id].shown || 0) + fundAmt;
-            });
-
-            /* Sync visible input fields */
-            LIQ_FUNDS.forEach((f) => {
-              const inp = el("lval-" + f.id);
-              if (inp) inp.value = state.liquid[f.id].value || "";
-            });
-            EQ_FUNDS.forEach((f) => {
-              const pInp = el("epaid-" + f.id);
-              const sInp = el("eshown-" + f.id);
-              if (pInp) pInp.value = state.equity[f.id].paid || "";
-              if (sInp) sInp.value = state.equity[f.id].shown || "";
-            });
-
-            state.stp.lastApplied = curMonthKey;
-            state.stp.appliedCount = appliedCount + 1;
-            saveState();
-          }
-
-          /* ════════════════════════════════════════════
              INIT
           ════════════════════════════════════════════ */
           /* Forecast inputs */
@@ -5310,7 +4513,6 @@
           renderNwHistory();
           renderNwProjection();
           const _hasLocalData = !!localStorage.getItem(STORE_KEY);
-          applyStpIfDue();
           applyTxnTotals();
           render();
 
