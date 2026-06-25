@@ -3609,15 +3609,24 @@
           }
 
           el("ddAuthBtn").addEventListener("click", async () => {
-            if (!fbAuthReady) return;
+            if (!fbAuthReady) {
+              UI.toast("err", "Firebase still connecting — try again in a moment", 3000);
+              return;
+            }
             closeNavDropdowns();
             if (authUser) {
-              await firebase.auth().signOut().catch(e => console.warn("Sign-out:", e.message));
+              await firebase.auth().signOut()
+                .catch(e => UI.toast("err", "Sign-out failed: " + e.message, 4000));
             } else {
               try {
                 const provider = new firebase.auth.GoogleAuthProvider();
                 await firebase.auth().signInWithPopup(provider);
-              } catch (e) { console.warn("Sign-in:", e.message); }
+              } catch (e) {
+                const ignored = ["auth/popup-closed-by-user", "auth/cancelled-popup-request"];
+                if (!ignored.includes(e.code)) {
+                  UI.toast("err", e.message || "Sign-in failed", 5000);
+                }
+              }
             }
           });
 
