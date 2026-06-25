@@ -1557,7 +1557,11 @@
         opacity: 0.85;
         white-space: nowrap;
         letter-spacing: -0.3px;
+        display: inline-flex;
+        min-width: 118px;
       }
+      .val-pfx { flex-shrink: 0; }
+      .val-num  { flex: 1; text-align: right; }
       .coll-chevron {
         font-size: 11px;
         transition: transform 0.25s ease;
@@ -1733,6 +1737,8 @@
         color: var(--txt);
         letter-spacing: -0.3px;
         margin-right: 20px;
+        display: inline-flex;
+        min-width: 118px;
       }
       /* ── PRIVACY MODE + THEME BUTTON ── */
       .hero-actions {
@@ -3242,6 +3248,11 @@
           const el = (id) => document.getElementById(id);
           const fmt = (n) =>
             "₹" + Math.max(0, Math.round(n)).toLocaleString("en-IN");
+          const fmtInner = (n, fallback = "") => {
+            if (!n || n <= 0) return fallback;
+            const num = Math.max(0, Math.round(n)).toLocaleString("en-IN");
+            return `<span class="val-pfx">₹</span><span class="val-num">${num}</span>`;
+          };
           const num = (v) => Number(v) || 0;
           const pct = (a, b) => (b > 0 ? (a / b) * 100 : 0);
           const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
@@ -3623,6 +3634,9 @@
             }
 
             if (authUser) {
+              privacyMode = false;
+              document.body.classList.remove("privacy-mode");
+              closeNavDropdowns();
               el("ddUserName").textContent = authUser.displayName || authUser.email || "Signed in";
               const avatar = el("ddUserAvatar");
               avatar.src = authUser.photoURL || "";
@@ -3928,12 +3942,12 @@
                 : "Enter liquid fund values above";
 
             /* — Liquid division row + per-fund collapsible headers — */
-            el("liqDivTotal").textContent = totalLiqVal > 0 ? fmt(totalLiqVal) : "—";
+            el("liqDivTotal").innerHTML = fmtInner(totalLiqVal, "—");
             LIQ_FUNDS.forEach(f => {
               const nameEl = el("coll-name-" + f.id);
               const valEl = el("coll-val-" + f.id);
               if (nameEl && document.activeElement !== nameEl) nameEl.value = state.liquid[f.id].label || f.defaultName;
-              if (valEl) valEl.textContent = (state.liquid[f.id].value || 0) > 0 ? fmt(state.liquid[f.id].value) : "";
+              if (valEl) valEl.innerHTML = fmtInner(state.liquid[f.id].value || 0);
             });
 
             /* — Equity funds — */
@@ -3989,13 +4003,13 @@
             });
 
             /* — Equity division row + per-fund collapsible headers — */
-            el("eqDivTotal").textContent = eqCur > 0 ? fmt(eqCur) : "—";
+            el("eqDivTotal").innerHTML = fmtInner(eqCur, "—");
             EQ_FUNDS.forEach(f => {
               const s = state.equity[f.id];
               const nameEl = el("coll-name-" + f.id);
               const valEl = el("coll-val-" + f.id);
               if (nameEl && document.activeElement !== nameEl) nameEl.value = s.label || f.defaultName;
-              if (valEl) valEl.textContent = (s.shown || 0) > 0 ? fmt(s.shown) : "";
+              if (valEl) valEl.innerHTML = fmtInner(s.shown || 0);
             });
 
             /* — Summary table — */
