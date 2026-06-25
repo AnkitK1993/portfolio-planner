@@ -5138,6 +5138,7 @@
           renderNwProjection();
           const _hasLocalData = !!localStorage.getItem(STORE_KEY);
           applyStpIfDue();
+          applyTxnTotals();
           render();
 
           /* Show skeleton while Firebase loads on a fresh device (no local cache) */
