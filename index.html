@@ -3620,7 +3620,11 @@
             } else {
               try {
                 const provider = new firebase.auth.GoogleAuthProvider();
-                await firebase.auth().signInWithPopup(provider);
+                const result = await firebase.auth().signInWithPopup(provider);
+                if (result.user.email !== "ankit.konchady@gmail.com") {
+                  await firebase.auth().signOut();
+                  UI.toast("err", "Unauthorized — access restricted to admin only", 5000);
+                }
               } catch (e) {
                 const ignored = ["auth/popup-closed-by-user", "auth/cancelled-popup-request"];
                 if (!ignored.includes(e.code)) {
