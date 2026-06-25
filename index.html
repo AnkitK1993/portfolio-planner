@@ -3651,6 +3651,9 @@
                 if (result.user.email !== "ankit.konchady@gmail.com") {
                   await firebase.auth().signOut();
                   UI.toast("err", "Unauthorized — access restricted to admin only", 5000);
+                } else {
+                  const firstName = (result.user.displayName || "Ankit").split(" ")[0];
+                  UI.toast("success", `Welcome back, ${firstName}! 👋`, 4500);
                 }
               } catch (e) {
                 const ignored = ["auth/popup-closed-by-user", "auth/cancelled-popup-request"];
