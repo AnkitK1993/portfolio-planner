@@ -1547,154 +1547,6 @@
       }
 
       /* ════ THEME MATRIX ════ */
-      /* ── Hamburger button ── */
-      .hamburger-btn {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        gap: 4px;
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 10px 14px;
-        flex-shrink: 0;
-        margin-right: 2px;
-      }
-      .hamburger-btn span {
-        display: block;
-        width: 17px;
-        height: 1.5px;
-        background: var(--dim);
-        border-radius: 2px;
-        transition: background 0.15s;
-      }
-      .hamburger-btn:hover span { background: var(--txt); }
-
-      /* ── Sidebar overlay ── */
-      .sidebar-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0);
-        z-index: 800;
-        pointer-events: none;
-        transition: background 0.25s;
-      }
-      .sidebar-overlay.open {
-        background: rgba(0,0,0,0.6);
-        pointer-events: all;
-      }
-
-      /* ── Sidebar drawer ── */
-      .sidebar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        height: 100dvh;
-        width: 272px;
-        max-width: 84vw;
-        background: var(--panel);
-        border-right: 1px solid var(--line);
-        box-shadow: 8px 0 28px rgba(0,0,0,0.55);
-        z-index: 900;
-        transform: translateX(-100%);
-        transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-      }
-      .sidebar.open { transform: translateX(0); }
-      .sidebar-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 22px 18px 15px;
-        border-bottom: 1px solid var(--line);
-        flex-shrink: 0;
-      }
-      .sidebar-title {
-        font-family: "Outfit", sans-serif;
-        font-size: 10px;
-        font-weight: 700;
-        letter-spacing: 2.5px;
-        text-transform: uppercase;
-        color: var(--dim);
-      }
-      .sidebar-close {
-        background: none;
-        border: none;
-        cursor: pointer;
-        color: var(--dim);
-        padding: 4px;
-        display: flex;
-        align-items: center;
-        transition: color 0.15s;
-      }
-      .sidebar-close:hover { color: var(--txt); }
-      .sidebar-close svg { width: 18px; height: 18px; }
-      .sidebar-section { padding: 10px 0; }
-      .sidebar-item {
-        width: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 13px 18px;
-        background: none;
-        border: none;
-        cursor: pointer;
-        color: var(--txt);
-        font-family: "Outfit", sans-serif;
-        font-size: 13.5px;
-        font-weight: 500;
-        letter-spacing: 0.3px;
-        transition: background 0.12s;
-      }
-      .sidebar-item:hover { background: rgba(255,255,255,0.04); }
-      .sb-chevron {
-        width: 15px;
-        height: 15px;
-        color: var(--dim);
-        transition: transform 0.22s;
-        flex-shrink: 0;
-      }
-      .sidebar-item.open .sb-chevron { transform: rotate(180deg); }
-      .sb-themes-list {
-        display: none;
-        padding: 4px 10px 10px;
-        overflow-y: auto;
-        max-height: calc(100dvh - 180px);
-      }
-      .sb-themes-list.open { display: block; }
-      .sb-theme-btn {
-        width: 100%;
-        display: flex;
-        align-items: center;
-        gap: 11px;
-        padding: 9px 10px;
-        border: 1.5px solid transparent;
-        border-radius: 10px;
-        background: var(--panel-2);
-        cursor: pointer;
-        margin-bottom: 5px;
-        transition: border-color 0.15s, background 0.15s;
-        text-align: left;
-      }
-      .sb-theme-btn:hover { background: var(--bg); border-color: var(--line); }
-      .sb-theme-btn.active { border-color: var(--mint); }
-      .sb-theme-dots { display: flex; gap: 4px; flex-shrink: 0; }
-      .sb-theme-dot {
-        width: 9px;
-        height: 9px;
-        border-radius: 50%;
-        flex-shrink: 0;
-      }
-      .sb-theme-name {
-        font-family: "Outfit", sans-serif;
-        font-size: 12px;
-        font-weight: 500;
-        color: var(--txt);
-        letter-spacing: 0.2px;
-      }
-
       .theme-matrix {
         position: fixed;
         z-index: 600;
@@ -2321,32 +2173,7 @@
     </style>
   </head>
   <body>
-    <!-- Sidebar overlay + drawer -->
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
-    <div class="sidebar" id="sidebar">
-      <div class="sidebar-header">
-        <span class="sidebar-title">Menu</span>
-        <button class="sidebar-close" id="sidebarClose" aria-label="Close menu">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
-        </button>
-      </div>
-      <div class="sidebar-section">
-        <button class="sidebar-item" id="sbThemesToggle">
-          <span>Themes</span>
-          <svg class="sb-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
-        </button>
-        <div class="sb-themes-list" id="sbThemesList"></div>
-      </div>
-    </div>
-
     <nav class="tabs" id="tabs">
-      <button class="hamburger-btn" id="hamburgerBtn" aria-label="Open menu">
-        <span></span><span></span><span></span>
-      </button>
       <button class="active" data-tab="portfolio">Portfolio</button>
       <button data-tab="calendar">Schedule</button>
       <button data-tab="summary">Summary</button>
@@ -5008,25 +4835,6 @@
             });
           }
 
-          function buildSidebarThemes() {
-            const list = document.getElementById("sbThemesList");
-            if (!list) return;
-            ACCENT_THEMES.forEach((t, i) => {
-              const btn = document.createElement("button");
-              btn.className = "sb-theme-btn" + (i === currentAccentIdx ? " active" : "");
-              btn.setAttribute("aria-label", t.name);
-              const dots = t.swatchColors.map(c => `<span class="sb-theme-dot" style="background:${c}"></span>`).join("");
-              btn.innerHTML =
-                `<span class="sb-theme-dots">${dots}</span>` +
-                `<span class="sb-theme-name">${t.name}</span>`;
-              btn.addEventListener("click", () => {
-                applyAccent(i);
-                setTimeout(closeSidebar, 320);
-              });
-              list.appendChild(btn);
-            });
-          }
-
           function showThemeMatrix(anchorEl) {
             const matrix = document.getElementById("themeMatrix");
             if (!matrix) return;
@@ -5068,38 +4876,8 @@
             if (matrix && !matrix.contains(e.target)) hideThemeMatrix();
           });
 
-          /* ── Sidebar (hamburger) ── */
-          let sidebarOpen = false;
-          let sbThemesOpen = false;
-
-          function openSidebar() {
-            sidebarOpen = true;
-            el("sidebar").classList.add("open");
-            el("sidebarOverlay").classList.add("open");
-            hideThemeMatrix();
-          }
-          function closeSidebar() {
-            sidebarOpen = false;
-            el("sidebar").classList.remove("open");
-            el("sidebarOverlay").classList.remove("open");
-          }
-
-          el("hamburgerBtn").addEventListener("click", (e) => {
-            e.stopPropagation();
-            sidebarOpen ? closeSidebar() : openSidebar();
-          });
-          el("sidebarClose").addEventListener("click", closeSidebar);
-          el("sidebarOverlay").addEventListener("click", closeSidebar);
-
-          el("sbThemesToggle").addEventListener("click", () => {
-            sbThemesOpen = !sbThemesOpen;
-            el("sbThemesList").classList.toggle("open", sbThemesOpen);
-            el("sbThemesToggle").classList.toggle("open", sbThemesOpen);
-          });
-
           /* Init */
           buildThemeMatrix();
-          buildSidebarThemes();
           loadSavedAccent();
     </script>
     <div id="toastWrap" aria-live="polite" aria-atomic="false"></div>
