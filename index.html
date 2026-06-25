@@ -2932,10 +2932,6 @@
             <input class="form-inp" id="txnInvested" type="number" placeholder="0" inputmode="numeric" min="0" />
           </div>
           <div class="form-row">
-            <label class="form-lbl">Value After Expense (₹)</label>
-            <input class="form-inp" id="txnAfterExp" type="number" placeholder="0" inputmode="numeric" min="0" />
-          </div>
-          <div class="form-row">
             <label class="form-lbl">Notes (optional)</label>
             <input class="form-inp" id="txnNotes" type="text" placeholder="e.g. SIP Jan 2025" />
           </div>
@@ -3522,9 +3518,9 @@
                   </div>
                 </div>
                 <div class="field">
-                  <label class="flabel" for="lval-${f.id}">After expense <span class="txn-lock">via transactions</span></label>
+                  <label class="flabel" for="lval-${f.id}">After expense</label>
                   <div class="ibox"><span class="pfx">&#8377;</span>
-                    <input class="num liq txn-driven" id="lval-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.value || ""}" readonly />
+                    <input class="num liq" id="lval-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.value || ""}" />
                   </div>
                 </div>
               </div>
@@ -3566,9 +3562,9 @@
                   </div>
                 </div>
                 <div class="field">
-                  <label class="flabel" for="eshown-${f.id}">After expense <span class="txn-lock">via transactions</span></label>
+                  <label class="flabel" for="eshown-${f.id}">After expense</label>
                   <div class="ibox"><span class="pfx">&#8377;</span>
-                    <input class="num txn-driven" id="eshown-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.shown || ""}" readonly />
+                    <input class="num" id="eshown-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.shown || ""}" />
                   </div>
                 </div>
               </div>
@@ -3819,10 +3815,9 @@
           ════════════════════════════════════════════ */
           function applyTxnTotals() {
             if (!state.transactions || !state.transactions.length) return;
-            const invested = {}, afterExp = {};
+            const invested = {};
             state.transactions.forEach(t => {
               invested[t.fundId] = (invested[t.fundId] || 0) + (Number(t.invested) || 0);
-              afterExp[t.fundId] = (afterExp[t.fundId] || 0) + (Number(t.afterExpense) || 0);
             });
             LIQ_FUNDS.forEach(f => {
               if (invested[f.id] !== undefined) {
@@ -3830,22 +3825,12 @@
                 const inp = document.getElementById("lpaid-" + f.id);
                 if (inp) inp.value = invested[f.id] || "";
               }
-              if (afterExp[f.id] !== undefined) {
-                state.liquid[f.id].value = afterExp[f.id];
-                const inp = document.getElementById("lval-" + f.id);
-                if (inp) inp.value = afterExp[f.id] || "";
-              }
             });
             EQ_FUNDS.forEach(f => {
               if (invested[f.id] !== undefined) {
                 state.equity[f.id].paid = invested[f.id];
                 const inp = document.getElementById("epaid-" + f.id);
                 if (inp) inp.value = invested[f.id] || "";
-              }
-              if (afterExp[f.id] !== undefined) {
-                state.equity[f.id].shown = afterExp[f.id];
-                const inp = document.getElementById("eshown-" + f.id);
-                if (inp) inp.value = afterExp[f.id] || "";
               }
             });
           }
@@ -3865,14 +3850,12 @@
                 sel.value = txn.fundId;
                 el("txnDate").value = txn.date || "";
                 el("txnInvested").value = txn.invested || "";
-                el("txnAfterExp").value = txn.afterExpense || "";
                 el("txnNotes").value = txn.notes || "";
               }
             } else {
               const today = new Date();
               el("txnDate").value = today.toISOString().split("T")[0];
               el("txnInvested").value = "";
-              el("txnAfterExp").value = "";
               el("txnNotes").value = "";
             }
             el("txnModal").style.display = "flex";
@@ -3886,7 +3869,6 @@
             const fundId = el("txnFund").value;
             const date = el("txnDate").value;
             const invested = Number(el("txnInvested").value) || 0;
-            const afterExpense = Number(el("txnAfterExp").value) || 0;
             const notes = el("txnNotes").value.trim();
             const editId = el("txnEditId").value;
             if (!fundId || !date || !invested) {
@@ -3896,9 +3878,9 @@
             if (!state.transactions) state.transactions = [];
             if (editId) {
               const idx = state.transactions.findIndex(t => t.id === editId);
-              if (idx !== -1) state.transactions[idx] = { id: editId, fundId, date, invested, afterExpense, notes };
+              if (idx !== -1) state.transactions[idx] = { id: editId, fundId, date, invested, notes };
             } else {
-              state.transactions.push({ id: String(Date.now()), fundId, date, invested, afterExpense, notes });
+              state.transactions.push({ id: String(Date.now()), fundId, date, invested, notes });
             }
             applyTxnTotals();
             saveState();
@@ -3944,7 +3926,6 @@
                   <div class="txn-date-col"><span class="txn-date-day">${day}</span>${mo}</div>
                   <div class="txn-info">
                     <div class="txn-fund-name">${fundName(t.fundId)}</div>
-                    ${t.afterExpense ? `<div class="txn-sub">After expense: ${fmt(t.afterExpense)}</div>` : ""}
                     ${t.notes ? `<div class="txn-sub">${t.notes}</div>` : ""}
                   </div>
                   <div class="txn-right">
