@@ -2419,6 +2419,13 @@
       .ret-profit-lbl.up   { color: #4ade80; }
       .ret-profit-lbl.down { color: #f87171; }
       .ret-empty { text-align: center; padding: 40px 20px; color: var(--dim); font-size: 13px; line-height: 1.6; }
+
+      /* ═══ DATA MODAL ═══ */
+      .data-action-row { display: flex; align-items: center; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+      .data-action-row:last-child { border-bottom: none; }
+      .data-action-info { flex: 1; min-width: 0; }
+      .data-action-title { font-size: 13px; font-weight: 600; color: var(--txt); margin-bottom: 3px; }
+      .data-action-desc { font-size: 11px; color: var(--dim); line-height: 1.5; }
     </style>
   </head>
   <body>
@@ -2448,6 +2455,8 @@
       <button class="nav-dd-item" id="ddAddTxnBtn">Add Transaction</button>
       <button class="nav-dd-item" id="ddTxnsBtn">Transactions</button>
       <button class="nav-dd-item" id="ddAddCurValBtn">Add Current Value</button>
+      <div class="nav-dd-sep" id="ddSep2"></div>
+      <button class="nav-dd-item" id="ddDataBtn">Data</button>
       <div class="nav-dd-sep"></div>
       <div class="nav-dd-user" id="ddUserInfo" style="display:none">
         <img class="nav-dd-avatar" id="ddUserAvatar" src="" alt=""/>
@@ -2859,6 +2868,36 @@
         <div class="modal-foot">
           <button class="btn btn-ghost" id="curValCancelBtn">Cancel</button>
           <button class="btn btn-primary" id="curValSaveBtn">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ DATA EXPORT / IMPORT MODAL ═══ -->
+    <div id="dataModal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <div class="modal-head">
+          <span class="modal-title">Data</span>
+          <button class="modal-close" id="dataModalClose" aria-label="Close">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="data-action-row">
+            <div class="data-action-info">
+              <div class="data-action-title">Export</div>
+              <div class="data-action-desc">Download all portfolio data as a JSON backup file.</div>
+            </div>
+            <button class="btn btn-primary" id="dataExportBtn">Export</button>
+          </div>
+          <div class="data-action-row">
+            <div class="data-action-info">
+              <div class="data-action-title">Import</div>
+              <div class="data-action-desc">Restore from a previously exported backup. Replaces all current data.</div>
+            </div>
+            <button class="btn btn-ghost" id="dataImportBtn">Import</button>
+          </div>
+          <input type="file" id="dataImportFile" accept=".json" style="display:none" />
+        </div>
+        <div class="modal-foot">
+          <button class="btn btn-ghost" id="dataModalCancelBtn">Close</button>
         </div>
       </div>
     </div>
@@ -3716,6 +3755,13 @@
           el("ddAddTxnBtn").addEventListener("click", () => { closeNavDropdowns(); openTxnModal(); });
           el("ddTxnsBtn").addEventListener("click", () => { closeNavDropdowns(); navigateTo("transactions"); });
           el("ddAddCurValBtn").addEventListener("click", () => openCurValModal());
+          el("ddDataBtn").addEventListener("click", () => { closeNavDropdowns(); el("dataModal").style.display = "flex"; });
+          el("dataModalClose").addEventListener("click", () => { el("dataModal").style.display = "none"; });
+          el("dataModalCancelBtn").addEventListener("click", () => { el("dataModal").style.display = "none"; });
+          el("dataModal").addEventListener("click", e => { if (e.target === el("dataModal")) el("dataModal").style.display = "none"; });
+          el("dataExportBtn").addEventListener("click", exportData);
+          el("dataImportBtn").addEventListener("click", () => el("dataImportFile").click());
+          el("dataImportFile").addEventListener("change", importData);
           el("curValModalClose").addEventListener("click", closeCurValModal);
           el("curValCancelBtn").addEventListener("click", closeCurValModal);
           el("curValSaveBtn").addEventListener("click", saveCurVal);
@@ -3749,7 +3795,7 @@
             const isGuest  = !authUser;
 
             // Admin-only dropdown items — hide for guests
-            ["editToggleBtn", "ddSep1", "ddAddTxnBtn", "ddTxnsBtn", "ddAddCurValBtn"].forEach(id => {
+            ["editToggleBtn", "ddSep1", "ddAddTxnBtn", "ddTxnsBtn", "ddAddCurValBtn", "ddSep2", "ddDataBtn"].forEach(id => {
               const el2 = el(id); if (el2) el2.style.display = isGuest ? "none" : "";
             });
 
@@ -4022,6 +4068,48 @@
 
           function closeCurValModal() {
             el("curValModal").style.display = "none";
+          }
+
+          /* ════════════════════════════════════════════
+             DATA EXPORT / IMPORT
+          ════════════════════════════════════════════ */
+          function exportData() {
+            const filename = "portfolio-backup-" + new Date().toISOString().slice(0, 10) + ".json";
+            const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url; a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            UI.toast("success", "Backup downloaded: " + filename, 3000);
+          }
+
+          function importData(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            e.target.value = ""; // reset so same file can be re-imported
+            const reader = new FileReader();
+            reader.onload = ev => {
+              try {
+                const raw = JSON.parse(ev.target.result);
+                if (!raw.liquid || !raw.equity) {
+                  UI.toast("error", "Invalid backup file — missing fund data", 4000);
+                  return;
+                }
+                if (!confirm("This will replace all current data with the backup. Continue?")) return;
+                applyCloudState(raw);
+                saveState();
+                renderTxns();
+                renderReturns();
+                el("dataModal").style.display = "none";
+                UI.toast("success", "Data restored from backup", 3000);
+              } catch {
+                UI.toast("error", "Could not read backup file — invalid JSON", 4000);
+              }
+            };
+            reader.readAsText(file);
           }
 
           function saveCurVal() {
