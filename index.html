@@ -2456,39 +2456,49 @@
 
       /* ═══ HOLDINGS WIDGET ═══ */
       .holdings-widget {
-        margin: 12px 0 4px;
-        border-top: 2px solid var(--accent);
-        background: rgba(255,255,255,0.015);
+        margin: 12px 0 8px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, rgba(0,245,160,0.06) 0%, transparent 55%), var(--panel-2);
+        border: 1px solid rgba(0,245,160,0.18);
+        border-top: 3px solid var(--mint);
         overflow: hidden;
       }
       .holdings-bar {
         width: 100%; display: flex; align-items: center;
-        gap: 14px; padding: 14px 20px 14px 12px;
+        gap: 14px; padding: 16px 20px 16px 14px;
         background: none; border: none; cursor: pointer; text-align: left;
       }
       .holdings-label {
-        font-family: "Outfit", sans-serif; font-size: 13px; font-weight: 700;
-        text-transform: uppercase; letter-spacing: 0.8px; color: var(--txt);
+        font-family: "Outfit", sans-serif; font-size: 11px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 1.5px; color: var(--dim);
         display: flex; align-items: center; gap: 10px; flex-shrink: 0;
       }
       .holdings-label::before {
-        content: ""; display: inline-block; width: 3px; height: 18px;
-        border-radius: 2px; background: var(--accent);
+        content: ""; display: inline-block; width: 3px; height: 20px;
+        border-radius: 2px; background: var(--mint);
+        box-shadow: 0 0 8px rgba(0,245,160,0.55);
       }
       .holdings-spacer { flex: 1; }
       .holdings-total {
-        font-family: "Fraunces", serif; font-size: 26px; font-weight: 700;
+        font-family: "Fraunces", serif; font-size: 28px; font-weight: 700;
         color: var(--txt); letter-spacing: -0.5px; display: inline-flex; flex-shrink: 0;
       }
-      .holdings-rtn { font-family: "Space Mono", monospace; font-size: 12px; font-weight: 700; flex-shrink: 0; }
-      .holdings-rtn.up { color: #4ade80; }
-      .holdings-rtn.dn { color: #f87171; }
-      .holdings-chevron { font-size: 11px; color: var(--dim); transition: transform 0.25s; flex-shrink: 0; }
+      .holdings-rtn {
+        font-family: "Space Mono", monospace; font-size: 11px; font-weight: 700;
+        flex-shrink: 0; padding: 3px 9px; border-radius: 20px;
+      }
+      .holdings-rtn.up { color: #4ade80; background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.22); }
+      .holdings-rtn.dn { color: #f87171; background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.22); }
+      .holdings-chevron { font-size: 11px; color: var(--dim); transition: transform 0.25s; flex-shrink: 0; margin-left: 2px; }
       .holdings-widget.open .holdings-chevron { transform: rotate(180deg); }
-      .holdings-body { border-top: 1px solid var(--line); padding: 4px 16px 12px; }
+      .holdings-body {
+        border-top: 1px solid rgba(0,245,160,0.1);
+        padding: 6px 16px 14px;
+        background: rgba(0,0,0,0.18);
+      }
       .holdings-row {
         display: flex; justify-content: space-between; align-items: center;
-        padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+        padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
       }
       .holdings-row:last-child { border-bottom: none; }
       .holdings-key { font-family: "Outfit", sans-serif; font-size: 12px; color: var(--dim); font-weight: 500; }
@@ -2498,7 +2508,7 @@
       }
       .holdings-val.up { color: #4ade80; }
       .holdings-val.dn { color: #f87171; }
-      .holdings-hdivider { height: 1px; background: var(--line); margin: 4px 0; }
+      .holdings-hdivider { height: 1px; background: rgba(255,255,255,0.06); margin: 4px 0; }
       /* Privacy mode */
       body.privacy-mode #tab-portfolio .holdings-total,
       body.privacy-mode #tab-portfolio .holdings-val { font-size: 0; }
