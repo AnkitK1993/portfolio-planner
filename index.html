@@ -1744,15 +1744,17 @@
       .fund-div-liq .fund-div-title::before { background: var(--liq); }
       .fund-div-eq  .fund-div-title::before { background: var(--mint); }
       .fund-div-total {
-        font-family: "Space Mono", monospace;
-        font-size: 13px;
-        font-weight: 700;
+        font-family: "Fraunces", serif;
+        font-size: 18px;
+        font-weight: 600;
         color: var(--txt);
-        letter-spacing: -0.3px;
+        letter-spacing: -0.5px;
         margin-right: 20px;
         display: inline-flex;
         min-width: 118px;
       }
+      .fund-div-liq .fund-div-total { color: var(--liq); }
+      .fund-div-eq  .fund-div-total { color: var(--mint); }
       /* ── PRIVACY MODE + THEME BUTTON ── */
       .hero-actions {
         display: flex;
@@ -1807,7 +1809,7 @@
       body.privacy-mode #tab-portfolio .coll-meta:not(:empty):not(#coll-meta-upcoming)::after {
         content: "• • • •";
         font-family: "Space Mono", monospace;
-        font-size: 13px;
+        font-size: 16px;
         color: var(--txt);
         opacity: 0.4;
       }
