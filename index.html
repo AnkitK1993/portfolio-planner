@@ -2740,12 +2740,34 @@
         from { transform: scale(0.88) translateY(12px); opacity: 0; }
         to   { transform: none; opacity: 1; }
       }
+      /* ═══ PIN LOCK ═══ */
+      .pin-key { width:64px;height:64px;border-radius:50%;background:var(--panel);border:1px solid var(--line);font-family:"Space Mono",monospace;font-size:20px;font-weight:700;color:var(--txt);cursor:pointer;transition:background 0.12s; }
+      .pin-key:hover { background:var(--panel-2); }
+      .pin-key:active { background:rgba(0,245,160,0.15); }
+      .pin-dot { width:12px;height:12px;border-radius:50%;border:2px solid var(--line);transition:background 0.1s; }
+      .pin-dot.filled { background:var(--mint);border-color:var(--mint); }
       /* ═══ DATA MODAL ═══ */
       .data-action-row { display: flex; align-items: center; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--line); }
       .data-action-row:last-child { border-bottom: none; }
       .data-action-info { flex: 1; min-width: 0; }
       .data-action-title { font-size: 13px; font-weight: 600; color: var(--txt); margin-bottom: 3px; }
       .data-action-desc { font-size: 11px; color: var(--dim); line-height: 1.5; }
+      /* ═══ PRINT VIEW ═══ */
+      @media print {
+        body { background: #fff !important; color: #000 !important; }
+        .tabs, nav, .nav-actions, #adminDropdown, #pinOverlay,
+        .btn, .modal-overlay, .confirm-overlay,
+        .coll-chevron, .drag-handle, .fund-archive-btn, .fund-cat-select,
+        .txn-filter-bar, .txn-act-btn, .fc-slider-wrap, .fc-mode-row,
+        .fc-scenario-row, #nwSnapshotBtn, .nw-snap-row button { display: none !important; }
+        .tab-section { display: block !important; page-break-before: always; }
+        .tab-section:first-of-type { page-break-before: auto; }
+        .card { border: 1px solid #ccc !important; background: #fff !important; box-shadow: none !important; }
+        .coll-body { display: block !important; height: auto !important; overflow: visible !important; }
+        * { color: #000 !important; }
+        .accent, .rtn-up, .up, [style*="color:var(--mint)"] { color: #007a50 !important; }
+        .rtn-dn, .dn, [style*="color:var(--coral)"] { color: #c0392b !important; }
+      }
     </style>
   </head>
   <body>
@@ -2778,6 +2800,8 @@
       <div class="nav-dd-sep" id="ddSep2"></div>
       <button class="nav-dd-item" id="ddManageSipsBtn">Manage SIPs</button>
       <button class="nav-dd-item" id="ddDataBtn">Data</button>
+      <button class="nav-dd-item" id="ddPrintBtn">Print View</button>
+      <button class="nav-dd-item" id="ddPinBtn">Set PIN Lock</button>
       <div class="nav-dd-sep"></div>
       <div class="nav-dd-user" id="ddUserInfo" style="display:none">
         <img class="nav-dd-avatar" id="ddUserAvatar" src="" alt=""/>
@@ -3048,7 +3072,11 @@
             </div>
             <span class="cal-month-invested" id="calMonthInvested"></span>
           </div>
-          <div class="cal-weekdays">
+          <div style="display:flex;justify-content:flex-end;margin-bottom:6px;gap:4px;">
+            <button class="txn-preset active" id="calViewMonth">Month</button>
+            <button class="txn-preset" id="calViewWeek">Week</button>
+          </div>
+          <div class="cal-weekdays" id="calWeekdays">
             <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
           </div>
           <div id="calGrid" class="cal-grid"></div>
@@ -3507,6 +3535,27 @@
       </div>
     </div>
 
+    <!-- PIN lock overlay -->
+    <div id="pinOverlay" style="display:none;position:fixed;inset:0;background:var(--bg,#0f1117);z-index:9999;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
+      <div style="font-family:'Fraunces',serif;font-size:28px;font-weight:700;color:var(--mint)">Enter PIN</div>
+      <div id="pinDots" style="display:flex;gap:10px;margin:4px 0;"></div>
+      <div id="pinError" style="font-size:11px;color:var(--coral);min-height:16px;"></div>
+      <div style="display:grid;grid-template-columns:repeat(3,64px);gap:10px;">
+        <button class="pin-key" data-k="1">1</button>
+        <button class="pin-key" data-k="2">2</button>
+        <button class="pin-key" data-k="3">3</button>
+        <button class="pin-key" data-k="4">4</button>
+        <button class="pin-key" data-k="5">5</button>
+        <button class="pin-key" data-k="6">6</button>
+        <button class="pin-key" data-k="7">7</button>
+        <button class="pin-key" data-k="8">8</button>
+        <button class="pin-key" data-k="9">9</button>
+        <button class="pin-key" data-k="" style="visibility:hidden"></button>
+        <button class="pin-key" data-k="0">0</button>
+        <button class="pin-key" data-k="back">&#9003;</button>
+      </div>
+    </div>
+
     <!-- Firebase SDK loaded lazily by initFirebase() only when apiKey is configured -->
 
     <script>
@@ -3844,6 +3893,24 @@
                 fbRetryDelay = 2000;
                 fbSyncUI("err", "Sync failed after retries — saved locally");
               }
+            }
+          }
+
+          /* Daily backup to a dated Firestore document */
+          async function maybeDailyBackup() {
+            if (!fbEnabled || !db || !authUser) return;
+            const today = new Date().toISOString().slice(0, 10);
+            const lastBackup = localStorage.getItem("lastDailyBackup");
+            if (lastBackup === today) return;
+            try {
+              await db.collection("dailyBackups").doc(today).set({
+                state:    JSON.stringify(state),
+                savedAt:  firebase.firestore.FieldValue.serverTimestamp(),
+              });
+              localStorage.setItem("lastDailyBackup", today);
+              UI.toast("success", "Daily backup saved (" + today + ")", 3000);
+            } catch (e) {
+              console.warn("Daily backup failed:", e.message);
             }
           }
 
@@ -4466,6 +4533,16 @@
           el("ddTxnsBtn").addEventListener("click", () => { closeNavDropdowns(); navigateTo("transactions"); });
           el("ddAddCurValBtn").addEventListener("click", () => openCurValModal());
           el("ddDataBtn").addEventListener("click", () => { closeNavDropdowns(); el("dataModal").style.display = "flex"; });
+          el("ddPrintBtn").addEventListener("click", () => { closeNavDropdowns(); window.print(); });
+          el("ddPinBtn").addEventListener("click", () => {
+            closeNavDropdowns();
+            const hasPIN = !!localStorage.getItem("appPin");
+            const msg = hasPIN ? "Enter a new 4-digit PIN (or leave blank to clear PIN lock):" : "Enter a 4-digit PIN to lock the app:";
+            const raw = prompt(msg);
+            if (raw === null) return; // cancelled
+            if (raw.trim() === "") { window.clearAppPin(); }
+            else { window.setAppPin(raw.trim()); }
+          });
           el("dataModalClose").addEventListener("click", () => { el("dataModal").style.display = "none"; });
           el("dataModalCancelBtn").addEventListener("click", () => { el("dataModal").style.display = "none"; });
           el("dataModal").addEventListener("click", e => { if (e.target === el("dataModal")) el("dataModal").style.display = "none"; });
@@ -4536,10 +4613,22 @@
 
           /* Calendar */
           el("calPrev").addEventListener("click", () => {
+            if (calView === "week") { calWeekOffset--; renderCalendar(); return; }
             calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderCalendar();
           });
           el("calNext").addEventListener("click", () => {
+            if (calView === "week") { calWeekOffset++; renderCalendar(); return; }
             calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCalendar();
+          });
+          el("calViewMonth").addEventListener("click", () => {
+            calView = "month";
+            el("calViewMonth").classList.add("active"); el("calViewWeek").classList.remove("active");
+            renderCalendar();
+          });
+          el("calViewWeek").addEventListener("click", () => {
+            calView = "week"; calWeekOffset = 0;
+            el("calViewWeek").classList.add("active"); el("calViewMonth").classList.remove("active");
+            renderCalendar();
           });
           el("calDayClose").addEventListener("click", () => { el("calDayModal").style.display = "none"; });
           el("calDayCloseBtn").addEventListener("click", () => { el("calDayModal").style.display = "none"; });
@@ -4609,6 +4698,7 @@
                 } else {
                   const firstName = (result.user.displayName || "Ankit").split(" ")[0];
                   UI.toast("success", `Welcome back, ${firstName}! 👋`, 4500);
+                  setTimeout(() => maybeDailyBackup(), 3000);
                 }
               } catch (e) {
                 const ignored = ["auth/popup-closed-by-user", "auth/cancelled-popup-request"];
@@ -5892,6 +5982,8 @@
           ════════════════════════════════════════════ */
           let calYear  = new Date().getFullYear();
           let calMonth = new Date().getMonth();
+          let calView  = "month"; // "month" | "week"
+          let calWeekOffset = 0; // weeks from current week
           let calDayDate = null; // date string currently open in day modal
           let txnFilter = { preset: "all", fundId: "", dateFrom: "", dateTo: "", sort: "newest" };
           let _shownMilestones = JSON.parse(localStorage.getItem("shownMilestones") || "[]");
@@ -5913,16 +6005,9 @@
             return "past";
           }
 
-          function renderCalendar() {
-            const grid = el("calGrid");
-            if (!grid) return;
-            const today = new Date().toISOString().split("T")[0];
-            const firstDay = new Date(calYear, calMonth, 1).getDay();
-            const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-            const prevMonthDays = new Date(calYear, calMonth, 0).getDate();
-            const monthPrefix = `${calYear}-${String(calMonth + 1).padStart(2,"0")}`;
-
-            // Build event map
+          function buildCalEvtMap(dates) {
+            // dates is an array of "YYYY-MM-DD" strings in scope
+            const monthPrefixes = [...new Set(dates.map(d => d.slice(0,7)))];
             const evtMap = {};
             (state.transactions || []).forEach(t => {
               if (!evtMap[t.date]) evtMap[t.date] = { txns: [], notes: [], sips: [] };
@@ -5932,48 +6017,102 @@
               if (!evtMap[n.date]) evtMap[n.date] = { txns: [], notes: [], sips: [] };
               evtMap[n.date].notes.push(n);
             });
-            // SIP recurring events for this month
-            [...LIQ_FUNDS, ...EQ_FUNDS].forEach(f => {
-              const s = LIQ_FUNDS.some(x => x.id === f.id) ? state.liquid[f.id] : state.equity[f.id];
-              const sipAmt = s.sipAmt || 0; const sipDay = parseInt(s.sipDate) || 0;
-              if (sipAmt > 0 && sipDay >= 1 && sipDay <= daysInMonth) {
-                const ds = `${monthPrefix}-${String(sipDay).padStart(2,"0")}`;
-                if (!evtMap[ds]) evtMap[ds] = { txns: [], notes: [], sips: [] };
-                evtMap[ds].sips.push({ fundId: f.id, amount: sipAmt });
-              }
-            });
-
-            el("calMonthLabel").textContent = new Date(calYear, calMonth, 1)
-              .toLocaleString("en-IN", { month: "long", year: "numeric" });
-
-            // Monthly invested amount
-            const monthTotal = (state.transactions || [])
-              .filter(t => t.date && t.date.startsWith(monthPrefix))
-              .reduce((s, t) => s + (t.invested || 0), 0);
-            const investedEl = el("calMonthInvested");
-            if (investedEl) investedEl.textContent = monthTotal > 0 ? "₹" + Math.round(monthTotal).toLocaleString("en-IN") : "";
-
-            let html = "";
-            for (let i = firstDay - 1; i >= 0; i--) {
-              html += `<div class="cal-day other-month"><span class="cal-dn">${prevMonthDays - i}</span></div>`;
-            }
-            for (let d = 1; d <= daysInMonth; d++) {
-              const ds = `${monthPrefix}-${String(d).padStart(2,"0")}`;
-              const evts = evtMap[ds] || { txns: [], notes: [], sips: [] };
-              const isToday = ds === today;
-              let dots = "";
-              if (evts.txns.length) dots += `<span class="cal-dot green"></span>`;
-              evts.notes.forEach(n => {
-                const dc = noteStatus(n.date) === "future" ? "green" : noteStatus(n.date) === "today" ? "orange" : "red";
-                dots += `<span class="cal-dot ${dc}"></span>`;
+            monthPrefixes.forEach(mp => {
+              const dim = new Date(+mp.slice(0,4), +mp.slice(5,7), 0).getDate();
+              [...LIQ_FUNDS, ...EQ_FUNDS].forEach(f => {
+                const s = LIQ_FUNDS.some(x => x.id === f.id) ? state.liquid[f.id] : state.equity[f.id];
+                const sipAmt = s.sipAmt || 0; const sipDay = parseInt(s.sipDate) || 0;
+                if (sipAmt > 0 && sipDay >= 1 && sipDay <= dim) {
+                  const ds = `${mp}-${String(sipDay).padStart(2,"0")}`;
+                  if (!evtMap[ds]) evtMap[ds] = { txns: [], notes: [], sips: [] };
+                  evtMap[ds].sips.push({ fundId: f.id, amount: sipAmt });
+                }
               });
-              if (evts.sips.length) dots += `<span class="cal-dot sip"></span>`;
-              html += `<div class="cal-day${isToday ? " today" : ""}" data-date="${ds}">
-                <span class="cal-dn">${d}</span>
-                <div class="cal-dots">${dots}</div>
-              </div>`;
+            });
+            return evtMap;
+          }
+
+          function calDayHTML(ds, evtMap, today, extraClass = "") {
+            const evts = evtMap[ds] || { txns: [], notes: [], sips: [] };
+            const isToday = ds === today;
+            const d = ds.slice(8);
+            let dots = "";
+            if (evts.txns.length) dots += `<span class="cal-dot green"></span>`;
+            evts.notes.forEach(n => {
+              const dc = noteStatus(n.date) === "future" ? "green" : noteStatus(n.date) === "today" ? "orange" : "red";
+              dots += `<span class="cal-dot ${dc}"></span>`;
+            });
+            if (evts.sips.length) dots += `<span class="cal-dot sip"></span>`;
+            return `<div class="cal-day${isToday ? " today" : ""}${extraClass ? " " + extraClass : ""}" data-date="${ds}">
+              <span class="cal-dn">${parseInt(d)}</span>
+              <div class="cal-dots">${dots}</div>
+            </div>`;
+          }
+
+          function renderCalendar() {
+            const grid = el("calGrid");
+            if (!grid) return;
+            const today = new Date().toISOString().split("T")[0];
+
+            if (calView === "week") {
+              // Week view: show 7 days for the current week
+              const baseDate = new Date();
+              baseDate.setDate(baseDate.getDate() + calWeekOffset * 7);
+              const weekStart = new Date(baseDate);
+              weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // Sunday
+              const dates = Array.from({ length: 7 }, (_, i) => {
+                const d = new Date(weekStart);
+                d.setDate(weekStart.getDate() + i);
+                return d.toISOString().split("T")[0];
+              });
+
+              const evtMap = buildCalEvtMap(dates);
+              const weekLbl = `${weekStart.toLocaleDateString("en-IN", { day: "numeric", month: "short" })} – ` +
+                new Date(weekStart.getTime() + 6 * 86400000).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+              el("calMonthLabel").textContent = weekLbl;
+
+              const weekTotal = dates.reduce((s, ds) => s + (evtMap[ds]?.txns || []).reduce((t, x) => t + (x.invested || 0), 0), 0);
+              const investedEl = el("calMonthInvested");
+              if (investedEl) investedEl.textContent = weekTotal > 0 ? "₹" + Math.round(weekTotal).toLocaleString("en-IN") : "";
+
+              // Week view: single row of 7 cells with day labels
+              const dayNames = ["Su","Mo","Tu","We","Th","Fr","Sa"];
+              const wdEl = el("calWeekdays");
+              if (wdEl) wdEl.style.display = "grid";
+
+              let html = "";
+              dates.forEach(ds => { html += calDayHTML(ds, evtMap, today, "week-cell"); });
+              grid.style.gridTemplateColumns = "repeat(7, 1fr)";
+              grid.innerHTML = html;
+            } else {
+              // Month view
+              const firstDay = new Date(calYear, calMonth, 1).getDay();
+              const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+              const prevMonthDays = new Date(calYear, calMonth, 0).getDate();
+              const monthPrefix = `${calYear}-${String(calMonth + 1).padStart(2,"0")}`;
+
+              const allDates = Array.from({ length: daysInMonth }, (_, i) =>
+                `${monthPrefix}-${String(i + 1).padStart(2,"0")}`);
+              const evtMap = buildCalEvtMap(allDates);
+
+              el("calMonthLabel").textContent = new Date(calYear, calMonth, 1)
+                .toLocaleString("en-IN", { month: "long", year: "numeric" });
+
+              const monthTotal = (state.transactions || [])
+                .filter(t => t.date && t.date.startsWith(monthPrefix))
+                .reduce((s, t) => s + (t.invested || 0), 0);
+              const investedEl = el("calMonthInvested");
+              if (investedEl) investedEl.textContent = monthTotal > 0 ? "₹" + Math.round(monthTotal).toLocaleString("en-IN") : "";
+
+              grid.style.gridTemplateColumns = "";
+              let html = "";
+              for (let i = firstDay - 1; i >= 0; i--) {
+                html += `<div class="cal-day other-month"><span class="cal-dn">${prevMonthDays - i}</span></div>`;
+              }
+              allDates.forEach(ds => { html += calDayHTML(ds, evtMap, today); });
+              grid.innerHTML = html;
             }
-            grid.innerHTML = html;
+
             grid.querySelectorAll(".cal-day:not(.other-month)").forEach(cell => {
               cell.addEventListener("click", () => openCalDay(cell.dataset.date));
             });
@@ -6967,6 +7106,55 @@
             render();
             setTimeout(() => toggleColl(newId), 50);
           });
+
+          /* ── PIN LOCK ── */
+          (function initPinLock() {
+            let _pinBuffer = "";
+            const PIN_KEY = "appPin";
+            const storedPin = localStorage.getItem(PIN_KEY);
+            const overlay = el("pinOverlay");
+            if (!overlay) return;
+
+            const updateDots = () => {
+              const dotsEl = el("pinDots");
+              if (!dotsEl) return;
+              dotsEl.innerHTML = [0,1,2,3].map(i =>
+                `<div class="pin-dot${_pinBuffer.length > i ? " filled" : ""}"></div>`
+              ).join("");
+            };
+
+            if (storedPin) {
+              overlay.style.display = "flex";
+              updateDots();
+              document.querySelectorAll(".pin-key").forEach(btn => {
+                btn.addEventListener("click", () => {
+                  const k = btn.dataset.k;
+                  if (k === "" || k === undefined) return;
+                  if (k === "back") { _pinBuffer = _pinBuffer.slice(0,-1); updateDots(); el("pinError").textContent = ""; return; }
+                  if (_pinBuffer.length >= 4) return;
+                  _pinBuffer += k;
+                  updateDots();
+                  if (_pinBuffer.length === 4) {
+                    if (_pinBuffer === storedPin) {
+                      overlay.style.display = "none";
+                    } else {
+                      el("pinError").textContent = "Incorrect PIN. Try again.";
+                      _pinBuffer = "";
+                      setTimeout(updateDots, 50);
+                    }
+                  }
+                });
+              });
+            }
+
+            // PIN management from admin menu
+            window.setAppPin = (newPin) => {
+              if (!newPin || newPin.length !== 4 || !/^\d{4}$/.test(newPin)) { UI.toast("err", "PIN must be exactly 4 digits", 3000); return; }
+              localStorage.setItem(PIN_KEY, newPin);
+              UI.toast("success", "PIN set successfully", 2500);
+            };
+            window.clearAppPin = () => { localStorage.removeItem(PIN_KEY); UI.toast("success", "PIN removed", 2500); };
+          })();
 
           initFirebase();          // must run before anything reads fbEnabled
           syncFundArrays();
