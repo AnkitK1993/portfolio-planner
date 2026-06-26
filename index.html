@@ -5123,10 +5123,12 @@
                 date, funds, note
               });
             }
-            // Apply as Target Total on Portfolio page for each fund
+            // Target = scheduled amount + current After Expense value
             funds.forEach(({ fundId, amount }) => {
-              if (LIQ_FUNDS.some(f => f.id === fundId)) state.liquid[fundId].target = amount;
-              else state.equity[fundId].target = amount;
+              const isLiq = LIQ_FUNDS.some(f => f.id === fundId);
+              const afterExp = isLiq ? (state.liquid[fundId].value || 0) : (state.equity[fundId].shown || 0);
+              if (isLiq) state.liquid[fundId].target = amount + afterExp;
+              else state.equity[fundId].target = amount + afterExp;
             });
             saveState();
             renderCalendar();
