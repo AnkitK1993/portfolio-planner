@@ -724,6 +724,9 @@
         border-top: none;
       }
 
+      /* ── DRIFT ALERT ── */
+      .drift-alert { border-radius: 12px; padding: 11px 14px; margin-bottom: 10px; font-size: 12px; font-weight: 500; display: flex; align-items: flex-start; gap: 10px; border: 1px solid rgba(251,191,36,0.3); background: rgba(251,191,36,0.08); color: var(--amber); }
+      .drift-alert-icon { font-size: 16px; flex-shrink: 0; }
       /* ── ALLOC BAR ── */
       .alloc-block {
         margin-bottom: 16px;
@@ -2889,6 +2892,9 @@
           <p>How much more to invest across all funds to reach your targets.</p>
         </div>
 
+        <!-- Drift alert -->
+        <div id="sumDriftAlert" style="display:none" class="drift-alert"></div>
+
         <div class="card" style="margin-bottom: 12px">
           <div class="sum-hero-label" id="heroLabel">
             Equity funds — you must invest
@@ -2962,6 +2968,36 @@
               <div class="sv" id="totDuty">₹0</div>
             </div>
           </div>
+        </div>
+
+        <!-- Allocation donut + rebalance suggestion -->
+        <div class="card" style="margin-bottom:12px">
+          <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+            <svg id="sumDonut" viewBox="0 0 100 100" style="width:90px;height:90px;flex-shrink:0;"></svg>
+            <div style="flex:1;min-width:0">
+              <div id="sumRebalance" style="font-size:12px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Surplus calculator -->
+        <div class="card" style="margin-bottom:12px">
+          <div class="sec-head" style="margin-bottom:12px">Surplus Calculator</div>
+          <div class="grid2" style="margin-bottom:10px">
+            <div class="field">
+              <label class="flabel">Monthly Income</label>
+              <div class="ibox"><span class="pfx">&#8377;</span>
+                <input class="num" id="surplusIncome" type="number" min="0" placeholder="0" inputmode="numeric"/>
+              </div>
+            </div>
+            <div class="field">
+              <label class="flabel">Monthly Expenses</label>
+              <div class="ibox"><span class="pfx">&#8377;</span>
+                <input class="num" id="surplusExpenses" type="number" min="0" placeholder="0" inputmode="numeric"/>
+              </div>
+            </div>
+          </div>
+          <div id="surplusResult"></div>
         </div>
 
         <div class="card cal-card">
@@ -3461,6 +3497,7 @@
                 snapshots: {},
               },
               forecast: { bankBalance: 0, investments: 0, monthlyInvest: 0, annualRate: 12 },
+              surplus: { income: 0, expenses: 0 },
               transactions: [],
               returnsLog: [],
               calendarNotes: [],
@@ -5197,6 +5234,7 @@
             el("fundedBar").style.width = clamp(funded, 0, 100) + "%";
             el("totDuty").textContent = fmt(totDuty);
 
+            renderSummaryExtras(eqCur, liqCur, totCur, eqTgt, liqTgt, totTgt, nowEqPct, tgtEqPct);
             renderNetWorth();
             renderUpcoming();
             renderHoldings();
@@ -5249,6 +5287,113 @@
               total > 0
                 ? Math.round(eqPct) + "% eq / " + Math.round(liqPct) + "% liq"
                 : "—";
+          }
+
+          /* ════════════════════════════════════════════
+             SUMMARY EXTRAS: Donut, Drift, Rebalance, Surplus
+          ════════════════════════════════════════════ */
+          function renderSummaryExtras(eqCur, liqCur, totCur, eqTgt, liqTgt, totTgt, nowEqPct, tgtEqPct) {
+            /* — Donut chart — */
+            const donut = el("sumDonut");
+            if (donut && totCur > 0) {
+              const eqPct = nowEqPct / 100;
+              const lqPct = 1 - eqPct;
+              const R = 40, cx = 50, cy = 50, stroke = 14;
+              const circ = 2 * Math.PI * R;
+              const eqDash = circ * eqPct;
+              const lqDash = circ * lqPct;
+              const eqStart = -Math.PI / 2;
+              const lqStart = eqStart + 2 * Math.PI * eqPct;
+              const arc = (startAngle, sweep) => {
+                const x1 = cx + R * Math.cos(startAngle);
+                const y1 = cy + R * Math.sin(startAngle);
+                const x2 = cx + R * Math.cos(startAngle + sweep);
+                const y2 = cy + R * Math.sin(startAngle + sweep);
+                const large = sweep > Math.PI ? 1 : 0;
+                return `M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${R} ${R} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`;
+              };
+              donut.innerHTML = `
+                <circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="var(--line)" stroke-width="${stroke}"/>
+                <path d="${arc(eqStart, 2 * Math.PI * eqPct)}" fill="none" stroke="var(--mint)" stroke-width="${stroke}" stroke-linecap="butt"/>
+                <path d="${arc(lqStart, 2 * Math.PI * lqPct)}" fill="none" stroke="var(--liq)" stroke-width="${stroke}" stroke-linecap="butt"/>
+                <text x="${cx}" y="${cy - 5}" text-anchor="middle" font-size="10" font-weight="700" fill="var(--txt)" font-family="Outfit,sans-serif">${Math.round(nowEqPct)}%</text>
+                <text x="${cx}" y="${cy + 8}" text-anchor="middle" font-size="7" fill="var(--dim)" font-family="Outfit,sans-serif">equity</text>
+                <circle cx="${cx - 14}" cy="${cy + 22}" r="3" fill="var(--mint)"/>
+                <text x="${cx - 9}" y="${cy + 25}" font-size="6.5" fill="var(--dim)" font-family="Outfit,sans-serif">Equity</text>
+                <circle cx="${cx + 8}" cy="${cy + 22}" r="3" fill="var(--liq)"/>
+                <text x="${cx + 13}" y="${cy + 25}" font-size="6.5" fill="var(--dim)" font-family="Outfit,sans-serif">Liquid</text>`;
+            } else if (donut) {
+              donut.innerHTML = `<circle cx="50" cy="50" r="40" fill="none" stroke="var(--line)" stroke-width="14"/><text x="50" y="55" text-anchor="middle" font-size="8" fill="var(--dim)" font-family="Outfit,sans-serif">No data</text>`;
+            }
+
+            /* — Drift alert & rebalancing — */
+            const driftEl = el("sumDriftAlert");
+            const rebalEl = el("sumRebalance");
+            const drift = Math.abs(nowEqPct - tgtEqPct);
+            if (driftEl) {
+              if (totCur > 0 && totTgt > 0 && drift > 5) {
+                const dir = nowEqPct < tgtEqPct ? "below" : "above";
+                driftEl.style.display = "flex";
+                driftEl.innerHTML = `<span class="drift-alert-icon">⚠</span><span>Allocation drift: equity is <b>${Math.round(drift)}%</b> ${dir} target (${Math.round(nowEqPct)}% now vs ${Math.round(tgtEqPct)}% target). Consider rebalancing.</span>`;
+              } else {
+                driftEl.style.display = "none";
+              }
+            }
+            if (rebalEl && totCur > 0) {
+              if (totTgt > 0 && drift > 1) {
+                const desiredEq = totCur * tgtEqPct / 100;
+                const desiredLiq = totCur - desiredEq;
+                const needEq  = Math.max(0, Math.round(desiredEq  - eqCur));
+                const needLiq = Math.max(0, Math.round(desiredLiq - liqCur));
+                rebalEl.innerHTML = `
+                  <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--dim);margin-bottom:8px">Rebalancing Suggestion</div>
+                  ${needEq  > 0 ? `<div style="font-size:12px;margin-bottom:4px">Invest <span style="color:var(--mint);font-weight:700">${fmt(needEq)}</span> in equity</div>` : ""}
+                  ${needLiq > 0 ? `<div style="font-size:12px;margin-bottom:4px">Invest <span style="color:var(--liq);font-weight:700">${fmt(needLiq)}</span> in liquid</div>` : ""}
+                  ${needEq === 0 && needLiq === 0 ? `<div style="font-size:12px;color:var(--mint)">✓ Portfolio is balanced</div>` : ""}
+                  <div style="font-size:10px;color:var(--dim);margin-top:6px">Based on current total ${fmt(totCur)} and target split ${Math.round(tgtEqPct)}% eq / ${Math.round(100 - tgtEqPct)}% liq</div>`;
+              } else if (totTgt === 0) {
+                rebalEl.innerHTML = `<div style="font-size:11px;color:var(--dim)">Set fund targets to see rebalancing suggestions.</div>`;
+              } else {
+                rebalEl.innerHTML = `<div style="font-size:12px;color:var(--mint)">✓ Portfolio is balanced (drift &lt; 1%)</div>`;
+              }
+            }
+
+            /* — Surplus calculator — */
+            renderSurplus();
+          }
+
+          function renderSurplus() {
+            if (!state.surplus) state.surplus = { income: 0, expenses: 0 };
+            const inc = state.surplus.income || 0;
+            const exp = state.surplus.expenses || 0;
+            const surplus = inc - exp;
+            const resultEl = el("surplusResult");
+            if (!resultEl) return;
+            if (inc === 0 && exp === 0) {
+              resultEl.innerHTML = `<div style="font-size:11px;color:var(--dim)">Enter your monthly income and expenses to see investable surplus.</div>`;
+              return;
+            }
+            const savingsRate = inc > 0 ? ((surplus / inc) * 100).toFixed(1) : 0;
+            const eqPct = (() => { const totCur = LIQ_FUNDS.reduce((s,f)=>s+(state.liquid[f.id].value||0),0) + EQ_FUNDS.reduce((s,f)=>s+(state.equity[f.id].shown||0),0); const eqCur = EQ_FUNDS.reduce((s,f)=>s+(state.equity[f.id].shown||0),0); return totCur > 0 ? eqCur / totCur : 0.6; })();
+            const surplusEq  = Math.max(0, Math.round(surplus * eqPct));
+            const surplusLiq = Math.max(0, Math.round(surplus * (1 - eqPct)));
+            const color = surplus >= 0 ? "var(--mint)" : "var(--coral)";
+            resultEl.innerHTML = `
+              <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+                <span style="font-family:'Fraunces',serif;font-size:22px;font-weight:700;color:${color}">${fmt(surplus)}</span>
+                <span style="font-size:11px;color:var(--dim)">surplus/month · ${savingsRate}% savings rate</span>
+              </div>
+              ${surplus > 0 ? `<div style="font-size:11px;color:var(--dim);margin-bottom:4px">Suggested split (based on current allocation):</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <div style="background:rgba(0,245,160,0.08);border:1px solid rgba(0,245,160,0.2);border-radius:8px;padding:6px 12px;">
+                  <div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px">Equity</div>
+                  <div style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--mint)">${fmt(surplusEq)}</div>
+                </div>
+                <div style="background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.2);border-radius:8px;padding:6px 12px;">
+                  <div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px">Liquid</div>
+                  <div style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--liq)">${fmt(surplusLiq)}</div>
+                </div>
+              </div>` : surplus < 0 ? `<div style="font-size:11px;color:var(--coral)">Expenses exceed income by ${fmt(Math.abs(surplus))}/month.</div>` : ""}`;
           }
 
           /* ════════════════════════════════════════════
@@ -6119,6 +6264,23 @@
           /* ════════════════════════════════════════════
              INIT
           ════════════════════════════════════════════ */
+          /* Surplus calculator inputs */
+          el("surplusIncome").addEventListener("input", e => {
+            if (!state.surplus) state.surplus = {};
+            state.surplus.income = num(e.target.value);
+            saveState(); renderSurplus();
+          });
+          el("surplusExpenses").addEventListener("input", e => {
+            if (!state.surplus) state.surplus = {};
+            state.surplus.expenses = num(e.target.value);
+            saveState(); renderSurplus();
+          });
+          // Restore surplus inputs on page load
+          if (state.surplus) {
+            if (el("surplusIncome") && state.surplus.income) el("surplusIncome").value = state.surplus.income;
+            if (el("surplusExpenses") && state.surplus.expenses) el("surplusExpenses").value = state.surplus.expenses;
+          }
+
           /* Forecast inputs */
           el("fcBank").addEventListener("input", (e) => {
             state.forecast.bankBalance = num(e.target.value);
