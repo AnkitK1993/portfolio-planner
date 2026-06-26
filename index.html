@@ -3121,17 +3121,8 @@
           <div class="curval-date-row">
             <input class="form-inp" id="calNoteDate" type="date" />
           </div>
-          <div class="cal-note-field">
-            <label class="flabel">Fund</label>
-            <select class="form-inp cal-note-select" id="calNoteFund"></select>
-          </div>
-          <div class="cal-note-field">
-            <label class="flabel">Amount</label>
-            <div class="ibox"><span class="pfx">&#8377;</span>
-              <input class="num" id="calNoteAmt" type="text" placeholder="0" inputmode="numeric" />
-            </div>
-          </div>
-          <div class="cal-note-field">
+          <div id="calNoteFundList"></div>
+          <div class="cal-note-field" style="margin-top:10px">
             <label class="flabel">Note <span style="opacity:.5;font-weight:400">(optional)</span></label>
             <input class="form-inp" id="calNoteText" type="text" placeholder="e.g. Monthly SIP" maxlength="80" />
           </div>
@@ -5054,47 +5045,53 @@
               const amtCls   = st === "future" ? "calday-green" : st === "today" ? "calday-orange" : "calday-red";
               const badgeCls = st === "future" ? "green-b" : st === "today" ? "orange-b" : "red-b";
               const label    = st === "future" ? "Scheduled" : st === "today" ? "Due Today" : "Overdue";
-              html += `<div class="calday-row">
-                <div class="calday-info">
-                  <span class="calday-fund">${getFundName(n.fundId)}</span>
-                  <span class="calday-amt ${amtCls}">&#8377;${Math.round(n.amount || 0).toLocaleString("en-IN")}</span>
-                  ${n.note ? `<span class="calday-note-text">${n.note}</span>` : ""}
-                </div>
-                <div class="calday-actions">
-                  <span class="calday-badge ${badgeCls}">${label}</span>
-                  <button class="calday-btn" onclick="openCalNoteModal('${n.date}','${n.id}')">Edit</button>
-                  <button class="calday-btn" onclick="doneCalNote('${n.id}')">Done</button>
-                  <button class="calday-btn danger" onclick="deleteCalNote('${n.id}')">Delete</button>
-                </div>
+              // Support both new (funds[]) and legacy (fundId/amount) format
+              const noteFunds = n.funds || (n.fundId ? [{ fundId: n.fundId, amount: n.amount }] : []);
+              const actions = `<div class="calday-actions">
+                <span class="calday-badge ${badgeCls}">${label}</span>
+                <button class="calday-btn" onclick="openCalNoteModal('${n.date}','${n.id}')">Edit</button>
+                <button class="calday-btn" onclick="doneCalNote('${n.id}')">Done</button>
+                <button class="calday-btn danger" onclick="deleteCalNote('${n.id}')">Delete</button>
               </div>`;
+              noteFunds.forEach(({ fundId, amount }, i) => {
+                html += `<div class="calday-row">
+                  <div class="calday-info">
+                    <span class="calday-fund">${getFundName(fundId)}</span>
+                    <span class="calday-amt ${amtCls}">&#8377;${Math.round(amount || 0).toLocaleString("en-IN")}</span>
+                    ${i === 0 && n.note ? `<span class="calday-note-text">${n.note}</span>` : ""}
+                  </div>
+                  ${i === 0 ? actions : ""}
+                </div>`;
+              });
             });
             el("calDayBody").innerHTML = html;
           }
 
           function openCalNoteModal(dateStr, noteId) {
             el("calNoteEditId").value = noteId || "";
-            el("calNoteModalTitle").textContent = noteId ? "Edit Scheduled Transaction" : "Schedule Transaction";
+            el("calNoteModalTitle").textContent = noteId ? "Edit Scheduled" : "Schedule Transaction";
             const today = new Date().toISOString().split("T")[0];
-            // Populate fund select
             const allFunds = [
               ...LIQ_FUNDS.map(f => ({ id: f.id, name: state.liquid[f.id]?.name || f.defaultName })),
               ...EQ_FUNDS.map(f => ({ id: f.id, name: state.equity[f.id]?.name || f.defaultName })),
             ];
-            el("calNoteFund").innerHTML = allFunds.map(f => `<option value="${f.id}">${f.name}</option>`).join("");
+            // Build prefill map from existing note
+            const prefill = {};
             if (noteId) {
               const n = (state.calendarNotes || []).find(x => x.id === noteId);
               if (n) {
                 el("calNoteDate").value = n.date;
-                el("calNoteFund").value = n.fundId;
-                el("calNoteAmt").value  = n.amount > 0 ? Math.round(n.amount).toLocaleString("en-IN") : "";
                 el("calNoteText").value = n.note || "";
+                (n.funds || (n.fundId ? [{ fundId: n.fundId, amount: n.amount }] : []))
+                  .forEach(({ fundId, amount }) => { prefill[fundId] = amount; });
               }
             } else {
               el("calNoteDate").value = dateStr || today;
-              el("calNoteAmt").value  = "";
               el("calNoteText").value = "";
             }
-            // Close day modal, open note modal
+            el("calNoteFundList").innerHTML = allFunds
+              .map(f => fundRowHTML(f.id, f.name, prefill[f.id] ? Math.round(prefill[f.id]) : ""))
+              .join("");
             el("calDayModal").style.display = "none";
             el("calNoteModal").style.display = "flex";
           }
@@ -5105,24 +5102,36 @@
 
           function saveCalNote() {
             const date   = el("calNoteDate").value;
-            const fundId = el("calNoteFund").value;
-            const amount = num(el("calNoteAmt").value);
             const note   = el("calNoteText").value.trim();
             const editId = el("calNoteEditId").value;
-            if (!date)   { UI.toast("error", "Date is required", 2500); return; }
-            if (!amount) { UI.toast("error", "Amount is required", 2500); return; }
+            if (!date) { UI.toast("error", "Date is required", 2500); return; }
+            // Collect amounts from all fund rows
+            const allFunds = [...LIQ_FUNDS, ...EQ_FUNDS];
+            const funds = [];
+            allFunds.forEach(f => {
+              const v = num(el("txi-" + f.id)?.value);
+              if (v > 0) funds.push({ fundId: f.id, amount: v });
+            });
+            if (!funds.length) { UI.toast("warn", "Enter at least one amount", 2500); return; }
             if (!state.calendarNotes) state.calendarNotes = [];
             if (editId) {
               const n = state.calendarNotes.find(x => x.id === editId);
-              if (n) { n.date = date; n.fundId = fundId; n.amount = amount; n.note = note; }
+              if (n) { n.date = date; n.funds = funds; n.note = note; delete n.fundId; delete n.amount; }
             } else {
               state.calendarNotes.push({
                 id: Date.now().toString(36) + Math.random().toString(36).slice(2,5),
-                date, fundId, amount, note
+                date, funds, note
               });
             }
+            // Apply as Target Total on Portfolio page for each fund
+            funds.forEach(({ fundId, amount }) => {
+              if (LIQ_FUNDS.some(f => f.id === fundId)) state.liquid[fundId].target = amount;
+              else state.equity[fundId].target = amount;
+            });
             saveState();
             renderCalendar();
+            syncInputsFromState();
+            scheduleRender();
             closeCalNoteModal();
             UI.toast("success", editId ? "Updated" : "Scheduled", 1800);
           }
