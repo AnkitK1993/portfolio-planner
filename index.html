@@ -4063,7 +4063,6 @@
           el("calNext").addEventListener("click", () => {
             calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCalendar();
           });
-          el("calAddNoteBtn").addEventListener("click", () => openCalNoteModal(null, null));
           el("calDayClose").addEventListener("click", () => { el("calDayModal").style.display = "none"; });
           el("calDayCloseBtn").addEventListener("click", () => { el("calDayModal").style.display = "none"; });
           el("calDayAddBtn").addEventListener("click", () => openCalNoteModal(calDayDate, null));
