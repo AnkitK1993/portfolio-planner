@@ -2622,6 +2622,57 @@
       .cal-note-field { margin-top: 12px; }
       .cal-note-select { width: 100%; background: var(--panel); border: 1px solid var(--line); color: var(--txt); border-radius: 8px; padding: 8px 10px; font-family: "Outfit", sans-serif; font-size: 13px; appearance: none; cursor: pointer; }
       .cal-note-select:focus { outline: none; border-color: var(--mint); }
+      /* ═══ CONFIRM DIALOG ═══ */
+      .confirm-overlay {
+        position: fixed; inset: 0; z-index: 10001;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(0,0,0,0.55);
+        backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+        padding: 24px;
+      }
+      .confirm-card {
+        background: linear-gradient(145deg, var(--panel-2) 0%, var(--panel) 100%);
+        border: 1px solid rgba(255,255,255,0.09);
+        border-radius: 22px;
+        padding: 30px 24px 24px;
+        max-width: 300px; width: 100%;
+        text-align: center;
+        box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 4px 16px rgba(0,0,0,0.3);
+        animation: confirmIn 0.28s cubic-bezier(0.22,1,0.36,1) both;
+      }
+      .confirm-icon-wrap {
+        width: 56px; height: 56px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        margin: 0 auto 18px;
+        background: rgba(248,113,113,0.1);
+        border: 1px solid rgba(248,113,113,0.22);
+        color: #f87171;
+      }
+      .confirm-icon-wrap.info-type {
+        background: rgba(56,189,248,0.1);
+        border-color: rgba(56,189,248,0.22);
+        color: #38bdf8;
+      }
+      .confirm-title {
+        font-family: "Outfit", sans-serif; font-size: 17px; font-weight: 700;
+        color: var(--txt); margin-bottom: 8px; letter-spacing: -0.2px;
+      }
+      .confirm-msg {
+        font-family: "Outfit", sans-serif; font-size: 13px; color: var(--dim);
+        line-height: 1.6; margin-bottom: 26px;
+      }
+      .confirm-btns { display: flex; gap: 10px; }
+      .confirm-btns button { flex: 1; padding: 11px 0; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid; transition: background 0.15s, opacity 0.15s; }
+      .confirm-cancel-btn { background: rgba(255,255,255,0.04); border-color: var(--line); color: var(--dim); }
+      .confirm-cancel-btn:hover { background: rgba(255,255,255,0.08); color: var(--txt); }
+      .confirm-ok-btn.is-danger { background: rgba(248,113,113,0.1); border-color: rgba(248,113,113,0.35); color: #f87171; }
+      .confirm-ok-btn.is-danger:hover { background: rgba(248,113,113,0.2); }
+      .confirm-ok-btn.is-primary { background: rgba(0,245,160,0.1); border-color: rgba(0,245,160,0.35); color: var(--mint); }
+      .confirm-ok-btn.is-primary:hover { background: rgba(0,245,160,0.18); }
+      @keyframes confirmIn {
+        from { transform: scale(0.88) translateY(12px); opacity: 0; }
+        to   { transform: none; opacity: 1; }
+      }
       /* ═══ DATA MODAL ═══ */
       .data-action-row { display: flex; align-items: center; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--line); }
       .data-action-row:last-child { border-bottom: none; }
@@ -3193,6 +3244,21 @@
       </div>
     </div>
 
+    <!-- ═══ CONFIRM DIALOG ═══ -->
+    <div id="confirmModal" class="confirm-overlay" style="display:none" role="dialog" aria-modal="true">
+      <div class="confirm-card">
+        <div class="confirm-icon-wrap" id="confirmIconWrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div class="confirm-title" id="confirmTitle">Are you sure?</div>
+        <div class="confirm-msg" id="confirmMsg"></div>
+        <div class="confirm-btns">
+          <button class="btn btn-ghost confirm-cancel-btn" id="confirmCancel">Cancel</button>
+          <button class="btn confirm-ok-btn" id="confirmOk">Confirm</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Firebase SDK loaded lazily by initFirebase() only when apiKey is configured -->
 
     <script>
@@ -3675,7 +3741,20 @@
           /* ════════════════════════════════════════════
              UI COMPONENT SYSTEM
           ════════════════════════════════════════════ */
+          let _confirmCb = null;
+
           const UI = {
+            /* Custom confirmation dialog */
+            confirm(msg, title, okLabel, cb, danger = true) {
+              el("confirmTitle").textContent = title || "Are you sure?";
+              el("confirmMsg").textContent   = msg || "";
+              el("confirmOk").textContent    = okLabel || "Confirm";
+              el("confirmOk").className = "btn confirm-ok-btn " + (danger ? "is-danger" : "is-primary");
+              el("confirmIconWrap").className = "confirm-icon-wrap" + (danger ? "" : " info-type");
+              _confirmCb = cb || null;
+              el("confirmModal").style.display = "flex";
+            },
+
             /* Floating toast notification — type: success | error | info | warn */
             toast(type, msg, duration = 3500) {
               const wrap = document.getElementById("toastWrap");
@@ -4112,6 +4191,9 @@
           el("sipModalCancelBtn").addEventListener("click", () => { el("sipModal").style.display = "none"; });
           el("sipModalSaveBtn").addEventListener("click", saveManageSips);
           el("sipModal").addEventListener("click", e => { if (e.target === el("sipModal")) el("sipModal").style.display = "none"; });
+          el("confirmCancel").addEventListener("click", () => { el("confirmModal").style.display = "none"; _confirmCb = null; });
+          el("confirmOk").addEventListener("click", () => { el("confirmModal").style.display = "none"; const cb = _confirmCb; _confirmCb = null; if (cb) cb(); });
+          el("confirmModal").addEventListener("click", e => { if (e.target === el("confirmModal")) { el("confirmModal").style.display = "none"; _confirmCb = null; } });
 
           function updateAuthUI() {
             const userInfo = el("ddUserInfo");
@@ -4281,12 +4363,10 @@
           }
 
           function deleteTxn(id) {
-            if (!confirm("Delete this transaction?")) return;
-            state.transactions = (state.transactions || []).filter(t => t.id !== id);
-            applyTxnTotals();
-            saveState();
-            render();
-            renderTxns();
+            UI.confirm("This cannot be undone.", "Delete transaction?", "Delete", () => {
+              state.transactions = (state.transactions || []).filter(t => t.id !== id);
+              applyTxnTotals(); saveState(); render(); renderTxns();
+            });
           }
 
           function renderHoldings() {
@@ -4470,13 +4550,14 @@
                   UI.toast("error", "Invalid backup file — missing fund data", 4000);
                   return;
                 }
-                if (!confirm("This will replace all current data with the backup. Continue?")) return;
-                applyCloudState(raw);
-                saveState();
-                renderTxns();
-                renderReturns();
-                el("dataModal").style.display = "none";
-                UI.toast("success", "Data restored from backup", 3000);
+                UI.confirm("This will replace all your current portfolio data.", "Restore backup?", "Restore", () => {
+                  applyCloudState(raw);
+                  saveState();
+                  renderTxns();
+                  renderReturns();
+                  el("dataModal").style.display = "none";
+                  UI.toast("success", "Data restored from backup", 3000);
+                }, false);
               } catch {
                 UI.toast("error", "Could not read backup file — invalid JSON", 4000);
               }
@@ -4935,24 +5016,20 @@
           }
 
           function resetAll() {
-            if (!confirm("Reset all saved fund data?")) return;
-            state = defaultState();
-            syncFundArrays();
-            rebuildFundCollapsibles();
-            el("fcBank").value = "";
-            el("fcInvest").value = "";
-            el("fcMonthly").value = "";
-            el("fcRate").value = "12";
-            NW_FIELDS.forEach((f) => {
-              const i = el("nw-" + f.id);
-              if (i) i.value = "";
+            UI.confirm("All fund data, transactions and settings will be erased.", "Reset everything?", "Reset", () => {
+              state = defaultState();
+              syncFundArrays();
+              rebuildFundCollapsibles();
+              el("fcBank").value = "";
+              el("fcInvest").value = "";
+              el("fcMonthly").value = "";
+              el("fcRate").value = "12";
+              NW_FIELDS.forEach((f) => { const i = el("nw-" + f.id); if (i) i.value = ""; });
+              try { localStorage.removeItem(STORE_KEY); } catch {}
+              setEditMode(false);
+              render();
+              saveState();
             });
-            try {
-              localStorage.removeItem(STORE_KEY);
-            } catch {}
-            setEditMode(false);
-            render();
-            saveState();
           }
 
           /* ════════════════════════════════════════════
@@ -5192,12 +5269,13 @@
           }
 
           function deleteCalNote(id) {
-            if (!confirm("Delete this scheduled transaction?")) return;
-            state.calendarNotes = (state.calendarNotes || []).filter(n => n.id !== id);
-            saveState();
-            renderCalendar();
-            if (calDayDate) refreshCalDayBody(calDayDate);
-            UI.toast("success", "Deleted", 1800);
+            UI.confirm("This scheduled transaction will be removed.", "Delete?", "Delete", () => {
+              state.calendarNotes = (state.calendarNotes || []).filter(n => n.id !== id);
+              saveState();
+              renderCalendar();
+              if (calDayDate) refreshCalDayBody(calDayDate);
+              UI.toast("success", "Deleted", 1800);
+            });
           }
 
           function openManageSips() {
@@ -5371,28 +5449,24 @@
             const total = mfVal + other;
 
             if (!state.networth.snapshots) state.networth.snapshots = {};
+            const doSave = () => {
+              const snap = { mf: mfVal, total, savedAt: new Date().toISOString() };
+              NW_FIELDS.forEach((f) => { snap[f.id] = state.networth[f.id] || 0; });
+              state.networth.snapshots[key] = snap;
+              saveState();
+              renderNwHistory();
+              renderNwProjection();
+              const msg = el("nwSnapMsg");
+              msg.textContent = "Saved ✓ " + fmtMonth(key);
+              setTimeout(() => {
+                if (msg.textContent.startsWith("Saved")) msg.textContent = "";
+              }, 3000);
+            };
             if (state.networth.snapshots[key]) {
-              if (
-                !confirm("Overwrite existing snapshot for " + fmtMonth(key) + "?")
-              )
-                return;
+              UI.confirm("Replace the existing snapshot for " + fmtMonth(key) + "?", "Overwrite snapshot?", "Overwrite", doSave);
+            } else {
+              doSave();
             }
-
-            const snap = { mf: mfVal, total, savedAt: new Date().toISOString() };
-            NW_FIELDS.forEach((f) => {
-              snap[f.id] = state.networth[f.id] || 0;
-            });
-            state.networth.snapshots[key] = snap;
-
-            saveState();
-            renderNwHistory();
-            renderNwProjection();
-
-            const msg = el("nwSnapMsg");
-            msg.textContent = "Saved ✓ " + fmtMonth(key);
-            setTimeout(() => {
-              if (msg.textContent.startsWith("Saved")) msg.textContent = "";
-            }, 3000);
           }
 
           function renderNwHistory() {
