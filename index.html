@@ -2371,6 +2371,7 @@
         text-overflow: ellipsis;
       }
       .txn-sub { font-size: 10px; color: var(--dim); margin-top: 2px; }
+      .txn-running { font-size: 9px; color: var(--dim); margin-top: 3px; font-family: "Space Mono", monospace; opacity: 0.6; }
       .txn-right { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex-shrink: 0; }
       .txn-amt {
         font-family: "Fraunces", serif;
@@ -3155,6 +3156,13 @@
             <input type="date" class="txn-filter-date" id="txnDateFrom">
             <span class="txn-filter-label">To</span>
             <input type="date" class="txn-filter-date" id="txnDateTo">
+            <span class="txn-filter-label" style="margin-left:6px">Sort</span>
+            <select class="txn-filter-select" id="txnSortSel">
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+              <option value="highest">Highest amt</option>
+              <option value="lowest">Lowest amt</option>
+            </select>
           </div>
         </div>
         <div id="txnSummary"></div>
@@ -4112,6 +4120,7 @@
           let _openNavDd = null;
 
           function navigateTo(tabId) {
+            _currentTab = tabId;
             document.querySelectorAll(".tab-section").forEach(s => s.classList.remove("active"));
             el("tab-" + tabId).classList.add("active");
             el("homeBtn").classList.toggle("active", tabId === "portfolio");
@@ -4244,6 +4253,10 @@
             txnFilter.dateTo = el("txnDateTo").value;
             document.querySelectorAll("#txnPresets .txn-preset").forEach(b => b.classList.remove("active"));
             txnFilter.preset = "custom";
+            renderTxns();
+          });
+          el("txnSortSel").addEventListener("change", () => {
+            txnFilter.sort = el("txnSortSel").value;
             renderTxns();
           });
           el("editToggleBtn").addEventListener("click", () => { closeNavDropdowns(); toggleEditMode(); });
@@ -4422,6 +4435,29 @@
             } else {
               const allFunds = [...LIQ_FUNDS, ...EQ_FUNDS];
               let added = 0;
+              const dups = [];
+              allFunds.forEach(f => {
+                const v = Number(el("txi-" + f.id)?.value) || 0;
+                if (v > 0) {
+                  const existing = (state.transactions || []).find(t => t.fundId === f.id && t.date === date);
+                  if (existing) dups.push(fundName(f.id));
+                }
+              });
+              const doAdd = () => {
+                allFunds.forEach(f => {
+                  const v = Number(el("txi-" + f.id)?.value) || 0;
+                  if (v > 0) {
+                    state.transactions.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5), fundId: f.id, date, invested: v, notes: "" });
+                    added++;
+                  }
+                });
+                applyTxnTotals(); saveState(); render(); renderTxns(); closeTxnModal();
+                UI.toast("success", "Transaction added", 2000);
+              };
+              if (dups.length) {
+                UI.confirm(`A transaction already exists on ${date} for: ${dups.join(", ")}. Add anyway?`, "Duplicate detected", "Add anyway", doAdd, false);
+                return;
+              }
               allFunds.forEach(f => {
                 const v = Number(el("txi-" + f.id)?.value) || 0;
                 if (v > 0) {
@@ -4492,6 +4528,7 @@
                 hRtnEl.className = `holdings-val ${isUp ? "up" : "dn"}`;
               } else { hRtnEl.textContent = "—"; hRtnEl.className = "holdings-val"; }
             }
+            if (hasData) checkProfitMilestones(returns);
           }
 
           function txnDateRange() {
@@ -4540,13 +4577,29 @@
 
             // Apply filters
             const { from, to } = txnDateRange();
-            let txns = [...(state.transactions || [])].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+            let txns = [...(state.transactions || [])];
             txns = txns.filter(t => {
               const d = t.date || "";
               if (d < from || d > to) return false;
               if (txnFilter.fundId && t.fundId !== txnFilter.fundId) return false;
               return true;
             });
+
+            // Apply sort
+            const srt = txnFilter.sort || "newest";
+            if (srt === "newest")  txns.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+            else if (srt === "oldest") txns.sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+            else if (srt === "highest") txns.sort((a, b) => (Number(b.invested) || 0) - (Number(a.invested) || 0));
+            else if (srt === "lowest")  txns.sort((a, b) => (Number(a.invested) || 0) - (Number(b.invested) || 0));
+
+            // Build running total map (always chronological regardless of sort)
+            const chronoAll = [...(state.transactions || [])].filter(t => {
+              const d = t.date || "";
+              return d >= from && d <= to && (!txnFilter.fundId || t.fundId === txnFilter.fundId);
+            }).sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+            const runMap = {};
+            let runSum = 0;
+            chronoAll.forEach(t => { runSum += Number(t.invested) || 0; runMap[t.id] = runSum; });
 
             // Summary bar
             const summaryEl = el("txnSummary");
@@ -4569,9 +4622,7 @@
                   </div>
                   ${chips ? `<div class="txn-fund-totals">${chips}</div>` : ""}
                 </div>`;
-              } else {
-                summaryEl.innerHTML = "";
-              }
+              } else { summaryEl.innerHTML = ""; }
             }
 
             if (!txns.length) {
@@ -4579,18 +4630,20 @@
               return;
             }
 
-            // Group by month → day
+            // Group by month → day (respects current sort order for display)
             const months = {};
+            const monthOrder = [];
             txns.forEach(t => {
               const mKey = t.date ? t.date.slice(0, 7) : "unknown";
               const dKey = t.date || "unknown";
-              if (!months[mKey]) months[mKey] = {};
+              if (!months[mKey]) { months[mKey] = {}; monthOrder.push(mKey); }
               if (!months[mKey][dKey]) months[mKey][dKey] = [];
               months[mKey][dKey].push(t);
             });
 
             let html = "";
-            Object.entries(months).forEach(([mKey, days]) => {
+            [...new Set(monthOrder)].forEach(mKey => {
+              const days = months[mKey];
               const mLabel = mKey !== "unknown"
                 ? new Date(mKey + "-01T00:00:00").toLocaleDateString("en-IN", { month: "long", year: "numeric" })
                 : "Unknown Date";
@@ -4617,10 +4670,12 @@
                 </div>`;
 
                 list.forEach(t => {
+                  const runningTotal = runMap[t.id] || 0;
                   html += `<div class="txn-row txn-row-child">
                     <div class="txn-info">
                       <div class="txn-fund-name">${fundName(t.fundId)}</div>
                       ${t.notes ? `<div class="txn-sub">${t.notes}</div>` : ""}
+                      <div class="txn-running">Running total: ${fmt(runningTotal)}</div>
                     </div>
                     <div class="txn-right">
                       <div class="txn-amt">${fmt(t.invested)}</div>
@@ -5048,6 +5103,40 @@
             if (_activeTab === "tab-forecast") renderForecast();
           }
 
+          /* ── Count-up animation ── */
+          const _animRaf = {};
+          function animateNumber(targetEl, toVal, duration = 600) {
+            if (!targetEl) return;
+            const key = targetEl.id || targetEl.className;
+            if (_animRaf[key]) cancelAnimationFrame(_animRaf[key]);
+            const fromText = targetEl.textContent.replace(/[₹,\s]/g, "");
+            const fromVal = parseFloat(fromText) || 0;
+            if (Math.abs(toVal - fromVal) < 1) { targetEl.textContent = fmt(Math.round(toVal)); return; }
+            const start = performance.now();
+            const tick = (now) => {
+              const t = Math.min(1, (now - start) / duration);
+              const ease = 1 - Math.pow(1 - t, 3);
+              const cur = fromVal + (toVal - fromVal) * ease;
+              targetEl.textContent = fmt(Math.round(cur));
+              if (t < 1) _animRaf[key] = requestAnimationFrame(tick);
+            };
+            _animRaf[key] = requestAnimationFrame(tick);
+          }
+
+          /* ── Profit milestones ── */
+          const PROFIT_MILESTONES = [50000, 100000, 250000, 500000, 1000000, 2500000, 5000000, 10000000];
+          function checkProfitMilestones(totalProfit) {
+            if (totalProfit <= 0) return;
+            PROFIT_MILESTONES.forEach(m => {
+              if (totalProfit >= m && !_shownMilestones.includes(m)) {
+                _shownMilestones.push(m);
+                localStorage.setItem("shownMilestones", JSON.stringify(_shownMilestones));
+                const label = m >= 10000000 ? "₹1 Crore" : m >= 100000 ? "₹" + (m / 100000) + " Lakh" : "₹" + (m / 1000) + "K";
+                UI.toast("success", `🎉 Milestone! Profit crossed ${label}`, 5000);
+              }
+            });
+          }
+
           function setAllocBar(eqId, liqId, splitId, eqPct, total) {
             const liqPct = 100 - eqPct;
             el(eqId).style.width = eqPct + "%";
@@ -5195,7 +5284,10 @@
           let calYear  = new Date().getFullYear();
           let calMonth = new Date().getMonth();
           let calDayDate = null; // date string currently open in day modal
-          let txnFilter = { preset: "all", fundId: "", dateFrom: "", dateTo: "" };
+          let txnFilter = { preset: "all", fundId: "", dateFrom: "", dateTo: "", sort: "newest" };
+          let _shownMilestones = JSON.parse(localStorage.getItem("shownMilestones") || "[]");
+          const TAB_ORDER = ["portfolio", "summary", "networth", "forecast", "transactions"];
+          let _currentTab = "portfolio";
 
           function getFundName(fundId) {
             const liq = LIQ_FUNDS.find(f => f.id === fundId);
@@ -5504,6 +5596,14 @@
                 </div>`;
               });
             });
+            const sipTotal = [...LIQ_FUNDS, ...EQ_FUNDS].reduce((s, f) => {
+              const isLiq = LIQ_FUNDS.some(x => x.id === f.id);
+              return s + ((isLiq ? state.liquid[f.id] : state.equity[f.id]).sipAmt || 0);
+            }, 0);
+            html += `<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--dim);">Total Monthly SIP</span>
+              <span style="font-family:'Space Mono',monospace;font-size:15px;font-weight:700;color:var(--mint);">${fmt(sipTotal)}</span>
+            </div>`;
             el("sipModalBody").innerHTML = html;
             el("sipModal").style.display = "flex";
           }
@@ -5582,7 +5682,7 @@
             el("nwMfChip").textContent = fmt(mfVal);
             el("nwMfProfitChip").textContent = fmt(profit);
             el("nwOtherChip").textContent = fmt(other);
-            el("nwHeroVal").textContent = fmt(total);
+            animateNumber(el("nwHeroVal"), total);
             el("nwSnapshotBtn").textContent =
               "Save snapshot — " + fmtMonth(snapshotKey());
 
@@ -6036,6 +6136,28 @@
               hideThemeMatrix();
             }
           });
+
+          /* ── Swipe navigation ── */
+          (function () {
+            const GATED = ["summary", "networth", "forecast"];
+            let _tx = 0, _ty = 0;
+            document.addEventListener("touchstart", e => {
+              _tx = e.changedTouches[0].clientX;
+              _ty = e.changedTouches[0].clientY;
+            }, { passive: true });
+            document.addEventListener("touchend", e => {
+              const dx = e.changedTouches[0].clientX - _tx;
+              const dy = e.changedTouches[0].clientY - _ty;
+              if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+              const idx = TAB_ORDER.indexOf(_currentTab);
+              if (idx < 0) return;
+              const nextIdx = dx < 0 ? idx + 1 : idx - 1;
+              if (nextIdx < 0 || nextIdx >= TAB_ORDER.length) return;
+              const nextTab = TAB_ORDER[nextIdx];
+              if (GATED.includes(nextTab) && !authUser) return;
+              navigateTo(nextTab);
+            }, { passive: true });
+          })();
 
           /* ════════════════════════════════════════════
              ACCENT THEME SYSTEM
