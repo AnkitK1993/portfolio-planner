@@ -3120,6 +3120,8 @@
                   db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
                   fbEnabled = true;
                   fbAuthReady = true;
+                  maybeLoadFromCloud().catch(() => fbSyncUI("err", "Cloud unavailable — using local data"));
+                  subscribeToCloud();
                   firebase.auth().onAuthStateChanged(async user => {
                     if (user && user.email !== "ankit.konchady@gmail.com") {
                       await firebase.auth().signOut();
@@ -3164,6 +3166,8 @@
             rebuildFundCollapsibles();
             syncInputsFromState();
             render();
+            renderTxns();
+            renderReturns();
           }
 
           /* Write to Firestore with exponential-backoff retry */
@@ -4973,13 +4977,7 @@
             EQ_FUNDS.forEach(f => { el("eq-wrap-" + f.id).innerHTML = UI.skeleton(1); });
           }
 
-          /* Cache-first cloud sync + real-time listener for cross-device updates */
-          if (fbEnabled) {
-            maybeLoadFromCloud().catch(() =>
-              fbSyncUI("err", "Cloud unavailable — using local data"),
-            );
-            subscribeToCloud();
-          }
+          /* Cloud sync is wired up inside initFirebase() after the SDK loads */
 
           /* Keyboard: Escape exits edit mode / closes overlays */
           document.addEventListener("keydown", (e) => {
