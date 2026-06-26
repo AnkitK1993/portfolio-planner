@@ -2928,7 +2928,7 @@
           ];
 
           const NW_FIELDS = [
-            { id: "mfProfit", label: "MF Unrealized Profit", color: "#4ade9c" },
+            { id: "mfProfit", label: "MF Unrealized Returns", color: "#4ade9c" },
             { id: "bank", label: "Bank & Savings", color: "var(--liq)" },
             { id: "fd", label: "Fixed Deposit", color: "#5bc4f5" },
             { id: "cash", label: "Cash", color: "var(--amber)" },
@@ -4486,15 +4486,17 @@
             el("nwFieldsGrid").innerHTML = NW_FIELDS.map(
               (f) => `
               <div class="field" style="margin-bottom:0;">
-                <label class="flabel" for="nw-${f.id}">${f.label}${f.id === "mfProfit" ? ' <span style="color:var(--dim);font-size:8px;text-transform:none;letter-spacing:0;">(within MF value)</span>' : ""}</label>
+                <label class="flabel" for="nw-${f.id}">${f.label}${f.id === "mfProfit" ? ' <span style="color:var(--dim);font-size:8px;text-transform:none;letter-spacing:0;">(auto-calculated)</span>' : ""}</label>
                 <div class="ibox"><span class="pfx">&#8377;</span>
                   <input class="num" id="nw-${f.id}" type="number" min="0" placeholder="0"
-                    inputmode="numeric" value="${state.networth[f.id] || ""}" />
+                    inputmode="numeric" value="${state.networth[f.id] || ""}"
+                    ${f.id === "mfProfit" ? "readonly style=\"opacity:0.6;cursor:default;\"" : ""} />
                 </div>
               </div>`,
             ).join("");
 
             NW_FIELDS.forEach((f) => {
+              if (f.id === "mfProfit") return;
               el("nw-" + f.id)?.addEventListener("input", (e) => {
                 state.networth[f.id] = num(e.target.value);
                 renderNetWorth();
@@ -4504,7 +4506,23 @@
 
           function renderNetWorth() {
             const mfVal = mfTotalValue();
-            const profit = state.networth.mfProfit || 0;
+            const profit = (() => {
+              let total = 0;
+              LIQ_FUNDS.forEach(f => {
+                const s = state.liquid[f.id]; if (!s) return;
+                const cv = s.currentValue || 0;
+                if (cv > 0) total += cv - (s.value || 0);
+              });
+              EQ_FUNDS.forEach(f => {
+                const s = state.equity[f.id]; if (!s) return;
+                const cv = s.currentValue || 0;
+                if (cv > 0) total += cv - (s.shown || 0);
+              });
+              return total;
+            })();
+            state.networth.mfProfit = profit;
+            const inp = el("nw-mfProfit");
+            if (inp) inp.value = profit !== 0 ? Math.round(profit) : "";
             const other = NW_FIELDS.filter((f) => f.id !== "mfProfit").reduce(
               (s, f) => s + (state.networth[f.id] || 0),
               0,
@@ -4526,7 +4544,7 @@
                 value: mfCost,
                 color: "rgba(74,222,156,0.4)",
               },
-              { label: "MF Unrealized Gain", value: profit, color: "#4ade9c" },
+              { label: "MF Unrealized Returns", value: profit, color: "#4ade9c" },
               {
                 label: "Bank & Savings",
                 value: state.networth.bank || 0,
