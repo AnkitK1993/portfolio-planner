@@ -2568,7 +2568,7 @@
       .sip-amt-box { display: flex; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
       .sip-amt-box .pfx { padding: 0 5px 0 8px; color: var(--dim); font-size: 12px; }
       .sip-amt-inp { background: none; border: none; color: var(--txt); font-family: "Space Mono", monospace; font-size: 12px; width: 80px; padding: 6px 6px 6px 0; outline: none; }
-      .sip-date-inp { background: var(--panel); border: 1px solid var(--line); border-radius: 7px; color: var(--txt); font-family: "Space Mono", monospace; font-size: 12px; width: 44px; padding: 6px 8px; outline: none; text-align: center; }
+      .sip-date-inp { background: var(--panel); border: 1px solid var(--line); border-radius: 7px; color: var(--txt); font-family: "Space Mono", monospace; font-size: 12px; padding: 6px 8px; outline: none; cursor: pointer; appearance: none; -webkit-appearance: none; }
       .sip-date-inp:focus, .sip-amt-inp:focus { border-color: var(--mint); }
       .calday-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--line); color: var(--txt); border-radius: 6px; font-family: "Outfit", sans-serif; font-size: 10px; font-weight: 600; padding: 3px 8px; cursor: pointer; white-space: nowrap; }
       .calday-btn:hover { border-color: var(--mint); color: var(--mint); }
@@ -5166,9 +5166,10 @@
                         placeholder="0" value="${amt > 0 ? Math.round(amt).toLocaleString("en-IN") : ""}" />
                     </div>
                     <span class="sip-inp-label">on</span>
-                    <input class="sip-date-inp" id="sidate-${f.id}" type="number" min="1" max="28"
-                      placeholder="5" value="${date || ""}" />
-                    <span class="sip-inp-label">th</span>
+                    <select class="sip-date-inp" id="sidate-${f.id}">
+                      <option value="">—</option>
+                      ${Array.from({length:31},(_,i)=>`<option value="${i+1}"${(date&&parseInt(date)===i+1)?' selected':''}>Day ${i+1}</option>`).join("")}
+                    </select>
                   </div>
                 </div>`;
               });
