@@ -391,6 +391,27 @@
       }
 
       /* ── FORECAST ── */
+      .fc-mode-row { display:flex; gap:6px; margin-bottom:12px; }
+      .fc-mode-btn { flex:1; background:none; border:1px solid var(--line); border-radius:20px; color:var(--dim); font-family:"Outfit",sans-serif; font-size:12px; font-weight:600; padding:7px 12px; cursor:pointer; transition:all 0.15s; }
+      .fc-mode-btn.active { background:rgba(0,245,160,0.12); border-color:var(--mint); color:var(--mint); }
+      .fc-scenario-row { display:flex; gap:6px; margin-bottom:12px; align-items:center; flex-wrap:wrap; }
+      .fc-scenario-btn { background:none; border:1px solid var(--line); border-radius:20px; color:var(--dim); font-family:"Outfit",sans-serif; font-size:11px; font-weight:600; padding:5px 12px; cursor:pointer; transition:all 0.15s; }
+      .fc-scenario-btn.active { background:rgba(0,245,160,0.12); border-color:var(--mint); color:var(--mint); }
+      .fc-scenario-btn.cons.active { background:rgba(251,191,36,0.12); border-color:var(--amber); color:var(--amber); }
+      .fc-scenario-btn.aggr.active { background:rgba(74,222,128,0.12); border-color:#4ade80; color:#4ade80; }
+      .fc-all-label { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--dim); cursor:pointer; margin-left:auto; }
+      .fc-all-label input { accent-color:var(--mint); }
+      /* Toggle switch */
+      .fc-toggle-wrap { position:relative; display:inline-block; width:34px; height:18px; }
+      .fc-toggle-wrap input { opacity:0; width:0; height:0; }
+      .fc-toggle-track { position:absolute; inset:0; border-radius:18px; background:var(--line); cursor:pointer; transition:0.2s; }
+      .fc-toggle-track::before { content:""; position:absolute; width:12px; height:12px; left:3px; top:3px; background:var(--dim); border-radius:50%; transition:0.2s; }
+      .fc-toggle-wrap input:checked + .fc-toggle-track { background:rgba(0,245,160,0.3); }
+      .fc-toggle-wrap input:checked + .fc-toggle-track::before { transform:translateX(16px); background:var(--mint); }
+      /* Goal result */
+      .fc-goal-result { text-align:center; }
+      .fc-goal-amount { font-family:"Fraunces",serif; font-size:28px; font-weight:700; color:var(--mint); }
+      .fc-goal-label { font-size:11px; color:var(--dim); margin-top:4px; }
       .fc-inputs { margin-bottom: 14px; }
       /* Forecast inputs always act as a calculator — never locked by edit mode */
       body:not(.edit-mode) #tab-forecast .num {
@@ -3118,42 +3139,114 @@
       <section class="tab-section" id="tab-forecast">
         <div class="pg-head">
           <h1>Net Worth <span class="accent">Forecast</span></h1>
-          <p>30-year projection based on your starting values and investment growth rate.</p>
+          <p>30-year projection with scenarios, step-up SIP, and goal planning.</p>
+        </div>
+
+        <!-- Mode toggle -->
+        <div class="fc-mode-row">
+          <button class="fc-mode-btn active" id="fcModeProject" data-mode="project">Projection</button>
+          <button class="fc-mode-btn" id="fcModeGoal" data-mode="goal">Goal Planning</button>
         </div>
 
         <div class="fc-inputs">
           <div class="card">
-            <div class="sec-head" style="margin-bottom: 14px">Starting Values</div>
-            <div class="grid2">
-              <div class="field">
-                <label class="flabel" for="fcBank">Bank Balance</label>
-                <div class="ibox"><span class="pfx">&#8377;</span>
-                  <input class="num" id="fcBank" type="number" min="0" placeholder="0" inputmode="numeric" />
+            <!-- Projection inputs -->
+            <div id="fcProjectInputs">
+              <div class="sec-head" style="margin-bottom: 14px">Starting Values</div>
+              <div class="grid2">
+                <div class="field">
+                  <label class="flabel" for="fcBank">Bank Balance</label>
+                  <div class="ibox"><span class="pfx">&#8377;</span>
+                    <input class="num" id="fcBank" type="number" min="0" placeholder="0" inputmode="numeric" />
+                  </div>
+                </div>
+                <div class="field">
+                  <label class="flabel" for="fcInvest">Investments</label>
+                  <div class="ibox"><span class="pfx">&#8377;</span>
+                    <input class="num" id="fcInvest" type="number" min="0" placeholder="0" inputmode="numeric" />
+                  </div>
                 </div>
               </div>
-              <div class="field">
-                <label class="flabel" for="fcInvest">Investments</label>
-                <div class="ibox"><span class="pfx">&#8377;</span>
-                  <input class="num" id="fcInvest" type="number" min="0" placeholder="0" inputmode="numeric" />
+              <div class="grid2" style="margin-top: 12px">
+                <div class="field">
+                  <label class="flabel" for="fcMonthly">Monthly Investment</label>
+                  <div class="ibox"><span class="pfx">&#8377;</span>
+                    <input class="num" id="fcMonthly" type="number" min="0" placeholder="0" inputmode="numeric" />
+                  </div>
+                </div>
+                <div class="field">
+                  <label class="flabel" for="fcRate">Annual Return (%)</label>
+                  <div class="ibox">
+                    <input class="num no-pfx" id="fcRate" type="number" min="0" max="100" step="0.5" placeholder="12" inputmode="decimal" style="padding-right:28px;" />
+                    <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:13px;pointer-events:none;">%</span>
+                  </div>
+                </div>
+              </div>
+              <div class="grid2" style="margin-top: 12px">
+                <div class="field">
+                  <label class="flabel" for="fcStepUp">Annual Step-up (%)</label>
+                  <div class="ibox">
+                    <input class="num no-pfx" id="fcStepUp" type="number" min="0" max="50" step="0.5" placeholder="0" inputmode="decimal" style="padding-right:28px;" />
+                    <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:13px;pointer-events:none;">%</span>
+                  </div>
+                </div>
+                <div class="field">
+                  <label class="flabel" style="display:flex;align-items:center;gap:6px;">
+                    Inflation-adjusted
+                    <label class="fc-toggle-wrap">
+                      <input type="checkbox" id="fcInflation" />
+                      <span class="fc-toggle-track"></span>
+                    </label>
+                    <span style="font-size:9px;color:var(--dim);font-weight:400">6%</span>
+                  </label>
+                  <div style="font-size:10px;color:var(--dim);margin-top:6px">Real purchasing power</div>
                 </div>
               </div>
             </div>
-            <div class="grid2" style="margin-top: 12px">
-              <div class="field">
-                <label class="flabel" for="fcMonthly">Monthly Investment</label>
-                <div class="ibox"><span class="pfx">&#8377;</span>
-                  <input class="num" id="fcMonthly" type="number" min="0" placeholder="0" inputmode="numeric" />
+
+            <!-- Goal planning inputs -->
+            <div id="fcGoalInputs" style="display:none">
+              <div class="sec-head" style="margin-bottom: 14px">Goal Planning</div>
+              <div class="grid2">
+                <div class="field">
+                  <label class="flabel" for="fcGoalBank">Current Savings</label>
+                  <div class="ibox"><span class="pfx">&#8377;</span>
+                    <input class="num" id="fcGoalBank" type="number" min="0" placeholder="0" inputmode="numeric" />
+                  </div>
+                </div>
+                <div class="field">
+                  <label class="flabel" for="fcGoalTarget">Target Corpus</label>
+                  <div class="ibox"><span class="pfx">&#8377;</span>
+                    <input class="num" id="fcGoalTarget" type="number" min="0" placeholder="0" inputmode="numeric" />
+                  </div>
                 </div>
               </div>
-              <div class="field">
-                <label class="flabel" for="fcRate">Annual return (%)</label>
-                <div class="ibox">
-                  <input class="num no-pfx" id="fcRate" type="number" min="0" max="100" step="0.5" placeholder="12" inputmode="decimal" style="padding-right: 28px;" />
-                  <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:13px;pointer-events:none;">%</span>
+              <div class="grid2" style="margin-top:12px">
+                <div class="field">
+                  <label class="flabel" for="fcGoalYears">In Years</label>
+                  <div class="ibox">
+                    <input class="num no-pfx" id="fcGoalYears" type="number" min="1" max="50" step="1" placeholder="10" inputmode="numeric" />
+                  </div>
+                </div>
+                <div class="field">
+                  <label class="flabel" for="fcGoalRate">Annual Return (%)</label>
+                  <div class="ibox">
+                    <input class="num no-pfx" id="fcGoalRate" type="number" min="0" max="100" step="0.5" placeholder="12" inputmode="decimal" style="padding-right:28px;" />
+                    <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:13px;pointer-events:none;">%</span>
+                  </div>
                 </div>
               </div>
+              <div id="fcGoalResult" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);"></div>
             </div>
           </div>
+        </div>
+
+        <!-- Scenario tabs (projection mode only) -->
+        <div class="fc-scenario-row" id="fcScenarioRow">
+          <button class="fc-scenario-btn active" data-sc="base">Base</button>
+          <button class="fc-scenario-btn cons" data-sc="cons">Conservative 8%</button>
+          <button class="fc-scenario-btn aggr" data-sc="aggr">Optimistic 15%</button>
+          <label class="fc-all-label"><input type="checkbox" id="fcShowAll" /> All 3</label>
         </div>
 
         <div class="fc-display" id="fcDisplay">
@@ -3496,7 +3589,7 @@
                 ...Object.fromEntries(NW_FIELDS.map((f) => [f.id, 0])),
                 snapshots: {},
               },
-              forecast: { bankBalance: 0, investments: 0, monthlyInvest: 0, annualRate: 12 },
+              forecast: { bankBalance: 0, investments: 0, monthlyInvest: 0, annualRate: 12, stepUp: 0, inflationRate: 6, mode: "project", goalBank: 0, goalTarget: 0, goalYears: 10, goalRate: 12, fcScenario: "base", fcShowAll: false },
               surplus: { income: 0, expenses: 0 },
               transactions: [],
               returnsLog: [],
@@ -3525,6 +3618,7 @@
                   snapshots: { ...(s.networth?.snapshots || {}) },
                 },
                 forecast: { ...def.forecast, ...(s.forecast || {}) },
+                surplus: { ...def.surplus, ...(s.surplus || {}) },
                 transactions: Array.isArray(s.transactions) ? s.transactions : [],
                 returnsLog: Array.isArray(s.returnsLog) ? s.returnsLog : [],
                 calendarNotes: Array.isArray(s.calendarNotes) ? s.calendarNotes : [],
@@ -6129,124 +6223,219 @@
           /* ════════════════════════════════════════════
              FORECAST
           ════════════════════════════════════════════ */
-          function fcProjected(bank, invest, monthly, rate, T) {
-            // Monthly compounding: each month balance × (1 + rate/12) + monthly_invest
-            // T is in years; slider steps are 6-month increments so months is always integer
-            const months    = Math.round(T * 12);
+          // Step-up aware projection (loops month-by-month for accuracy)
+          function fcProjectedAdv(bank, invest, monthly, rate, years, stepUp = 0) {
             const monthRate = rate / 100 / 12;
-            const fvLump    = invest * Math.pow(1 + monthRate, months);
-            const fvAnnuity = monthly <= 0 || months === 0
-              ? 0
-              : monthRate > 0
-                ? monthly * (Math.pow(1 + monthRate, months) - 1) / monthRate
-                : monthly * months;
-            return bank + fvLump + fvAnnuity;
+            const annualStepUp = stepUp / 100;
+            let value = bank + invest;
+            const totalMonths = Math.round(years * 12);
+            for (let m = 0; m < totalMonths; m++) {
+              const contrib = monthly * Math.pow(1 + annualStepUp, Math.floor(m / 12));
+              value = value * (1 + monthRate) + contrib;
+            }
+            return value;
+          }
+
+          // Simple version (no step-up) kept for chart compat
+          function fcProjected(bank, invest, monthly, rate, T) {
+            return fcProjectedAdv(bank, invest, monthly, rate, T, 0);
+          }
+
+          // Total invested with step-up
+          function fcTotalInvested(bank, invest, monthly, years, stepUp = 0) {
+            const annualStepUp = stepUp / 100;
+            let total = bank + invest;
+            const totalMonths = Math.round(years * 12);
+            for (let m = 0; m < totalMonths; m++) {
+              total += monthly * Math.pow(1 + annualStepUp, Math.floor(m / 12));
+            }
+            return total;
+          }
+
+          // Binary search for required monthly to hit target
+          function fcGoalMonthly(bank, invest, rate, years, stepUp, target) {
+            if (years <= 0 || target <= 0) return 0;
+            let lo = 0, hi = target * 2;
+            for (let i = 0; i < 60; i++) {
+              const mid = (lo + hi) / 2;
+              if (fcProjectedAdv(bank, invest, mid, rate, years, stepUp) < target) lo = mid;
+              else hi = mid;
+            }
+            return Math.ceil((lo + hi) / 2);
           }
 
           function renderForecast() {
-            const { bankBalance, investments, monthlyInvest, annualRate } = state.forecast || {};
-            const bank    = bankBalance   || 0;
-            const invest  = investments  || 0;
-            const monthly = monthlyInvest || 0;
-            const rate    = annualRate   != null ? annualRate : 12;
+            const fc = state.forecast || {};
+            const mode = fc.mode || "project";
+
+            // Show/hide mode panels
+            const projInputs = el("fcProjectInputs");
+            const goalInputs = el("fcGoalInputs");
+            const scenRow    = el("fcScenarioRow");
+            const dispEl     = el("fcDisplay");
+            const chartWrap  = document.querySelector(".fc-chart-wrap");
+            const sliderWrap = document.querySelector(".fc-slider-wrap");
+
+            if (projInputs) projInputs.style.display = mode === "project" ? "" : "none";
+            if (goalInputs) goalInputs.style.display  = mode === "goal"    ? "" : "none";
+            if (scenRow)    scenRow.style.display      = mode === "project" ? "" : "none";
+            if (dispEl)     dispEl.style.display       = mode === "project" ? "" : "none";
+            if (chartWrap)  chartWrap.style.display    = mode === "project" ? "" : "none";
+            if (sliderWrap) sliderWrap.style.display   = mode === "project" ? "" : "none";
+
+            if (mode === "goal") { renderGoalMode(); return; }
+
+            // ── Projection mode ──
+            const bank    = fc.bankBalance   || 0;
+            const invest  = fc.investments   || 0;
+            const monthly = fc.monthlyInvest || 0;
+            const rate    = fc.annualRate    != null ? fc.annualRate : 12;
+            const stepUp  = fc.stepUp        || 0;
+            const inflation = fc.inflationRate != null ? fc.inflationRate : 6;
+            const useInflation = fc.useInflation || false;
+            const scenario = fc.fcScenario   || "base";
+            const showAll  = fc.fcShowAll    || false;
+
+            const activeRate = scenario === "cons" ? 8 : scenario === "aggr" ? 15 : rate;
 
             const sliderEl = el("fcSlider");
-            const step  = sliderEl ? parseInt(sliderEl.value, 10) : 0;
-            const T     = step * 0.5; // years
-            const months = Math.round(T * 12);
+            const step     = sliderEl ? parseInt(sliderEl.value, 10) : 0;
+            const T        = step * 0.5;
 
-            // Total capital deployed (no growth — just money put in)
-            const totalInvested = bank + invest + monthly * months;
-            const projected     = fcProjected(bank, invest, monthly, rate, T);
-            const profit        = projected - totalInvested;
-            const profitPct     = totalInvested > 0 ? (profit / totalInvested) * 100 : 0;
+            let projected = fcProjectedAdv(bank, invest, monthly, activeRate, T, stepUp);
+            let totalInvested = fcTotalInvested(bank, invest, monthly, T, stepUp);
 
-            // Time label
+            // Inflation adjustment
+            if (useInflation && T > 0) {
+              projected = projected / Math.pow(1 + inflation / 100, T);
+              totalInvested = totalInvested / Math.pow(1 + inflation / 100, T);
+            }
+
+            const profit    = projected - totalInvested;
+            const profitPct = totalInvested > 0 ? (profit / totalInvested) * 100 : 0;
+
             let timeLabel;
             if (step === 0)               timeLabel = "Now";
             else if (T < 1)               timeLabel = "6 months";
             else if (T === Math.floor(T)) timeLabel = T + " year" + (T !== 1 ? "s" : "");
             else                          timeLabel = T + " years";
+            if (useInflation && step > 0) timeLabel += " (real)";
 
-            const timeBadge  = el("fcTimeBadge");
+            const timeBadge = el("fcTimeBadge");
             if (!timeBadge) return;
-
             timeBadge.textContent = timeLabel;
-
             el("fcInvested").textContent = fmt(Math.round(totalInvested));
             el("fcBig").textContent      = fmt(Math.round(projected));
 
-            const profitEl  = el("fcProfit");
-            const pctEl     = el("fcProfitPct");
+            const profitEl = el("fcProfit"), pctEl = el("fcProfitPct");
             if (step === 0 || totalInvested === 0) {
-              profitEl.textContent   = "—";
-              profitEl.style.color   = "var(--dim)";
-              pctEl.textContent      = "";
-              pctEl.style.color      = "var(--dim)";
+              profitEl.textContent = "—"; profitEl.style.color = "var(--dim)";
+              pctEl.textContent = ""; pctEl.style.color = "var(--dim)";
             } else {
               const sign = profit >= 0 ? "+" : "";
-              profitEl.textContent   = sign + fmt(Math.round(profit));
-              profitEl.style.color   = profit >= 0 ? "var(--mint)" : "var(--coral)";
-              pctEl.textContent      = sign + profitPct.toFixed(1) + "%";
-              pctEl.style.color      = profit >= 0 ? "var(--mint)" : "var(--coral)";
+              profitEl.textContent = sign + fmt(Math.round(profit));
+              profitEl.style.color = profit >= 0 ? "var(--mint)" : "var(--coral)";
+              pctEl.textContent = sign + profitPct.toFixed(1) + "%";
+              pctEl.style.color = profit >= 0 ? "var(--mint)" : "var(--coral)";
             }
 
-            drawForecastChart(bank, invest, monthly, rate, step);
+            drawForecastChart(bank, invest, monthly, rate, step, stepUp, inflation, useInflation, showAll);
             updateFcSliderFill(step);
 
-            // Sync forecast input values (don't overwrite focused input)
-            const fcBankEl    = el("fcBank");
-            const fcInvestEl  = el("fcInvest");
-            const fcMonthlyEl = el("fcMonthly");
-            const fcRateEl    = el("fcRate");
-            if (fcBankEl    && document.activeElement !== fcBankEl)    fcBankEl.value    = bank    || "";
-            if (fcInvestEl  && document.activeElement !== fcInvestEl)  fcInvestEl.value  = invest  || "";
-            if (fcMonthlyEl && document.activeElement !== fcMonthlyEl) fcMonthlyEl.value = monthly || "";
-            if (fcRateEl    && document.activeElement !== fcRateEl)    fcRateEl.value    = rate    != null ? rate : "";
+            // Sync inputs
+            const safe = (id, v) => { const e = el(id); if (e && document.activeElement !== e) e.value = v || ""; };
+            safe("fcBank", bank); safe("fcInvest", invest); safe("fcMonthly", monthly);
+            safe("fcRate", rate); safe("fcStepUp", stepUp);
+            const fcInflEl = el("fcInflation");
+            if (fcInflEl) fcInflEl.checked = useInflation;
           }
 
-          function drawForecastChart(bank, invest, monthly, rate, currentStep) {
+          function renderGoalMode() {
+            const fc = state.forecast || {};
+            const bank    = fc.goalBank   || 0;
+            const target  = fc.goalTarget || 0;
+            const years   = fc.goalYears  || 10;
+            const rate    = fc.goalRate   || 12;
+            const stepUp  = fc.stepUp     || 0;
+
+            const safe = (id, v) => { const e = el(id); if (e && document.activeElement !== e) e.value = v || ""; };
+            safe("fcGoalBank", bank); safe("fcGoalTarget", target);
+            safe("fcGoalYears", years); safe("fcGoalRate", rate);
+
+            const resultEl = el("fcGoalResult");
+            if (!resultEl) return;
+            if (!target || !years) {
+              resultEl.innerHTML = `<div style="font-size:11px;color:var(--dim)">Enter your target corpus and time horizon.</div>`;
+              return;
+            }
+            const needed = fcGoalMonthly(bank, 0, rate, years, stepUp, target);
+            const projected = fcProjectedAdv(bank, 0, needed, rate, years, stepUp);
+            resultEl.innerHTML = `
+              <div class="fc-goal-result">
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--dim);margin-bottom:8px">Required Monthly Investment</div>
+                <div class="fc-goal-amount">${fmt(needed)}</div>
+                <div class="fc-goal-label">to reach ${fmt(target)} in ${years} year${years !== 1 ? "s" : ""} at ${rate}% p.a.${stepUp > 0 ? ` (${stepUp}% step-up)` : ""}</div>
+                <div style="display:flex;gap:12px;justify-content:center;margin-top:12px;flex-wrap:wrap;">
+                  <div style="text-align:center"><div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px">Invested</div><div style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--txt)">${fmt(Math.round(fcTotalInvested(bank, 0, needed, years, stepUp)))}</div></div>
+                  <div style="text-align:center"><div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px">Returns</div><div style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--mint)">+${fmt(Math.round(projected - fcTotalInvested(bank, 0, needed, years, stepUp)))}</div></div>
+                </div>
+              </div>`;
+          }
+
+          function drawForecastChart(bank, invest, monthly, rate, currentStep, stepUp = 0, inflation = 6, useInflation = false, showAll = false) {
             const svg = el("fcChart");
             if (!svg) return;
             const W = 600, H = 110, PAD_T = 12, PAD_B = 18;
 
-            const pts = [];
-            for (let i = 0; i <= 60; i++) {
-              pts.push(fcProjected(bank, invest, monthly, rate, i * 0.5));
-            }
+            const scenarios = showAll
+              ? [{ rate: 8, color: "var(--amber)", label: "8%" }, { rate, color: "var(--mint)", label: rate + "%" }, { rate: 15, color: "#4ade80", label: "15%" }]
+              : [{ rate, color: "var(--mint)", label: rate + "%" }];
 
-            const minV = pts[0];
-            const maxV = pts[60];
+            const allPts = scenarios.map(sc => {
+              const pts = [];
+              for (let i = 0; i <= 60; i++) {
+                let v = fcProjectedAdv(bank, invest, monthly, sc.rate, i * 0.5, stepUp);
+                if (useInflation && i > 0) v /= Math.pow(1 + inflation / 100, i * 0.5);
+                pts.push(v);
+              }
+              return { ...sc, pts };
+            });
+
+            const allVals = allPts.flatMap(s => s.pts);
+            const minV = allVals[0];
+            const maxV = Math.max(...allVals);
             const range = maxV - minV || 1;
 
-            const toX = (i) => (i / 60) * W;
-            const toY = (v) => H - PAD_B - ((v - minV) / range) * (H - PAD_T - PAD_B);
+            const toX = i => (i / 60) * W;
+            const toY = v => H - PAD_B - ((v - minV) / range) * (H - PAD_T - PAD_B);
 
-            const lineStr  = pts.map((v, i) => `${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(" ");
-            const areaPath = `M ${toX(0).toFixed(1)},${H} ` +
-              pts.map((v, i) => `L ${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(" ") +
-              ` L ${W},${H} Z`;
-
+            const activePts = allPts[showAll ? 1 : 0].pts;
             const cx = toX(currentStep);
-            const cy = toY(pts[currentStep]);
+            const cy = toY(activePts[currentStep]);
 
-            // Year tick labels inside chart
+            const areaPath = `M ${toX(0).toFixed(1)},${H} ` +
+              activePts.map((v, i) => `L ${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(" ") + ` L ${W},${H} Z`;
+
             const tickLabels = [0,10,20,30,40,50,60].map(i => {
-              const x = toX(i);
-              const yr = i / 2;
-              const lbl = yr === 0 ? "Now" : yr + "y";
-              return `<text x="${x.toFixed(1)}" y="${H - 3}" text-anchor="${i === 0 ? "start" : i === 60 ? "end" : "middle"}" font-size="8" fill="var(--dim)" font-family="JetBrains Mono, monospace">${lbl}</text>`;
+              const x = toX(i); const yr = i / 2;
+              return `<text x="${x.toFixed(1)}" y="${H - 3}" text-anchor="${i === 0 ? "start" : i === 60 ? "end" : "middle"}" font-size="8" fill="var(--dim)" font-family="JetBrains Mono, monospace">${yr === 0 ? "Now" : yr + "y"}</text>`;
+            }).join("");
+
+            const lines = allPts.map((sc, idx) => {
+              const pts = sc.pts.map((v, i) => `${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(" ");
+              const isMain = !showAll || idx === 1;
+              return `<polyline points="${pts}" fill="none" stroke="${sc.color}" stroke-width="${isMain ? 1.8 : 1.2}" stroke-linejoin="round" stroke-linecap="round" ${!isMain ? 'stroke-dasharray="4,3" opacity="0.7"' : ""}/>`;
             }).join("");
 
             svg.innerHTML = `
               <defs>
                 <linearGradient id="fcAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stop-color="var(--mint)" stop-opacity="0.3"/>
+                  <stop offset="0%" stop-color="var(--mint)" stop-opacity="0.25"/>
                   <stop offset="100%" stop-color="var(--mint)" stop-opacity="0.02"/>
                 </linearGradient>
               </defs>
               <path d="${areaPath}" fill="url(#fcAreaGrad)"/>
-              <polyline points="${lineStr}" fill="none" stroke="var(--mint)" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+              ${lines}
               <line x1="${cx.toFixed(1)}" y1="${PAD_T}" x2="${cx.toFixed(1)}" y2="${H - PAD_B}" stroke="var(--mint)" stroke-width="1" stroke-dasharray="3,3" opacity="0.6"/>
               <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="4.5" fill="var(--mint)" filter="drop-shadow(0 0 4px var(--mint))"/>
               ${tickLabels}
@@ -6280,6 +6469,21 @@
             if (el("surplusIncome") && state.surplus.income) el("surplusIncome").value = state.surplus.income;
             if (el("surplusExpenses") && state.surplus.expenses) el("surplusExpenses").value = state.surplus.expenses;
           }
+          // Restore forecast mode/scenario active states
+          (function restoreFcState() {
+            const fc = state.forecast || {};
+            const mode = fc.mode || "project";
+            document.querySelectorAll(".fc-mode-btn").forEach(b => b.classList.toggle("active", b.dataset.mode === mode));
+            const sc = fc.fcScenario || "base";
+            document.querySelectorAll(".fc-scenario-btn").forEach(b => b.classList.toggle("active", b.dataset.sc === sc));
+            if (fc.stepUp && el("fcStepUp")) el("fcStepUp").value = fc.stepUp;
+            if (fc.useInflation && el("fcInflation")) el("fcInflation").checked = true;
+            if (fc.goalBank && el("fcGoalBank")) el("fcGoalBank").value = fc.goalBank;
+            if (fc.goalTarget && el("fcGoalTarget")) el("fcGoalTarget").value = fc.goalTarget;
+            if (fc.goalYears && el("fcGoalYears")) el("fcGoalYears").value = fc.goalYears;
+            if (fc.goalRate && el("fcGoalRate")) el("fcGoalRate").value = fc.goalRate;
+            if (el("fcShowAll")) el("fcShowAll").checked = !!fc.fcShowAll;
+          })();
 
           /* Forecast inputs */
           el("fcBank").addEventListener("input", (e) => {
@@ -6303,6 +6507,52 @@
             saveState();
           });
           el("fcSlider").addEventListener("input", () => renderForecast());
+
+          /* Forecast extended controls */
+          const fcStepUpEl = el("fcStepUp");
+          if (fcStepUpEl) fcStepUpEl.addEventListener("input", (e) => {
+            state.forecast.stepUp = parseFloat(e.target.value) || 0;
+            renderForecast(); saveState();
+          });
+          const fcInflEl = el("fcInflation");
+          if (fcInflEl) fcInflEl.addEventListener("change", (e) => {
+            state.forecast.useInflation = e.target.checked;
+            renderForecast(); saveState();
+          });
+          document.querySelectorAll(".fc-mode-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+              const mode = btn.dataset.mode;
+              if (!mode) return;
+              state.forecast.mode = mode;
+              document.querySelectorAll(".fc-mode-btn").forEach(b => b.classList.toggle("active", b.dataset.mode === mode));
+              renderForecast(); saveState();
+            });
+          });
+          document.querySelectorAll(".fc-scenario-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+              const sc = btn.dataset.sc;
+              if (!sc) return;
+              state.forecast.fcScenario = sc;
+              document.querySelectorAll(".fc-scenario-btn").forEach(b => b.classList.toggle("active", b.dataset.sc === sc));
+              renderForecast(); saveState();
+            });
+          });
+          const fcShowAllEl = el("fcShowAll");
+          if (fcShowAllEl) fcShowAllEl.addEventListener("change", (e) => {
+            state.forecast.fcShowAll = e.target.checked;
+            renderForecast(); saveState();
+          });
+          // Goal mode inputs
+          ["fcGoalBank","fcGoalTarget","fcGoalYears","fcGoalRate"].forEach(id => {
+            const e = el(id); if (!e) return;
+            e.addEventListener("input", () => {
+              state.forecast.goalBank   = num(el("fcGoalBank")?.value);
+              state.forecast.goalTarget = num(el("fcGoalTarget")?.value);
+              state.forecast.goalYears  = parseFloat(el("fcGoalYears")?.value) || 10;
+              state.forecast.goalRate   = parseFloat(el("fcGoalRate")?.value)  || 12;
+              renderForecast(); saveState();
+            });
+          });
 
           /* Privacy toggle */
           let privacyMode = true;
