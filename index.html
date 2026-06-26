@@ -2969,9 +2969,13 @@
           <div id="sumAllocBarsMain"></div>
         </div>
 
-        <!-- Rebalancing suggestion -->
+        <!-- Ideal Allocation -->
         <div class="card" style="margin-bottom:12px">
-          <div id="sumRebalance" style="font-size:12px;"></div>
+          <div class="sec-head" style="margin-bottom:14px">Ideal Allocation</div>
+          <div id="idealWeightsEditor"></div>
+          <div id="idealAllocBarSection"></div>
+          <div id="rebalMoveSection"></div>
+          <div id="sumRebalance" style="display:none;"></div>
         </div>
 
         <!-- Portfolio XIRR -->
@@ -3627,6 +3631,7 @@
               },
               forecast: { bankBalance: 0, investments: 0, monthlyInvest: 0, annualRate: 12, stepUp: 0, inflationRate: 6, mode: "project", goalBank: 0, goalTarget: 0, goalYears: 10, goalRate: 12, fcScenario: "base", fcShowAll: false },
               surplus: { income: 0, expenses: 0 },
+              idealWeights: { "Large Cap": 45, "Flexi Cap": 33, "Mid Cap": 22 },
               transactions: [],
               returnsLog: [],
               calendarNotes: [],
@@ -3655,6 +3660,7 @@
                 },
                 forecast: { ...def.forecast, ...(s.forecast || {}) },
                 surplus: { ...def.surplus, ...(s.surplus || {}) },
+                idealWeights: { ...def.idealWeights, ...(s.idealWeights || {}) },
                 transactions: Array.isArray(s.transactions) ? s.transactions : [],
                 returnsLog: Array.isArray(s.returnsLog) ? s.returnsLog : [],
                 calendarNotes: Array.isArray(s.calendarNotes) ? s.calendarNotes : [],
@@ -5622,10 +5628,203 @@
           /* ════════════════════════════════════════════
              SUMMARY EXTRAS: Drift, Rebalance, Surplus
           ════════════════════════════════════════════ */
+          function renderIdealAlloc() {
+            const editorEl = el("idealWeightsEditor");
+            const bar1El   = el("idealAllocBarSection");
+            const bar2El   = el("rebalMoveSection");
+            if (!editorEl) return;
+
+            if (!state.idealWeights) state.idealWeights = {};
+            const DEF_WEIGHTS = { "Large Cap": 45, "Flexi Cap": 33, "Mid Cap": 22 };
+
+            // Effective weights: state overrides defaults; others default to 0
+            const weights = {};
+            EQ_CATEGORIES.forEach(cat => {
+              weights[cat] = state.idealWeights[cat] !== undefined
+                ? state.idealWeights[cat]
+                : (DEF_WEIGHTS[cat] || 0);
+            });
+            const totalWeight = Object.values(weights).reduce((s, w) => s + w, 0);
+            const weightOk = Math.abs(totalWeight - 100) < 0.5;
+
+            // --- Editable weights section ---
+            const weightItems = EQ_CATEGORIES.map(cat => `
+              <div style="display:grid;grid-template-columns:1fr 56px 16px;align-items:center;gap:5px;padding:4px 0;">
+                <span style="font-size:11px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${cat}</span>
+                <input type="number" class="ideal-wt-inp" data-cat="${cat}" min="0" max="100" step="1" value="${weights[cat]}"
+                  style="background:var(--input-bg,rgba(255,255,255,0.06));border:1px solid var(--line);border-radius:5px;color:var(--txt);
+                         font-family:'Space Mono',monospace;font-size:11px;text-align:right;padding:3px 6px;width:100%"/>
+                <span style="font-size:10px;color:var(--dim)">%</span>
+              </div>`).join("");
+
+            editorEl.innerHTML = `
+              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--dim);margin-bottom:7px">Target Equity Split</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 18px;">${weightItems}</div>
+              <div style="text-align:right;font-size:10px;margin-top:5px;color:${weightOk ? "var(--mint)" : "var(--coral)"};">
+                Total: ${totalWeight.toFixed(0)}% ${weightOk ? "✓" : "— must equal 100%"}
+              </div>`;
+
+            editorEl.querySelectorAll(".ideal-wt-inp").forEach(inp => {
+              inp.addEventListener("change", e => {
+                if (!state.idealWeights) state.idealWeights = {};
+                state.idealWeights[e.target.dataset.cat] = parseFloat(e.target.value) || 0;
+                saveState();
+                renderIdealAlloc();
+              });
+            });
+
+            // --- Calculations ---
+            const deployable = LIQ_FUNDS.reduce((s, f) => {
+              const ls = state.liquid[f.id];
+              return s + Math.max(0, (ls?.value || 0) - (ls?.reserve || 0));
+            }, 0);
+            const eqCurrent = EQ_FUNDS.reduce((s, f) => s + (state.equity[f.id]?.shown || 0), 0);
+            const eqAfter   = eqCurrent + deployable;
+
+            if (eqAfter === 0) {
+              if (bar1El) bar1El.innerHTML = "";
+              if (bar2El) bar2El.innerHTML = "";
+              return;
+            }
+
+            // Group equity funds by category; compute per-fund ideal targets
+            const catGroups = {};
+            EQ_FUNDS.forEach(f => {
+              const cat = state.equity[f.id]?.category || "Other";
+              if (!catGroups[cat]) catGroups[cat] = [];
+              catGroups[cat].push({
+                id: f.id,
+                name: state.equity[f.id]?.name || f.defaultName,
+                current: state.equity[f.id]?.shown || 0,
+              });
+            });
+
+            let colorIdx = 0;
+            const fundTargets = [];
+            EQ_CATEGORIES.forEach(cat => {
+              const funds = catGroups[cat];
+              if (!funds?.length) return;
+              const catWt = weights[cat] || 0;
+              const catIdeal = eqAfter * catWt / 100;
+              const catCurTotal = funds.reduce((s, f) => s + f.current, 0);
+              funds.forEach(f => {
+                const share = catCurTotal > 0 ? f.current / catCurTotal : 1 / funds.length;
+                const idealAmt = catIdeal * share;
+                fundTargets.push({
+                  ...f, cat, catWt,
+                  idealAmt,
+                  idealPct: eqAfter > 0 ? (idealAmt / eqAfter * 100) : 0,
+                  toAdd: idealAmt - f.current,
+                  fromLiq: deployable > 0 ? Math.max(0, deployable * (catWt / 100) * share) : 0,
+                  color: ALLOC_PALETTE[colorIdx++ % ALLOC_PALETTE.length],
+                });
+              });
+            });
+            // Funds in unlisted categories (safety)
+            Object.entries(catGroups).forEach(([cat, funds]) => {
+              if (EQ_CATEGORIES.includes(cat)) return;
+              const catWt = weights[cat] || 0;
+              const catIdeal = eqAfter * catWt / 100;
+              const catCurTotal = funds.reduce((s, f) => s + f.current, 0);
+              funds.forEach(f => {
+                const share = catCurTotal > 0 ? f.current / catCurTotal : 1 / funds.length;
+                const idealAmt = catIdeal * share;
+                fundTargets.push({
+                  ...f, cat, catWt,
+                  idealAmt,
+                  idealPct: eqAfter > 0 ? (idealAmt / eqAfter * 100) : 0,
+                  toAdd: idealAmt - f.current,
+                  fromLiq: deployable > 0 ? Math.max(0, deployable * (catWt / 100) * share) : 0,
+                  color: ALLOC_PALETTE[colorIdx++ % ALLOC_PALETTE.length],
+                });
+              });
+            });
+
+            if (!fundTargets.length) {
+              if (bar1El) bar1El.innerHTML = `<div style="font-size:11px;color:var(--dim);margin-top:10px;">No equity funds with values entered.</div>`;
+              if (bar2El) bar2El.innerHTML = "";
+              return;
+            }
+
+            const mkSeg = (pct, color, title) => {
+              if (pct < 0.5) return "";
+              return `<div style="flex:${pct.toFixed(2)};background:${color};min-width:2px;height:100%;
+                                   display:flex;align-items:center;justify-content:center;overflow:hidden;" title="${title}">
+                ${pct >= 8 ? `<span style="font-size:9px;font-weight:700;color:#0a0f0e;padding:0 2px;">${Math.round(pct)}%</span>` : ""}
+              </div>`;
+            };
+
+            // --- Bar 1: Ideal Allocation ---
+            const bar1Segs = fundTargets.map(f =>
+              mkSeg(f.idealPct, f.color, `${f.name}: ${fmt(Math.round(f.idealAmt))}`)).join("");
+
+            const bar1Rows = fundTargets.map(f => `
+              <div style="display:grid;grid-template-columns:10px 1fr auto auto auto;align-items:start;gap:6px;padding:6px 0;border-bottom:1px solid var(--line);">
+                <span style="width:10px;height:10px;border-radius:2px;background:${f.color};display:block;margin-top:2px;flex-shrink:0"></span>
+                <div style="overflow:hidden;">
+                  <div style="font-size:11px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${f.name}</div>
+                  <div style="font-size:9px;color:var(--dim)">${f.cat}</div>
+                </div>
+                <div style="text-align:right;min-width:58px">
+                  <div style="font-size:8px;color:var(--dim);margin-bottom:1px">Current</div>
+                  <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--txt)">${fmt(Math.round(f.current))}</div>
+                </div>
+                <div style="text-align:right;min-width:58px">
+                  <div style="font-size:8px;color:var(--dim);margin-bottom:1px">${f.toAdd >= 0 ? "To Add" : "Excess"}</div>
+                  <div style="font-family:'Space Mono',monospace;font-size:10px;color:${f.toAdd >= 0 ? "var(--mint)" : "var(--coral)"}">
+                    ${f.toAdd >= 0 ? "+" : ""}${fmt(Math.round(Math.abs(f.toAdd)))}
+                  </div>
+                </div>
+                <div style="text-align:right;min-width:38px">
+                  <div style="font-size:8px;color:var(--dim);margin-bottom:1px">Weight</div>
+                  <div style="font-family:'Space Mono',monospace;font-size:10px;font-weight:700;color:${f.color}">${f.idealPct.toFixed(1)}%</div>
+                </div>
+              </div>`).join("");
+
+            if (bar1El) bar1El.innerHTML = `
+              <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line);">
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--dim);margin-bottom:7px">
+                  Ideal Equity Allocation &nbsp;— &nbsp;<span style="font-family:'Space Mono',monospace;color:var(--mint)">${fmt(Math.round(eqAfter))}</span>
+                </div>
+                <div style="display:flex;height:28px;border-radius:7px;overflow:hidden;gap:1px;">${bar1Segs}</div>
+                <div>${bar1Rows}</div>
+              </div>`;
+
+            // --- Bar 2: Liquid → Equity redistribution ---
+            if (bar2El) {
+              if (deployable > 1) {
+                const moveItems = fundTargets.filter(f => f.fromLiq > 1);
+                const moveTotal = moveItems.reduce((s, f) => s + f.fromLiq, 0);
+                const bar2Segs = moveItems.map(f => {
+                  const pct = moveTotal > 0 ? (f.fromLiq / moveTotal * 100) : 0;
+                  return mkSeg(pct, f.color, `${f.name}: ${fmt(Math.round(f.fromLiq))}`);
+                }).join("");
+                const bar2Rows = moveItems.map(f => {
+                  const pct = moveTotal > 0 ? (f.fromLiq / moveTotal * 100) : 0;
+                  return `<div style="display:grid;grid-template-columns:10px 1fr auto auto;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--line);">
+                    <span style="width:10px;height:10px;border-radius:2px;background:${f.color};display:block;flex-shrink:0"></span>
+                    <span style="font-size:11px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${f.name}</span>
+                    <span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--liq);text-align:right;white-space:nowrap;">+${fmt(Math.round(f.fromLiq))}</span>
+                    <span style="font-family:'Space Mono',monospace;font-size:10px;font-weight:700;color:${f.color};text-align:right;min-width:38px;">${pct.toFixed(1)}%</span>
+                  </div>`;
+                }).join("");
+                bar2El.innerHTML = `
+                  <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line);">
+                    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--dim);margin-bottom:7px">
+                      Move Liquid → Equity &nbsp;— &nbsp;<span style="font-family:'Space Mono',monospace;color:var(--liq)">${fmt(Math.round(deployable))}</span>
+                    </div>
+                    <div style="display:flex;height:28px;border-radius:7px;overflow:hidden;gap:1px;">${bar2Segs}</div>
+                    <div>${bar2Rows}</div>
+                  </div>`;
+              } else {
+                bar2El.innerHTML = `<div style="font-size:11px;color:var(--mint);margin-top:10px;">✓ No deployable liquid to redistribute.</div>`;
+              }
+            }
+          }
+
           function renderSummaryExtras(eqCur, liqCur, totCur, eqTgt, liqTgt, totTgt, nowEqPct, tgtEqPct) {
-            /* — Drift alert & rebalancing — */
+            /* — Drift alert — */
             const driftEl = el("sumDriftAlert");
-            const rebalEl = el("sumRebalance");
             const drift = Math.abs(nowEqPct - tgtEqPct);
             if (driftEl) {
               if (totCur > 0 && totTgt > 0 && drift > 5) {
@@ -5636,45 +5835,9 @@
                 driftEl.style.display = "none";
               }
             }
-            if (rebalEl && totCur > 0) {
-              // Deployable = liquid value minus each fund's reserve
-              const deployable = LIQ_FUNDS.reduce((s, f) => {
-                const ls = state.liquid[f.id];
-                return s + Math.max(0, (ls.value || 0) - (ls.reserve || 0));
-              }, 0);
-              const totalLiqVal = LIQ_FUNDS.reduce((s, f) => s + (state.liquid[f.id]?.value || 0), 0);
 
-              const afterEq    = eqCur + deployable;
-              const afterLiq   = totalLiqVal - deployable;
-              const afterEqPct = totCur > 0 ? (afterEq / totCur) * 100 : 0;
-              const afterLiqPct = 100 - afterEqPct;
-
-              if (deployable > 0) {
-                rebalEl.innerHTML = `
-                  <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--dim);margin-bottom:10px">Rebalancing Suggestion</div>
-                  <div style="font-size:13px;margin-bottom:6px">
-                    Move <span style="color:var(--liq);font-weight:700;font-family:'Space Mono',monospace">${fmt(Math.round(deployable))}</span>
-                    from liquid to equity
-                  </div>
-                  <div style="font-size:10px;color:var(--dim);margin-bottom:10px">All un-reserved liquid balance deployed into equity</div>
-                  <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--dim);margin-bottom:6px">After rebalancing</div>
-                  <div style="display:flex;gap:10px;flex-wrap:wrap;">
-                    <div style="background:rgba(0,245,160,0.08);border:1px solid rgba(0,245,160,0.2);border-radius:8px;padding:6px 12px;min-width:80px;">
-                      <div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px">Equity</div>
-                      <div style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--mint)">${fmt(Math.round(afterEq))}</div>
-                      <div style="font-size:10px;color:var(--mint);margin-top:2px">${afterEqPct.toFixed(1)}%</div>
-                    </div>
-                    <div style="background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.2);border-radius:8px;padding:6px 12px;min-width:80px;">
-                      <div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px">Liquid</div>
-                      <div style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--liq)">${fmt(Math.round(afterLiq))}</div>
-                      <div style="font-size:10px;color:var(--liq);margin-top:2px">${afterLiqPct.toFixed(1)}%</div>
-                    </div>
-                  </div>
-                  <div style="font-size:9px;color:var(--dim);margin-top:8px">Reserved liquid (${fmt(Math.round(afterLiq))}) stays untouched</div>`;
-              } else {
-                rebalEl.innerHTML = `<div style="font-size:12px;color:var(--mint)">✓ No deployable liquid — all liquid is reserved</div>`;
-              }
-            }
+            /* — Ideal Allocation card — */
+            renderIdealAlloc();
 
             /* — Surplus calculator — */
             renderSurplus();
