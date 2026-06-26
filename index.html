@@ -2361,6 +2361,56 @@
         padding: 9px 12px;
       }
       .txn-row-child:last-child { margin-bottom: 8px; }
+      /* ── TRANSACTION SUB-TABS ── */
+      .txn-stabs { display: flex; gap: 6px; margin: 14px 0 4px; }
+      .txn-stab {
+        background: none; border: 1px solid var(--line); border-radius: 20px;
+        color: var(--dim); font-size: 12px; font-weight: 600; padding: 5px 16px;
+        cursor: pointer; transition: all 0.15s;
+      }
+      .txn-stab.active { background: var(--mint); border-color: var(--mint); color: #000; }
+      /* ── CURRENT VALUE MODAL ── */
+      .curval-date-row { font-size: 12px; color: var(--dim); margin-bottom: 12px; font-family: "JetBrains Mono", monospace; }
+      .curval-fund-row {
+        display: flex; align-items: center; gap: 8px;
+        padding: 10px 0; border-bottom: 1px solid var(--line);
+      }
+      .curval-fund-row:last-child { border-bottom: none; }
+      .curval-fname { flex: 1; font-size: 12px; font-weight: 600; color: var(--txt); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .curval-arrow {
+        background: none; border: 1px solid var(--line); border-radius: 6px;
+        cursor: pointer; font-size: 14px; line-height: 1; padding: 4px 6px; flex-shrink: 0;
+        transition: color 0.12s, border-color 0.12s;
+      }
+      .curval-arrow.up   { color: #4ade80; border-color: #4ade80; }
+      .curval-arrow.down { color: #f87171; border-color: #f87171; }
+      .curval-ibox { display: flex; align-items: center; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); flex-shrink: 0; }
+      .curval-ibox .pfx { padding: 0 4px 0 8px; color: var(--dim); font-size: 12px; }
+      .curval-inp { background: none; border: none; outline: none; color: var(--txt); font-size: 13px; width: 100px; padding: 7px 8px 7px 0; }
+      /* ── FUND CARD STAT ROW ── */
+      .card-stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+      .card-stat { background: var(--panel-2); border-radius: 8px; padding: 8px 10px; }
+      .card-stat-lbl { font-size: 10px; color: var(--dim); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+      .card-stat-val { font-family: "Fraunces", serif; font-size: 14px; font-weight: 600; color: var(--txt); }
+      .card-stat-val.profit { color: #4ade80; }
+      .card-stat-val.loss   { color: #f87171; }
+      .card-stat-pct { font-size: 10px; margin-left: 4px; opacity: 0.7; }
+      /* ── RETURNS LOG ── */
+      .ret-month-head { font-size: 11px; font-weight: 700; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; padding: 14px 14px 6px; }
+      .ret-row {
+        display: flex; align-items: center; padding: 10px 14px;
+        border: 1px solid var(--line); border-radius: 10px; margin: 0 8px 6px;
+        background: var(--panel);
+      }
+      .ret-fund { flex: 1; min-width: 0; }
+      .ret-fname { font-size: 12px; font-weight: 600; color: var(--txt); }
+      .ret-date  { font-size: 10px; color: var(--dim); margin-top: 2px; font-family: "JetBrains Mono", monospace; }
+      .ret-right { text-align: right; flex-shrink: 0; }
+      .ret-cur   { font-family: "Fraunces", serif; font-size: 14px; font-weight: 600; color: var(--txt); }
+      .ret-profit-lbl { font-size: 11px; margin-top: 2px; }
+      .ret-profit-lbl.up   { color: #4ade80; }
+      .ret-profit-lbl.down { color: #f87171; }
+      .ret-empty { text-align: center; padding: 40px 20px; color: var(--dim); font-size: 13px; line-height: 1.6; }
     </style>
   </head>
   <body>
@@ -2389,6 +2439,7 @@
       <div class="nav-dd-sep" id="ddSep1"></div>
       <button class="nav-dd-item" id="ddAddTxnBtn">Add Transaction</button>
       <button class="nav-dd-item" id="ddTxnsBtn">Transactions</button>
+      <button class="nav-dd-item" id="ddAddCurValBtn">Add Current Value</button>
       <div class="nav-dd-sep"></div>
       <div class="nav-dd-user" id="ddUserInfo" style="display:none">
         <img class="nav-dd-avatar" id="ddUserAvatar" src="" alt=""/>
@@ -2751,10 +2802,15 @@
       <section class="tab-section" id="tab-transactions">
         <div class="pg-head">
           <h1>Transaction <span class="accent">History</span></h1>
-          <p>All recorded fund investments. Tap a row to edit or delete.</p>
+          <p>All recorded fund investments and return snapshots.</p>
+          <div class="txn-stabs">
+            <button class="txn-stab active" id="txnTabInvest">Investments</button>
+            <button class="txn-stab" id="txnTabReturns">Returns</button>
+          </div>
           <button class="btn btn-primary" id="txnAddFromListBtn" style="margin-top:12px;display:inline-flex;align-items:center;gap:6px;">+ Add Transaction</button>
         </div>
         <div id="txnList"></div>
+        <div id="returnsList" style="display:none"></div>
       </section>
 
     </div>
@@ -2799,6 +2855,24 @@
         <div class="modal-foot">
           <button class="btn btn-ghost" id="txnCancelBtn">Cancel</button>
           <button class="btn btn-primary" id="txnSaveBtn">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ ADD CURRENT VALUE MODAL ═══ -->
+    <div id="curValModal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <div class="modal-head">
+          <span class="modal-title">Update Current Value</span>
+          <button class="modal-close" id="curValModalClose" aria-label="Close">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="curval-date-row" id="curValDate"></div>
+          <div id="curValFundList"></div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn btn-ghost" id="curValCancelBtn">Cancel</button>
+          <button class="btn btn-primary" id="curValSaveBtn">Save</button>
         </div>
       </div>
     </div>
@@ -2924,6 +2998,7 @@
               },
               forecast: { bankBalance: 0, investments: 0, monthlyInvest: 0, annualRate: 12 },
               transactions: [],
+              returnsLog: [],
               _meta: { v: 0, savedAt: null, syncedAt: null },
             };
           }
@@ -2949,6 +3024,7 @@
                 },
                 forecast: { ...def.forecast, ...(s.forecast || {}) },
                 transactions: Array.isArray(s.transactions) ? s.transactions : [],
+                returnsLog: Array.isArray(s.returnsLog) ? s.returnsLog : [],
                 _meta: { ...def._meta, ...(s._meta || {}) },
               };
             } catch {
@@ -3255,6 +3331,17 @@
           };
           const num = (v) => Number(v) || 0;
           const pct = (a, b) => (b > 0 ? (a / b) * 100 : 0);
+          function setStatReturn(elId, curVal, invested) {
+            const statEl = el(elId);
+            if (!statEl) return;
+            if (!curVal || curVal <= 0) { statEl.textContent = "—"; statEl.className = "card-stat-val"; return; }
+            const profit = curVal - invested;
+            const profitPct = invested > 0 ? (profit / invested) * 100 : 0;
+            const sign = profit >= 0 ? "+" : "";
+            const cls  = profit >= 0 ? "profit" : "loss";
+            statEl.className = `card-stat-val ${cls}`;
+            statEl.innerHTML = `${sign}${fmt(Math.abs(profit))}<span class="card-stat-pct">(${sign}${profitPct.toFixed(1)}%)</span>`;
+          }
           const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
           const roundUpInvest = (target, rate) =>
             target > 0 && rate < 1 ? Math.ceil(target / (1 - rate)) : 0;
@@ -3390,6 +3477,16 @@
                   </div>
                 </div>
               </div>
+              <div class="card-stat-row">
+                <div class="card-stat">
+                  <div class="card-stat-lbl">Current Value</div>
+                  <div class="card-stat-val" id="lcurval-${f.id}">—</div>
+                </div>
+                <div class="card-stat">
+                  <div class="card-stat-lbl">Returns</div>
+                  <div class="card-stat-val" id="lrtn-${f.id}">—</div>
+                </div>
+              </div>
               <div class="chip liq"><span>Deployable</span><b id="ldep-${f.id}">&#8377;0</b></div>
               <div class="chip liq"><span id="linvlbl-${f.id}">Invest now</span><b id="linv-${f.id}">&#8377;0</b></div>
               <div class="pbar-row"><span>Reserved</span><span id="lrespct-${f.id}">0%</span></div>
@@ -3424,6 +3521,16 @@
                 <label class="flabel" for="etgt-${f.id}">Target total</label>
                 <div class="ibox"><span class="pfx">&#8377;</span>
                   <input class="num" id="etgt-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.target || ""}" />
+                </div>
+              </div>
+              <div class="card-stat-row">
+                <div class="card-stat">
+                  <div class="card-stat-lbl">Current Value</div>
+                  <div class="card-stat-val" id="ecurvval-${f.id}">—</div>
+                </div>
+                <div class="card-stat">
+                  <div class="card-stat-lbl">Returns</div>
+                  <div class="card-stat-val" id="ertn-${f.id}">—</div>
                 </div>
               </div>
               <div class="chip mint"><span id="einvlbl-${f.id}">Invest now</span><b id="einv-${f.id}">&#8377;0</b></div>
@@ -3544,7 +3651,14 @@
             el("networthBtn").classList.toggle("active", tabId === "networth");
             el("forecastBtn").classList.toggle("active", tabId === "forecast");
             el("adminBtn").classList.remove("active");
-            if (tabId === "transactions") renderTxns();
+            if (tabId === "transactions") {
+              renderTxns();
+              el("txnTabInvest").classList.add("active");
+              el("txnTabReturns").classList.remove("active");
+              el("txnList").style.display = "";
+              el("returnsList").style.display = "none";
+              el("txnAddFromListBtn").style.display = "";
+            }
             if (tabId === "forecast") renderForecast();
             closeNavDropdowns();
           }
@@ -3601,6 +3715,27 @@
           el("resetBtn").addEventListener("click", resetAll);
           el("ddAddTxnBtn").addEventListener("click", () => { closeNavDropdowns(); openTxnModal(); });
           el("ddTxnsBtn").addEventListener("click", () => { closeNavDropdowns(); navigateTo("transactions"); });
+          el("ddAddCurValBtn").addEventListener("click", () => openCurValModal());
+          el("curValModalClose").addEventListener("click", closeCurValModal);
+          el("curValCancelBtn").addEventListener("click", closeCurValModal);
+          el("curValSaveBtn").addEventListener("click", saveCurVal);
+          el("curValModal").addEventListener("click", e => { if (e.target === el("curValModal")) closeCurValModal(); });
+          /* Transaction sub-tabs */
+          el("txnTabInvest").addEventListener("click", () => {
+            el("txnTabInvest").classList.add("active");
+            el("txnTabReturns").classList.remove("active");
+            el("txnList").style.display = "";
+            el("returnsList").style.display = "none";
+            el("txnAddFromListBtn").style.display = "";
+          });
+          el("txnTabReturns").addEventListener("click", () => {
+            el("txnTabReturns").classList.add("active");
+            el("txnTabInvest").classList.remove("active");
+            el("txnList").style.display = "none";
+            el("returnsList").style.display = "";
+            el("txnAddFromListBtn").style.display = "none";
+            renderReturns();
+          });
           el("txnModalClose").addEventListener("click", closeTxnModal);
           el("txnCancelBtn").addEventListener("click", closeTxnModal);
           el("txnSaveBtn").addEventListener("click", saveTxn);
@@ -3623,7 +3758,7 @@
             const isGuest  = !authUser;
 
             // Admin-only dropdown items — hide for guests
-            ["editToggleBtn", "ddSep1", "ddAddTxnBtn", "ddTxnsBtn"].forEach(id => {
+            ["editToggleBtn", "ddSep1", "ddAddTxnBtn", "ddTxnsBtn", "ddAddCurValBtn"].forEach(id => {
               const el2 = el(id); if (el2) el2.style.display = isGuest ? "none" : "";
             });
 
@@ -3883,6 +4018,145 @@
           }
 
           /* ════════════════════════════════════════════
+             CURRENT VALUE MODAL
+          ════════════════════════════════════════════ */
+          function openCurValModal() {
+            closeNavDropdowns();
+            const today = new Date();
+            const dateStr = today.toISOString().slice(0, 10);
+            el("curValDate").textContent = today.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+
+            const allFunds = [
+              ...LIQ_FUNDS.map(f => ({ id: f.id, name: state.liquid[f.id].name || f.defaultName, type: "liq" })),
+              ...EQ_FUNDS.map(f => ({ id: f.id, name: state.equity[f.id].name || f.defaultName, type: "eq" })),
+            ];
+
+            const listEl = el("curValFundList");
+            listEl.innerHTML = allFunds.map(f => {
+              const s = f.type === "liq" ? state.liquid[f.id] : state.equity[f.id];
+              const curVal = s.currentValue || (f.type === "liq" ? s.value : s.shown) || 0;
+              const invested = s.paid || 0;
+              const isUp = curVal >= invested;
+              return `
+                <div class="curval-fund-row" data-fundid="${f.id}" data-type="${f.type}">
+                  <span class="curval-fname">${f.name}</span>
+                  <button class="curval-arrow ${isUp ? "up" : "down"}" id="cva-${f.id}" title="Toggle direction">${isUp ? "↑" : "↓"}</button>
+                  <div class="curval-ibox">
+                    <span class="pfx">₹</span>
+                    <input type="number" class="curval-inp" id="cvi-${f.id}" data-invested="${invested}" value="${curVal || ""}" min="0" inputmode="numeric" placeholder="0" />
+                  </div>
+                </div>`;
+            }).join("");
+
+            /* Wire up arrow toggle + auto-update on input */
+            allFunds.forEach(f => {
+              const inpEl = el("cvi-" + f.id);
+              const arrEl = el("cva-" + f.id);
+              if (!inpEl || !arrEl) return;
+              const updateArrow = () => {
+                const v = parseFloat(inpEl.value) || 0;
+                const inv = parseFloat(inpEl.dataset.invested) || 0;
+                const up = v >= inv;
+                arrEl.textContent = up ? "↑" : "↓";
+                arrEl.className = "curval-arrow " + (up ? "up" : "down");
+              };
+              inpEl.addEventListener("input", updateArrow);
+              arrEl.addEventListener("click", () => {
+                arrEl.className = arrEl.classList.contains("up") ? "curval-arrow down" : "curval-arrow up";
+                arrEl.textContent = arrEl.classList.contains("up") ? "↑" : "↓";
+              });
+            });
+
+            el("curValModal").style.display = "flex";
+          }
+
+          function closeCurValModal() {
+            el("curValModal").style.display = "none";
+          }
+
+          function saveCurVal() {
+            const today = new Date().toISOString().slice(0, 10);
+            const ts = new Date().toISOString();
+            const allFunds = [
+              ...LIQ_FUNDS.map(f => ({ id: f.id, type: "liq" })),
+              ...EQ_FUNDS.map(f => ({ id: f.id, type: "eq" })),
+            ];
+
+            let changed = false;
+            allFunds.forEach(f => {
+              const inpEl = el("cvi-" + f.id);
+              if (!inpEl) return;
+              const v = parseFloat(inpEl.value) || 0;
+              if (v <= 0) return;
+              const s = f.type === "liq" ? state.liquid[f.id] : state.equity[f.id];
+              const invested = s.paid || 0;
+              s.currentValue = v;
+              const profit = v - invested;
+              const profitPct = invested > 0 ? (profit / invested) * 100 : 0;
+              state.returnsLog.push({
+                id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+                fundId: f.id,
+                date: today,
+                ts,
+                currentValue: v,
+                invested,
+                profit,
+                profitPct,
+              });
+              changed = true;
+            });
+
+            if (!changed) { UI.toast("warn", "No values entered", 2500); return; }
+            saveState();
+            scheduleRender();
+            closeCurValModal();
+            UI.toast("success", "Current values updated", 2500);
+          }
+
+          /* ════════════════════════════════════════════
+             RETURNS LOG RENDERER
+          ════════════════════════════════════════════ */
+          function renderReturns() {
+            const container = el("returnsList");
+            if (!container) return;
+            const logs = [...(state.returnsLog || [])].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+            if (!logs.length) {
+              container.innerHTML = `<div class="ret-empty">No return snapshots yet.<br>Use Admin → Add Current Value to record one.</div>`;
+              return;
+            }
+            const months = {};
+            logs.forEach(l => {
+              const mk = l.date ? l.date.slice(0, 7) : "unknown";
+              if (!months[mk]) months[mk] = [];
+              months[mk].push(l);
+            });
+            let html = "";
+            Object.entries(months).forEach(([mk, entries]) => {
+              const mLabel = mk !== "unknown"
+                ? new Date(mk + "-01T00:00:00").toLocaleDateString("en-IN", { month: "long", year: "numeric" })
+                : "Unknown Date";
+              html += `<div class="ret-month-head">${mLabel}</div>`;
+              entries.forEach(l => {
+                const name = fundName(l.fundId);
+                const isProfit = l.profit >= 0;
+                const sign = isProfit ? "+" : "−";
+                const dayLabel = l.date !== "unknown" ? new Date(l.date + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : "—";
+                html += `<div class="ret-row">
+                  <div class="ret-fund">
+                    <div class="ret-fname">${name}</div>
+                    <div class="ret-date">${dayLabel}</div>
+                  </div>
+                  <div class="ret-right">
+                    <div class="ret-cur">${fmt(l.currentValue)}</div>
+                    <div class="ret-profit-lbl ${isProfit ? "up" : "down"}">${sign}${fmt(Math.abs(l.profit))} (${sign}${Math.abs(l.profitPct).toFixed(1)}%)</div>
+                  </div>
+                </div>`;
+              });
+            });
+            container.innerHTML = html;
+          }
+
+          /* ════════════════════════════════════════════
              MAIN RENDER
           ════════════════════════════════════════════ */
           /* Debounced render: coalesces rapid input events into one frame */
@@ -3929,6 +4203,11 @@
               el("lrespct-" + f.id).textContent = resPct + "% reserved";
               el("ldepfill-" + f.id).style.width =
                 val > 0 ? Math.round((dep / val) * 100) + "%" : "0%";
+              /* Current Value + Returns stat boxes */
+              const lcv = state.liquid[f.id].currentValue || val;
+              const lcvEl = el("lcurval-" + f.id);
+              if (lcvEl) lcvEl.textContent = lcv > 0 ? fmt(lcv) : "—";
+              setStatReturn("lrtn-" + f.id, lcv, paid);
             });
 
             /* Deployable summary bar */
@@ -3988,6 +4267,12 @@
                 el("einvlbl-" + f.id).textContent = "Invest now";
                 el("einv-" + f.id).textContent = fmt(0);
               }
+
+              /* Current Value + Returns stat boxes */
+              const ecv = s.currentValue || shown;
+              const ecvEl = el("ecurvval-" + f.id);
+              if (ecvEl) ecvEl.textContent = ecv > 0 ? fmt(ecv) : "—";
+              setStatReturn("ertn-" + f.id, ecv, paid);
 
               eqCur += cur;
               eqTgt += targetVal;
