@@ -2833,32 +2833,10 @@
         </div>
         <div class="modal-body">
           <input type="hidden" id="txnEditId" />
-          <div class="form-row">
-            <label class="form-lbl">Fund</label>
-            <div class="fund-picker" id="txnFundPicker">
-              <button class="fund-picker-btn" id="txnFundBtn" type="button" aria-haspopup="listbox">
-                <span class="fund-picker-label">
-                  <span class="fp-tag" id="txnFundTag" style="display:none"></span>
-                  <span class="fund-picker-label-text" id="txnFundText">Select fund…</span>
-                </span>
-                <svg class="fund-picker-chevron" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3l4 4 4-4"/></svg>
-              </button>
-              <div class="fund-picker-list" id="txnFundList" style="display:none" role="listbox"></div>
-            </div>
-            <input type="hidden" id="txnFund" />
-          </div>
-          <div class="form-row">
-            <label class="form-lbl">Date</label>
+          <div class="curval-date-row">
             <input class="form-inp" id="txnDate" type="date" />
           </div>
-          <div class="form-row">
-            <label class="form-lbl">Amount Invested (₹)</label>
-            <input class="form-inp" id="txnInvested" type="number" placeholder="0" inputmode="numeric" min="0" />
-          </div>
-          <div class="form-row">
-            <label class="form-lbl">Notes (optional)</label>
-            <input class="form-inp" id="txnNotes" type="text" placeholder="e.g. SIP Jan 2025" />
-          </div>
+          <div id="txnFundInputList"></div>
         </div>
         <div class="modal-foot">
           <button class="btn btn-ghost" id="txnCancelBtn">Cancel</button>
@@ -3757,15 +3735,6 @@
           el("txnSaveBtn").addEventListener("click", saveTxn);
           el("txnAddFromListBtn").addEventListener("click", () => openTxnModal());
           el("txnModal").addEventListener("click", e => { if (e.target === el("txnModal")) closeTxnModal(); });
-          el("txnFundBtn").addEventListener("click", e => {
-            e.stopPropagation();
-            const list = el("txnFundList");
-            const isOpen = list.style.display !== "none";
-            if (isOpen) { closeFundPicker(); } else { list.style.display = "block"; el("txnFundBtn").classList.add("open"); }
-          });
-          document.addEventListener("click", e => {
-            if (!el("txnFundPicker")?.contains(e.target)) closeFundPicker();
-          });
           el("editToggleBtn").addEventListener("click", () => { closeNavDropdowns(); toggleEditMode(); });
 
           function updateAuthUI() {
@@ -3860,68 +3829,40 @@
             });
           }
 
-          function setFundPickerValue(id, type, name) {
-            el("txnFund").value = id;
-            const text = el("txnFundText");
-            const tag = el("txnFundTag");
-            if (id) {
-              text.textContent = name;
-              tag.textContent = type === "liq" ? "LIQUID" : "EQUITY";
-              tag.className = "fp-tag " + type;
-              tag.style.display = "";
-              el("txnFundList").querySelectorAll(".fund-picker-item").forEach(item => {
-                item.classList.toggle("selected", item.dataset.id === id);
-              });
-            } else {
-              text.textContent = "Select fund…";
-              tag.style.display = "none";
-            }
-          }
-
-          function closeFundPicker() {
-            el("txnFundList").style.display = "none";
-            el("txnFundBtn").classList.remove("open");
+          function fundRowHTML(fundId, name, value) {
+            return `
+              <div class="curval-fund-row" data-fundid="${fundId}">
+                <span class="curval-fname">${name}</span>
+                <div class="curval-ibox">
+                  <span class="pfx">&#8377;</span>
+                  <input type="number" class="curval-inp" id="txi-${fundId}" min="0" inputmode="numeric" placeholder="0" value="${value || ""}" />
+                </div>
+              </div>`;
           }
 
           function openTxnModal(txnId) {
             const editId = txnId || null;
             el("txnEditId").value = editId || "";
             el("txnModalTitle").textContent = editId ? "Edit Transaction" : "Add Transaction";
+            const today = new Date().toISOString().split("T")[0];
 
-            const allFunds = [
-              ...LIQ_FUNDS.map(f => ({ id: f.id, name: state.liquid[f.id].name || f.defaultName, type: "liq" })),
-              ...EQ_FUNDS.map(f => ({ id: f.id, name: state.equity[f.id].name || f.defaultName, type: "eq" }))
-            ];
-            const list = el("txnFundList");
-            list.innerHTML = allFunds.map(f =>
-              `<div class="fund-picker-item" data-id="${f.id}" data-type="${f.type}" role="option">
-                <span class="fp-tag ${f.type}">${f.type === "liq" ? "LIQUID" : "EQUITY"}</span>
-                <span class="fund-picker-item-name">${f.name}</span>
-              </div>`
-            ).join("");
-            list.querySelectorAll(".fund-picker-item").forEach(item => {
-              item.addEventListener("click", () => {
-                setFundPickerValue(item.dataset.id, item.dataset.type, item.querySelector(".fund-picker-item-name").textContent);
-                closeFundPicker();
-              });
-            });
-
-            closeFundPicker();
             if (editId) {
               const txn = (state.transactions || []).find(t => t.id === editId);
-              if (txn) {
-                const fund = allFunds.find(f => f.id === txn.fundId);
-                if (fund) setFundPickerValue(fund.id, fund.type, fund.name);
-                el("txnDate").value = txn.date || "";
-                el("txnInvested").value = txn.invested || "";
-                el("txnNotes").value = txn.notes || "";
-              }
+              el("txnDate").value = txn?.date || today;
+              const isLiq = LIQ_FUNDS.some(f => f.id === txn?.fundId);
+              const s = isLiq ? state.liquid[txn.fundId] : state.equity[txn.fundId];
+              const defName = isLiq
+                ? (LIQ_FUNDS.find(f => f.id === txn.fundId)?.defaultName || "Fund")
+                : (EQ_FUNDS.find(f => f.id === txn.fundId)?.defaultName || "Fund");
+              const name = s?.name || defName;
+              el("txnFundInputList").innerHTML = fundRowHTML(txn.fundId, name, txn?.invested);
             } else {
-              setFundPickerValue("", "", "");
-              const today = new Date();
-              el("txnDate").value = today.toISOString().split("T")[0];
-              el("txnInvested").value = "";
-              el("txnNotes").value = "";
+              el("txnDate").value = today;
+              const allFunds = [
+                ...LIQ_FUNDS.map(f => ({ id: f.id, name: state.liquid[f.id].name || f.defaultName })),
+                ...EQ_FUNDS.map(f => ({ id: f.id, name: state.equity[f.id].name || f.defaultName })),
+              ];
+              el("txnFundInputList").innerHTML = allFunds.map(f => fundRowHTML(f.id, f.name, "")).join("");
             }
             el("txnModal").style.display = "flex";
           }
@@ -3931,21 +3872,29 @@
           }
 
           function saveTxn() {
-            const fundId = el("txnFund").value;
             const date = el("txnDate").value;
-            const invested = Number(el("txnInvested").value) || 0;
-            const notes = el("txnNotes").value.trim();
             const editId = el("txnEditId").value;
-            if (!fundId || !date || !invested) {
-              UI.toast("error", "Fund, date and amount are required", 2500);
-              return;
-            }
+            if (!date) { UI.toast("error", "Date is required", 2500); return; }
             if (!state.transactions) state.transactions = [];
+
             if (editId) {
-              const idx = state.transactions.findIndex(t => t.id === editId);
-              if (idx !== -1) state.transactions[idx] = { id: editId, fundId, date, invested, notes };
+              const txn = state.transactions.find(t => t.id === editId);
+              if (!txn) return;
+              const invested = Number(el("txi-" + txn.fundId)?.value) || 0;
+              if (!invested) { UI.toast("error", "Amount is required", 2500); return; }
+              txn.date = date;
+              txn.invested = invested;
             } else {
-              state.transactions.push({ id: String(Date.now()), fundId, date, invested, notes });
+              const allFunds = [...LIQ_FUNDS, ...EQ_FUNDS];
+              let added = 0;
+              allFunds.forEach(f => {
+                const v = Number(el("txi-" + f.id)?.value) || 0;
+                if (v > 0) {
+                  state.transactions.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5), fundId: f.id, date, invested: v, notes: "" });
+                  added++;
+                }
+              });
+              if (!added) { UI.toast("warn", "Enter at least one amount", 2500); return; }
             }
             applyTxnTotals();
             saveState();
