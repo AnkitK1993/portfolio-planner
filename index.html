@@ -2420,6 +2420,25 @@
       .ret-profit-lbl.down { color: #f87171; }
       .ret-empty { text-align: center; padding: 40px 20px; color: var(--dim); font-size: 13px; line-height: 1.6; }
 
+      /* ═══ RETURNS DISPLAY (fund card) ═══ */
+      .rtn-display {
+        font-family: "Space Mono", monospace; font-size: 13px;
+        padding: 0 10px; border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 10px; background: rgba(255,255,255,0.04);
+        min-height: 38px; display: flex; align-items: center; gap: 5px;
+        color: var(--dim); position: relative;
+      }
+      .rtn-display.rtn-up { color: #4ade80; border-color: rgba(74,222,128,0.2); background: rgba(74,222,128,0.04); }
+      .rtn-display.rtn-dn { color: #f87171; border-color: rgba(248,113,113,0.2); background: rgba(248,113,113,0.04); }
+      .rtn-arrow { font-size: 13px; flex-shrink: 0; }
+      .rtn-amt   { flex: 1; min-width: 0; }
+      .rtn-pct   { font-size: 10px; opacity: 0.8; flex-shrink: 0; }
+      body.privacy-mode:not(.edit-mode) #tab-portfolio .rtn-display > * { color: transparent !important; -webkit-text-fill-color: transparent; }
+      body.privacy-mode:not(.edit-mode) #tab-portfolio .rtn-display::after {
+        content: "• • • •"; position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+        font-family: "Space Mono", monospace; font-size: 13px; color: var(--txt); opacity: 0.4; pointer-events: none;
+      }
+
       /* ═══ DATA MODAL ═══ */
       .data-action-row { display: flex; align-items: center; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--line); }
       .data-action-row:last-child { border-bottom: none; }
@@ -3503,9 +3522,7 @@
                 </div>
                 <div class="field">
                   <label class="flabel">Returns</label>
-                  <div class="ibox"><span class="pfx" id="lrtnpfx-${f.id}">&#8377;</span>
-                    <input class="num liq" id="lrtn-${f.id}" type="text" placeholder="—" readonly />
-                  </div>
+                  <div class="rtn-display" id="lrtn-${f.id}">—</div>
                 </div>
               </div>
               <div class="ratechip">Expense ratio: <b id="lrate-${f.id}">—</b></div>
@@ -3561,9 +3578,7 @@
                 </div>
                 <div class="field">
                   <label class="flabel">Returns</label>
-                  <div class="ibox"><span class="pfx" id="ertnpfx-${f.id}">&#8377;</span>
-                    <input class="num" id="ertn-${f.id}" type="text" placeholder="—" readonly />
-                  </div>
+                  <div class="rtn-display" id="ertn-${f.id}">—</div>
                 </div>
               </div>
               <div class="ratechip">Expense ratio: <b id="erate-${f.id}">—</b></div>
@@ -4258,14 +4273,18 @@
               const lcvInp = el("lcurval-" + f.id);
               if (lcvInp) lcvInp.value = lcv > 0 ? Math.round(lcv).toLocaleString("en-IN") : "";
               const lret = lcv - val;
-              const lrtnInp = el("lrtn-" + f.id);
-              const lrtnPfx = el("lrtnpfx-" + f.id);
-              if (lrtnInp && lrtnPfx) {
-                if (lcv <= 0) { lrtnInp.value = ""; lrtnPfx.textContent = "₹"; lrtnPfx.style.color = ""; }
-                else {
-                  lrtnInp.value = Math.abs(Math.round(lret)).toLocaleString("en-IN");
-                  lrtnPfx.textContent = lret >= 0 ? "+₹" : "−₹";
-                  lrtnPfx.style.color = lret >= 0 ? "#4ade80" : "#f87171";
+              const lrtnEl = el("lrtn-" + f.id);
+              if (lrtnEl) {
+                if (lcv <= 0 || val === 0) {
+                  lrtnEl.className = "rtn-display"; lrtnEl.innerHTML = "—";
+                } else {
+                  const isUp  = lret >= 0;
+                  const arrow = isUp ? "↑" : "↓";
+                  const sign  = isUp ? "+" : "−";
+                  const amt   = Math.abs(Math.round(lret)).toLocaleString("en-IN");
+                  const pct   = (Math.abs(lret) / val * 100).toFixed(2);
+                  lrtnEl.className = `rtn-display ${isUp ? "rtn-up" : "rtn-dn"}`;
+                  lrtnEl.innerHTML = `<span class="rtn-arrow">${arrow}</span><span class="rtn-amt">₹${amt}</span><span class="rtn-pct">(${sign}${pct}%)</span>`;
                 }
               }
             });
@@ -4333,14 +4352,18 @@
               const ecvInp = el("ecurvval-" + f.id);
               if (ecvInp) ecvInp.value = ecv > 0 ? Math.round(ecv).toLocaleString("en-IN") : "";
               const eret = ecv - shown;
-              const ertnInp = el("ertn-" + f.id);
-              const ertnPfx = el("ertnpfx-" + f.id);
-              if (ertnInp && ertnPfx) {
-                if (ecv <= 0) { ertnInp.value = ""; ertnPfx.textContent = "₹"; ertnPfx.style.color = ""; }
-                else {
-                  ertnInp.value = Math.abs(Math.round(eret)).toLocaleString("en-IN");
-                  ertnPfx.textContent = eret >= 0 ? "+₹" : "−₹";
-                  ertnPfx.style.color = eret >= 0 ? "#4ade80" : "#f87171";
+              const ertnEl = el("ertn-" + f.id);
+              if (ertnEl) {
+                if (ecv <= 0 || shown === 0) {
+                  ertnEl.className = "rtn-display"; ertnEl.innerHTML = "—";
+                } else {
+                  const isUp  = eret >= 0;
+                  const arrow = isUp ? "↑" : "↓";
+                  const sign  = isUp ? "+" : "−";
+                  const amt   = Math.abs(Math.round(eret)).toLocaleString("en-IN");
+                  const pct   = (Math.abs(eret) / shown * 100).toFixed(2);
+                  ertnEl.className = `rtn-display ${isUp ? "rtn-up" : "rtn-dn"}`;
+                  ertnEl.innerHTML = `<span class="rtn-arrow">${arrow}</span><span class="rtn-amt">₹${amt}</span><span class="rtn-pct">(${sign}${pct}%)</span>`;
                 }
               }
 
