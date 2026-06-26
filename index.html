@@ -2392,13 +2392,6 @@
       }
       .curval-fund-row:last-child { border-bottom: none; }
       .curval-fname { flex: 1; font-size: 12px; font-weight: 600; color: var(--txt); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      .curval-arrow {
-        background: none; border: 1px solid var(--line); border-radius: 6px;
-        cursor: pointer; font-size: 14px; line-height: 1; padding: 4px 6px; flex-shrink: 0;
-        transition: color 0.12s, border-color 0.12s;
-      }
-      .curval-arrow.up   { color: #4ade80; border-color: #4ade80; }
-      .curval-arrow.down { color: #f87171; border-color: #f87171; }
       .curval-ibox { display: flex; align-items: center; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); flex-shrink: 0; }
       .curval-ibox .pfx { padding: 0 4px 0 8px; color: var(--dim); font-size: 12px; }
       .curval-inp { background: none; border: none; outline: none; color: var(--txt); font-size: 13px; width: 100px; padding: 7px 8px 7px 0; }
@@ -4059,36 +4052,15 @@
               const s = f.type === "liq" ? state.liquid[f.id] : state.equity[f.id];
               const afterExpense = f.type === "liq" ? (s.value || 0) : (s.shown || 0);
               const curVal = s.currentValue || afterExpense;
-              const isUp = curVal >= afterExpense;
               return `
                 <div class="curval-fund-row" data-fundid="${f.id}" data-type="${f.type}">
                   <span class="curval-fname">${f.name}</span>
-                  <button class="curval-arrow ${isUp ? "up" : "down"}" id="cva-${f.id}" title="Toggle direction">${isUp ? "↑" : "↓"}</button>
                   <div class="curval-ibox">
                     <span class="pfx">₹</span>
                     <input type="number" class="curval-inp" id="cvi-${f.id}" data-afterexpense="${afterExpense}" value="${curVal || ""}" min="0" inputmode="numeric" placeholder="0" />
                   </div>
                 </div>`;
             }).join("");
-
-            /* Wire up arrow toggle + auto-update on input */
-            allFunds.forEach(f => {
-              const inpEl = el("cvi-" + f.id);
-              const arrEl = el("cva-" + f.id);
-              if (!inpEl || !arrEl) return;
-              const updateArrow = () => {
-                const v = parseFloat(inpEl.value) || 0;
-                const inv = parseFloat(inpEl.dataset.afterexpense) || 0;
-                const up = v >= inv;
-                arrEl.textContent = up ? "↑" : "↓";
-                arrEl.className = "curval-arrow " + (up ? "up" : "down");
-              };
-              inpEl.addEventListener("input", updateArrow);
-              arrEl.addEventListener("click", () => {
-                arrEl.className = arrEl.classList.contains("up") ? "curval-arrow down" : "curval-arrow up";
-                arrEl.textContent = arrEl.classList.contains("up") ? "↑" : "↓";
-              });
-            });
 
             el("curValModal").style.display = "flex";
           }
