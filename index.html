@@ -1749,12 +1749,27 @@
         font-weight: 600;
         color: var(--txt);
         letter-spacing: -0.5px;
-        margin-right: 20px;
         display: inline-flex;
         min-width: 118px;
       }
       .fund-div-liq .fund-div-total { color: var(--liq); }
       .fund-div-eq  .fund-div-total { color: var(--mint); }
+      .fund-div-right { display: inline-flex; align-items: center; gap: 10px; margin-right: 20px; }
+      .fund-div-rtn {
+        font-family: "Space Mono", monospace; font-size: 11px; font-weight: 700;
+        white-space: nowrap; flex-shrink: 0;
+      }
+      .fund-div-rtn.up { color: #4ade80; }
+      .fund-div-rtn.dn { color: #f87171; }
+      .coll-rtn {
+        font-family: "Space Mono", monospace; font-size: 9.5px; font-weight: 700;
+        white-space: nowrap; flex-shrink: 0; opacity: 0; transition: opacity 0.2s;
+      }
+      .coll-rtn:not(:empty) { opacity: 1; }
+      .coll-rtn.up { color: #4ade80; }
+      .coll-rtn.dn { color: #f87171; }
+      body.privacy-mode #tab-portfolio .fund-div-rtn,
+      body.privacy-mode #tab-portfolio .coll-rtn { opacity: 0 !important; }
       /* ── PRIVACY MODE + THEME BUTTON ── */
       .hero-actions {
         display: flex;
@@ -2521,7 +2536,10 @@
         <!-- Division row: Liquid Funds -->
         <div class="fund-division fund-div-liq">
           <span class="fund-div-title">Liquid Funds</span>
-          <span class="fund-div-total" id="liqDivTotal">—</span>
+          <span class="fund-div-right">
+            <span class="fund-div-total" id="liqDivTotal">—</span>
+            <span class="fund-div-rtn" id="liqDivRtn"></span>
+          </span>
         </div>
         <div id="liqFundsList"></div>
         <div class="add-fund-row">
@@ -2531,7 +2549,10 @@
         <!-- Division row: Equity Funds -->
         <div class="fund-division fund-div-eq">
           <span class="fund-div-title">Equity Funds</span>
-          <span class="fund-div-total" id="eqDivTotal">—</span>
+          <span class="fund-div-right">
+            <span class="fund-div-total" id="eqDivTotal">—</span>
+            <span class="fund-div-rtn" id="eqDivRtn"></span>
+          </span>
         </div>
         <div id="eqFundsList"></div>
         <div class="add-fund-row">
@@ -3675,6 +3696,7 @@
                 <button class="coll-head" id="coll-head-${f.id}" aria-expanded="false">
                   <input class="coll-title coll-name-input" id="coll-name-${f.id}" value="${lbl}" ${editMode ? "" : "readonly"} />
                   <span class="coll-meta" id="coll-val-${f.id}"></span>
+                  <span class="coll-rtn" id="coll-rtn-${f.id}"></span>
                   <span class="coll-chevron">▾</span>
                 </button>
                 <div class="coll-body" id="coll-body-${f.id}">
@@ -3694,6 +3716,7 @@
                 <button class="coll-head" id="coll-head-${f.id}" aria-expanded="false">
                   <input class="coll-title coll-name-input" id="coll-name-${f.id}" value="${lbl}" ${editMode ? "" : "readonly"} />
                   <span class="coll-meta" id="coll-val-${f.id}"></span>
+                  <span class="coll-rtn" id="coll-rtn-${f.id}"></span>
                   <span class="coll-chevron">▾</span>
                 </button>
                 <div class="coll-body" id="coll-body-${f.id}">
@@ -4235,7 +4258,9 @@
             let totalLiqVal = 0,
               totalDep = 0,
               totalLiqTgt = 0,
-              totalLiqInv = 0;
+              totalLiqInv = 0,
+              totalLiqAE = 0,
+              totalLiqRet = 0;
             LIQ_FUNDS.forEach((f) => {
               const paid = state.liquid[f.id].paid || 0;
               const val = state.liquid[f.id].value || 0;
@@ -4285,7 +4310,18 @@
                   const pct   = (Math.abs(lret) / val * 100).toFixed(2);
                   lrtnEl.className = `rtn-display ${isUp ? "rtn-up" : "rtn-dn"}`;
                   lrtnEl.innerHTML = `<span class="rtn-arrow">${arrow}</span><span class="rtn-amt">₹${amt}</span><span class="rtn-pct">(${sign}${pct}%)</span>`;
+                  totalLiqAE += val; totalLiqRet += lret;
                 }
+              }
+              /* Per-fund collapsible header badge */
+              const lcollRtn = el("coll-rtn-" + f.id);
+              if (lcollRtn) {
+                if (lcv > 0 && val > 0) {
+                  const isUp = lret >= 0;
+                  const pct  = (Math.abs(lret) / val * 100).toFixed(2);
+                  lcollRtn.textContent = (isUp ? "↑" : "↓") + " " + (isUp ? "+" : "−") + pct + "%";
+                  lcollRtn.className = "coll-rtn " + (isUp ? "up" : "dn");
+                } else { lcollRtn.textContent = ""; lcollRtn.className = "coll-rtn"; }
               }
             });
 
@@ -4301,6 +4337,15 @@
 
             /* — Liquid division row + per-fund collapsible headers — */
             el("liqDivTotal").innerHTML = fmtInner(totalLiqVal, "—");
+            const liqDivRtnEl = el("liqDivRtn");
+            if (liqDivRtnEl) {
+              if (totalLiqAE > 0) {
+                const isUp = totalLiqRet >= 0;
+                const pct  = (Math.abs(totalLiqRet) / totalLiqAE * 100).toFixed(2);
+                liqDivRtnEl.textContent = (isUp ? "↑" : "↓") + " " + (isUp ? "+" : "−") + pct + "%";
+                liqDivRtnEl.className = "fund-div-rtn " + (isUp ? "up" : "dn");
+              } else { liqDivRtnEl.textContent = ""; liqDivRtnEl.className = "fund-div-rtn"; }
+            }
             LIQ_FUNDS.forEach(f => {
               const nameEl = el("coll-name-" + f.id);
               const valEl = el("coll-val-" + f.id);
@@ -4313,7 +4358,9 @@
               eqTgt = 0,
               eqInv = 0,
               totDuty = 0,
-              totalSip = 0;
+              totalSip = 0,
+              totalEqAE = 0,
+              totalEqRet = 0;
 
             EQ_FUNDS.forEach((f) => {
               const s = state.equity[f.id];
@@ -4364,7 +4411,18 @@
                   const pct   = (Math.abs(eret) / shown * 100).toFixed(2);
                   ertnEl.className = `rtn-display ${isUp ? "rtn-up" : "rtn-dn"}`;
                   ertnEl.innerHTML = `<span class="rtn-arrow">${arrow}</span><span class="rtn-amt">₹${amt}</span><span class="rtn-pct">(${sign}${pct}%)</span>`;
+                  totalEqAE += shown; totalEqRet += eret;
                 }
+              }
+              /* Per-fund collapsible header badge */
+              const ecollRtn = el("coll-rtn-" + f.id);
+              if (ecollRtn) {
+                if (ecv > 0 && shown > 0) {
+                  const isUp = eret >= 0;
+                  const pct  = (Math.abs(eret) / shown * 100).toFixed(2);
+                  ecollRtn.textContent = (isUp ? "↑" : "↓") + " " + (isUp ? "+" : "−") + pct + "%";
+                  ecollRtn.className = "coll-rtn " + (isUp ? "up" : "dn");
+                } else { ecollRtn.textContent = ""; ecollRtn.className = "coll-rtn"; }
               }
 
               eqCur += cur;
@@ -4382,6 +4440,15 @@
 
             /* — Equity division row + per-fund collapsible headers — */
             el("eqDivTotal").innerHTML = fmtInner(eqCur, "—");
+            const eqDivRtnEl = el("eqDivRtn");
+            if (eqDivRtnEl) {
+              if (totalEqAE > 0) {
+                const isUp = totalEqRet >= 0;
+                const pct  = (Math.abs(totalEqRet) / totalEqAE * 100).toFixed(2);
+                eqDivRtnEl.textContent = (isUp ? "↑" : "↓") + " " + (isUp ? "+" : "−") + pct + "%";
+                eqDivRtnEl.className = "fund-div-rtn " + (isUp ? "up" : "dn");
+              } else { eqDivRtnEl.textContent = ""; eqDivRtnEl.className = "fund-div-rtn"; }
+            }
             EQ_FUNDS.forEach(f => {
               const s = state.equity[f.id];
               const nameEl = el("coll-name-" + f.id);
