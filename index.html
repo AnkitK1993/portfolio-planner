@@ -5642,21 +5642,41 @@
               }
             }
             if (rebalEl && totCur > 0) {
-              if (totTgt > 0 && drift > 1) {
-                const desiredEq = totCur * tgtEqPct / 100;
-                const desiredLiq = totCur - desiredEq;
-                const needEq  = Math.max(0, Math.round(desiredEq  - eqCur));
-                const needLiq = Math.max(0, Math.round(desiredLiq - liqCur));
+              // Deployable = liquid value minus each fund's reserve
+              const deployable = LIQ_FUNDS.reduce((s, f) => {
+                const ls = state.liquid[f.id];
+                return s + Math.max(0, (ls.value || 0) - (ls.reserve || 0));
+              }, 0);
+
+              const afterEq    = eqCur + deployable;
+              const afterLiq   = liqCur - deployable;
+              const afterEqPct = totCur > 0 ? (afterEq / totCur) * 100 : 0;
+              const afterLiqPct = 100 - afterEqPct;
+
+              if (deployable > 0) {
                 rebalEl.innerHTML = `
-                  <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--dim);margin-bottom:8px">Rebalancing Suggestion</div>
-                  ${needEq  > 0 ? `<div style="font-size:12px;margin-bottom:4px">Invest <span style="color:var(--mint);font-weight:700">${fmt(needEq)}</span> in equity</div>` : ""}
-                  ${needLiq > 0 ? `<div style="font-size:12px;margin-bottom:4px">Invest <span style="color:var(--liq);font-weight:700">${fmt(needLiq)}</span> in liquid</div>` : ""}
-                  ${needEq === 0 && needLiq === 0 ? `<div style="font-size:12px;color:var(--mint)">✓ Portfolio is balanced</div>` : ""}
-                  <div style="font-size:10px;color:var(--dim);margin-top:6px">Based on current total ${fmt(totCur)} and target split ${Math.round(tgtEqPct)}% eq / ${Math.round(100 - tgtEqPct)}% liq</div>`;
-              } else if (totTgt === 0) {
-                rebalEl.innerHTML = `<div style="font-size:11px;color:var(--dim)">Set fund targets to see rebalancing suggestions.</div>`;
+                  <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--dim);margin-bottom:10px">Rebalancing Suggestion</div>
+                  <div style="font-size:13px;margin-bottom:6px">
+                    Move <span style="color:var(--liq);font-weight:700;font-family:'Space Mono',monospace">${fmt(Math.round(deployable))}</span>
+                    from liquid to equity
+                  </div>
+                  <div style="font-size:10px;color:var(--dim);margin-bottom:10px">All un-reserved liquid balance deployed into equity</div>
+                  <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--dim);margin-bottom:6px">After rebalancing</div>
+                  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                    <div style="background:rgba(0,245,160,0.08);border:1px solid rgba(0,245,160,0.2);border-radius:8px;padding:6px 12px;min-width:80px;">
+                      <div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px">Equity</div>
+                      <div style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--mint)">${fmt(Math.round(afterEq))}</div>
+                      <div style="font-size:10px;color:var(--mint);margin-top:2px">${afterEqPct.toFixed(1)}%</div>
+                    </div>
+                    <div style="background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.2);border-radius:8px;padding:6px 12px;min-width:80px;">
+                      <div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px">Liquid</div>
+                      <div style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--liq)">${fmt(Math.round(afterLiq))}</div>
+                      <div style="font-size:10px;color:var(--liq);margin-top:2px">${afterLiqPct.toFixed(1)}%</div>
+                    </div>
+                  </div>
+                  <div style="font-size:9px;color:var(--dim);margin-top:8px">Reserved liquid (${fmt(Math.round(afterLiq))}) stays untouched</div>`;
               } else {
-                rebalEl.innerHTML = `<div style="font-size:12px;color:var(--mint)">✓ Portfolio is balanced (drift &lt; 1%)</div>`;
+                rebalEl.innerHTML = `<div style="font-size:12px;color:var(--mint)">✓ No deployable liquid — all liquid is reserved</div>`;
               }
             }
 
