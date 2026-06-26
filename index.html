@@ -5260,21 +5260,59 @@
             UI.toast("success", editId ? "Updated" : "Scheduled", 1800);
           }
 
-          function doneCalNote(id) {
+          function noteFundIds(note) {
+            return (note.funds || (note.fundId ? [{ fundId: note.fundId }] : []))
+              .map(f => f.fundId);
+          }
+
+          function recalcFundTarget(fundId) {
+            const today = new Date().toISOString().split("T")[0];
+            const isLiq  = LIQ_FUNDS.some(f => f.id === fundId);
+            const s      = isLiq ? state.liquid[fundId] : state.equity[fundId];
+            const afterExp = isLiq ? (s.value || 0) : (s.shown || 0);
+
+            // Next upcoming calendar note for this fund (earliest date >= today)
+            const upcoming = (state.calendarNotes || [])
+              .filter(n => {
+                if (n.date < today) return false;
+                const fds = n.funds || (n.fundId ? [{ fundId: n.fundId, amount: n.amount }] : []);
+                return fds.some(f => f.fundId === fundId);
+              })
+              .sort((a, b) => a.date.localeCompare(b.date));
+
+            if (upcoming.length > 0) {
+              const fds = upcoming[0].funds || [{ fundId: upcoming[0].fundId, amount: upcoming[0].amount }];
+              const entry = fds.find(f => f.fundId === fundId);
+              if (entry) { s.target = entry.amount + afterExp; return; }
+            }
+
+            // Fall back to monthly SIP amount
+            const sipAmt = s.sipAmt || 0;
+            if (sipAmt > 0) { s.target = sipAmt + afterExp; return; }
+
+            // Nothing left — leave target as-is
+          }
+
+          function removeCalNote(id, successMsg) {
+            const note = (state.calendarNotes || []).find(n => n.id === id);
+            const affected = note ? noteFundIds(note) : [];
             state.calendarNotes = (state.calendarNotes || []).filter(n => n.id !== id);
+            affected.forEach(recalcFundTarget);
             saveState();
+            syncInputsFromState();
+            scheduleRender();
             renderCalendar();
             if (calDayDate) refreshCalDayBody(calDayDate);
-            UI.toast("success", "Marked done", 1800);
+            UI.toast("success", successMsg, 1800);
+          }
+
+          function doneCalNote(id) {
+            removeCalNote(id, "Marked done");
           }
 
           function deleteCalNote(id) {
             UI.confirm("This scheduled transaction will be removed.", "Delete?", "Delete", () => {
-              state.calendarNotes = (state.calendarNotes || []).filter(n => n.id !== id);
-              saveState();
-              renderCalendar();
-              if (calDayDate) refreshCalDayBody(calDayDate);
-              UI.toast("success", "Deleted", 1800);
+              removeCalNote(id, "Deleted");
             });
           }
 
