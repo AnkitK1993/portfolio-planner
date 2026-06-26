@@ -3325,27 +3325,27 @@
             LIQ_FUNDS.forEach((f) => {
               const s = state.liquid[f.id];
               el("lname-" + f.id).value = s.name || "";
-              el("lpaid-" + f.id).value = s.paid || "";
-              el("lval-" + f.id).value = s.value || "";
-              el("lres-" + f.id).value = s.reserve || "";
-              el("ltgt-" + f.id).value = s.target || "";
+              el("lpaid-" + f.id).value = fmtNum(s.paid);
+              el("lval-" + f.id).value = fmtNum(s.value);
+              el("lres-" + f.id).value = fmtNum(s.reserve);
+              el("ltgt-" + f.id).value = fmtNum(s.target);
               const hdr = el("coll-name-" + f.id);
               if (hdr) hdr.value = s.label || f.defaultName;
             });
             EQ_FUNDS.forEach((f) => {
               const s = state.equity[f.id];
               el("ename-" + f.id).value = s.name || "";
-              el("epaid-" + f.id).value = s.paid || "";
-              el("eshown-" + f.id).value = s.shown || "";
-              el("etgt-" + f.id).value = s.target || "";
-              el("esip-" + f.id).value = s.sipAmt || "";
+              el("epaid-" + f.id).value = fmtNum(s.paid);
+              el("eshown-" + f.id).value = fmtNum(s.shown);
+              el("etgt-" + f.id).value = fmtNum(s.target);
+              el("esip-" + f.id).value = fmtNum(s.sipAmt);
               el("esipdate-" + f.id).value = s.sipDate || "";
               const hdr = el("coll-name-" + f.id);
               if (hdr) hdr.value = s.label || f.defaultName;
             });
             NW_FIELDS.forEach((f) => {
               const inp = el("nw-" + f.id);
-              if (inp) inp.value = state.networth[f.id] || "";
+              if (inp) inp.value = fmtNum(state.networth[f.id]);
             });
           }
 
@@ -3360,7 +3360,8 @@
             const num = Math.max(0, Math.round(n)).toLocaleString("en-IN");
             return `<span class="val-pfx">₹</span><span class="val-num">${num}</span>`;
           };
-          const num = (v) => Number(v) || 0;
+          const num = (v) => Number(String(v || "").replace(/,/g, "")) || 0;
+          const fmtNum = (v) => (v > 0 ? Math.round(v).toLocaleString("en-IN") : "");
           const pct = (a, b) => (b > 0 ? (a / b) * 100 : 0);
           function setStatReturn(elId, curVal, invested) {
             const statEl = el(elId);
@@ -3483,13 +3484,13 @@
                 <div class="field">
                   <label class="flabel" for="lpaid-${f.id}">Invested <span class="txn-lock">via transactions</span></label>
                   <div class="ibox"><span class="pfx">&#8377;</span>
-                    <input class="num liq txn-driven" id="lpaid-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.paid || ""}" readonly />
+                    <input class="num liq txn-driven" id="lpaid-${f.id}" type="text" placeholder="0" inputmode="numeric" value="${fmtNum(s.paid)}" readonly />
                   </div>
                 </div>
                 <div class="field">
                   <label class="flabel" for="lval-${f.id}">After expense</label>
                   <div class="ibox"><span class="pfx">&#8377;</span>
-                    <input class="num liq" id="lval-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.value || ""}" />
+                    <input class="num liq" id="lval-${f.id}" type="text" placeholder="0" inputmode="numeric" value="${fmtNum(s.value)}" />
                   </div>
                 </div>
               </div>
@@ -3512,13 +3513,13 @@
                 <div class="field">
                   <label class="flabel" for="ltgt-${f.id}">Target total</label>
                   <div class="ibox"><span class="pfx">&#8377;</span>
-                    <input class="num liq" id="ltgt-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.target || ""}" />
+                    <input class="num liq" id="ltgt-${f.id}" type="text" placeholder="0" inputmode="numeric" value="${fmtNum(s.target)}" />
                   </div>
                 </div>
                 <div class="field">
                   <label class="flabel" for="lres-${f.id}">Untouchable reserve</label>
                   <div class="ibox"><span class="pfx">&#8377;</span>
-                    <input class="num liq" id="lres-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.reserve || ""}" />
+                    <input class="num liq" id="lres-${f.id}" type="text" placeholder="0" inputmode="numeric" value="${fmtNum(s.reserve)}" />
                   </div>
                 </div>
               </div>
@@ -3541,13 +3542,13 @@
                 <div class="field">
                   <label class="flabel" for="epaid-${f.id}">Invested <span class="txn-lock">via transactions</span></label>
                   <div class="ibox"><span class="pfx">&#8377;</span>
-                    <input class="num txn-driven" id="epaid-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.paid || ""}" readonly />
+                    <input class="num txn-driven" id="epaid-${f.id}" type="text" placeholder="0" inputmode="numeric" value="${fmtNum(s.paid)}" readonly />
                   </div>
                 </div>
                 <div class="field">
                   <label class="flabel" for="eshown-${f.id}">After expense</label>
                   <div class="ibox"><span class="pfx">&#8377;</span>
-                    <input class="num" id="eshown-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.shown || ""}" />
+                    <input class="num" id="eshown-${f.id}" type="text" placeholder="0" inputmode="numeric" value="${fmtNum(s.shown)}" />
                   </div>
                 </div>
               </div>
@@ -3569,7 +3570,7 @@
               <div class="field">
                 <label class="flabel" for="etgt-${f.id}">Target total</label>
                 <div class="ibox"><span class="pfx">&#8377;</span>
-                  <input class="num" id="etgt-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.target || ""}" />
+                  <input class="num" id="etgt-${f.id}" type="text" placeholder="0" inputmode="numeric" value="${fmtNum(s.target)}" />
                 </div>
               </div>
               <div class="chip mint"><span id="einvlbl-${f.id}">Invest now</span><b id="einv-${f.id}">&#8377;0</b></div>
@@ -3578,7 +3579,7 @@
                 <div class="field">
                   <label class="flabel" for="esip-${f.id}">Monthly SIP</label>
                   <div class="ibox"><span class="pfx">&#8377;</span>
-                    <input class="num" id="esip-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.sipAmt || ""}" />
+                    <input class="num" id="esip-${f.id}" type="text" placeholder="0" inputmode="numeric" value="${fmtNum(s.sipAmt)}" />
                   </div>
                 </div>
                 <div class="field date-field">
@@ -3629,6 +3630,17 @@
               el("etgt-"     + f.id)?.addEventListener("input", e => { state.equity[f.id].target = num(e.target.value); scheduleRender(); });
               el("esip-"     + f.id)?.addEventListener("input", e => { state.equity[f.id].sipAmt = num(e.target.value); scheduleRender(); });
               el("esipdate-" + f.id)?.addEventListener("input", e => { state.equity[f.id].sipDate = num(e.target.value) || 5; scheduleRender(); });
+            });
+            /* Format with commas on blur, strip on focus for editable money fields */
+            const moneyIds = [
+              ...LIQ_FUNDS.flatMap(f => ["lval-"+f.id, "lres-"+f.id, "ltgt-"+f.id]),
+              ...EQ_FUNDS.flatMap(f => ["eshown-"+f.id, "etgt-"+f.id, "esip-"+f.id]),
+            ];
+            moneyIds.forEach(id => {
+              const inp = el(id);
+              if (!inp) return;
+              inp.addEventListener("focus", () => { const v = num(inp.value); inp.value = v > 0 ? v : ""; });
+              inp.addEventListener("blur",  () => { inp.value = fmtNum(num(inp.value)); });
             });
           }
 
@@ -3869,14 +3881,14 @@
               if (invested[f.id] !== undefined) {
                 state.liquid[f.id].paid = invested[f.id];
                 const inp = document.getElementById("lpaid-" + f.id);
-                if (inp) inp.value = invested[f.id] || "";
+                if (inp) inp.value = fmtNum(invested[f.id]);
               }
             });
             EQ_FUNDS.forEach(f => {
               if (invested[f.id] !== undefined) {
                 state.equity[f.id].paid = invested[f.id];
                 const inp = document.getElementById("epaid-" + f.id);
-                if (inp) inp.value = invested[f.id] || "";
+                if (inp) inp.value = fmtNum(invested[f.id]);
               }
             });
           }
@@ -4582,8 +4594,8 @@
               <div class="field" style="margin-bottom:0;">
                 <label class="flabel" for="nw-${f.id}">${f.label}${f.id === "mfProfit" ? ' <span style="color:var(--dim);font-size:8px;text-transform:none;letter-spacing:0;">(auto-calculated)</span>' : ""}</label>
                 <div class="ibox"><span class="pfx">&#8377;</span>
-                  <input class="num" id="nw-${f.id}" type="number" min="0" placeholder="0"
-                    inputmode="numeric" value="${state.networth[f.id] || ""}"
+                  <input class="num" id="nw-${f.id}" type="text" placeholder="0"
+                    inputmode="numeric" value="${fmtNum(state.networth[f.id])}"
                     ${f.id === "mfProfit" ? "readonly style=\"opacity:0.6;cursor:default;\"" : ""} />
                 </div>
               </div>`,
@@ -4591,10 +4603,14 @@
 
             NW_FIELDS.forEach((f) => {
               if (f.id === "mfProfit") return;
-              el("nw-" + f.id)?.addEventListener("input", (e) => {
+              const inp = el("nw-" + f.id);
+              if (!inp) return;
+              inp.addEventListener("input", (e) => {
                 state.networth[f.id] = num(e.target.value);
                 renderNetWorth();
               });
+              inp.addEventListener("focus", () => { const v = num(inp.value); inp.value = v > 0 ? v : ""; });
+              inp.addEventListener("blur",  () => { inp.value = fmtNum(num(inp.value)); });
             });
           }
 
@@ -4616,7 +4632,7 @@
             })();
             state.networth.mfProfit = profit;
             const inp = el("nw-mfProfit");
-            if (inp) inp.value = profit !== 0 ? Math.round(profit) : "";
+            if (inp) inp.value = profit !== 0 ? Math.round(profit).toLocaleString("en-IN") : "";
             const other = NW_FIELDS.filter((f) => f.id !== "mfProfit").reduce(
               (s, f) => s + (state.networth[f.id] || 0),
               0,
