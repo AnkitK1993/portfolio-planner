@@ -3001,6 +3001,24 @@
           </div>
         </div>
 
+        <!-- Portfolio XIRR -->
+        <div class="card" style="margin-bottom:12px" id="sumXirrCard" style="display:none">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+            <div>
+              <div class="sec-head" style="margin-bottom:4px">Portfolio XIRR</div>
+              <div style="font-size:10px;color:var(--dim)">Annualised return on all investments</div>
+            </div>
+            <div id="sumXirr" style="font-family:'Space Mono',monospace;font-size:22px;font-weight:700;"></div>
+          </div>
+          <div id="sumFundXirrs" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap;"></div>
+        </div>
+
+        <!-- Returns heatmap -->
+        <div class="card" id="sumHeatmapCard" style="display:none;margin-bottom:12px">
+          <div class="sec-head" style="margin-bottom:10px">Monthly Net Worth Change</div>
+          <div id="sumHeatmap" style="overflow-x:auto;"></div>
+        </div>
+
         <!-- Surplus calculator -->
         <div class="card" style="margin-bottom:12px">
           <div class="sec-head" style="margin-bottom:12px">Surplus Calculator</div>
@@ -4132,6 +4150,7 @@
               <div class="chip liq"><span id="linvlbl-${f.id}">Invest now</span><b id="linv-${f.id}">&#8377;0</b></div>
               <div class="pbar-row"><span>Reserved</span><span id="lrespct-${f.id}">0%</span></div>
               <div class="pbar"><div class="fill liq" id="ldepfill-${f.id}" style="width:0%"></div></div>
+              <div id="spark-${f.id}" style="margin-top:8px;"></div>
             </div>`;
           }
 
@@ -4194,6 +4213,7 @@
               <div class="chip amber" id="estpchip-${f.id}" style="display:none;margin-top:8px">
                 <span>Monthly STP</span><b id="estp-${f.id}">&#8377;0</b>
               </div>
+              <div id="spark-${f.id}" style="margin-top:8px;"></div>
             </div>`;
           }
 
@@ -5426,6 +5446,7 @@
             el("totDuty").textContent = fmt(totDuty);
 
             renderSummaryExtras(eqCur, liqCur, totCur, eqTgt, liqTgt, totTgt, nowEqPct, tgtEqPct);
+            renderSparklines();
             renderNetWorth();
             renderUpcoming();
             renderHoldings();
@@ -5551,6 +5572,8 @@
 
             /* — Surplus calculator — */
             renderSurplus();
+            /* — XIRR + heatmap — */
+            renderXirrAndHeatmap();
           }
 
           function renderSurplus() {
@@ -5585,6 +5608,154 @@
                   <div style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--liq)">${fmt(surplusLiq)}</div>
                 </div>
               </div>` : surplus < 0 ? `<div style="font-size:11px;color:var(--coral)">Expenses exceed income by ${fmt(Math.abs(surplus))}/month.</div>` : ""}`;
+          }
+
+          /* ════════════════════════════════════════════
+             SPARKLINES
+          ════════════════════════════════════════════ */
+          function renderSparklines() {
+            const now = new Date();
+            const months = [];
+            for (let i = 11; i >= 0; i--) {
+              const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+              months.push(d.toISOString().slice(0, 7));
+            }
+            const allFunds = [...LIQ_FUNDS.map(f => ({ ...f, isLiq: true })), ...EQ_FUNDS.map(f => ({ ...f, isLiq: false }))];
+            allFunds.forEach(({ id, isLiq }) => {
+              const sparkEl = el("spark-" + id);
+              if (!sparkEl) return;
+              const txns = (state.transactions || []).filter(t => t.fundId === id && t.date);
+              if (!txns.length) { sparkEl.innerHTML = ""; return; }
+
+              const byMonth = {};
+              months.forEach(m => { byMonth[m] = 0; });
+              txns.forEach(t => {
+                const mo = t.date.slice(0, 7);
+                if (byMonth[mo] !== undefined) byMonth[mo] += Number(t.invested) || 0;
+              });
+
+              const vals = months.map(m => byMonth[m]);
+              const maxV = Math.max(...vals, 1);
+              const hasData = vals.some(v => v > 0);
+              if (!hasData) { sparkEl.innerHTML = ""; return; }
+
+              const W = 200, H = 28, bw = Math.max(3, (W / months.length) - 2);
+              const bars = vals.map((v, i) => {
+                const bh = Math.max(0, (v / maxV) * (H - 4));
+                const x = i * (W / months.length) + (W / months.length - bw) / 2;
+                const y = H - bh;
+                const color = isLiq ? "var(--liq)" : "var(--mint)";
+                return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw}" height="${bh.toFixed(1)}" rx="1.5" fill="${color}" opacity="${v > 0 ? "0.8" : "0.15"}"/>`;
+              }).join("");
+
+              sparkEl.innerHTML = `<div style="font-size:8px;color:var(--dim);margin-bottom:3px">Last 12 months</div>
+                <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;">${bars}</svg>`;
+            });
+          }
+
+          /* ════════════════════════════════════════════
+             XIRR + HEATMAP
+          ════════════════════════════════════════════ */
+          function xirrCalc(cashflows) {
+            if (!cashflows || cashflows.length < 2) return null;
+            const hasPos = cashflows.some(c => c.amount > 0);
+            const hasNeg = cashflows.some(c => c.amount < 0);
+            if (!hasPos || !hasNeg) return null;
+            const t0 = Math.min(...cashflows.map(c => c.date));
+            const yrs = cashflows.map(c => (c.date - t0) / (365.25 * 24 * 3600 * 1000));
+
+            const f = r => cashflows.reduce((s, c, i) => s + c.amount / Math.pow(1 + r, yrs[i]), 0);
+            const df = r => cashflows.reduce((s, c, i) => s - c.amount * yrs[i] / Math.pow(1 + r, yrs[i] + 1), 0);
+
+            let r = 0.1;
+            for (let i = 0; i < 100; i++) {
+              const dv = df(r);
+              if (Math.abs(dv) < 1e-10) break;
+              const nr = r - f(r) / dv;
+              if (!isFinite(nr) || Math.abs(nr) > 100) return null;
+              if (Math.abs(nr - r) < 1e-7) return nr;
+              r = nr;
+            }
+            return Math.abs(r) < 100 ? r : null;
+          }
+
+          function fundXirr(fid, isLiq) {
+            const s = isLiq ? state.liquid[fid] : state.equity[fid];
+            const curVal = isLiq ? (s.value || 0) : (s.shown || 0);
+            if (!curVal) return null;
+            const txns = (state.transactions || []).filter(t => t.fundId === fid && t.date && Number(t.invested) > 0);
+            if (!txns.length) return null;
+            const cfs = txns.map(t => ({ amount: -Number(t.invested), date: new Date(t.date).getTime() }));
+            cfs.push({ amount: curVal, date: Date.now() });
+            return xirrCalc(cfs);
+          }
+
+          function renderXirrAndHeatmap() {
+            // Portfolio XIRR
+            const xirrCard = el("sumXirrCard");
+            const xirrEl = el("sumXirr");
+            const fundXirrsEl = el("sumFundXirrs");
+            if (xirrCard && xirrEl) {
+              const allTxns = (state.transactions || []).filter(t => t.date && Number(t.invested) > 0);
+              const totalVal = LIQ_FUNDS.reduce((s, f) => s + (state.liquid[f.id]?.value || 0), 0) +
+                               EQ_FUNDS.reduce((s, f) => s + (state.equity[f.id]?.shown || 0), 0);
+              let portfolioXirr = null;
+              if (allTxns.length && totalVal > 0) {
+                const cfs = allTxns.map(t => ({ amount: -Number(t.invested), date: new Date(t.date).getTime() }));
+                cfs.push({ amount: totalVal, date: Date.now() });
+                portfolioXirr = xirrCalc(cfs);
+              }
+              if (portfolioXirr !== null) {
+                xirrCard.style.display = "";
+                const pct = (portfolioXirr * 100).toFixed(2);
+                const isUp = portfolioXirr >= 0;
+                xirrEl.textContent = (isUp ? "+" : "") + pct + "%";
+                xirrEl.style.color = isUp ? "var(--mint)" : "var(--coral)";
+
+                // Per-fund XIRR chips
+                if (fundXirrsEl) {
+                  const chips = [...LIQ_FUNDS.map(f => ({ f, isLiq: true })), ...EQ_FUNDS.map(f => ({ f, isLiq: false }))]
+                    .map(({ f, isLiq }) => {
+                      const x = fundXirr(f.id, isLiq);
+                      if (x === null) return "";
+                      const p = (x * 100).toFixed(1);
+                      const up = x >= 0;
+                      return `<div style="background:var(--panel-2);border-radius:8px;padding:5px 10px;font-size:10px;">
+                        <div style="color:var(--dim);margin-bottom:2px">${fundName(f.id)}</div>
+                        <div style="font-family:'Space Mono',monospace;font-weight:700;color:${up ? "var(--mint)" : "var(--coral)"}">${up ? "+" : ""}${p}%</div>
+                      </div>`;
+                    }).join("");
+                  fundXirrsEl.innerHTML = chips || `<span style="font-size:11px;color:var(--dim)">Add transactions to see per-fund XIRR.</span>`;
+                }
+              } else {
+                xirrCard.style.display = "none";
+              }
+            }
+
+            // Returns heatmap using networth snapshots
+            const hmCard = el("sumHeatmapCard");
+            const hmEl = el("sumHeatmap");
+            if (hmCard && hmEl) {
+              const snaps = state.networth.snapshots || {};
+              const sorted = Object.entries(snaps).map(([k, v]) => ({ key: k, ...v })).sort((a, b) => a.key.localeCompare(b.key));
+              if (sorted.length < 2) { hmCard.style.display = "none"; }
+              else {
+                hmCard.style.display = "";
+                const rows = sorted.slice(-12).map((s, i, arr) => {
+                  const prev = arr[i - 1];
+                  const delta = prev ? s.total - prev.total : null;
+                  const pct = prev && prev.total > 0 ? ((s.total - prev.total) / prev.total * 100) : null;
+                  const color = delta === null ? "transparent" : delta >= 0 ? `rgba(0,245,160,${Math.min(0.7, Math.abs(pct || 0) / 10)})` : `rgba(248,113,113,${Math.min(0.7, Math.abs(pct || 0) / 10)})`;
+                  const lbl = new Date(s.key + "-01T00:00:00").toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
+                  return `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:3px;min-width:48px;padding:6px 4px;background:${color};border-radius:6px;border:1px solid var(--line);">
+                    <div style="font-size:8px;color:var(--dim);font-family:'Space Mono',monospace;">${lbl}</div>
+                    <div style="font-size:10px;font-weight:700;color:${delta === null ? "var(--dim)" : delta >= 0 ? "var(--mint)" : "var(--coral)"};">${delta !== null ? (delta >= 0 ? "+" : "−") + fmt(Math.abs(delta)) : "—"}</div>
+                    <div style="font-size:8px;color:var(--dim);">${pct !== null ? (pct >= 0 ? "+" : "") + pct.toFixed(1) + "%" : ""}</div>
+                  </div>`;
+                }).join("");
+                hmEl.innerHTML = `<div style="display:flex;gap:6px;flex-wrap:wrap;">${rows}</div>`;
+              }
+            }
           }
 
           /* ════════════════════════════════════════════
