@@ -3155,6 +3155,8 @@
                 snapshots: { ...(raw.networth?.snapshots || {}) },
               },
               forecast: { ...def.forecast, ...(raw.forecast || {}) },
+              transactions: Array.isArray(raw.transactions) ? raw.transactions : [],
+              returnsLog: Array.isArray(raw.returnsLog) ? raw.returnsLog : [],
               _meta: { ...def._meta, ...(raw._meta || {}), syncedAt: new Date().toISOString() },
             };
             localStorage.setItem(STORE_KEY, JSON.stringify(state));
