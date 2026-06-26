@@ -2525,7 +2525,7 @@
       .cal-month-label { flex: 1; text-align: center; font-family: "Outfit", sans-serif; font-weight: 700; font-size: 14px; color: var(--txt); letter-spacing: 0.3px; }
       .cal-nav { background: none; border: 1px solid var(--line); color: var(--txt); border-radius: 8px; width: 30px; height: 30px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
       .cal-nav:hover { border-color: var(--mint); color: var(--mint); }
-      .cal-add-btn { font-size: 11px; padding: 5px 10px; border-radius: 8px; flex-shrink: 0; }
+      .cal-month-invested { font-family: "Space Mono", monospace; font-size: 11px; font-weight: 700; color: #4ade80; flex-shrink: 0; white-space: nowrap; }
       .cal-weekdays { display: grid; grid-template-columns: repeat(7,1fr); margin-bottom: 4px; }
       .cal-weekdays span { text-align: center; font-family: "Outfit", sans-serif; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--dim); padding: 4px 0; }
       .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; }
@@ -2540,6 +2540,7 @@
       .cal-dot.green  { background: #4ade80; }
       .cal-dot.orange { background: #fb923c; }
       .cal-dot.red    { background: #f87171; }
+      .cal-dot.sip    { background: #38bdf8; }
       /* Day detail modal */
       .calday-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
       .calday-row:last-child { border-bottom: none; }
@@ -2555,6 +2556,20 @@
       .calday-badge.green-b  { color: #4ade80; background: rgba(74,222,128,0.12); border: 1px solid rgba(74,222,128,0.25); }
       .calday-badge.orange-b { color: #fb923c; background: rgba(251,146,60,0.12); border: 1px solid rgba(251,146,60,0.25); }
       .calday-badge.red-b    { color: #f87171; background: rgba(248,113,113,0.12); border: 1px solid rgba(248,113,113,0.25); }
+      .calday-badge.sip-b    { color: #38bdf8; background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.25); }
+      .calday-cyan { color: #38bdf8; }
+      /* Manage SIPs modal */
+      .sip-section-label { font-family: "Outfit", sans-serif; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--dim); padding: 10px 0 6px; }
+      .sip-fund-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+      .sip-fund-row:last-child { border-bottom: none; }
+      .sip-fund-name { flex: 1; font-family: "Outfit", sans-serif; font-size: 13px; color: var(--txt); font-weight: 500; min-width: 0; }
+      .sip-inp-wrap { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+      .sip-inp-label { font-family: "Outfit", sans-serif; font-size: 10px; color: var(--dim); white-space: nowrap; }
+      .sip-amt-box { display: flex; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+      .sip-amt-box .pfx { padding: 0 5px 0 8px; color: var(--dim); font-size: 12px; }
+      .sip-amt-inp { background: none; border: none; color: var(--txt); font-family: "Space Mono", monospace; font-size: 12px; width: 80px; padding: 6px 6px 6px 0; outline: none; }
+      .sip-date-inp { background: var(--panel); border: 1px solid var(--line); border-radius: 7px; color: var(--txt); font-family: "Space Mono", monospace; font-size: 12px; width: 44px; padding: 6px 8px; outline: none; text-align: center; }
+      .sip-date-inp:focus, .sip-amt-inp:focus { border-color: var(--mint); }
       .calday-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--line); color: var(--txt); border-radius: 6px; font-family: "Outfit", sans-serif; font-size: 10px; font-weight: 600; padding: 3px 8px; cursor: pointer; white-space: nowrap; }
       .calday-btn:hover { border-color: var(--mint); color: var(--mint); }
       .calday-btn.danger { border-color: rgba(248,113,113,0.4); color: #f87171; }
@@ -2599,6 +2614,7 @@
       <button class="nav-dd-item" id="ddTxnsBtn">Transactions</button>
       <button class="nav-dd-item" id="ddAddCurValBtn">Add Current Value</button>
       <div class="nav-dd-sep" id="ddSep2"></div>
+      <button class="nav-dd-item" id="ddManageSipsBtn">Manage SIPs</button>
       <button class="nav-dd-item" id="ddDataBtn">Data</button>
       <div class="nav-dd-sep"></div>
       <div class="nav-dd-user" id="ddUserInfo" style="display:none">
@@ -2809,7 +2825,7 @@
             <button class="cal-nav" id="calPrev">&#8249;</button>
             <span class="cal-month-label" id="calMonthLabel"></span>
             <button class="cal-nav" id="calNext">&#8250;</button>
-            <button class="btn btn-primary cal-add-btn" id="calAddNoteBtn">+ Schedule</button>
+            <span class="cal-month-invested" id="calMonthInvested"></span>
           </div>
           <div class="cal-weekdays">
             <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
@@ -3123,6 +3139,21 @@
         <div class="modal-foot">
           <button class="btn btn-ghost" id="calNoteCancelBtn">Cancel</button>
           <button class="btn btn-primary" id="calNoteSaveBtn">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ MANAGE SIPs MODAL ═══ -->
+    <div id="sipModal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <div class="modal-head">
+          <span class="modal-title">Manage SIPs</span>
+          <button class="modal-close" id="sipModalClose" aria-label="Close">✕</button>
+        </div>
+        <div class="modal-body" id="sipModalBody"></div>
+        <div class="modal-foot">
+          <button class="btn btn-ghost" id="sipModalCancelBtn">Cancel</button>
+          <button class="btn btn-primary" id="sipModalSaveBtn">Save</button>
         </div>
       </div>
     </div>
@@ -4041,6 +4072,11 @@
           el("calNoteCancelBtn").addEventListener("click", closeCalNoteModal);
           el("calNoteSaveBtn").addEventListener("click", saveCalNote);
           el("calNoteModal").addEventListener("click", e => { if (e.target === el("calNoteModal")) closeCalNoteModal(); });
+          el("ddManageSipsBtn").addEventListener("click", () => { closeNavDropdowns(); openManageSips(); });
+          el("sipModalClose").addEventListener("click", () => { el("sipModal").style.display = "none"; });
+          el("sipModalCancelBtn").addEventListener("click", () => { el("sipModal").style.display = "none"; });
+          el("sipModalSaveBtn").addEventListener("click", saveManageSips);
+          el("sipModal").addEventListener("click", e => { if (e.target === el("sipModal")) el("sipModal").style.display = "none"; });
 
           function updateAuthUI() {
             const userInfo = el("ddUserInfo");
@@ -4048,7 +4084,7 @@
             const isGuest  = !authUser;
 
             // Admin-only dropdown items — hide for guests
-            ["editToggleBtn", "ddSep1", "ddAddTxnBtn", "ddTxnsBtn", "ddAddCurValBtn", "ddSep2", "ddDataBtn"].forEach(id => {
+            ["editToggleBtn", "ddSep1", "ddAddTxnBtn", "ddTxnsBtn", "ddAddCurValBtn", "ddSep2", "ddManageSipsBtn", "ddDataBtn"].forEach(id => {
               const el2 = el(id); if (el2) el2.style.display = isGuest ? "none" : "";
             });
 
@@ -4913,36 +4949,54 @@
             const firstDay = new Date(calYear, calMonth, 1).getDay();
             const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
             const prevMonthDays = new Date(calYear, calMonth, 0).getDate();
+            const monthPrefix = `${calYear}-${String(calMonth + 1).padStart(2,"0")}`;
 
             // Build event map
             const evtMap = {};
             (state.transactions || []).forEach(t => {
-              if (!evtMap[t.date]) evtMap[t.date] = { txns: [], notes: [] };
+              if (!evtMap[t.date]) evtMap[t.date] = { txns: [], notes: [], sips: [] };
               evtMap[t.date].txns.push(t);
             });
             (state.calendarNotes || []).forEach(n => {
-              if (!evtMap[n.date]) evtMap[n.date] = { txns: [], notes: [] };
+              if (!evtMap[n.date]) evtMap[n.date] = { txns: [], notes: [], sips: [] };
               evtMap[n.date].notes.push(n);
+            });
+            // SIP recurring events for this month
+            [...LIQ_FUNDS, ...EQ_FUNDS].forEach(f => {
+              const s = LIQ_FUNDS.some(x => x.id === f.id) ? state.liquid[f.id] : state.equity[f.id];
+              const sipAmt = s.sipAmt || 0; const sipDay = parseInt(s.sipDate) || 0;
+              if (sipAmt > 0 && sipDay >= 1 && sipDay <= daysInMonth) {
+                const ds = `${monthPrefix}-${String(sipDay).padStart(2,"0")}`;
+                if (!evtMap[ds]) evtMap[ds] = { txns: [], notes: [], sips: [] };
+                evtMap[ds].sips.push({ fundId: f.id, amount: sipAmt });
+              }
             });
 
             el("calMonthLabel").textContent = new Date(calYear, calMonth, 1)
               .toLocaleString("en-IN", { month: "long", year: "numeric" });
+
+            // Monthly invested amount
+            const monthTotal = (state.transactions || [])
+              .filter(t => t.date && t.date.startsWith(monthPrefix))
+              .reduce((s, t) => s + (t.invested || 0), 0);
+            const investedEl = el("calMonthInvested");
+            if (investedEl) investedEl.textContent = monthTotal > 0 ? "₹" + Math.round(monthTotal).toLocaleString("en-IN") : "";
 
             let html = "";
             for (let i = firstDay - 1; i >= 0; i--) {
               html += `<div class="cal-day other-month"><span class="cal-dn">${prevMonthDays - i}</span></div>`;
             }
             for (let d = 1; d <= daysInMonth; d++) {
-              const ds = `${calYear}-${String(calMonth + 1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-              const evts = evtMap[ds] || { txns: [], notes: [] };
+              const ds = `${monthPrefix}-${String(d).padStart(2,"0")}`;
+              const evts = evtMap[ds] || { txns: [], notes: [], sips: [] };
               const isToday = ds === today;
               let dots = "";
               if (evts.txns.length) dots += `<span class="cal-dot green"></span>`;
               evts.notes.forEach(n => {
-                const st = noteStatus(n.date);
-                const dc = st === "future" ? "green" : st === "today" ? "orange" : "red";
+                const dc = noteStatus(n.date) === "future" ? "green" : noteStatus(n.date) === "today" ? "orange" : "red";
                 dots += `<span class="cal-dot ${dc}"></span>`;
               });
+              if (evts.sips.length) dots += `<span class="cal-dot sip"></span>`;
               html += `<div class="cal-day${isToday ? " today" : ""}" data-date="${ds}">
                 <span class="cal-dn">${d}</span>
                 <div class="cal-dots">${dots}</div>
@@ -4963,31 +5017,47 @@
           }
 
           function refreshCalDayBody(dateStr) {
-            const txns  = (state.transactions   || []).filter(t => t.date === dateStr);
-            const notes = (state.calendarNotes  || []).filter(n => n.date === dateStr);
+            const txns  = (state.transactions  || []).filter(t => t.date === dateStr);
+            const notes = (state.calendarNotes || []).filter(n => n.date === dateStr);
+            const dayOfMonth = parseInt(dateStr.split("-")[2]);
+            const sipEvts = [];
+            [...LIQ_FUNDS, ...EQ_FUNDS].forEach(f => {
+              const s = LIQ_FUNDS.some(x => x.id === f.id) ? state.liquid[f.id] : state.equity[f.id];
+              if ((s.sipAmt || 0) > 0 && parseInt(s.sipDate) === dayOfMonth) {
+                sipEvts.push({ fundId: f.id, amount: s.sipAmt });
+              }
+            });
             let html = "";
-            if (!txns.length && !notes.length) {
+            if (!txns.length && !notes.length && !sipEvts.length) {
               html = `<p style="color:var(--dim);font-size:12px;padding:8px 0">No events on this day.</p>`;
             }
             txns.forEach(t => {
-              const name = getFundName(t.fundId);
               html += `<div class="calday-row">
                 <div class="calday-info">
-                  <span class="calday-fund">${name}</span>
+                  <span class="calday-fund">${getFundName(t.fundId)}</span>
                   <span class="calday-amt calday-green">&#8377;${Math.round(t.invested).toLocaleString("en-IN")}</span>
                 </div>
                 <span class="calday-badge green-b">Invested</span>
               </div>`;
             });
-            notes.forEach(n => {
-              const st = noteStatus(n.date);
-              const amtCls  = st === "future" ? "calday-green" : st === "today" ? "calday-orange" : "calday-red";
-              const badgeCls = st === "future" ? "green-b" : st === "today" ? "orange-b" : "red-b";
-              const label    = st === "future" ? "Scheduled" : st === "today" ? "Due Today" : "Overdue";
-              const name = getFundName(n.fundId);
+            sipEvts.forEach(s => {
               html += `<div class="calday-row">
                 <div class="calday-info">
-                  <span class="calday-fund">${name}</span>
+                  <span class="calday-fund">${getFundName(s.fundId)}</span>
+                  <span class="calday-amt calday-cyan">&#8377;${Math.round(s.amount).toLocaleString("en-IN")}</span>
+                  <span class="calday-note-text">Monthly SIP</span>
+                </div>
+                <span class="calday-badge sip-b">SIP</span>
+              </div>`;
+            });
+            notes.forEach(n => {
+              const st = noteStatus(n.date);
+              const amtCls   = st === "future" ? "calday-green" : st === "today" ? "calday-orange" : "calday-red";
+              const badgeCls = st === "future" ? "green-b" : st === "today" ? "orange-b" : "red-b";
+              const label    = st === "future" ? "Scheduled" : st === "today" ? "Due Today" : "Overdue";
+              html += `<div class="calday-row">
+                <div class="calday-info">
+                  <span class="calday-fund">${getFundName(n.fundId)}</span>
                   <span class="calday-amt ${amtCls}">&#8377;${Math.round(n.amount || 0).toLocaleString("en-IN")}</span>
                   ${n.note ? `<span class="calday-note-text">${n.note}</span>` : ""}
                 </div>
@@ -5073,6 +5143,55 @@
             renderCalendar();
             if (calDayDate) refreshCalDayBody(calDayDate);
             UI.toast("success", "Deleted", 1800);
+          }
+
+          function openManageSips() {
+            const sections = [
+              { label: "Liquid Funds", funds: LIQ_FUNDS, stateKey: "liquid" },
+              { label: "Equity Funds", funds: EQ_FUNDS,  stateKey: "equity" },
+            ];
+            let html = "";
+            sections.forEach(sec => {
+              html += `<div class="sip-section-label">${sec.label}</div>`;
+              sec.funds.forEach(f => {
+                const s = state[sec.stateKey][f.id];
+                const name = s.name || s.label || f.defaultName;
+                const amt  = s.sipAmt  || 0;
+                const date = s.sipDate || "";
+                html += `<div class="sip-fund-row">
+                  <span class="sip-fund-name">${name}</span>
+                  <div class="sip-inp-wrap">
+                    <span class="sip-inp-label">₹</span>
+                    <div class="sip-amt-box">
+                      <input class="sip-amt-inp" id="siamt-${f.id}" type="text" inputmode="numeric"
+                        placeholder="0" value="${amt > 0 ? Math.round(amt).toLocaleString("en-IN") : ""}" />
+                    </div>
+                    <span class="sip-inp-label">on</span>
+                    <input class="sip-date-inp" id="sidate-${f.id}" type="number" min="1" max="28"
+                      placeholder="5" value="${date || ""}" />
+                    <span class="sip-inp-label">th</span>
+                  </div>
+                </div>`;
+              });
+            });
+            el("sipModalBody").innerHTML = html;
+            el("sipModal").style.display = "flex";
+          }
+
+          function saveManageSips() {
+            [...LIQ_FUNDS, ...EQ_FUNDS].forEach(f => {
+              const isLiq = LIQ_FUNDS.some(x => x.id === f.id);
+              const s = isLiq ? state.liquid[f.id] : state.equity[f.id];
+              const amtInp  = el("siamt-"  + f.id);
+              const dateInp = el("sidate-" + f.id);
+              if (!amtInp) return;
+              s.sipAmt  = num(amtInp.value);
+              s.sipDate = parseInt(dateInp.value) || 0;
+            });
+            saveState();
+            renderCalendar();
+            el("sipModal").style.display = "none";
+            UI.toast("success", "SIPs saved", 1800);
           }
 
           /* ════════════════════════════════════════════
