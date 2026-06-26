@@ -2934,90 +2934,43 @@
       <section class="tab-section" id="tab-summary">
         <div class="pg-head">
           <h1>Portfolio <span class="accent">Summary</span></h1>
-          <p>How much more to invest across all funds to reach your targets.</p>
+          <p>Where your money is currently allocated across all funds.</p>
         </div>
 
         <!-- Drift alert -->
         <div id="sumDriftAlert" style="display:none" class="drift-alert"></div>
 
-        <div class="card" style="margin-bottom: 12px">
-          <div class="sum-hero-label" id="heroLabel">
-            Equity funds — you must invest
-          </div>
-          <div class="sum-hero" id="heroVal">₹0</div>
-          <div class="sum-hero-sub" id="heroSub">across all equity funds</div>
+        <!-- hidden compat stubs for render() references -->
+        <span id="heroLabel" style="display:none"></span>
+        <span id="heroVal" style="display:none"></span>
+        <span id="heroSub" style="display:none"></span>
+        <span id="eqCur" style="display:none"></span>
+        <span id="eqTgt" style="display:none"></span>
+        <span id="eqInv" style="display:none"></span>
+        <span id="liqCur" style="display:none"></span>
+        <span id="liqTgt" style="display:none"></span>
+        <span id="liqInv" style="display:none"></span>
+        <span id="totCur" style="display:none"></span>
+        <span id="totTgt" style="display:none"></span>
+        <span id="totInv" style="display:none"></span>
+        <span id="curEqSeg" style="display:none"></span>
+        <span id="curLiqSeg" style="display:none"></span>
+        <span id="curSplit" style="display:none"></span>
+        <span id="tgtEqSeg" style="display:none"></span>
+        <span id="tgtLiqSeg" style="display:none"></span>
+        <span id="tgtSplit" style="display:none"></span>
+        <span id="fundedPct" style="display:none"></span>
+        <span id="fundedBar" style="display:none"></span>
+        <span id="totDuty" style="display:none"></span>
 
-          <table class="sum-table">
-            <thead>
-              <tr>
-                <th>&nbsp;</th>
-                <th>Current</th>
-                <th>Target</th>
-                <th>Invest</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr class="row-eq">
-                <td>Equity</td>
-                <td id="eqCur">₹0</td>
-                <td id="eqTgt">₹0</td>
-                <td class="inv-cell" id="eqInv">₹0</td>
-              </tr>
-              <tr class="row-liq">
-                <td>Liquid</td>
-                <td id="liqCur">₹0</td>
-                <td id="liqTgt">—</td>
-                <td id="liqInv">—</td>
-              </tr>
-              <tr class="row-tot">
-                <td>Total</td>
-                <td id="totCur">₹0</td>
-                <td id="totTgt">₹0</td>
-                <td class="inv-cell" id="totInv">₹0</td>
-              </tr>
-            </tbody>
-          </table>
-
-          <div class="alloc-block">
-            <div class="sec-head" style="font-size: 9px; margin-bottom: 10px">
-              Allocation — equity vs liquid
-            </div>
-            <div class="alloc-line">
-              <div class="alloc-cap">
-                <span>Now</span><span id="curSplit">—</span>
-              </div>
-              <div class="alloc-bar">
-                <span class="eq-seg" id="curEqSeg"></span
-                ><span class="liq-seg" id="curLiqSeg"></span>
-              </div>
-            </div>
-            <div class="alloc-line">
-              <div class="alloc-cap">
-                <span>After targets</span><span id="tgtSplit">—</span>
-              </div>
-              <div class="alloc-bar">
-                <span class="eq-seg" id="tgtEqSeg"></span
-                ><span class="liq-seg" id="tgtLiqSeg"></span>
-              </div>
-            </div>
-          </div>
-
-          <div class="stats">
-            <div class="stat">
-              <div class="sk">Equity funded</div>
-              <div class="sv" id="fundedPct">0%</div>
-              <div class="sp"><i id="fundedBar" style="width: 0%"></i></div>
-            </div>
-            <div class="stat">
-              <div class="sk">Stamp duty (total)</div>
-              <div class="sv" id="totDuty">₹0</div>
-            </div>
-          </div>
+        <!-- Total Allocation bars -->
+        <div class="card" style="margin-bottom:12px">
+          <div class="sec-head" style="margin-bottom:16px">Total Allocation</div>
+          <div id="sumAllocBarsMain"></div>
         </div>
 
-        <!-- Allocation bar + rebalance suggestion -->
+        <!-- Rebalancing suggestion -->
         <div class="card" style="margin-bottom:12px">
-          <div id="sumAllocBar" style="margin-bottom:14px;"></div>
           <div id="sumRebalance" style="font-size:12px;"></div>
         </div>
 
@@ -5588,43 +5541,88 @@
           }
 
           /* ════════════════════════════════════════════
-             SUMMARY EXTRAS: Donut, Drift, Rebalance, Surplus
+             ALLOCATION BARS
           ════════════════════════════════════════════ */
-          function renderSummaryExtras(eqCur, liqCur, totCur, eqTgt, liqTgt, totTgt, nowEqPct, tgtEqPct) {
-            /* — Allocation horizontal bar — */
-            const allocBarEl = el("sumAllocBar");
-            if (allocBarEl) {
-              if (totCur > 0) {
-                const eqPct = Math.round(nowEqPct);
-                const lqPct = 100 - eqPct;
-                allocBarEl.innerHTML = `
-                  <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
-                    <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--dim)">Current Allocation</span>
-                    <span style="font-size:10px;color:var(--dim)">${fmt(totCur)} total</span>
-                  </div>
-                  <div style="display:flex;height:22px;border-radius:6px;overflow:hidden;gap:2px;">
-                    <div style="flex:${eqPct};background:var(--mint);opacity:0.85;border-radius:6px 0 0 6px;display:flex;align-items:center;justify-content:center;">
-                      ${eqPct >= 12 ? `<span style="font-size:10px;font-weight:700;color:#0f1117">${eqPct}%</span>` : ""}
-                    </div>
-                    <div style="flex:${lqPct};background:var(--liq);opacity:0.85;border-radius:0 6px 6px 0;display:flex;align-items:center;justify-content:center;">
-                      ${lqPct >= 12 ? `<span style="font-size:10px;font-weight:700;color:#0f1117">${lqPct}%</span>` : ""}
-                    </div>
-                  </div>
-                  <div style="display:flex;justify-content:space-between;margin-top:6px;">
-                    <div style="display:flex;align-items:center;gap:5px;">
-                      <span style="width:8px;height:8px;border-radius:2px;background:var(--mint);display:inline-block;"></span>
-                      <span style="font-size:11px;color:var(--dim)">Equity <b style="color:var(--txt)">${fmt(eqCur)}</b></span>
-                    </div>
-                    <div style="display:flex;align-items:center;gap:5px;">
-                      <span style="font-size:11px;color:var(--dim)">Liquid <b style="color:var(--txt)">${fmt(totCur - eqCur)}</b></span>
-                      <span style="width:8px;height:8px;border-radius:2px;background:var(--liq);display:inline-block;"></span>
-                    </div>
-                  </div>`;
-              } else {
-                allocBarEl.innerHTML = `<div style="font-size:11px;color:var(--dim)">Enter fund values to see allocation.</div>`;
-              }
+          const ALLOC_PALETTE = [
+            "#4ade80","#38bdf8","#f59e0b","#f87171","#a78bfa",
+            "#60a5fa","#34d399","#fb923c","#e879f9","#22d3ee",
+            "#84cc16","#c084fc","#fbbf24","#2dd4bf","#f472b6"
+          ];
+
+          function renderAllocBars() {
+            const container = el("sumAllocBarsMain");
+            if (!container) return;
+
+            // Build fund lists with assigned colors from the shared palette
+            let paletteIdx = 0;
+            const liqFunds = LIQ_FUNDS.map(f => {
+              const s = state.liquid[f.id];
+              return { name: (s?.name || f.defaultName), value: s?.value || 0, color: ALLOC_PALETTE[paletteIdx++] };
+            }).filter(f => f.value > 0);
+
+            const eqFunds = EQ_FUNDS.map(f => {
+              const s = state.equity[f.id];
+              return { name: (s?.name || f.defaultName), value: s?.shown || 0, color: ALLOC_PALETTE[paletteIdx++ % ALLOC_PALETTE.length] };
+            }).filter(f => f.value > 0);
+
+            const grandTotal = liqFunds.reduce((s, f) => s + f.value, 0) +
+                               eqFunds.reduce((s, f) => s + f.value, 0);
+
+            if (grandTotal === 0) {
+              container.innerHTML = `<div style="font-size:11px;color:var(--dim);padding:8px 0">Enter fund values on the Portfolio tab to see allocation.</div>`;
+              return;
             }
 
+            const liqTotal = liqFunds.reduce((s, f) => s + f.value, 0);
+            const eqTotal  = eqFunds.reduce((s, f) => s + f.value, 0);
+
+            // All funds sorted descending for Total bar
+            const allFunds = [...liqFunds, ...eqFunds].sort((a, b) => b.value - a.value);
+
+            // Helper — renders one labeled segmented bar + vertical legend
+            const mkSection = (label, funds, sectionTotal) => {
+              if (!funds.length || sectionTotal === 0) return "";
+
+              const segments = funds.map(f => {
+                const pct = (f.value / sectionTotal) * 100;
+                const showLabel = pct >= 10;
+                return `<div style="flex:${pct.toFixed(2)};background:${f.color};min-width:3px;height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;" title="${f.name}: ${fmt(f.value)}">
+                  ${showLabel ? `<span style="font-size:9px;font-weight:700;color:#0a0f0e;pointer-events:none;white-space:nowrap;padding:0 3px;">${Math.round(pct)}%</span>` : ""}
+                </div>`;
+              }).join("");
+
+              const legend = funds.map(f => {
+                const pct = ((f.value / sectionTotal) * 100).toFixed(1);
+                const ofTotal = ((f.value / grandTotal) * 100).toFixed(1);
+                return `<div style="display:grid;grid-template-columns:12px 1fr auto auto;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);">
+                  <span style="width:12px;height:12px;border-radius:3px;background:${f.color};flex-shrink:0;display:block;"></span>
+                  <span style="font-size:12px;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.name}</span>
+                  <span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--dim);text-align:right;white-space:nowrap;">${fmt(f.value)}</span>
+                  <span style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:${f.color};text-align:right;min-width:42px;white-space:nowrap;">${pct}%</span>
+                </div>`;
+              }).join("");
+
+              const pctOfGrand = sectionTotal > 0 ? ((sectionTotal / grandTotal) * 100).toFixed(1) : "0";
+              return `<div style="margin-bottom:22px;">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px;">
+                  <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.9px;color:var(--dim)">${label}</span>
+                  <span style="font-size:11px;color:var(--dim);font-family:'Space Mono',monospace;">${fmt(sectionTotal)} &nbsp;<span style="font-size:9px">(${pctOfGrand}% of total)</span></span>
+                </div>
+                <div style="display:flex;height:28px;border-radius:7px;overflow:hidden;gap:1px;">${segments}</div>
+                <div style="margin-top:2px;">${legend}</div>
+              </div>`;
+            };
+
+            container.innerHTML =
+              mkSection("Liquid", liqFunds, liqTotal) +
+              mkSection("Equity", eqFunds, eqTotal) +
+              mkSection("Total", allFunds, grandTotal);
+          }
+
+          /* ════════════════════════════════════════════
+             SUMMARY EXTRAS: Drift, Rebalance, Surplus
+          ════════════════════════════════════════════ */
+          function renderSummaryExtras(eqCur, liqCur, totCur, eqTgt, liqTgt, totTgt, nowEqPct, tgtEqPct) {
             /* — Drift alert & rebalancing — */
             const driftEl = el("sumDriftAlert");
             const rebalEl = el("sumRebalance");
@@ -5682,6 +5680,8 @@
             renderSurplus();
             /* — XIRR + heatmap — */
             renderXirrAndHeatmap();
+            /* — Allocation bars — */
+            renderAllocBars();
           }
 
           function renderSurplus() {
