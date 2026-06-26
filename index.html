@@ -3015,14 +3015,10 @@
           </div>
         </div>
 
-        <!-- Allocation donut + rebalance suggestion -->
+        <!-- Allocation bar + rebalance suggestion -->
         <div class="card" style="margin-bottom:12px">
-          <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
-            <svg id="sumDonut" viewBox="0 0 100 100" style="width:90px;height:90px;flex-shrink:0;"></svg>
-            <div style="flex:1;min-width:0">
-              <div id="sumRebalance" style="font-size:12px;"></div>
-            </div>
-          </div>
+          <div id="sumAllocBar" style="margin-bottom:14px;"></div>
+          <div id="sumRebalance" style="font-size:12px;"></div>
         </div>
 
         <!-- Portfolio XIRR -->
@@ -5595,37 +5591,38 @@
              SUMMARY EXTRAS: Donut, Drift, Rebalance, Surplus
           ════════════════════════════════════════════ */
           function renderSummaryExtras(eqCur, liqCur, totCur, eqTgt, liqTgt, totTgt, nowEqPct, tgtEqPct) {
-            /* — Donut chart — */
-            const donut = el("sumDonut");
-            if (donut && totCur > 0) {
-              const eqPct = nowEqPct / 100;
-              const lqPct = 1 - eqPct;
-              const R = 40, cx = 50, cy = 50, stroke = 14;
-              const circ = 2 * Math.PI * R;
-              const eqDash = circ * eqPct;
-              const lqDash = circ * lqPct;
-              const eqStart = -Math.PI / 2;
-              const lqStart = eqStart + 2 * Math.PI * eqPct;
-              const arc = (startAngle, sweep) => {
-                const x1 = cx + R * Math.cos(startAngle);
-                const y1 = cy + R * Math.sin(startAngle);
-                const x2 = cx + R * Math.cos(startAngle + sweep);
-                const y2 = cy + R * Math.sin(startAngle + sweep);
-                const large = sweep > Math.PI ? 1 : 0;
-                return `M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${R} ${R} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`;
-              };
-              donut.innerHTML = `
-                <circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="var(--line)" stroke-width="${stroke}"/>
-                <path d="${arc(eqStart, 2 * Math.PI * eqPct)}" fill="none" stroke="var(--mint)" stroke-width="${stroke}" stroke-linecap="butt"/>
-                <path d="${arc(lqStart, 2 * Math.PI * lqPct)}" fill="none" stroke="var(--liq)" stroke-width="${stroke}" stroke-linecap="butt"/>
-                <text x="${cx}" y="${cy - 5}" text-anchor="middle" font-size="10" font-weight="700" fill="var(--txt)" font-family="Outfit,sans-serif">${Math.round(nowEqPct)}%</text>
-                <text x="${cx}" y="${cy + 8}" text-anchor="middle" font-size="7" fill="var(--dim)" font-family="Outfit,sans-serif">equity</text>
-                <circle cx="${cx - 14}" cy="${cy + 22}" r="3" fill="var(--mint)"/>
-                <text x="${cx - 9}" y="${cy + 25}" font-size="6.5" fill="var(--dim)" font-family="Outfit,sans-serif">Equity</text>
-                <circle cx="${cx + 8}" cy="${cy + 22}" r="3" fill="var(--liq)"/>
-                <text x="${cx + 13}" y="${cy + 25}" font-size="6.5" fill="var(--dim)" font-family="Outfit,sans-serif">Liquid</text>`;
-            } else if (donut) {
-              donut.innerHTML = `<circle cx="50" cy="50" r="40" fill="none" stroke="var(--line)" stroke-width="14"/><text x="50" y="55" text-anchor="middle" font-size="8" fill="var(--dim)" font-family="Outfit,sans-serif">No data</text>`;
+            /* — Allocation horizontal bar — */
+            const allocBarEl = el("sumAllocBar");
+            if (allocBarEl) {
+              if (totCur > 0) {
+                const eqPct = Math.round(nowEqPct);
+                const lqPct = 100 - eqPct;
+                allocBarEl.innerHTML = `
+                  <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+                    <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--dim)">Current Allocation</span>
+                    <span style="font-size:10px;color:var(--dim)">${fmt(totCur)} total</span>
+                  </div>
+                  <div style="display:flex;height:22px;border-radius:6px;overflow:hidden;gap:2px;">
+                    <div style="flex:${eqPct};background:var(--mint);opacity:0.85;border-radius:6px 0 0 6px;display:flex;align-items:center;justify-content:center;">
+                      ${eqPct >= 12 ? `<span style="font-size:10px;font-weight:700;color:#0f1117">${eqPct}%</span>` : ""}
+                    </div>
+                    <div style="flex:${lqPct};background:var(--liq);opacity:0.85;border-radius:0 6px 6px 0;display:flex;align-items:center;justify-content:center;">
+                      ${lqPct >= 12 ? `<span style="font-size:10px;font-weight:700;color:#0f1117">${lqPct}%</span>` : ""}
+                    </div>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;margin-top:6px;">
+                    <div style="display:flex;align-items:center;gap:5px;">
+                      <span style="width:8px;height:8px;border-radius:2px;background:var(--mint);display:inline-block;"></span>
+                      <span style="font-size:11px;color:var(--dim)">Equity <b style="color:var(--txt)">${fmt(eqCur)}</b></span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:5px;">
+                      <span style="font-size:11px;color:var(--dim)">Liquid <b style="color:var(--txt)">${fmt(totCur - eqCur)}</b></span>
+                      <span style="width:8px;height:8px;border-radius:2px;background:var(--liq);display:inline-block;"></span>
+                    </div>
+                  </div>`;
+              } else {
+                allocBarEl.innerHTML = `<div style="font-size:11px;color:var(--dim)">Enter fund values to see allocation.</div>`;
+              }
             }
 
             /* — Drift alert & rebalancing — */
@@ -5647,9 +5644,10 @@
                 const ls = state.liquid[f.id];
                 return s + Math.max(0, (ls.value || 0) - (ls.reserve || 0));
               }, 0);
+              const totalLiqVal = LIQ_FUNDS.reduce((s, f) => s + (state.liquid[f.id]?.value || 0), 0);
 
               const afterEq    = eqCur + deployable;
-              const afterLiq   = liqCur - deployable;
+              const afterLiq   = totalLiqVal - deployable;
               const afterEqPct = totCur > 0 ? (afterEq / totCur) * 100 : 0;
               const afterLiqPct = 100 - afterEqPct;
 
