@@ -3462,6 +3462,20 @@
                   </div>
                 </div>
               </div>
+              <div class="grid2">
+                <div class="field">
+                  <label class="flabel">Current Value</label>
+                  <div class="ibox"><span class="pfx">&#8377;</span>
+                    <input class="num liq" id="lcurval-${f.id}" type="text" placeholder="—" readonly />
+                  </div>
+                </div>
+                <div class="field">
+                  <label class="flabel">Returns</label>
+                  <div class="ibox"><span class="pfx" id="lrtnpfx-${f.id}">&#8377;</span>
+                    <input class="num liq" id="lrtn-${f.id}" type="text" placeholder="—" readonly />
+                  </div>
+                </div>
+              </div>
               <div class="ratechip">Expense ratio: <b id="lrate-${f.id}">—</b></div>
               <div class="grid2">
                 <div class="field">
@@ -3475,16 +3489,6 @@
                   <div class="ibox"><span class="pfx">&#8377;</span>
                     <input class="num liq" id="lres-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.reserve || ""}" />
                   </div>
-                </div>
-              </div>
-              <div class="card-stat-row">
-                <div class="card-stat">
-                  <div class="card-stat-lbl">Current Value</div>
-                  <div class="card-stat-val" id="lcurval-${f.id}">—</div>
-                </div>
-                <div class="card-stat">
-                  <div class="card-stat-lbl">Returns</div>
-                  <div class="card-stat-val" id="lrtn-${f.id}">—</div>
                 </div>
               </div>
               <div class="chip liq"><span>Deployable</span><b id="ldep-${f.id}">&#8377;0</b></div>
@@ -3516,21 +3520,25 @@
                   </div>
                 </div>
               </div>
+              <div class="grid2">
+                <div class="field">
+                  <label class="flabel">Current Value</label>
+                  <div class="ibox"><span class="pfx">&#8377;</span>
+                    <input class="num" id="ecurvval-${f.id}" type="text" placeholder="—" readonly />
+                  </div>
+                </div>
+                <div class="field">
+                  <label class="flabel">Returns</label>
+                  <div class="ibox"><span class="pfx" id="ertnpfx-${f.id}">&#8377;</span>
+                    <input class="num" id="ertn-${f.id}" type="text" placeholder="—" readonly />
+                  </div>
+                </div>
+              </div>
               <div class="ratechip">Expense ratio: <b id="erate-${f.id}">—</b></div>
               <div class="field">
                 <label class="flabel" for="etgt-${f.id}">Target total</label>
                 <div class="ibox"><span class="pfx">&#8377;</span>
                   <input class="num" id="etgt-${f.id}" type="number" min="0" placeholder="0" inputmode="numeric" value="${s.target || ""}" />
-                </div>
-              </div>
-              <div class="card-stat-row">
-                <div class="card-stat">
-                  <div class="card-stat-lbl">Current Value</div>
-                  <div class="card-stat-val" id="ecurvval-${f.id}">—</div>
-                </div>
-                <div class="card-stat">
-                  <div class="card-stat-lbl">Returns</div>
-                  <div class="card-stat-val" id="ertn-${f.id}">—</div>
                 </div>
               </div>
               <div class="chip mint"><span id="einvlbl-${f.id}">Invest now</span><b id="einv-${f.id}">&#8377;0</b></div>
@@ -4034,16 +4042,16 @@
             const listEl = el("curValFundList");
             listEl.innerHTML = allFunds.map(f => {
               const s = f.type === "liq" ? state.liquid[f.id] : state.equity[f.id];
-              const curVal = s.currentValue || (f.type === "liq" ? s.value : s.shown) || 0;
-              const invested = s.paid || 0;
-              const isUp = curVal >= invested;
+              const afterExpense = f.type === "liq" ? (s.value || 0) : (s.shown || 0);
+              const curVal = s.currentValue || afterExpense;
+              const isUp = curVal >= afterExpense;
               return `
                 <div class="curval-fund-row" data-fundid="${f.id}" data-type="${f.type}">
                   <span class="curval-fname">${f.name}</span>
                   <button class="curval-arrow ${isUp ? "up" : "down"}" id="cva-${f.id}" title="Toggle direction">${isUp ? "↑" : "↓"}</button>
                   <div class="curval-ibox">
                     <span class="pfx">₹</span>
-                    <input type="number" class="curval-inp" id="cvi-${f.id}" data-invested="${invested}" value="${curVal || ""}" min="0" inputmode="numeric" placeholder="0" />
+                    <input type="number" class="curval-inp" id="cvi-${f.id}" data-afterexpense="${afterExpense}" value="${curVal || ""}" min="0" inputmode="numeric" placeholder="0" />
                   </div>
                 </div>`;
             }).join("");
@@ -4055,7 +4063,7 @@
               if (!inpEl || !arrEl) return;
               const updateArrow = () => {
                 const v = parseFloat(inpEl.value) || 0;
-                const inv = parseFloat(inpEl.dataset.invested) || 0;
+                const inv = parseFloat(inpEl.dataset.afterexpense) || 0;
                 const up = v >= inv;
                 arrEl.textContent = up ? "↑" : "↓";
                 arrEl.className = "curval-arrow " + (up ? "up" : "down");
@@ -4089,17 +4097,17 @@
               const v = parseFloat(inpEl.value) || 0;
               if (v <= 0) return;
               const s = f.type === "liq" ? state.liquid[f.id] : state.equity[f.id];
-              const invested = s.paid || 0;
+              const afterExpense = f.type === "liq" ? (s.value || 0) : (s.shown || 0);
               s.currentValue = v;
-              const profit = v - invested;
-              const profitPct = invested > 0 ? (profit / invested) * 100 : 0;
+              const profit = v - afterExpense;
+              const profitPct = afterExpense > 0 ? (profit / afterExpense) * 100 : 0;
               state.returnsLog.push({
                 id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
                 fundId: f.id,
                 date: today,
                 ts,
                 currentValue: v,
-                invested,
+                afterExpense,
                 profit,
                 profitPct,
               });
@@ -4203,11 +4211,21 @@
               el("lrespct-" + f.id).textContent = resPct + "% reserved";
               el("ldepfill-" + f.id).style.width =
                 val > 0 ? Math.round((dep / val) * 100) + "%" : "0%";
-              /* Current Value + Returns stat boxes */
+              /* Current Value + Returns (vs after expense) */
               const lcv = state.liquid[f.id].currentValue || val;
-              const lcvEl = el("lcurval-" + f.id);
-              if (lcvEl) lcvEl.textContent = lcv > 0 ? fmt(lcv) : "—";
-              setStatReturn("lrtn-" + f.id, lcv, paid);
+              const lcvInp = el("lcurval-" + f.id);
+              if (lcvInp) lcvInp.value = lcv > 0 ? Math.round(lcv).toLocaleString("en-IN") : "";
+              const lret = lcv - val;
+              const lrtnInp = el("lrtn-" + f.id);
+              const lrtnPfx = el("lrtnpfx-" + f.id);
+              if (lrtnInp && lrtnPfx) {
+                if (lcv <= 0) { lrtnInp.value = ""; lrtnPfx.textContent = "₹"; lrtnPfx.style.color = ""; }
+                else {
+                  lrtnInp.value = Math.abs(Math.round(lret)).toLocaleString("en-IN");
+                  lrtnPfx.textContent = lret >= 0 ? "+₹" : "−₹";
+                  lrtnPfx.style.color = lret >= 0 ? "#4ade80" : "#f87171";
+                }
+              }
             });
 
             /* Deployable summary bar */
@@ -4268,11 +4286,21 @@
                 el("einv-" + f.id).textContent = fmt(0);
               }
 
-              /* Current Value + Returns stat boxes */
+              /* Current Value + Returns (vs after expense) */
               const ecv = s.currentValue || shown;
-              const ecvEl = el("ecurvval-" + f.id);
-              if (ecvEl) ecvEl.textContent = ecv > 0 ? fmt(ecv) : "—";
-              setStatReturn("ertn-" + f.id, ecv, paid);
+              const ecvInp = el("ecurvval-" + f.id);
+              if (ecvInp) ecvInp.value = ecv > 0 ? Math.round(ecv).toLocaleString("en-IN") : "";
+              const eret = ecv - shown;
+              const ertnInp = el("ertn-" + f.id);
+              const ertnPfx = el("ertnpfx-" + f.id);
+              if (ertnInp && ertnPfx) {
+                if (ecv <= 0) { ertnInp.value = ""; ertnPfx.textContent = "₹"; ertnPfx.style.color = ""; }
+                else {
+                  ertnInp.value = Math.abs(Math.round(eret)).toLocaleString("en-IN");
+                  ertnPfx.textContent = eret >= 0 ? "+₹" : "−₹";
+                  ertnPfx.style.color = eret >= 0 ? "#4ade80" : "#f87171";
+                }
+              }
 
               eqCur += cur;
               eqTgt += targetVal;
