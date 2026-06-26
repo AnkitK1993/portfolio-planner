@@ -1624,6 +1624,28 @@
       }
       .coll-body.open { max-height: 2400px; }
       .coll-body-inner { padding: 4px 14px 16px; }
+      /* ── Drag handle ── */
+      .drag-handle { display: none; font-size: 13px; color: var(--dim); cursor: grab; padding: 0 6px; flex-shrink: 0; touch-action: none; user-select: none; }
+      body.edit-mode .drag-handle { display: flex; align-items: center; }
+      .coll-section.drag-over { outline: 2px dashed var(--mint); outline-offset: -2px; }
+      .coll-section[draggable="true"] { cursor: default; }
+      /* ── Fund category pill ── */
+      .fund-cat-pill { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; padding: 2px 7px; border-radius: 10px; border: 1px solid var(--line); color: var(--dim); background: transparent; flex-shrink: 0; white-space: nowrap; }
+      .fund-cat-select { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; color: var(--txt); font-family: "Outfit", sans-serif; font-size: 10px; padding: 2px 5px; flex-shrink: 0; display: none; }
+      body.edit-mode .fund-cat-pill { display: none; }
+      body.edit-mode .fund-cat-select { display: block; }
+      /* ── Archive button ── */
+      .fund-archive-btn { display: none; background: none; border: 1px solid var(--line); border-radius: 7px; color: var(--dim); font-size: 10px; font-family: "Outfit", sans-serif; padding: 2px 8px; cursor: pointer; flex-shrink: 0; }
+      body.edit-mode .fund-archive-btn { display: block; }
+      .fund-archive-btn:hover { border-color: var(--coral); color: var(--coral); }
+      /* ── Archived section ── */
+      .archived-section { display: none; margin-top: 10px; }
+      body.edit-mode .archived-section { display: block; }
+      .archived-head { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--dim); padding: 8px 0 6px; }
+      .archived-fund-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; margin-bottom: 6px; }
+      .archived-fund-name { flex: 1; font-size: 12px; color: var(--dim); }
+      .unarchive-btn { background: none; border: 1px solid var(--line); border-radius: 7px; color: var(--dim); font-size: 10px; padding: 2px 8px; cursor: pointer; }
+      .unarchive-btn:hover { border-color: var(--mint); color: var(--mint); }
 
       /* ═══ NAV DROPDOWNS ═══ */
       .nav-home-btn {
@@ -2838,6 +2860,12 @@
           <button class="add-fund-btn" id="addEqBtn">＋ Add Equity Fund</button>
         </div>
 
+        <!-- Archived funds (edit mode only) -->
+        <div class="archived-section" id="archivedSection">
+          <div class="archived-head">Archived Funds</div>
+          <div id="archivedList"></div>
+        </div>
+
         <!-- Collapsible: Upcoming Payments -->
         <div class="coll-section">
           <button class="coll-head" id="coll-head-upcoming" aria-expanded="false">
@@ -3350,15 +3378,16 @@
           let LIQ_FUNDS = [];
           let EQ_FUNDS = [];
 
+          const LIQ_CATEGORIES = ["Liquid", "Ultra Short", "Short Duration", "Debt", "Money Market", "Other"];
+          const EQ_CATEGORIES  = ["Large Cap", "Mid Cap", "Small Cap", "Flexi Cap", "ELSS", "Index", "International", "Other"];
+
           function syncFundArrays() {
-            LIQ_FUNDS = (state.liquidOrder || Object.keys(BASE_LIQ_DEFAULTS)).map(id => ({
-              id,
-              defaultName: BASE_LIQ_DEFAULTS[id] || state.liquid[id]?.name || "Liquid Fund",
-            }));
-            EQ_FUNDS = (state.equityOrder || Object.keys(BASE_EQ_DEFAULTS)).map(id => ({
-              id,
-              defaultName: BASE_EQ_DEFAULTS[id] || state.equity[id]?.name || "Equity Fund",
-            }));
+            LIQ_FUNDS = (state.liquidOrder || Object.keys(BASE_LIQ_DEFAULTS))
+              .filter(id => !state.liquid[id]?.archived)
+              .map(id => ({ id, defaultName: BASE_LIQ_DEFAULTS[id] || state.liquid[id]?.name || "Liquid Fund" }));
+            EQ_FUNDS = (state.equityOrder || Object.keys(BASE_EQ_DEFAULTS))
+              .filter(id => !state.equity[id]?.archived)
+              .map(id => ({ id, defaultName: BASE_EQ_DEFAULTS[id] || state.equity[id]?.name || "Equity Fund" }));
           }
 
           const MONTHS = [
@@ -4067,51 +4096,124 @@
             });
           }
 
+          function makeFundSection(f, isLiq, container) {
+            const s = isLiq ? state.liquid[f.id] : state.equity[f.id];
+            if (!s) return;
+            const lbl = s.label || f.defaultName;
+            const cats = isLiq ? LIQ_CATEGORIES : EQ_CATEGORIES;
+            const cat  = s.category || "";
+            const catOpts = cats.map(c => `<option value="${c}"${c === cat ? " selected" : ""}>${c}</option>`).join("");
+            const sec = document.createElement("div");
+            sec.className = "coll-section";
+            sec.dataset.fundId   = f.id;
+            sec.dataset.fundType = isLiq ? "liq" : "eq";
+            sec.innerHTML = `
+              <button class="coll-head" id="coll-head-${f.id}" aria-expanded="false">
+                <span class="drag-handle" title="Drag to reorder">⠿</span>
+                <input class="coll-title coll-name-input" id="coll-name-${f.id}" value="${lbl}" ${editMode ? "" : "readonly"} />
+                ${cat ? `<span class="fund-cat-pill">${cat}</span>` : `<span class="fund-cat-pill" style="display:none"></span>`}
+                <select class="fund-cat-select" id="cat-${f.id}"><option value="">Category…</option>${catOpts}</select>
+                <span class="coll-meta" id="coll-val-${f.id}"></span>
+                <span class="coll-rtn" id="coll-rtn-${f.id}"></span>
+                <button class="fund-archive-btn" data-id="${f.id}" data-liq="${isLiq}" title="Archive fund">Archive</button>
+                <span class="coll-chevron">▾</span>
+              </button>
+              <div class="coll-body" id="coll-body-${f.id}">
+                <div class="coll-body-inner" id="${isLiq ? "liq" : "eq"}-wrap-${f.id}"></div>
+              </div>`;
+            container.appendChild(sec);
+            el((isLiq ? "liq" : "eq") + "-wrap-" + f.id).innerHTML = isLiq ? liqCardHTML(f) : eqCardHTML(f);
+
+            // Category change
+            const catSel = el("cat-" + f.id);
+            catSel.addEventListener("change", e => {
+              e.stopPropagation();
+              s.category = e.target.value;
+              const pill = sec.querySelector(".fund-cat-pill");
+              if (e.target.value) { pill.textContent = e.target.value; pill.style.display = ""; }
+              else pill.style.display = "none";
+              saveState();
+            });
+            catSel.addEventListener("click", e => e.stopPropagation());
+            catSel.addEventListener("mousedown", e => e.stopPropagation());
+
+            // Archive button
+            const archBtn = sec.querySelector(".fund-archive-btn");
+            archBtn.addEventListener("click", e => {
+              e.stopPropagation();
+              const isLiqF = e.currentTarget.dataset.liq === "true";
+              const fid = e.currentTarget.dataset.id;
+              UI.confirm(`Archive "${fundName(fid)}"? It will be hidden but data is preserved.`, "Archive fund?", "Archive", () => {
+                (isLiqF ? state.liquid : state.equity)[fid].archived = true;
+                saveState(); syncFundArrays(); rebuildFundCollapsibles(); render();
+              });
+            });
+
+            // Drag-to-reorder
+            sec.setAttribute("draggable", "true");
+            sec.addEventListener("dragstart", e => {
+              e.dataTransfer.setData("text/plain", f.id + "|" + (isLiq ? "liq" : "eq"));
+              sec.style.opacity = "0.5";
+            });
+            sec.addEventListener("dragend", () => { sec.style.opacity = ""; container.querySelectorAll(".coll-section").forEach(s2 => s2.classList.remove("drag-over")); });
+            sec.addEventListener("dragover", e => { e.preventDefault(); sec.classList.add("drag-over"); });
+            sec.addEventListener("dragleave", () => sec.classList.remove("drag-over"));
+            sec.addEventListener("drop", e => {
+              e.preventDefault();
+              sec.classList.remove("drag-over");
+              const [dragId, dragType] = (e.dataTransfer.getData("text/plain") || "").split("|");
+              if (!dragId || dragType !== (isLiq ? "liq" : "eq") || dragId === f.id) return;
+              const orderKey = isLiq ? "liquidOrder" : "equityOrder";
+              const order = [...(state[orderKey] || (isLiq ? LIQ_FUNDS : EQ_FUNDS).map(x => x.id))];
+              const fromIdx = order.indexOf(dragId);
+              const toIdx   = order.indexOf(f.id);
+              if (fromIdx < 0 || toIdx < 0) return;
+              order.splice(fromIdx, 1);
+              order.splice(toIdx, 0, dragId);
+              state[orderKey] = order;
+              saveState(); syncFundArrays(); rebuildFundCollapsibles(); render();
+            });
+          }
+
           function rebuildFundCollapsibles() {
             const liqContainer = el("liqFundsList");
             const eqContainer  = el("eqFundsList");
             liqContainer.innerHTML = "";
             eqContainer.innerHTML  = "";
             LIQ_FUNDS.forEach(f => {
-              if (!state.liquid[f.id]) {
-                state.liquid[f.id] = { name: f.defaultName, label: f.defaultName, paid: 0, value: 0, reserve: 0, target: 0 };
-              }
-              const sec = document.createElement("div");
-              sec.className = "coll-section";
-              const lbl = state.liquid[f.id].label || f.defaultName;
-              sec.innerHTML = `
-                <button class="coll-head" id="coll-head-${f.id}" aria-expanded="false">
-                  <input class="coll-title coll-name-input" id="coll-name-${f.id}" value="${lbl}" ${editMode ? "" : "readonly"} />
-                  <span class="coll-meta" id="coll-val-${f.id}"></span>
-                  <span class="coll-rtn" id="coll-rtn-${f.id}"></span>
-                  <span class="coll-chevron">▾</span>
-                </button>
-                <div class="coll-body" id="coll-body-${f.id}">
-                  <div class="coll-body-inner" id="liq-wrap-${f.id}"></div>
-                </div>`;
-              liqContainer.appendChild(sec);
-              el("liq-wrap-" + f.id).innerHTML = liqCardHTML(f);
+              if (!state.liquid[f.id]) state.liquid[f.id] = { name: f.defaultName, label: f.defaultName, paid: 0, value: 0, reserve: 0, target: 0 };
+              makeFundSection(f, true, liqContainer);
             });
             EQ_FUNDS.forEach(f => {
-              if (!state.equity[f.id]) {
-                state.equity[f.id] = { name: f.defaultName, label: f.defaultName, paid: 0, shown: 0, target: 0, sipAmt: 0, sipDate: 5, sipPaidAmounts: {} };
-              }
-              const sec = document.createElement("div");
-              sec.className = "coll-section";
-              const lbl = state.equity[f.id].label || f.defaultName;
-              sec.innerHTML = `
-                <button class="coll-head" id="coll-head-${f.id}" aria-expanded="false">
-                  <input class="coll-title coll-name-input" id="coll-name-${f.id}" value="${lbl}" ${editMode ? "" : "readonly"} />
-                  <span class="coll-meta" id="coll-val-${f.id}"></span>
-                  <span class="coll-rtn" id="coll-rtn-${f.id}"></span>
-                  <span class="coll-chevron">▾</span>
-                </button>
-                <div class="coll-body" id="coll-body-${f.id}">
-                  <div class="coll-body-inner" id="eq-wrap-${f.id}"></div>
-                </div>`;
-              eqContainer.appendChild(sec);
-              el("eq-wrap-" + f.id).innerHTML = eqCardHTML(f);
+              if (!state.equity[f.id]) state.equity[f.id] = { name: f.defaultName, label: f.defaultName, paid: 0, shown: 0, target: 0, sipAmt: 0, sipDate: 5, sipPaidAmounts: {} };
+              makeFundSection(f, false, eqContainer);
             });
+
+            // Render archived funds list
+            const archivedEl = el("archivedList");
+            if (archivedEl) {
+              const allLiqIds = state.liquidOrder || Object.keys(state.liquid);
+              const allEqIds  = state.equityOrder || Object.keys(state.equity);
+              const archivedFunds = [
+                ...allLiqIds.filter(id => state.liquid[id]?.archived).map(id => ({ id, name: state.liquid[id].name || id, isLiq: true })),
+                ...allEqIds.filter(id => state.equity[id]?.archived).map(id => ({ id, name: state.equity[id].name || id, isLiq: false })),
+              ];
+              archivedEl.innerHTML = archivedFunds.length
+                ? archivedFunds.map(f => `<div class="archived-fund-row">
+                    <span class="archived-fund-name">${f.name} <span style="font-size:9px;color:var(--dim)">(${f.isLiq ? "Liquid" : "Equity"})</span></span>
+                    <button class="unarchive-btn" data-id="${f.id}" data-liq="${f.isLiq}">Restore</button>
+                  </div>`).join("")
+                : `<div style="font-size:11px;color:var(--dim);">No archived funds.</div>`;
+              archivedEl.querySelectorAll(".unarchive-btn").forEach(btn => {
+                btn.addEventListener("click", () => {
+                  const fid = btn.dataset.id;
+                  const isLiqF = btn.dataset.liq === "true";
+                  (isLiqF ? state.liquid : state.equity)[fid].archived = false;
+                  saveState(); syncFundArrays(); rebuildFundCollapsibles(); render();
+                });
+              });
+            }
+
             bindFundEvents();
             updateCollNameReadonly();
           }
