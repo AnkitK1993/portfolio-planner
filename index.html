@@ -2454,6 +2454,59 @@
         font-family: "Space Mono", monospace; font-size: 13px; color: var(--txt); opacity: 0.4; pointer-events: none;
       }
 
+      /* ═══ HOLDINGS WIDGET ═══ */
+      .holdings-widget {
+        margin: 0 0 6px;
+        border-radius: 14px;
+        background: var(--panel-2);
+        border: 1px solid var(--line);
+        overflow: hidden;
+      }
+      .holdings-bar {
+        width: 100%; display: flex; align-items: center;
+        justify-content: space-between; padding: 14px 16px;
+        background: none; border: none; cursor: pointer; gap: 12px;
+        text-align: left;
+      }
+      .holdings-bar-left { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; flex: 1; min-width: 0; }
+      .holdings-label {
+        font-family: "Outfit", sans-serif; font-size: 9px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 1.4px; color: var(--dim);
+      }
+      .holdings-total {
+        font-family: "Fraunces", serif; font-size: 26px; font-weight: 700;
+        color: var(--txt); letter-spacing: -0.5px; display: inline-flex;
+      }
+      .holdings-bar-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+      .holdings-rtn { font-family: "Space Mono", monospace; font-size: 13px; font-weight: 700; }
+      .holdings-rtn.up { color: #4ade80; }
+      .holdings-rtn.dn { color: #f87171; }
+      .holdings-chevron { font-size: 11px; color: var(--dim); transition: transform 0.25s; flex-shrink: 0; }
+      .holdings-widget.open .holdings-chevron { transform: rotate(180deg); }
+      .holdings-body { border-top: 1px solid var(--line); padding: 4px 16px 12px; }
+      .holdings-row {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+      }
+      .holdings-row:last-child { border-bottom: none; }
+      .holdings-key { font-family: "Outfit", sans-serif; font-size: 12px; color: var(--dim); font-weight: 500; }
+      .holdings-val {
+        font-family: "Space Mono", monospace; font-size: 12px;
+        font-weight: 700; color: var(--txt); text-align: right;
+      }
+      .holdings-val.up { color: #4ade80; }
+      .holdings-val.dn { color: #f87171; }
+      .holdings-hdivider { height: 1px; background: var(--line); margin: 4px 0; }
+      /* Privacy mode */
+      body.privacy-mode #tab-portfolio .holdings-total,
+      body.privacy-mode #tab-portfolio .holdings-val { font-size: 0; }
+      body.privacy-mode #tab-portfolio .holdings-total::after,
+      body.privacy-mode #tab-portfolio .holdings-val::after {
+        content: "• • •"; font-family: "Space Mono", monospace;
+        font-size: 13px; color: var(--txt); opacity: 0.4;
+      }
+      body.privacy-mode #tab-portfolio .holdings-rtn { opacity: 0; }
+
       /* ═══ DATA MODAL ═══ */
       .data-action-row { display: flex; align-items: center; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--line); }
       .data-action-row:last-child { border-bottom: none; }
@@ -2525,6 +2578,47 @@
                 <circle cx="23.25" cy="11" r="1.8" fill="currentColor" stroke="none"/>
               </svg>
             </button>
+          </div>
+        </div>
+
+        <!-- Holdings summary widget -->
+        <div class="holdings-widget" id="holdingsWidget">
+          <button class="holdings-bar" id="holdingsToggle" aria-expanded="false">
+            <div class="holdings-bar-left">
+              <span class="holdings-label">Holdings</span>
+              <span class="holdings-total" id="holdingsTotal">—</span>
+            </div>
+            <div class="holdings-bar-right">
+              <span class="holdings-rtn" id="holdingsRtn"></span>
+              <span class="holdings-chevron">▾</span>
+            </div>
+          </button>
+          <div class="holdings-body" id="holdingsBody" hidden>
+            <div class="holdings-row">
+              <span class="holdings-key">Invested</span>
+              <span class="holdings-val" id="hInvested">—</span>
+            </div>
+            <div class="holdings-row">
+              <span class="holdings-key">After Expense</span>
+              <span class="holdings-val" id="hAfterExp">—</span>
+            </div>
+            <div class="holdings-row">
+              <span class="holdings-key">Current Value</span>
+              <span class="holdings-val" id="hCurVal">—</span>
+            </div>
+            <div class="holdings-row">
+              <span class="holdings-key">Returns</span>
+              <span class="holdings-val" id="hReturns">—</span>
+            </div>
+            <div class="holdings-hdivider"></div>
+            <div class="holdings-row">
+              <span class="holdings-key">Liquid Funds</span>
+              <span class="holdings-val" id="hLiquid">—</span>
+            </div>
+            <div class="holdings-row">
+              <span class="holdings-key">Equity Funds</span>
+              <span class="holdings-val" id="hEquity">—</span>
+            </div>
           </div>
         </div>
 
@@ -4015,6 +4109,54 @@
             renderTxns();
           }
 
+          function renderHoldings() {
+            let invested = 0, afterExp = 0, curVal = 0, liqCur = 0, eqCur2 = 0;
+            LIQ_FUNDS.forEach(f => {
+              const s = state.liquid[f.id];
+              invested += s.paid || 0;
+              const ae = s.value || 0;
+              const cv = (s.currentValue > 0 ? s.currentValue : ae);
+              afterExp += ae; curVal += cv; liqCur += cv;
+            });
+            EQ_FUNDS.forEach(f => {
+              const s = state.equity[f.id];
+              invested += s.paid || 0;
+              const ae = s.shown || 0;
+              const cv = (s.currentValue > 0 ? s.currentValue : ae);
+              afterExp += ae; curVal += cv; eqCur2 += cv;
+            });
+            const returns = curVal - afterExp;
+            const retPct  = afterExp > 0 ? (returns / afterExp * 100) : 0;
+            const hasData = afterExp > 0;
+            const isUp    = returns >= 0;
+            const sign    = isUp ? "+" : "−";
+            const arrow   = isUp ? "↑" : "↓";
+
+            el("holdingsTotal").innerHTML = hasData ? fmtInner(curVal, "—") : "—";
+
+            const rtnEl = el("holdingsRtn");
+            if (rtnEl) {
+              if (hasData) {
+                rtnEl.textContent = `${arrow} ${sign}${Math.abs(retPct).toFixed(2)}%`;
+                rtnEl.className = `holdings-rtn ${isUp ? "up" : "dn"}`;
+              } else { rtnEl.textContent = ""; rtnEl.className = "holdings-rtn"; }
+            }
+
+            el("hInvested").textContent  = hasData ? fmt(invested)  : "—";
+            el("hAfterExp").textContent  = hasData ? fmt(afterExp)  : "—";
+            el("hCurVal").textContent    = hasData ? fmt(curVal)    : "—";
+            el("hLiquid").textContent    = liqCur  > 0 ? fmt(liqCur)  : "—";
+            el("hEquity").textContent    = eqCur2  > 0 ? fmt(eqCur2)  : "—";
+
+            const hRtnEl = el("hReturns");
+            if (hRtnEl) {
+              if (hasData) {
+                hRtnEl.textContent = `${arrow} ${fmt(Math.abs(returns))} (${sign}${Math.abs(retPct).toFixed(2)}%)`;
+                hRtnEl.className = `holdings-val ${isUp ? "up" : "dn"}`;
+              } else { hRtnEl.textContent = "—"; hRtnEl.className = "holdings-val"; }
+            }
+          }
+
           function renderTxns() {
             const container = document.getElementById("txnList");
             if (!container) return;
@@ -4522,6 +4664,7 @@
 
             renderNetWorth();
             renderUpcoming();
+            renderHoldings();
             const _activeTab = document.querySelector(".tab-section.active")?.id;
             if (_activeTab === "tab-forecast") renderForecast();
           }
@@ -5159,6 +5302,14 @@
           rebuildFundCollapsibles();
           buildNwGrid();
           el("nwSnapshotBtn").addEventListener("click", takeSnapshot);
+          el("holdingsToggle").addEventListener("click", () => {
+            const widget = el("holdingsWidget");
+            const body   = el("holdingsBody");
+            const isOpen = widget.classList.contains("open");
+            widget.classList.toggle("open", !isOpen);
+            body.hidden = isOpen;
+            el("holdingsToggle").setAttribute("aria-expanded", String(!isOpen));
+          });
           renderNwHistory();
           renderNwProjection();
           const _hasLocalData = !!localStorage.getItem(STORE_KEY);
