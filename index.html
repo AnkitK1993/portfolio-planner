@@ -7328,7 +7328,6 @@
           let privacyMode = true;
           document.body.classList.add("privacy-mode");
           el("privacyBtn").addEventListener("click", () => {
-            if (!authUser) return;
             privacyMode = !privacyMode;
             document.body.classList.toggle("privacy-mode", privacyMode);
           });
