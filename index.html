@@ -1656,6 +1656,8 @@
       /* ── Fund category pill ── */
       .fund-cat-pill { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; padding: 2px 7px; border-radius: 10px; border: 1px solid var(--line); color: var(--dim); background: transparent; flex-shrink: 0; white-space: nowrap; }
       .fund-cat-select { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; color: var(--txt); font-family: "Outfit", sans-serif; font-size: 10px; padding: 2px 5px; flex-shrink: 0; display: none; }
+      .fund-cat-select.cat-required { border-color: var(--coral) !important; outline: 2px solid rgba(248,113,113,0.45); animation: catPulse 1s ease-in-out 4; }
+      @keyframes catPulse { 0%,100% { outline-color: rgba(248,113,113,0.35); } 50% { outline-color: rgba(248,113,113,0.9); } }
       body.edit-mode .fund-cat-pill { display: none; }
       body.edit-mode .fund-cat-select { display: block; }
       /* ── Archive button ── */
@@ -5645,25 +5647,39 @@
                 ? state.idealWeights[cat]
                 : (DEF_WEIGHTS[cat] || 0);
             });
-            const totalWeight = Object.values(weights).reduce((s, w) => s + w, 0);
+
+            // Only show categories that are actually assigned to active equity funds
+            const activeCats = [...new Set(
+              EQ_FUNDS.map(f => state.equity[f.id]?.category).filter(c => c && c !== "")
+            )].sort((a, b) => EQ_CATEGORIES.indexOf(a) - EQ_CATEGORIES.indexOf(b));
+
+            const totalWeight = activeCats.reduce((s, cat) => s + (weights[cat] || 0), 0);
             const weightOk = Math.abs(totalWeight - 100) < 0.5;
 
             // --- Editable weights section ---
-            const weightItems = EQ_CATEGORIES.map(cat => `
-              <div style="display:grid;grid-template-columns:1fr 56px 16px;align-items:center;gap:5px;padding:4px 0;">
-                <span style="font-size:11px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${cat}</span>
-                <input type="number" class="ideal-wt-inp" data-cat="${cat}" min="0" max="100" step="1" value="${weights[cat]}"
-                  style="background:var(--input-bg,rgba(255,255,255,0.06));border:1px solid var(--line);border-radius:5px;color:var(--txt);
-                         font-family:'Space Mono',monospace;font-size:11px;text-align:right;padding:3px 6px;width:100%"/>
-                <span style="font-size:10px;color:var(--dim)">%</span>
-              </div>`).join("");
+            if (activeCats.length === 0) {
+              editorEl.innerHTML = `
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--dim);margin-bottom:7px">Target Equity Split</div>
+                <div style="font-size:11px;color:var(--dim);padding:8px 0;">
+                  No categories assigned. Go to the <b style="color:var(--txt)">Portfolio tab</b> → edit each equity fund → set its category.
+                </div>`;
+            } else {
+              const weightItems = activeCats.map(cat => `
+                <div style="display:grid;grid-template-columns:1fr 56px 16px;align-items:center;gap:5px;padding:4px 0;">
+                  <span style="font-size:11px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${cat}</span>
+                  <input type="number" class="ideal-wt-inp" data-cat="${cat}" min="0" max="100" step="1" value="${weights[cat]}"
+                    style="background:var(--input-bg,rgba(255,255,255,0.06));border:1px solid var(--line);border-radius:5px;color:var(--txt);
+                           font-family:'Space Mono',monospace;font-size:11px;text-align:right;padding:3px 6px;width:100%"/>
+                  <span style="font-size:10px;color:var(--dim)">%</span>
+                </div>`).join("");
 
-            editorEl.innerHTML = `
-              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--dim);margin-bottom:7px">Target Equity Split</div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 18px;">${weightItems}</div>
-              <div style="text-align:right;font-size:10px;margin-top:5px;color:${weightOk ? "var(--mint)" : "var(--coral)"};">
-                Total: ${totalWeight.toFixed(0)}% ${weightOk ? "✓" : "— must equal 100%"}
-              </div>`;
+              editorEl.innerHTML = `
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--dim);margin-bottom:7px">Target Equity Split</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 18px;">${weightItems}</div>
+                <div style="text-align:right;font-size:10px;margin-top:5px;color:${weightOk ? "var(--mint)" : "var(--coral)"};">
+                  Total: ${totalWeight.toFixed(0)}% ${weightOk ? "✓" : "— must equal 100%"}
+                </div>`;
+            }
 
             editorEl.querySelectorAll(".ideal-wt-inp").forEach(inp => {
               inp.addEventListener("change", e => {
@@ -5764,18 +5780,14 @@
             const bar1Segs = fundTargets.map(f =>
               mkSeg(f.idealPct, f.color, `${f.name}: ${fmt(Math.round(f.idealAmt))}`)).join("");
 
-            const bar1Rows = fundTargets.map(f => {
-              const catOpts = EQ_CATEGORIES.map(c =>
-                `<option value="${c}"${c === f.cat ? " selected" : ""}>${c}</option>`).join("");
-              return `
+            const bar1Rows = fundTargets.map(f => `
               <div style="display:grid;grid-template-columns:10px 1fr auto auto auto;align-items:start;gap:6px;padding:6px 0;border-bottom:1px solid var(--line);">
                 <span style="width:10px;height:10px;border-radius:2px;background:${f.color};display:block;margin-top:2px;flex-shrink:0"></span>
                 <div style="overflow:hidden;">
                   <div style="font-size:11px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${f.name}</div>
-                  <select class="ideal-cat-sel" data-fid="${f.id}"
-                    style="background:transparent;border:none;border-bottom:1px solid var(--line);color:var(--dim);font-size:9px;padding:0;margin-top:2px;max-width:110px;cursor:pointer;">
-                    <option value="">— set category —</option>${catOpts}
-                  </select>
+                  ${f.cat
+                    ? `<div style="font-size:9px;color:var(--dim)">${f.cat}</div>`
+                    : `<div style="font-size:9px;color:var(--coral)">No category — set on Portfolio tab</div>`}
                 </div>
                 <div style="text-align:right;min-width:58px">
                   <div style="font-size:8px;color:var(--dim);margin-bottom:1px">Current</div>
@@ -5791,8 +5803,7 @@
                   <div style="font-size:8px;color:var(--dim);margin-bottom:1px">Weight</div>
                   <div style="font-family:'Space Mono',monospace;font-size:10px;font-weight:700;color:${f.color}">${f.idealPct.toFixed(1)}%</div>
                 </div>
-              </div>`;
-            }).join("");
+              </div>`).join("");
 
             if (bar1El) {
               bar1El.innerHTML = `
@@ -5803,17 +5814,6 @@
                   <div style="display:flex;height:28px;border-radius:7px;overflow:hidden;gap:1px;">${bar1Segs}</div>
                   <div>${bar1Rows}</div>
                 </div>`;
-              // Delegated listener (guard against duplicates)
-              if (!bar1El._catListenerAdded) {
-                bar1El._catListenerAdded = true;
-                bar1El.addEventListener("change", e => {
-                  if (!e.target.classList.contains("ideal-cat-sel")) return;
-                  const fid = e.target.dataset.fid;
-                  if (state.equity[fid]) state.equity[fid].category = e.target.value || undefined;
-                  saveState();
-                  renderIdealAlloc();
-                });
-              }
             }
 
             // --- Bar 2: Liquid → Equity redistribution ---
@@ -7360,7 +7360,17 @@
             syncFundArrays();
             rebuildFundCollapsibles();
             render();
-            setTimeout(() => toggleColl(newId), 50);
+            setTimeout(() => {
+              toggleColl(newId);
+              setTimeout(() => {
+                const catSel = el("cat-" + newId);
+                if (catSel) {
+                  catSel.classList.add("cat-required");
+                  catSel.focus();
+                  catSel.addEventListener("change", () => catSel.classList.remove("cat-required"), { once: true });
+                }
+              }, 150);
+            }, 50);
           });
 
           /* ── PIN LOCK ── */
