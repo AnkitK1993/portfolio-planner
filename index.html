@@ -1652,6 +1652,22 @@
       }
       .coll-body.open { max-height: 2400px; }
       .coll-body-inner { padding: 4px 14px 16px; }
+
+      /* ── Mobile two-line coll-head ── */
+      @media (max-width: 480px) {
+        /* flex-wrap so row 1 = name+chevron, row 2 = value+return */
+        .coll-head { flex-wrap: wrap; gap: 0 8px; padding-bottom: 10px; }
+        /* Invisible row-break element between row 1 and row 2 */
+        .coll-head::after { content: ''; flex-basis: 100%; order: 2; height: 4px; flex-shrink: 0; }
+        /* Row 1 items */
+        .coll-title  { order: 1; flex: 1; }
+        .coll-chevron { order: 1; }
+        /* Row 2 items */
+        .fund-cat-pill { order: 3; }
+        .coll-meta { order: 4; min-width: 0; font-size: 12px; letter-spacing: -0.5px; margin-left: auto; }
+        .coll-rtn  { order: 5; }
+      }
+
       /* ── Drag handle ── */
       .drag-handle { display: none; font-size: 13px; color: var(--dim); cursor: grab; padding: 0 6px; flex-shrink: 0; touch-action: none; user-select: none; }
       body.edit-mode .drag-handle { display: flex; align-items: center; }
