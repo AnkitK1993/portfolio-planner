@@ -3866,10 +3866,12 @@
                 const data = doc.data();
                 const t = data.savedAt?.toDate?.();
                 const timeStr = t ? t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
+                const bytes = (data.state || "").length;
+                const sizeStr = bytes > 1024 ? (bytes / 1024).toFixed(1) + " KB" : bytes + " B";
                 const item = document.createElement("div");
                 item.className = "backup-item";
                 item.innerHTML = `
-                  <div class="backup-item-date">${doc.id}<span class="backup-item-time">${timeStr ? "· " + timeStr : ""}</span></div>
+                  <div class="backup-item-date">${doc.id}<span class="backup-item-time">${timeStr ? "· " + timeStr : ""} · ${sizeStr}</span></div>
                   <button class="btn btn-ghost btn-sm">Restore</button>
                 `;
                 item.querySelector("button").addEventListener("click", () => {
