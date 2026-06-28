@@ -3632,6 +3632,7 @@
             { id: "fd", label: "Fixed Deposit", color: "#5bc4f5" },
             { id: "cash", label: "Cash", color: "var(--amber)" },
             { id: "ppf", label: "PPF / EPF / NPS", color: "#8be8ff" },
+            { id: "bonds", label: "Bonds", color: "#c084fc" },
           ];
 
           /* ════════════════════════════════════════════
@@ -6886,6 +6887,11 @@
                 value: state.networth.ppf || 0,
                 color: "#8be8ff",
               },
+              {
+                label: "Bonds",
+                value: state.networth.bonds || 0,
+                color: "#c084fc",
+              },
             ].filter((c) => c.value > 0);
 
             if (!cats.length) {
@@ -6963,7 +6969,7 @@
                 return `<tr>
                 <td>${fmtMonth(s.key)}</td>
                 ${td(s.mf)}${td(s.mfProfit, "var(--mint)")}
-                ${td(s.bank)}${td(s.fd)}${td(s.cash)}${td(s.ppf)}
+                ${td(s.bank)}${td(s.fd)}${td(s.cash)}${td(s.ppf)}${td(s.bonds)}
                 <td style="text-align:right;color:var(--mint);font-weight:600;">${fmt(s.total)}</td>
                 <td style="text-align:right;">${dStr}</td>
               </tr>`;
@@ -6980,6 +6986,7 @@
                   <th style="text-align:right;padding-bottom:8px;">FD</th>
                   <th style="text-align:right;padding-bottom:8px;">Cash</th>
                   <th style="text-align:right;padding-bottom:8px;">PPF</th>
+                  <th style="text-align:right;padding-bottom:8px;">Bonds</th>
                   <th style="text-align:right;padding-bottom:8px;">Total</th>
                   <th style="text-align:right;padding-bottom:8px;">&Delta;</th>
                 </tr></thead>
