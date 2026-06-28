@@ -2774,6 +2774,14 @@
       .data-action-info { flex: 1; min-width: 0; }
       .data-action-title { font-size: 13px; font-weight: 600; color: var(--txt); margin-bottom: 3px; }
       .data-action-desc { font-size: 11px; color: var(--dim); line-height: 1.5; }
+      .backup-list-wrap { border-top: 1px solid var(--line); padding: 10px 0 4px; }
+      .backup-list { max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; }
+      .backup-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 2px; border-bottom: 1px solid var(--line); }
+      .backup-item:last-child { border-bottom: none; }
+      .backup-item-date { font-size: 13px; font-weight: 600; color: var(--txt); }
+      .backup-item-time { font-size: 11px; color: var(--dim); font-weight: 400; margin-left: 4px; }
+      .backup-list-msg { font-size: 12px; color: var(--dim); padding: 14px 4px; text-align: center; }
+      .btn-sm { font-size: 11px !important; padding: 4px 10px !important; border-radius: 8px !important; }
       /* ═══ PRINT VIEW ═══ */
       @media print {
         body { background: #fff !important; color: #000 !important; }
@@ -3433,6 +3441,16 @@
             </div>
             <button class="btn btn-ghost" id="dataImportBtn">Import</button>
           </div>
+          <div class="data-action-row">
+            <div class="data-action-info">
+              <div class="data-action-title">Cloud Backups</div>
+              <div class="data-action-desc">Browse and restore from daily cloud snapshots (last 30 days).</div>
+            </div>
+            <button class="btn btn-ghost" id="backupBrowseBtn">Browse</button>
+          </div>
+          <div class="backup-list-wrap" id="backupListWrap" style="display:none">
+            <div class="backup-list" id="backupList"></div>
+          </div>
           <input type="file" id="dataImportFile" accept=".json" style="display:none" />
         </div>
         <div class="modal-foot">
@@ -3813,6 +3831,72 @@
                 }
               })
               .catch(e => console.warn("Firebase SDK load failed:", e));
+          }
+
+          /* Browse and restore daily cloud backups */
+          async function loadBackupList() {
+            const wrap = el("backupListWrap");
+            const list = el("backupList");
+            const btn  = el("backupBrowseBtn");
+            const open = wrap.style.display === "none";
+            wrap.style.display = open ? "block" : "none";
+            btn.textContent    = open ? "Hide" : "Browse";
+            if (!open) return;
+
+            list.innerHTML = '<div class="backup-list-msg">Loading…</div>';
+
+            if (!fbEnabled || !db || !authUser) {
+              list.innerHTML = '<div class="backup-list-msg">Sign in to view cloud backups.</div>';
+              return;
+            }
+
+            try {
+              const snap = await db.collection("dailyBackups")
+                .orderBy(firebase.firestore.FieldPath.documentId(), "desc")
+                .limit(30)
+                .get();
+
+              if (snap.empty) {
+                list.innerHTML = '<div class="backup-list-msg">No cloud backups found.</div>';
+                return;
+              }
+
+              list.innerHTML = "";
+              snap.docs.forEach(doc => {
+                const data = doc.data();
+                const t = data.savedAt?.toDate?.();
+                const timeStr = t ? t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
+                const item = document.createElement("div");
+                item.className = "backup-item";
+                item.innerHTML = `
+                  <div class="backup-item-date">${doc.id}<span class="backup-item-time">${timeStr ? "· " + timeStr : ""}</span></div>
+                  <button class="btn btn-ghost btn-sm">Restore</button>
+                `;
+                item.querySelector("button").addEventListener("click", () => {
+                  UI.confirm(
+                    `Restore the snapshot from ${doc.id}? This replaces all current data.`,
+                    "Restore Backup", "Restore",
+                    async () => {
+                      try {
+                        const docSnap = await db.collection("dailyBackups").doc(doc.id).get();
+                        const raw = JSON.parse(docSnap.data().state || "{}");
+                        if (!raw.liquid || !raw.equity) { UI.toast("err", "Snapshot data is invalid", 3000); return; }
+                        applyCloudState(raw);
+                        saveState();
+                        el("dataModal").style.display = "none";
+                        UI.toast("success", "Restored backup from " + doc.id, 3000);
+                      } catch (e) {
+                        UI.toast("err", "Failed to restore — " + e.message, 4000);
+                      }
+                    }, false
+                  );
+                });
+                list.appendChild(item);
+              });
+            } catch (e) {
+              list.innerHTML = '<div class="backup-list-msg">Failed to load backups.</div>';
+              console.warn("loadBackupList:", e);
+            }
           }
 
           /* Merge cloud state into local, persist, and re-render */
@@ -4535,6 +4619,13 @@
           el("dataExportBtn").addEventListener("click", exportData);
           el("dataImportBtn").addEventListener("click", () => el("dataImportFile").click());
           el("dataImportFile").addEventListener("change", importData);
+          el("backupBrowseBtn").addEventListener("click", loadBackupList);
+          function resetBackupPanel() {
+            el("backupListWrap").style.display = "none";
+            el("backupBrowseBtn").textContent = "Browse";
+          }
+          el("dataModalClose").addEventListener("click", resetBackupPanel);
+          el("dataModalCancelBtn").addEventListener("click", resetBackupPanel);
           el("curValModalClose").addEventListener("click", closeCurValModal);
           el("curValCancelBtn").addEventListener("click", closeCurValModal);
           el("curValSaveBtn").addEventListener("click", saveCurVal);
