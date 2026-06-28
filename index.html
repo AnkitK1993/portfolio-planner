@@ -3443,6 +3443,13 @@
           </div>
           <div class="data-action-row">
             <div class="data-action-info">
+              <div class="data-action-title">Backup to Cloud</div>
+              <div class="data-action-desc">Save a snapshot of today's data to the cloud right now.</div>
+            </div>
+            <button class="btn btn-ghost" id="backupNowBtn">Back Up Now</button>
+          </div>
+          <div class="data-action-row">
+            <div class="data-action-info">
               <div class="data-action-title">Cloud Backups</div>
               <div class="data-action-desc">Browse and restore from daily cloud snapshots (last 30 days).</div>
             </div>
@@ -3974,6 +3981,31 @@
               UI.toast("success", "Daily backup saved (" + today + ")", 3000);
             } catch (e) {
               console.warn("Daily backup failed:", e.message);
+            }
+          }
+
+          /* Manual on-demand cloud backup */
+          async function saveManualBackup() {
+            if (!fbEnabled || !db || !authUser) {
+              UI.toast("err", "Sign in to back up to cloud", 3000);
+              return;
+            }
+            const btn = el("backupNowBtn");
+            btn.disabled = true;
+            btn.textContent = "Saving…";
+            const today = new Date().toISOString().slice(0, 10);
+            try {
+              await db.collection("dailyBackups").doc(today).set({
+                state:   JSON.stringify(state),
+                savedAt: firebase.firestore.FieldValue.serverTimestamp(),
+              });
+              localStorage.setItem("lastDailyBackup", today);
+              UI.toast("success", "Cloud backup saved (" + today + ")", 3000);
+            } catch (e) {
+              UI.toast("err", "Backup failed — " + e.message, 4000);
+            } finally {
+              btn.disabled = false;
+              btn.textContent = "Back Up Now";
             }
           }
 
@@ -4619,6 +4651,7 @@
           el("dataExportBtn").addEventListener("click", exportData);
           el("dataImportBtn").addEventListener("click", () => el("dataImportFile").click());
           el("dataImportFile").addEventListener("change", importData);
+          el("backupNowBtn").addEventListener("click", saveManualBackup);
           el("backupBrowseBtn").addEventListener("click", loadBackupList);
           function resetBackupPanel() {
             el("backupListWrap").style.display = "none";
