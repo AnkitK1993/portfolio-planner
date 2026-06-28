@@ -1662,10 +1662,17 @@
         /* Row 1 items */
         .coll-title  { order: 1; flex: 1; }
         .coll-chevron { order: 1; }
-        /* Row 2 items */
+        /* Row 2 items — pill left, value+return right-aligned as a consistent column */
         .fund-cat-pill { order: 3; }
-        .coll-meta { order: 4; min-width: 0; font-size: 12px; letter-spacing: -0.5px; margin-left: auto; }
-        .coll-rtn  { order: 5; }
+        .coll-meta { order: 4; min-width: 88px; font-size: 12px; letter-spacing: -0.5px; margin-left: auto; justify-content: flex-end; }
+        .coll-meta .val-num { flex: 0 0 auto; }
+        .coll-rtn  { order: 5; min-width: 58px; text-align: right; flex-shrink: 0; }
+      }
+
+      /* ── Mobile: HOLDINGS bar ── */
+      @media (max-width: 430px) {
+        .holdings-bar { gap: 8px; padding-right: 14px; }
+        .holdings-total { font-size: 22px; }
       }
 
       /* ── Drag handle ── */
