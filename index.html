@@ -3851,10 +3851,7 @@
             }
 
             try {
-              const snap = await db.collection("dailyBackups")
-                .orderBy(firebase.firestore.FieldPath.documentId(), "desc")
-                .limit(30)
-                .get();
+              const snap = await db.collection("dailyBackups").limit(30).get();
 
               if (snap.empty) {
                 list.innerHTML = '<div class="backup-list-msg">No cloud backups found.</div>';
@@ -3862,7 +3859,8 @@
               }
 
               list.innerHTML = "";
-              snap.docs.forEach(doc => {
+              const sortedDocs = snap.docs.slice().sort((a, b) => b.id.localeCompare(a.id));
+              sortedDocs.forEach(doc => {
                 const data = doc.data();
                 const t = data.savedAt?.toDate?.();
                 const timeStr = t ? t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
@@ -3896,7 +3894,7 @@
                 list.appendChild(item);
               });
             } catch (e) {
-              list.innerHTML = '<div class="backup-list-msg">Failed to load backups.</div>';
+              list.innerHTML = `<div class="backup-list-msg">Failed to load backups: ${e.message}</div>`;
               console.warn("loadBackupList:", e);
             }
           }
