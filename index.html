@@ -4002,12 +4002,24 @@
             btn.textContent = "Saving…";
             const today = new Date().toISOString().slice(0, 10);
             try {
-              await db.collection("dailyBackups").doc(today).set({
+              /* Find the first unused key for today: today, today-2, today-3 … */
+              let docId = today;
+              const baseSnap = await db.collection("dailyBackups").doc(today).get();
+              if (baseSnap.exists) {
+                let n = 2;
+                while (true) {
+                  const candidate = today + "-" + n;
+                  const snap = await db.collection("dailyBackups").doc(candidate).get();
+                  if (!snap.exists) { docId = candidate; break; }
+                  n++;
+                }
+              }
+              await db.collection("dailyBackups").doc(docId).set({
                 state:   JSON.stringify(state),
                 savedAt: firebase.firestore.FieldValue.serverTimestamp(),
               });
               localStorage.setItem("lastDailyBackup", today);
-              UI.toast("success", "Cloud backup saved (" + today + ")", 3000);
+              UI.toast("success", "Cloud backup saved (" + docId + ")", 3000);
             } catch (e) {
               UI.toast("err", "Backup failed — " + e.message, 4000);
             } finally {
