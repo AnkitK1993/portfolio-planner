@@ -1653,20 +1653,12 @@
       .coll-body.open { max-height: 2400px; }
       .coll-body-inner { padding: 4px 14px 16px; }
 
-      /* ── Mobile two-line coll-head ── */
+      /* ── Mobile fund rows: single-line, vertically centered ── */
       @media (max-width: 480px) {
-        /* flex-wrap so row 1 = name+chevron, row 2 = value+return */
-        .coll-head { flex-wrap: wrap; gap: 0 8px; padding-bottom: 10px; }
-        /* Invisible row-break element between row 1 and row 2 */
-        .coll-head::after { content: ''; flex-basis: 100%; order: 2; height: 4px; flex-shrink: 0; }
-        /* Row 1 items */
-        .coll-title  { order: 1; flex: 1; }
-        .coll-chevron { order: 1; }
-        /* Row 2 items — pill left, value+return right-aligned as a consistent column */
-        .fund-cat-pill { order: 3; }
-        .coll-meta { order: 4; min-width: 88px; font-size: 12px; letter-spacing: -0.5px; margin-left: auto; justify-content: flex-end; }
+        .coll-head { gap: 6px; }
+        .coll-meta { min-width: 85px; font-size: 12px; letter-spacing: -0.5px; justify-content: flex-end; }
         .coll-meta .val-num { flex: 0 0 auto; }
-        .coll-rtn  { order: 5; min-width: 58px; text-align: right; flex-shrink: 0; }
+        .coll-rtn  { min-width: 52px; text-align: right; flex-shrink: 0; }
       }
 
       /* ── Mobile: HOLDINGS bar ── */
