@@ -2658,6 +2658,11 @@
       }
       body.privacy-mode #tab-portfolio .holdings-rtn { opacity: 0; }
 
+      /* ── Hide chevrons on portfolio tab except Upcoming Payments ── */
+      #tab-portfolio .holdings-chevron { display: none; }
+      #tab-portfolio .coll-chevron { display: none; }
+      #coll-head-upcoming .coll-chevron { display: inline; }
+
       /* ═══ CALENDAR ═══ */
       .cal-card { padding: 14px 14px 16px; }
       .cal-head { display: flex; align-items: center; gap: 0; margin-bottom: 14px; }
