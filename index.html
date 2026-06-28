@@ -3806,6 +3806,7 @@
                     }
                     authUser = user;
                     updateAuthUI();
+                    if (user) maybeLoadFromCloud().catch(() => {});
                   });
                 } catch (e) {
                   console.warn("Firebase init:", e.message);
@@ -3946,10 +3947,17 @@
               fbDirty = true;
               await saveToCloud(0);
             } else {
-              // Same version — stamp syncedAt so next load skips the network
-              state._meta.syncedAt = new Date().toISOString();
-              localStorage.setItem(STORE_KEY, JSON.stringify(state));
-              fbSyncUI("ok");
+              // Same version — but if local has no real data, apply cloud state anyway
+              // (covers fresh device where both localV and cloudV are 0)
+              const hasLocalData = !!localStorage.getItem(STORE_KEY);
+              if (!hasLocalData && raw) {
+                applyCloudState(raw);
+                fbSyncUI("ok", "Synced from cloud ✓");
+              } else {
+                state._meta.syncedAt = new Date().toISOString();
+                localStorage.setItem(STORE_KEY, JSON.stringify(state));
+                fbSyncUI("ok");
+              }
             }
           }
 
