@@ -2802,22 +2802,6 @@
       .backup-item-time { font-size: 11px; color: var(--dim); font-weight: 400; margin-left: 4px; }
       .backup-list-msg { font-size: 12px; color: var(--dim); padding: 14px 4px; text-align: center; }
       .btn-sm { font-size: 11px !important; padding: 4px 10px !important; border-radius: 8px !important; }
-      /* ═══ PRINT VIEW ═══ */
-      @media print {
-        body { background: #fff !important; color: #000 !important; }
-        .tabs, nav, .nav-actions, #adminDropdown, #pinOverlay,
-        .btn, .modal-overlay, .confirm-overlay,
-        .coll-chevron, .drag-handle, .fund-archive-btn, .fund-cat-select,
-        .txn-filter-bar, .txn-act-btn, .fc-slider-wrap, .fc-mode-row,
-        .fc-scenario-row, #nwSnapshotBtn, .nw-snap-row button { display: none !important; }
-        .tab-section { display: block !important; page-break-before: always; }
-        .tab-section:first-of-type { page-break-before: auto; }
-        .card { border: 1px solid #ccc !important; background: #fff !important; box-shadow: none !important; }
-        .coll-body { display: block !important; height: auto !important; overflow: visible !important; }
-        * { color: #000 !important; }
-        .accent, .rtn-up, .up, [style*="color:var(--mint)"] { color: #007a50 !important; }
-        .rtn-dn, .dn, [style*="color:var(--coral)"] { color: #c0392b !important; }
-      }
 
       /* ── Transactions Tab Cards ── */
       .txp-card { background:var(--panel); border:1px solid var(--line); border-radius:14px; margin-bottom:12px; overflow:hidden; }
@@ -3464,9 +3448,6 @@
     </div>
     <!-- /app -->
 
-    <!-- txnModal / curValModal shells kept for JS compat -->
-    <div id="txnModal" style="display:none"></div>
-    <div id="curValModal" style="display:none"></div>
 
     <!-- ═══ DATA EXPORT / IMPORT MODAL ═══ -->
     <div id="dataModal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true">
@@ -3555,8 +3536,6 @@
       </div>
     </div>
 
-    <!-- sipModal shell kept for JS compat -->
-    <div id="sipModal" style="display:none"></div>
 
     <!-- ═══ CONFIRM DIALOG ═══ -->
     <div id="confirmModal" class="confirm-overlay" style="display:none" role="dialog" aria-modal="true">
