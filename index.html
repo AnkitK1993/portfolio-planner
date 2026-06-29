@@ -2813,6 +2813,34 @@
       .txp-card.open .txp-card-body { display:block; }
       .txp-inner { padding-top:14px; }
       .txp-foot { display:flex; justify-content:flex-end; gap:10px; margin-top:14px; }
+
+      /* ── Transaction type toggle (#3) ── */
+      .txn-type-toggle { display:flex; gap:4px; margin-bottom:12px; background:var(--bg); border-radius:10px; padding:3px; }
+      .txn-type-btn { flex:1; padding:6px 4px; font-size:11px; font-weight:600; border-radius:7px; border:none; background:none; color:var(--dim); cursor:pointer; transition:all 0.15s; }
+      .txn-type-btn.active { background:var(--panel); color:var(--txt); box-shadow:0 1px 4px rgba(0,0,0,.25); }
+      .txn-type-btn[data-type="redemption"].active { color:var(--coral); }
+      .txn-row-redeemed .txn-amt { color:var(--coral); }
+      .txn-badge { display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; border-radius:4px; text-transform:uppercase; letter-spacing:.4px; margin-left:5px; vertical-align:middle; }
+      .txn-badge-sip { background:rgba(74,222,156,.15); color:var(--mint); }
+      .txn-badge-lump { background:rgba(147,197,253,.12); color:#93c5fd; }
+      .txn-badge-redeem { background:rgba(248,113,113,.15); color:var(--coral); }
+
+      /* ── Fund split row (#10) ── */
+      .fund-split-row { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; min-height:0; }
+      .split-chip { font-size:10px; font-weight:600; padding:2px 7px; border-radius:6px; }
+      .split-chip-sip { background:rgba(74,222,156,.12); color:var(--mint); }
+      .split-chip-lump { background:rgba(147,197,253,.1); color:#93c5fd; }
+      .split-chip-redeem { background:rgba(248,113,113,.12); color:var(--coral); }
+
+      /* ── Streak banner (#6) ── */
+      .streak-banner { display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--panel); border:1px solid var(--line); border-radius:12px; margin-bottom:12px; }
+      .streak-count { font-family:'IBM Plex Mono',monospace; font-size:22px; font-weight:700; color:var(--mint); }
+      .streak-label { font-size:11px; color:var(--dim); line-height:1.3; }
+
+      /* ── Fund XIRR header badge (#9) ── */
+      .coll-xirr { font-size:10px; font-weight:700; color:var(--dim); padding:2px 6px; border-radius:5px; background:var(--bg); margin-left:4px; flex-shrink:0; white-space:nowrap; }
+      .coll-xirr.up { color:var(--mint); background:rgba(74,222,156,.1); }
+      .coll-xirr.dn { color:var(--coral); background:rgba(248,113,113,.1); }
     </style>
   </head>
   <body>
@@ -3018,6 +3046,16 @@
           <div id="sumRebalance" style="display:none;"></div>
         </div>
 
+        <!-- Investment streak -->
+        <div id="sumStreakWrap" style="display:none">
+          <div class="streak-banner">
+            <div>
+              <div class="streak-count" id="sumStreakCount">0</div>
+            </div>
+            <div class="streak-label" id="sumStreakLabel">consecutive months investing</div>
+          </div>
+        </div>
+
         <!-- Portfolio XIRR -->
         <div class="card" style="margin-bottom:12px" id="sumXirrCard" style="display:none">
           <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
@@ -3182,7 +3220,7 @@
         <!-- Mode toggle -->
         <div class="fc-mode-row">
           <button class="fc-mode-btn active" id="fcModeProject" data-mode="project">Projection</button>
-          <button class="fc-mode-btn" id="fcModeGoal" data-mode="goal">Goal Planning</button>
+          <button class="fc-mode-btn" id="fcModeGoal" data-mode="goal">Reverse SIP</button>
         </div>
 
         <div class="fc-inputs">
@@ -3338,6 +3376,12 @@
               <div class="curval-date-row">
                 <input class="form-inp" id="txnDate" type="date" />
               </div>
+              <div class="txn-type-toggle" id="txnTypeToggle">
+                <button class="txn-type-btn active" data-type="sip">SIP</button>
+                <button class="txn-type-btn" data-type="lump">Lump Sum</button>
+                <button class="txn-type-btn" data-type="redemption">Redemption</button>
+              </div>
+              <input type="hidden" id="txnType" value="sip" />
               <div id="txnFundInputList"></div>
               <div class="txp-foot">
                 <button class="btn btn-ghost" id="txnCancelBtn">Cancel</button>
@@ -4309,6 +4353,7 @@
                   <div class="ibox"><span class="pfx">&#8377;</span>
                     <input class="num liq txn-driven" id="lpaid-${f.id}" type="text" placeholder="0" inputmode="numeric" value="${fmtNum(s.paid)}" readonly />
                   </div>
+                  <div class="fund-split-row" id="lsplit-${f.id}"></div>
                 </div>
                 <div class="field">
                   <label class="flabel" for="lval-${f.id}">After expense</label>
@@ -4366,6 +4411,7 @@
                   <div class="ibox"><span class="pfx">&#8377;</span>
                     <input class="num txn-driven" id="epaid-${f.id}" type="text" placeholder="0" inputmode="numeric" value="${fmtNum(s.paid)}" readonly />
                   </div>
+                  <div class="fund-split-row" id="esplit-${f.id}"></div>
                 </div>
                 <div class="field">
                   <label class="flabel" for="eshown-${f.id}">After expense</label>
@@ -4484,6 +4530,7 @@
                 <select class="fund-cat-select" id="cat-${f.id}"><option value="">Category…</option>${catOpts}</select>
                 <span class="coll-meta" id="coll-val-${f.id}"></span>
                 <span class="coll-rtn" id="coll-rtn-${f.id}"></span>
+                <span class="coll-xirr" id="coll-xirr-${f.id}" style="display:none"></span>
                 <button class="fund-archive-btn" data-id="${f.id}" data-liq="${isLiq}" title="Archive fund">Archive</button>
                 <span class="coll-chevron">▾</span>
               </button>
@@ -4727,6 +4774,18 @@
           });
           el("txnCancelBtn").addEventListener("click", closeTxnModal);
           el("txnSaveBtn").addEventListener("click", saveTxn);
+
+          /* Transaction type toggle */
+          function setTxnType(type) {
+            el("txnType").value = type;
+            el("txnTypeToggle").querySelectorAll(".txn-type-btn").forEach(b => {
+              b.classList.toggle("active", b.dataset.type === type);
+            });
+          }
+          el("txnTypeToggle").addEventListener("click", e => {
+            const btn = e.target.closest(".txn-type-btn");
+            if (btn) setTxnType(btn.dataset.type);
+          });
           /* Transaction filters */
           document.querySelectorAll("#txnPresets .txn-preset").forEach(btn => {
             btn.addEventListener("click", () => {
@@ -4868,22 +4927,40 @@
           ════════════════════════════════════════════ */
           function applyTxnTotals() {
             if (!state.transactions || !state.transactions.length) return;
-            const invested = {};
+            const net = {}, sipTot = {}, lumpTot = {}, redeemTot = {};
             state.transactions.forEach(t => {
-              invested[t.fundId] = (invested[t.fundId] || 0) + (Number(t.invested) || 0);
+              const amt = Number(t.invested) || 0;
+              if (t.type === "redemption") {
+                redeemTot[t.fundId] = (redeemTot[t.fundId] || 0) + amt;
+                net[t.fundId] = (net[t.fundId] || 0) - amt;
+              } else if (t.type === "sip") {
+                sipTot[t.fundId]  = (sipTot[t.fundId]  || 0) + amt;
+                net[t.fundId]     = (net[t.fundId]     || 0) + amt;
+              } else {
+                lumpTot[t.fundId] = (lumpTot[t.fundId] || 0) + amt;
+                net[t.fundId]     = (net[t.fundId]     || 0) + amt;
+              }
             });
             LIQ_FUNDS.forEach(f => {
-              if (invested[f.id] !== undefined) {
-                state.liquid[f.id].paid = invested[f.id];
+              if (net[f.id] !== undefined) {
+                const paid = Math.max(0, net[f.id]);
+                state.liquid[f.id].paid      = paid;
+                state.liquid[f.id].sipPaid   = sipTot[f.id]    || 0;
+                state.liquid[f.id].lumpPaid  = lumpTot[f.id]   || 0;
+                state.liquid[f.id].redeemPaid= redeemTot[f.id] || 0;
                 const inp = document.getElementById("lpaid-" + f.id);
-                if (inp) inp.value = fmtNum(invested[f.id]);
+                if (inp) inp.value = fmtNum(paid);
               }
             });
             EQ_FUNDS.forEach(f => {
-              if (invested[f.id] !== undefined) {
-                state.equity[f.id].paid = invested[f.id];
+              if (net[f.id] !== undefined) {
+                const paid = Math.max(0, net[f.id]);
+                state.equity[f.id].paid      = paid;
+                state.equity[f.id].sipPaid   = sipTot[f.id]    || 0;
+                state.equity[f.id].lumpPaid  = lumpTot[f.id]   || 0;
+                state.equity[f.id].redeemPaid= redeemTot[f.id] || 0;
                 const inp = document.getElementById("epaid-" + f.id);
-                if (inp) inp.value = fmtNum(invested[f.id]);
+                if (inp) inp.value = fmtNum(paid);
               }
             });
           }
@@ -4908,6 +4985,7 @@
             if (editId) {
               const txn = (state.transactions || []).find(t => t.id === editId);
               el("txnDate").value = txn?.date || today;
+              setTxnType(txn?.type || "sip");
               const isLiq = LIQ_FUNDS.some(f => f.id === txn?.fundId);
               const s = isLiq ? state.liquid[txn.fundId] : state.equity[txn.fundId];
               const defName = isLiq
@@ -4917,6 +4995,7 @@
               el("txnFundInputList").innerHTML = fundRowHTML(txn.fundId, name, txn?.invested);
             } else {
               el("txnDate").value = today;
+              setTxnType("sip");
               const allFunds = [
                 ...LIQ_FUNDS.map(f => ({ id: f.id, name: state.liquid[f.id].name || f.defaultName })),
                 ...EQ_FUNDS.map(f => ({ id: f.id, name: state.equity[f.id].name || f.defaultName })),
@@ -4937,6 +5016,7 @@
             if (!date) { UI.toast("error", "Date is required", 2500); return; }
             if (!state.transactions) state.transactions = [];
 
+            const txnType = el("txnType")?.value || "sip";
             if (editId) {
               const txn = state.transactions.find(t => t.id === editId);
               if (!txn) return;
@@ -4944,17 +5024,20 @@
               if (!invested) { UI.toast("error", "Amount is required", 2500); return; }
               txn.date = date;
               txn.invested = invested;
+              txn.type = txnType;
             } else {
               const allFunds = [...LIQ_FUNDS, ...EQ_FUNDS];
               let added = 0;
               const dups = [];
-              allFunds.forEach(f => {
-                const v = Number(el("txi-" + f.id)?.value) || 0;
-                if (v > 0) {
-                  const existing = (state.transactions || []).find(t => t.fundId === f.id && t.date === date);
-                  if (existing) dups.push(fundName(f.id));
-                }
-              });
+              if (txnType !== "redemption") {
+                allFunds.forEach(f => {
+                  const v = Number(el("txi-" + f.id)?.value) || 0;
+                  if (v > 0) {
+                    const existing = (state.transactions || []).find(t => t.fundId === f.id && t.date === date && t.type !== "redemption");
+                    if (existing) dups.push(fundName(f.id));
+                  }
+                });
+              }
               const doAdd = () => {
                 allFunds.forEach(f => {
                   const v = Number(el("txi-" + f.id)?.value) || 0;
@@ -4964,7 +5047,7 @@
                   }
                 });
                 applyTxnTotals(); saveState(); render(); renderTxns(); closeTxnModal();
-                UI.toast("success", "Transaction added", 2000);
+                UI.toast("success", txnType === "redemption" ? "Redemption recorded" : "Transaction added", 2000);
               };
               if (dups.length) {
                 UI.confirm(`A transaction already exists on ${date} for: ${dups.join(", ")}. Add anyway?`, "Duplicate detected", "Add anyway", doAdd, false);
@@ -4973,7 +5056,7 @@
               allFunds.forEach(f => {
                 const v = Number(el("txi-" + f.id)?.value) || 0;
                 if (v > 0) {
-                  state.transactions.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5), fundId: f.id, date, invested: v, notes: "" });
+                  state.transactions.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5), fundId: f.id, date, invested: v, notes: "", type: txnType });
                   added++;
                 }
               });
@@ -4984,7 +5067,7 @@
             render();
             renderTxns();
             closeTxnModal();
-            UI.toast("success", editId ? "Transaction updated" : "Transaction added", 2000);
+            UI.toast("success", editId ? "Transaction updated" : txnType === "redemption" ? "Redemption recorded" : "Transaction added", 2000);
           }
 
           function deleteTxn(id) {
@@ -5183,14 +5266,22 @@
 
                 list.forEach(t => {
                   const runningTotal = runMap[t.id] || 0;
-                  html += `<div class="txn-row txn-row-child">
+                  const isRedeem = t.type === "redemption";
+                  const typeBadge = t.type === "sip"
+                    ? `<span class="txn-badge txn-badge-sip">SIP</span>`
+                    : t.type === "redemption"
+                    ? `<span class="txn-badge txn-badge-redeem">Redeemed</span>`
+                    : t.type === "lump"
+                    ? `<span class="txn-badge txn-badge-lump">Lump</span>`
+                    : "";
+                  html += `<div class="txn-row txn-row-child${isRedeem ? " txn-row-redeemed" : ""}">
                     <div class="txn-info">
-                      <div class="txn-fund-name">${fundName(t.fundId)}</div>
+                      <div class="txn-fund-name">${fundName(t.fundId)}${typeBadge}</div>
                       ${t.notes ? `<div class="txn-sub">${t.notes}</div>` : ""}
                       <div class="txn-running">Running total: ${fmt(runningTotal)}</div>
                     </div>
                     <div class="txn-right">
-                      <div class="txn-amt">${fmt(t.invested)}</div>
+                      <div class="txn-amt">${isRedeem ? "−" : ""}${fmt(t.invested)}</div>
                       <div class="txn-acts">
                         <button class="txn-act-btn edit" data-id="${t.id}">Edit</button>
                         <button class="txn-act-btn del" data-id="${t.id}">Del</button>
@@ -5528,6 +5619,29 @@
                   lcollRtn.className = "coll-rtn " + (isUp ? "up" : "dn");
                 } else { lcollRtn.textContent = ""; lcollRtn.className = "coll-rtn"; }
               }
+              /* XIRR badge */
+              const lxirrBadge = el("coll-xirr-" + f.id);
+              if (lxirrBadge) {
+                const x = fundXirr(f.id, true);
+                if (x !== null) {
+                  const p = (x * 100).toFixed(1);
+                  const up = x >= 0;
+                  lxirrBadge.textContent = (up ? "+" : "") + p + "% pa";
+                  lxirrBadge.className = "coll-xirr " + (up ? "up" : "dn");
+                  lxirrBadge.style.display = "";
+                } else { lxirrBadge.style.display = "none"; }
+              }
+              /* Split row */
+              const lsplit = el("lsplit-" + f.id);
+              if (lsplit) {
+                const s2 = state.liquid[f.id];
+                const chips = [
+                  s2.sipPaid  > 0 ? `<span class="split-chip split-chip-sip">SIP ${fmt(s2.sipPaid)}</span>`    : "",
+                  s2.lumpPaid > 0 ? `<span class="split-chip split-chip-lump">Lump ${fmt(s2.lumpPaid)}</span>` : "",
+                  s2.redeemPaid > 0 ? `<span class="split-chip split-chip-redeem">−${fmt(s2.redeemPaid)}</span>` : "",
+                ].join("");
+                lsplit.innerHTML = chips;
+              }
             });
 
             /* Deployable summary bar */
@@ -5627,6 +5741,29 @@
                   ecollRtn.textContent = (isUp ? "↑" : "↓") + " " + (isUp ? "+" : "−") + pct + "%";
                   ecollRtn.className = "coll-rtn " + (isUp ? "up" : "dn");
                 } else { ecollRtn.textContent = ""; ecollRtn.className = "coll-rtn"; }
+              }
+              /* XIRR badge */
+              const exirrBadge = el("coll-xirr-" + f.id);
+              if (exirrBadge) {
+                const x = fundXirr(f.id, false);
+                if (x !== null) {
+                  const p = (x * 100).toFixed(1);
+                  const up = x >= 0;
+                  exirrBadge.textContent = (up ? "+" : "") + p + "% pa";
+                  exirrBadge.className = "coll-xirr " + (up ? "up" : "dn");
+                  exirrBadge.style.display = "";
+                } else { exirrBadge.style.display = "none"; }
+              }
+              /* Split row */
+              const esplit = el("esplit-" + f.id);
+              if (esplit) {
+                const s2 = state.equity[f.id];
+                const chips = [
+                  s2.sipPaid  > 0 ? `<span class="split-chip split-chip-sip">SIP ${fmt(s2.sipPaid)}</span>`    : "",
+                  s2.lumpPaid > 0 ? `<span class="split-chip split-chip-lump">Lump ${fmt(s2.lumpPaid)}</span>` : "",
+                  s2.redeemPaid > 0 ? `<span class="split-chip split-chip-redeem">−${fmt(s2.redeemPaid)}</span>` : "",
+                ].join("");
+                esplit.innerHTML = chips;
               }
 
               eqCur += cur;
@@ -6260,6 +6397,29 @@
                 }
               } else {
                 xirrCard.style.display = "none";
+              }
+            }
+
+            // Investment streak
+            const streakWrap = el("sumStreakWrap");
+            if (streakWrap) {
+              const months = new Set((state.transactions || [])
+                .filter(t => t.type !== "redemption" && t.date)
+                .map(t => t.date.slice(0, 7)));
+              const now = new Date();
+              let streak = 0;
+              for (let i = 0; i < 120; i++) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+                if (months.has(key)) streak++;
+                else if (i > 0) break;
+              }
+              if (streak >= 2) {
+                el("sumStreakCount").textContent = streak;
+                el("sumStreakLabel").textContent = `consecutive month${streak !== 1 ? "s" : ""} investing`;
+                streakWrap.style.display = "";
+              } else {
+                streakWrap.style.display = "none";
               }
             }
 
