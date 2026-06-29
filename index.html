@@ -1176,6 +1176,22 @@
         margin-top: 3px;
         word-break: break-all;
       }
+      /* ── NW HYBRID LAYOUT ── */
+      .nw-hero-inner { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+      .nw-hero-sparkline { width:110px; height:52px; flex-shrink:0; margin-top:8px; overflow:visible; }
+      .nw-delta-chips { display:flex; gap:7px; flex-wrap:wrap; margin:8px 0 10px; }
+      .nw-delta-chip { display:inline-flex; align-items:center; background:rgba(61,214,140,0.12); border-radius:20px; padding:3px 10px; font-size:11px; font-weight:700; color:var(--mint); font-family:"Space Mono",monospace; }
+      .nw-delta-chip.neg { background:rgba(255,107,107,0.12); color:var(--coral); }
+      .nw-stat-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+      .nw-stat-card { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 14px; }
+      .nw-stat-label { font-size:9px; text-transform:uppercase; letter-spacing:1px; color:var(--dim); margin-bottom:5px; }
+      .nw-stat-val { font-family:"Space Mono",monospace; font-size:16px; font-weight:700; color:var(--mint); }
+      .nw-enter-toggle { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin-bottom:0; display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none; }
+      .nw-enter-toggle.open { border-radius:14px 14px 0 0; border-bottom-color:transparent; }
+      .nw-enter-title { font-size:12.5px; font-weight:700; color:var(--txt); margin-bottom:3px; }
+      .nw-enter-hint { font-size:9.5px; color:var(--dim); }
+      .nw-enter-chevron { color:var(--dim); font-size:14px; transition:transform 0.2s; }
+      .nw-enter-body { background:var(--panel); border:1px solid var(--line); border-top:none; border-radius:0 0 14px 14px; padding:14px 16px 16px; margin-bottom:12px; }
       @media (max-width: 680px) {
         .nw-bar-label {
           min-width: 100px;
@@ -3075,97 +3091,88 @@
       <section class="tab-section" id="tab-networth">
         <div class="pg-head">
           <h1>Net <span class="accent">Worth</span></h1>
-          <p>
-            Monthly snapshot tracker. Save each month to build your growth
-            history and unlock projections.
-          </p>
+          <p>Monthly snapshot tracker. Save each month to build your growth history.</p>
         </div>
 
-        <!-- Hero -->
+        <!-- Hero with inline sparkline -->
         <div class="nw-hero">
           <div class="nw-hero-label">Current Net Worth</div>
-          <div class="nw-hero-val" id="nwHeroVal">₹0</div>
-          <div class="nw-hero-meta">
-            <div class="nwpm">Mutual Funds&nbsp;<b id="nwMfChip">₹0</b></div>
-            <div class="nwpm">MF Profit&nbsp;<b id="nwMfProfitChip">₹0</b></div>
-            <div class="nwpm">Other Assets&nbsp;<b id="nwOtherChip">₹0</b></div>
+          <div class="nw-hero-inner">
+            <div>
+              <div class="nw-hero-val" id="nwHeroVal">₹0</div>
+              <div class="nw-delta-chips" id="nwDeltaChips" style="display:none">
+                <span class="nw-delta-chip" id="nwMomChip"></span>
+                <span class="nw-delta-chip" id="nwYoyChip"></span>
+              </div>
+              <div class="nw-hero-meta">
+                <div class="nwpm">Mutual Funds&nbsp;<b id="nwMfChip">₹0</b></div>
+                <div class="nwpm">MF Profit&nbsp;<b id="nwMfProfitChip">₹0</b></div>
+                <div class="nwpm">Other Assets&nbsp;<b id="nwOtherChip">₹0</b></div>
+              </div>
+            </div>
+            <svg id="nwHeroSparkline" class="nw-hero-sparkline" viewBox="0 0 110 52" preserveAspectRatio="none"></svg>
           </div>
         </div>
 
-        <!-- Inputs + breakdown + save -->
-        <div class="card" style="margin-bottom: 12px">
-          <div class="sec-head" style="margin-bottom: 14px">Enter Values</div>
+        <!-- Stats row -->
+        <div class="nw-stat-row" id="nwStatRow" style="display:none">
+          <div class="nw-stat-card">
+            <div class="nw-stat-label">Avg Monthly Growth</div>
+            <div class="nw-stat-val" id="nwAvgGrowth">—</div>
+          </div>
+          <div class="nw-stat-card">
+            <div class="nw-stat-label">Savings Rate</div>
+            <div class="nw-stat-val" id="nwSavingsRateStat">—</div>
+          </div>
+        </div>
 
+        <!-- Enter Values — collapsible, snapshot button inside -->
+        <div class="nw-enter-toggle open" id="nwEnterToggle">
+          <div>
+            <div class="nw-enter-title">Enter Values</div>
+            <div class="nw-enter-hint">Bank · FD · PPF · Cash · Bonds</div>
+          </div>
+          <span class="nw-enter-chevron" id="nwEnterChevron">▾</span>
+        </div>
+        <div class="nw-enter-body" id="nwEnterBody">
           <div class="nw-auto-item">
             <div class="nw-auto-label">
               Mutual Funds
-              <span
-                class="tag equity"
-                style="font-size: 7.5px; padding: 2px 6px"
-                >AUTO</span
-              >
+              <span class="tag equity" style="font-size:7.5px;padding:2px 6px">AUTO</span>
             </div>
             <div class="nw-auto-val" id="nwMfVal">₹0</div>
-            <div class="nw-auto-sub">
-              Liquid + equity synced from Portfolio tab
-            </div>
+            <div class="nw-auto-sub">Liquid + equity synced from Portfolio tab</div>
           </div>
-
           <div class="nw-fields-grid" id="nwFieldsGrid"></div>
-
-          <div
-            style="
-              margin-top: 14px;
-              padding-top: 12px;
-              border-top: 1px solid var(--line);
-            "
-          >
-            <div
-              class="sec-head"
-              style="
-                border-bottom: none;
-                padding-bottom: 0;
-                margin-bottom: 10px;
-              "
-            >
-              Asset Breakdown
-            </div>
-            <div id="nwBreakdown"></div>
-          </div>
-
           <div class="nw-snap-row">
-            <button
-              class="btn primary"
-              id="nwSnapshotBtn"
-              style="flex: 0 0 auto"
-            >
-              Save snapshot
-            </button>
-            <span
-              id="nwSnapMsg"
-              style="font-size: 10.5px; color: var(--dim)"
-            ></span>
+            <button class="btn primary" id="nwSnapshotBtn" style="flex:0 0 auto">Save snapshot</button>
+            <span id="nwSnapMsg" style="font-size:10.5px;color:var(--dim)"></span>
           </div>
         </div>
 
-        <!-- History -->
-        <div class="card" style="margin-bottom: 12px">
-          <div class="sec-head" style="margin-bottom: 12px">
-            Monthly History
-          </div>
+        <!-- Asset Breakdown — own card -->
+        <div class="card" style="margin-bottom:12px">
+          <div class="sec-head" style="margin-bottom:12px">Asset Breakdown</div>
+          <div id="nwBreakdown"></div>
+        </div>
+
+        <!-- Monthly History -->
+        <div class="card" style="margin-bottom:12px">
+          <div class="sec-head" style="margin-bottom:12px">Monthly History</div>
           <div id="nwHistory"></div>
         </div>
 
-        <!-- Net Worth Line Chart -->
-        <div class="card" id="nwChartCard" style="display:none">
-          <div class="sec-head" style="margin-bottom:12px">Net Worth Over Time</div>
-          <svg id="nwLineChart" viewBox="0 0 600 150" preserveAspectRatio="none" style="width:100%;height:130px;display:block;"></svg>
-          <div id="nwSavingsRate" style="margin-top:10px;font-size:11px;color:var(--dim);"></div>
+        <!-- Net Worth Over Time -->
+        <div class="card" id="nwChartCard" style="display:none;margin-bottom:12px">
+          <div class="sec-head" style="margin-bottom:10px">Net Worth Over Time</div>
+          <svg id="nwLineChart" viewBox="0 0 600 150" preserveAspectRatio="none" style="width:100%;height:140px;display:block;"></svg>
+          <div id="nwChartStats" style="margin-top:8px;padding-top:10px;border-top:1px solid var(--line);display:flex;gap:16px;flex-wrap:wrap;"></div>
+          <div id="nwChartLegend" style="display:flex;gap:16px;margin-top:8px;"></div>
         </div>
 
         <!-- Projections -->
         <div class="card">
-          <div class="sec-head" style="margin-bottom: 12px">Projections</div>
+          <div class="sec-head" style="margin-bottom:12px">Projections</div>
           <div id="nwProjection"></div>
         </div>
 
@@ -6846,8 +6853,7 @@
             const inp = el("nw-mfProfit");
             if (inp) inp.value = profit !== 0 ? Math.round(profit).toLocaleString("en-IN") : "";
             const other = NW_FIELDS.filter((f) => f.id !== "mfProfit").reduce(
-              (s, f) => s + (state.networth[f.id] || 0),
-              0,
+              (s, f) => s + (state.networth[f.id] || 0), 0,
             );
             const total = mfVal + other;
 
@@ -6856,61 +6862,118 @@
             el("nwMfProfitChip").textContent = fmt(profit);
             el("nwOtherChip").textContent = fmt(other);
             animateNumber(el("nwHeroVal"), total);
-            el("nwSnapshotBtn").textContent =
-              "Save snapshot — " + fmtMonth(snapshotKey());
+            el("nwSnapshotBtn").textContent = "Save snapshot — " + fmtMonth(snapshotKey());
 
+            // Delta chips, stats row, sparkline — driven by snapshots
+            const snaps = state.networth.snapshots || {};
+            const sorted = Object.entries(snaps)
+              .map(([k, v]) => ({ key: k, ...v }))
+              .sort((a, b) => a.key.localeCompare(b.key));
+            const deltaRow = el("nwDeltaChips");
+            const statRow  = el("nwStatRow");
+
+            if (sorted.length >= 1) {
+              const last = sorted[sorted.length - 1];
+              // MoM: diff between live total and most recent snapshot
+              const momChip = el("nwMomChip");
+              if (momChip) {
+                const mom = total - last.total;
+                const sign = mom >= 0 ? "▲" : "▼";
+                momChip.textContent = `${sign} ${mom >= 0 ? "+" : "−"}${fmt(Math.abs(mom))} MoM`;
+                momChip.className = "nw-delta-chip" + (mom < 0 ? " neg" : "");
+              }
+              // YoY: snapshot closest to 12 months ago
+              const [ny, nm] = snapshotKey().split("-").map(Number);
+              const yoyTarget = `${ny - 1}-${String(nm).padStart(2, "0")}`;
+              const yoySnap = snaps[yoyTarget] || [...sorted].reverse().find(s => s.key <= yoyTarget);
+              const yoyChip = el("nwYoyChip");
+              if (yoySnap && yoyChip) {
+                const yoy = total - yoySnap.total;
+                const sign = yoy >= 0 ? "▲" : "▼";
+                yoyChip.textContent = `${sign} ${yoy >= 0 ? "+" : "−"}${fmt(Math.abs(yoy))} YoY`;
+                yoyChip.className = "nw-delta-chip" + (yoy < 0 ? " neg" : "");
+                yoyChip.style.display = "";
+              } else if (yoyChip) {
+                yoyChip.style.display = "none";
+              }
+              if (deltaRow) deltaRow.style.display = "flex";
+
+              // Avg monthly growth
+              if (statRow) {
+                let sumDelta = 0, countDelta = 0;
+                for (let i = 1; i < sorted.length; i++) { sumDelta += sorted[i].total - sorted[i-1].total; countDelta++; }
+                sumDelta += total - last.total; countDelta++;
+                const avg = countDelta > 0 ? sumDelta / countDelta : 0;
+                const avgEl = el("nwAvgGrowth");
+                if (avgEl) {
+                  avgEl.textContent = (avg >= 0 ? "+" : "−") + fmt(Math.abs(avg));
+                  avgEl.style.color = avg >= 0 ? "var(--mint)" : "var(--coral)";
+                }
+                statRow.style.display = "grid";
+              }
+            } else {
+              if (deltaRow) deltaRow.style.display = "none";
+              if (statRow)  statRow.style.display  = "none";
+            }
+
+            // Savings rate stat
+            const srEl = el("nwSavingsRateStat");
+            if (srEl) {
+              if (state.surplus?.income > 0) {
+                const rate = ((state.surplus.income - (state.surplus.expenses || 0)) / state.surplus.income * 100).toFixed(1);
+                srEl.textContent = rate + "%";
+                srEl.style.color = "var(--mint)";
+              } else {
+                srEl.textContent = "—";
+                srEl.style.color = "var(--dim)";
+              }
+            }
+
+            // Hero sparkline — last 6 snapshots + live total
+            const sparkEl = el("nwHeroSparkline");
+            if (sparkEl) {
+              const pts = [...sorted.slice(-6).map(s => s.total), total];
+              if (pts.length >= 2) {
+                const mn = Math.min(...pts), mx = Math.max(...pts), rng = mx - mn || 1;
+                const W = 110, H = 52, P = 4;
+                const px = i => (i / (pts.length - 1)) * (W - P * 2) + P;
+                const py = v => H - P - ((v - mn) / rng) * (H - P * 2);
+                const ld = pts.map((v, i) => `${i === 0 ? "M" : "L"}${px(i).toFixed(1)},${py(v).toFixed(1)}`).join(" ");
+                const ad = ld + ` L${px(pts.length-1).toFixed(1)},${H} L${P},${H} Z`;
+                const lx = px(pts.length-1).toFixed(1), ly = py(total).toFixed(1);
+                sparkEl.innerHTML = `<defs><linearGradient id="spkG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3dd68c" stop-opacity="0.3"/><stop offset="100%" stop-color="#3dd68c" stop-opacity="0"/></linearGradient></defs>
+                  <path d="${ad}" fill="url(#spkG)"/>
+                  <path d="${ld}" fill="none" stroke="#3dd68c" stroke-width="2" stroke-linejoin="round"/>
+                  <circle cx="${lx}" cy="${ly}" r="3.5" fill="#3dd68c"/>`;
+              } else { sparkEl.innerHTML = ""; }
+            }
+
+            // Asset breakdown bars
             const mfCost = Math.max(0, mfVal - profit);
             const cats = [
-              {
-                label: "MF Invested (cost)",
-                value: mfCost,
-                color: "rgba(74,222,156,0.4)",
-              },
+              { label: "MF Invested (cost)", value: mfCost, color: "rgba(74,222,156,0.4)" },
               { label: "MF Unrealized Returns", value: profit, color: "#4ade9c" },
-              {
-                label: "Bank & Savings",
-                value: state.networth.bank || 0,
-                color: "var(--liq)",
-              },
-              {
-                label: "Fixed Deposit",
-                value: state.networth.fd || 0,
-                color: "#5bc4f5",
-              },
-              {
-                label: "Cash",
-                value: state.networth.cash || 0,
-                color: "var(--amber)",
-              },
-              {
-                label: "PPF / EPF / NPS",
-                value: state.networth.ppf || 0,
-                color: "#8be8ff",
-              },
-              {
-                label: "Bonds",
-                value: state.networth.bonds || 0,
-                color: "#c084fc",
-              },
+              { label: "Bank & Savings", value: state.networth.bank || 0, color: "var(--liq)" },
+              { label: "Fixed Deposit", value: state.networth.fd || 0, color: "#5bc4f5" },
+              { label: "Cash", value: state.networth.cash || 0, color: "var(--amber)" },
+              { label: "PPF / EPF / NPS", value: state.networth.ppf || 0, color: "#8be8ff" },
+              { label: "Bonds", value: state.networth.bonds || 0, color: "#c084fc" },
             ].filter((c) => c.value > 0);
 
             if (!cats.length) {
-              el("nwBreakdown").innerHTML =
-                `<div style="color:var(--dim);font-size:12px;">Enter values above to see the breakdown.</div>`;
+              el("nwBreakdown").innerHTML = `<div style="color:var(--dim);font-size:12px;">Enter values above to see the breakdown.</div>`;
               return;
             }
             const maxW = Math.max(...cats.map((c) => c.value));
-            el("nwBreakdown").innerHTML = cats
-              .map((c) => {
-                const barW = Math.max(1, Math.round((c.value / maxW) * 100));
-                const share = total > 0 ? Math.round((c.value / total) * 100) : 0;
-                return `<div class="nw-bar-row">
+            el("nwBreakdown").innerHTML = cats.map((c) => {
+              const barW = Math.max(1, Math.round((c.value / maxW) * 100));
+              const share = total > 0 ? Math.round((c.value / total) * 100) : 0;
+              return `<div class="nw-bar-row">
                 <div class="nw-bar-label" title="${c.label}">${c.label}</div>
                 <div class="nw-bar-track"><div class="nw-bar-fill" style="width:${barW}%;background:${c.color};"></div></div>
                 <div class="nw-bar-val">${fmt(c.value)}<span class="nw-bar-pct">${share}%</span></div>
               </div>`;
-              })
-              .join("");
+            }).join("");
           }
 
           function takeSnapshot() {
@@ -6956,38 +7019,30 @@
               return;
             }
 
-            const rows = sorted
-              .map((s, i) => {
-                const prev = sorted[i + 1];
-                const delta = prev !== undefined ? s.total - prev.total : null;
-                const dStr =
-                  delta !== null
-                    ? `<span style="color:${delta >= 0 ? "var(--mint)" : "var(--coral)"}">${delta >= 0 ? "+" : "−"}${fmt(Math.abs(delta))}</span>`
-                    : "—";
-                const td = (v, c) =>
-                  `<td style="text-align:right;${c ? "color:" + c + ";" : ""}">${fmt(v || 0)}</td>`;
-                return `<tr>
+            const td = (v, c) => `<td style="text-align:right;${c ? "color:" + c + ";" : ""}">${fmt(v || 0)}</td>`;
+            const rows = sorted.map((s, i) => {
+              const prev = sorted[i + 1];
+              const delta = prev !== undefined ? s.total - prev.total : null;
+              const dStr = delta !== null
+                ? `<span style="color:${delta >= 0 ? "var(--mint)" : "var(--coral)"};font-weight:600;">${delta >= 0 ? "+" : "−"}${fmt(Math.abs(delta))}</span>`
+                : "—";
+              return `<tr>
                 <td>${fmtMonth(s.key)}</td>
-                ${td(s.mf)}${td(s.mfProfit, "var(--mint)")}
-                ${td(s.bank)}${td(s.fd)}${td(s.cash)}${td(s.ppf)}${td(s.bonds)}
+                ${td(s.mf)}${td(s.bank)}${td(s.fd)}${td(s.ppf)}
                 <td style="text-align:right;color:var(--mint);font-weight:600;">${fmt(s.total)}</td>
                 <td style="text-align:right;">${dStr}</td>
               </tr>`;
-              })
-              .join("");
+            }).join("");
 
             el("nwHistory").innerHTML = `<div class="nw-hist-wrap">
               <table class="nw-hist-table">
                 <thead><tr>
                   <th style="text-align:left;padding-bottom:8px;">Month</th>
                   <th style="text-align:right;padding-bottom:8px;">MF</th>
-                  <th style="text-align:right;padding-bottom:8px;">Profit</th>
                   <th style="text-align:right;padding-bottom:8px;">Bank</th>
                   <th style="text-align:right;padding-bottom:8px;">FD</th>
-                  <th style="text-align:right;padding-bottom:8px;">Cash</th>
                   <th style="text-align:right;padding-bottom:8px;">PPF</th>
-                  <th style="text-align:right;padding-bottom:8px;">Bonds</th>
-                  <th style="text-align:right;padding-bottom:8px;">Total</th>
+                  <th style="text-align:right;padding-bottom:8px;color:var(--mint);">Total</th>
                   <th style="text-align:right;padding-bottom:8px;">&Delta;</th>
                 </tr></thead>
                 <tbody>${rows}</tbody>
@@ -7007,77 +7062,128 @@
             card.style.display = "";
 
             const svg = el("nwLineChart");
-            const W = 600, H = 150, PAD_T = 18, PAD_B = 28, PAD_L = 0, PAD_R = 0;
+            const W = 600, H = 150, PAD_T = 14, PAD_B = 24, PAD_L = 48, PAD_R = 8;
+            const n = sorted.length;
+
+            // Avg monthly rate for projection
+            let sumRate = 0, rateCount = 0;
+            for (let i = 1; i < n; i++) {
+              const prev = sorted[i-1], curr = sorted[i];
+              if (prev.total > 0) {
+                const [py, pm] = prev.key.split("-").map(Number);
+                const [cy, cm] = curr.key.split("-").map(Number);
+                const months = (cy - py) * 12 + (cm - pm);
+                if (months > 0) { sumRate += Math.pow(curr.total / prev.total, 1 / months) - 1; rateCount++; }
+              }
+            }
+            const r = rateCount > 0 ? sumRate / rateCount : 0;
+            const lastTotal = sorted[n - 1].total;
+            const proj1 = lastTotal * (1 + r), proj2 = proj1 * (1 + r);
 
             const vals = sorted.map(s => s.total || 0);
             const minV = Math.min(...vals);
-            const maxV = Math.max(...vals);
+            const maxV = Math.max(Math.max(...vals), proj2);
             const range = maxV - minV || 1;
 
-            const toX = i => PAD_L + (i / (sorted.length - 1)) * (W - PAD_L - PAD_R);
+            // Use n+2 slots (n actual + 2 projected)
+            const toX = i => PAD_L + (i / (n + 1)) * (W - PAD_L - PAD_R);
             const toY = v => PAD_T + (1 - (v - minV) / range) * (H - PAD_T - PAD_B);
 
-            const pts = sorted.map((s, i) => `${toX(i).toFixed(1)},${toY(s.total).toFixed(1)}`);
-            const lineStr = pts.join(" ");
-            const areaPath = `M ${toX(0).toFixed(1)},${H} ` +
-              sorted.map((s, i) => `L ${toX(i).toFixed(1)},${toY(s.total).toFixed(1)}`).join(" ") +
-              ` L ${toX(sorted.length - 1).toFixed(1)},${H} Z`;
+            // Actual line + area
+            const lineStr = sorted.map((s, i) => `${toX(i).toFixed(1)},${toY(s.total).toFixed(1)}`).join(" ");
+            const areaPath = `M${toX(0).toFixed(1)},${H - PAD_B} ` +
+              sorted.map((s, i) => `L${toX(i).toFixed(1)},${toY(s.total).toFixed(1)}`).join(" ") +
+              ` L${toX(n-1).toFixed(1)},${H - PAD_B} Z`;
 
-            // Milestone markers (horizontal lines at round numbers)
-            const MILESTONES = [100000,250000,500000,1000000,2500000,5000000,10000000];
-            const milestoneLines = MILESTONES
-              .filter(m => m > minV && m <= maxV)
-              .map(m => {
-                const y = toY(m).toFixed(1);
-                const lbl = m >= 10000000 ? "₹1 Cr" : m >= 100000 ? "₹" + (m / 100000) + "L" : "₹" + (m / 1000) + "K";
-                return `<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="var(--amber)" stroke-width="0.7" stroke-dasharray="4,4" opacity="0.5"/>
-                  <text x="${W - 2}" y="${parseFloat(y) - 3}" text-anchor="end" font-size="7.5" fill="var(--amber)" opacity="0.7" font-family="JetBrains Mono,monospace">${lbl}</text>`;
-              }).join("");
+            // Projection
+            const lx = toX(n-1).toFixed(1), ly = toY(lastTotal).toFixed(1);
+            const px1 = toX(n).toFixed(1), py1 = toY(proj1).toFixed(1);
+            const px2 = toX(n+1).toFixed(1), py2 = toY(proj2).toFixed(1);
+            const projArea = `M${lx},${H - PAD_B} L${lx},${ly} L${px1},${py1} L${px2},${py2} L${px2},${H - PAD_B} Z`;
 
-            // Month tick labels (show first and last + every 3rd)
-            const tickLabels = sorted.map((s, i) => {
-              if (i !== 0 && i !== sorted.length - 1 && i % 3 !== 0) return "";
-              const x = toX(i).toFixed(1);
-              const [yr, mo] = s.key.split("-");
-              const lbl = new Date(+yr, +mo - 1, 1).toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
-              return `<text x="${x}" y="${H - 5}" text-anchor="${i === 0 ? "start" : i === sorted.length - 1 ? "end" : "middle"}" font-size="7.5" fill="var(--dim)" font-family="JetBrains Mono,monospace">${lbl}</text>`;
+            // Y-axis gridlines
+            const gridLines = Array.from({ length: 4 }, (_, i) => {
+              const v = minV + range * (i + 1) / 5;
+              const y = toY(v).toFixed(1);
+              const lbl = v >= 10000000 ? (v/10000000).toFixed(1)+"Cr" : v >= 100000 ? (v/100000).toFixed(1)+"L" : (v/1000).toFixed(0)+"K";
+              return `<line x1="${PAD_L}" y1="${y}" x2="${W}" y2="${y}" stroke="var(--line)" stroke-width="1"/>
+                <text x="${PAD_L - 4}" y="${parseFloat(y) + 3}" text-anchor="end" font-size="8" fill="var(--dim)" font-family="JetBrains Mono,monospace">${lbl}</text>`;
             }).join("");
 
-            // Dot at last point
-            const lx = toX(sorted.length - 1).toFixed(1);
-            const ly = toY(sorted[sorted.length - 1].total).toFixed(1);
+            // Milestone lines
+            const MILESTONES = [100000,250000,500000,1000000,2500000,5000000,10000000,25000000,50000000,100000000];
+            const milestoneLines = MILESTONES.filter(m => m > minV && m <= maxV).map(m => {
+              const y = toY(m).toFixed(1);
+              const lbl = m >= 10000000 ? "₹"+(m/10000000).toFixed(0)+"Cr" : "₹"+(m/100000)+"L";
+              return `<line x1="${PAD_L}" y1="${y}" x2="${W}" y2="${y}" stroke="var(--amber)" stroke-width="0.7" stroke-dasharray="4,4" opacity="0.35"/>
+                <text x="${W - 2}" y="${parseFloat(y) - 3}" text-anchor="end" font-size="7.5" fill="var(--amber)" opacity="0.55" font-family="JetBrains Mono,monospace">${lbl}</text>`;
+            }).join("");
+
+            // Month labels on x-axis — every point if ≤8, else every 2nd/3rd
+            const step = n <= 8 ? 1 : n <= 16 ? 2 : 3;
+            const tickLabels = sorted.map((s, i) => {
+              if (i !== 0 && i !== n-1 && i % step !== 0) return "";
+              const [yr, mo] = s.key.split("-");
+              const lbl = new Date(+yr, +mo - 1, 1).toLocaleDateString("en-IN", { month: "short" });
+              const anchor = i === 0 ? "start" : i === n-1 ? "end" : "middle";
+              return `<text x="${toX(i).toFixed(1)}" y="${H - 6}" text-anchor="${anchor}" font-size="8" fill="var(--dim)" font-family="JetBrains Mono,monospace">${lbl}</text>`;
+            }).join("");
+
+            // Projection month labels
+            const nextMonthLbl = (key, offset) => {
+              const [yr, mo] = key.split("-").map(Number);
+              return new Date(yr, mo - 1 + offset, 1).toLocaleDateString("en-IN", { month: "short" });
+            };
+            const lastKey = sorted[n-1].key;
 
             svg.innerHTML = `
               <defs>
                 <linearGradient id="nwAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stop-color="var(--liq)" stop-opacity="0.3"/>
-                  <stop offset="100%" stop-color="var(--liq)" stop-opacity="0.02"/>
+                  <stop offset="0%" stop-color="var(--mint)" stop-opacity="0.25"/>
+                  <stop offset="100%" stop-color="var(--mint)" stop-opacity="0.02"/>
+                </linearGradient>
+                <linearGradient id="nwProjGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#c084fc" stop-opacity="0.15"/>
+                  <stop offset="100%" stop-color="#c084fc" stop-opacity="0"/>
                 </linearGradient>
               </defs>
+              ${gridLines}
               ${milestoneLines}
               <path d="${areaPath}" fill="url(#nwAreaGrad)"/>
-              <polyline points="${lineStr}" fill="none" stroke="var(--liq)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-              <circle cx="${lx}" cy="${ly}" r="4" fill="var(--liq)" filter="drop-shadow(0 0 4px var(--liq))"/>
+              <path d="${projArea}" fill="url(#nwProjGrad)"/>
+              <polyline points="${lineStr}" fill="none" stroke="var(--mint)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+              <line x1="${lx}" y1="${ly}" x2="${px1}" y2="${py1}" stroke="#c084fc" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.8"/>
+              <line x1="${px1}" y1="${py1}" x2="${px2}" y2="${py2}" stroke="#c084fc" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.8"/>
+              <circle cx="${lx}" cy="${ly}" r="4" fill="var(--mint)" stroke="var(--bg)" stroke-width="1.5"/>
+              <circle cx="${px2}" cy="${py2}" r="3.5" fill="#c084fc" stroke="var(--bg)" stroke-width="1.5" opacity="0.9"/>
               ${tickLabels}
+              <text x="${px1}" y="${H - 6}" text-anchor="middle" font-size="8" fill="#c084fc" font-family="JetBrains Mono,monospace" opacity="0.7">${nextMonthLbl(lastKey, 1)}</text>
+              <text x="${px2}" y="${H - 6}" text-anchor="end" font-size="8" fill="#c084fc" font-family="JetBrains Mono,monospace" opacity="0.7">${nextMonthLbl(lastKey, 2)} ↗</text>
             `;
 
-            // Savings rate: avg monthly change vs avg monthly invested
-            const monthlySavingsRateEl = el("nwSavingsRate");
-            if (monthlySavingsRateEl && state.surplus?.income > 0) {
-              const income = state.surplus.income;
-              const expenses = state.surplus.expenses || 0;
-              const surplus = income - expenses;
-              const savingsRate = income > 0 ? ((surplus / income) * 100).toFixed(1) : 0;
-              const invested = (state.transactions || [])
-                .filter(t => { const d = t.date || ""; const now = new Date(); const cutoff = new Date(now.getFullYear(), now.getMonth() - 12, 1).toISOString().slice(0,7); return d >= cutoff; })
-                .reduce((s, t) => s + (Number(t.invested) || 0), 0);
-              const avgMonthlyInvested = invested / 12;
-              const sipRate = income > 0 ? ((avgMonthlyInvested / income) * 100).toFixed(1) : null;
-              monthlySavingsRateEl.innerHTML =
-                `Savings rate: <b style="color:var(--mint)">${savingsRate}%</b> &nbsp;·&nbsp; ` +
-                (sipRate !== null ? `Last 12-month avg SIP: <b style="color:var(--liq)">${fmt(Math.round(avgMonthlyInvested))}/mo</b> (<b style="color:var(--liq)">${sipRate}%</b> of income)` : "Set income in Summary tab for savings rate.");
-            } else if (monthlySavingsRateEl) {
-              monthlySavingsRateEl.innerHTML = `<span style="color:var(--dim)">Set monthly income in Summary tab to see savings rate.</span>`;
+            // Stats row below chart
+            const ann = (Math.pow(1 + r, 12) - 1) * 100;
+            const deltas = sorted.slice(1).map((s, i) => s.total - sorted[i].total);
+            const bestMonth = deltas.length ? Math.max(...deltas) : 0;
+            const statsEl = el("nwChartStats");
+            if (statsEl) {
+              statsEl.innerHTML = [
+                `<span style="font-size:10.5px;color:var(--dim)">Best month&nbsp;<b style="color:var(--txt);font-family:'Space Mono',monospace">${fmt(bestMonth)}</b></span>`,
+                `<span style="font-size:10.5px;color:var(--dim)">CAGR&nbsp;<b style="color:var(--mint);font-family:'Space Mono',monospace">${ann >= 0 ? "+" : ""}${ann.toFixed(1)}%</b></span>`,
+                `<span style="font-size:10.5px;color:var(--dim)">Proj ${nextMonthLbl(lastKey, 2)}&nbsp;<b style="color:#c084fc;font-family:'Space Mono',monospace">${fmt(proj2)}</b></span>`,
+              ].join("");
+            }
+
+            // Legend
+            const legendEl = el("nwChartLegend");
+            if (legendEl) {
+              legendEl.innerHTML = `
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9.5px;color:var(--dim)">
+                  <svg width="16" height="3"><line x1="0" y1="1.5" x2="16" y2="1.5" stroke="var(--mint)" stroke-width="2"/></svg>Actual
+                </span>
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9.5px;color:var(--dim)">
+                  <svg width="16" height="3"><line x1="0" y1="1.5" x2="16" y2="1.5" stroke="#c084fc" stroke-width="1.5" stroke-dasharray="4,2"/></svg>Projection
+                </span>`;
             }
           }
 
@@ -7601,6 +7707,15 @@
           rebuildFundCollapsibles();
           buildNwGrid();
           el("nwSnapshotBtn").addEventListener("click", takeSnapshot);
+          el("nwEnterToggle").addEventListener("click", () => {
+            const body    = el("nwEnterBody");
+            const toggle  = el("nwEnterToggle");
+            const chevron = el("nwEnterChevron");
+            const isOpen  = body.style.display !== "none";
+            body.style.display       = isOpen ? "none" : "";
+            chevron.style.transform  = isOpen ? "rotate(-90deg)" : "";
+            toggle.classList.toggle("open", !isOpen);
+          });
           el("holdingsToggle").addEventListener("click", () => {
             const widget = el("holdingsWidget");
             const body   = el("holdingsBody");
