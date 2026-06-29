@@ -2856,7 +2856,6 @@
       <button class="nav-dd-item" id="editToggleBtn" aria-pressed="false">Edit</button>
       <button class="nav-dd-item" id="ddThemeBtn">Themes</button>
       <button class="nav-dd-item" id="ddDataBtn">Data</button>
-      <button class="nav-dd-item" id="ddPrintBtn">Print View</button>
       <button class="nav-dd-item" id="ddPinBtn">Set PIN Lock</button>
       <div class="nav-dd-sep"></div>
       <div class="nav-dd-user" id="ddUserInfo" style="display:none">
@@ -4703,7 +4702,6 @@
               }
             });
           });
-          el("ddPrintBtn").addEventListener("click", () => { closeNavDropdowns(); window.print(); });
           el("ddPinBtn").addEventListener("click", () => {
             closeNavDropdowns();
             const hasPIN = !!localStorage.getItem("appPin");
