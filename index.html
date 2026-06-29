@@ -6076,15 +6076,8 @@
           function renderSummaryExtras(eqCur, liqCur, totCur, eqTgt, liqTgt, totTgt, nowEqPct, tgtEqPct) {
             /* — Drift alert — */
             const driftEl = el("sumDriftAlert");
-            const drift = Math.abs(nowEqPct - tgtEqPct);
             if (driftEl) {
-              if (totCur > 0 && totTgt > 0 && drift > 5) {
-                const dir = nowEqPct < tgtEqPct ? "below" : "above";
-                driftEl.style.display = "flex";
-                driftEl.innerHTML = `<span class="drift-alert-icon">⚠</span><span>Allocation drift: equity is <b>${Math.round(drift)}%</b> ${dir} target (${Math.round(nowEqPct)}% now vs ${Math.round(tgtEqPct)}% target). Consider rebalancing.</span>`;
-              } else {
-                driftEl.style.display = "none";
-              }
+              driftEl.style.display = "none";
             }
 
             /* — Ideal Allocation card — */
