@@ -7057,6 +7057,9 @@
                 _snapExist.style.display = _hasSnap ? "flex" : "none";
                 const lbl = el("nwSnapExistLabel");
                 if (_hasSnap && lbl) lbl.textContent = fmtMonth(_snapKey) + " ✓";
+                const editBtn = el("nwSnapEditBtn"), delBtn = el("nwSnapDeleteBtn");
+                if (editBtn) editBtn.style.display = editMode ? "" : "none";
+                if (delBtn)  delBtn.style.display  = editMode ? "" : "none";
               }
             }
 
@@ -7232,10 +7235,10 @@
                 : "—";
               return `<tr>
                 <td>${fmtMonth(s.key)}</td>
-                ${td(s.mf)}${td(s.bank)}${td(s.fd)}${td(s.ppf)}
+                ${td(s.mf)}${td(s.bank)}${td(s.mfProfit)}${td(s.ppf)}
                 <td style="text-align:right;color:var(--mint);font-weight:600;">${fmt(s.total)}</td>
                 <td style="text-align:right;">${dStr}</td>
-                <td style="text-align:right;padding-left:4px;"><button class="nw-hist-del" data-key="${s.key}" title="Delete snapshot" style="background:none;border:none;cursor:pointer;color:var(--dim);font-size:12px;padding:2px 5px;border-radius:5px;line-height:1;">✕</button></td>
+                ${editMode ? `<td style="text-align:right;padding-left:4px;"><button class="nw-hist-del" data-key="${s.key}" title="Delete snapshot" style="background:none;border:none;cursor:pointer;color:var(--dim);font-size:12px;padding:2px 5px;border-radius:5px;line-height:1;">✕</button></td>` : ""}
               </tr>`;
             }).join("");
 
@@ -7245,11 +7248,11 @@
                   <th style="text-align:left;padding-bottom:8px;">Month</th>
                   <th style="text-align:right;padding-bottom:8px;">MF</th>
                   <th style="text-align:right;padding-bottom:8px;">Bank</th>
-                  <th style="text-align:right;padding-bottom:8px;">FD</th>
+                  <th style="text-align:right;padding-bottom:8px;">MF Profit</th>
                   <th style="text-align:right;padding-bottom:8px;">PPF</th>
                   <th style="text-align:right;padding-bottom:8px;color:var(--mint);">Total</th>
                   <th style="text-align:right;padding-bottom:8px;">&Delta;</th>
-                  <th style="padding-bottom:8px;width:28px;"></th>
+                  ${editMode ? `<th style="padding-bottom:8px;width:28px;"></th>` : ""}
                 </tr></thead>
                 <tbody>${rows}</tbody>
               </table>
