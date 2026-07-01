@@ -3356,7 +3356,7 @@
         </div>
 
         <div class="fc-slider-wrap">
-          <input type="range" id="fcSlider" min="0" max="60" value="0" step="1" class="fc-slider" />
+          <input type="range" id="fcSlider" min="0" max="60" value="10" step="1" class="fc-slider" />
           <div class="fc-ticks">
             <span>Now</span><span>5y</span><span>10y</span><span>15y</span><span>20y</span><span>25y</span><span>30y</span>
           </div>
@@ -4645,7 +4645,6 @@
           let _openNavDd = null;
 
           function navigateTo(tabId) {
-            _currentTab = tabId;
             document.querySelectorAll(".tab-section").forEach(s => s.classList.remove("active"));
             el("tab-" + tabId).classList.add("active");
             el("homeBtn").classList.toggle("active", tabId === "portfolio");
@@ -6595,8 +6594,6 @@
           let calDayDate = null; // date string currently open in day modal
           let txnFilter = { preset: "all", fundId: "", dateFrom: "", dateTo: "", sort: "newest" };
           let _shownMilestones = JSON.parse(localStorage.getItem("shownMilestones") || "[]");
-          const TAB_ORDER = ["portfolio", "summary", "networth", "forecast", "transactions"];
-          let _currentTab = "portfolio";
 
           function getFundName(fundId) {
             const liq = LIQ_FUNDS.find(f => f.id === fundId);
@@ -8011,28 +8008,6 @@
               hideThemeMatrix();
             }
           });
-
-          /* ── Swipe navigation ── */
-          (function () {
-            const GATED = ["summary", "networth", "forecast"];
-            let _tx = 0, _ty = 0;
-            document.addEventListener("touchstart", e => {
-              _tx = e.changedTouches[0].clientX;
-              _ty = e.changedTouches[0].clientY;
-            }, { passive: true });
-            document.addEventListener("touchend", e => {
-              const dx = e.changedTouches[0].clientX - _tx;
-              const dy = e.changedTouches[0].clientY - _ty;
-              if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-              const idx = TAB_ORDER.indexOf(_currentTab);
-              if (idx < 0) return;
-              const nextIdx = dx < 0 ? idx + 1 : idx - 1;
-              if (nextIdx < 0 || nextIdx >= TAB_ORDER.length) return;
-              const nextTab = TAB_ORDER[nextIdx];
-              if (GATED.includes(nextTab) && !authUser) return;
-              navigateTo(nextTab);
-            }, { passive: true });
-          })();
 
           /* ════════════════════════════════════════════
              ACCENT THEME SYSTEM
