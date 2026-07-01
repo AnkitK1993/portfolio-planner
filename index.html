@@ -7592,7 +7592,7 @@
               pctEl.style.color = profit >= 0 ? "var(--mint)" : "var(--coral)";
             }
 
-            drawForecastChart(bank, invest, monthly, rate, step, stepUp, inflation, useInflation, showAll);
+            drawForecastChart(bank, invest, monthly, rate, activeRate, step, stepUp, inflation, useInflation, showAll, scenario);
             updateFcSliderFill(step);
 
             // Sync inputs
@@ -7635,14 +7635,14 @@
               </div>`;
           }
 
-          function drawForecastChart(bank, invest, monthly, rate, currentStep, stepUp = 0, inflation = 6, useInflation = false, showAll = false) {
+          function drawForecastChart(bank, invest, monthly, rate, activeRate, currentStep, stepUp = 0, inflation = 6, useInflation = false, showAll = false, scenario = "base") {
             const svg = el("fcChart");
             if (!svg) return;
             const W = 600, H = 110, PAD_T = 12, PAD_B = 18;
 
             const scenarios = showAll
-              ? [{ rate: 8, color: "var(--amber)", label: "8%" }, { rate, color: "var(--mint)", label: rate + "%" }, { rate: 15, color: "#4ade80", label: "15%" }]
-              : [{ rate, color: "var(--mint)", label: rate + "%" }];
+              ? [{ key: "cons", rate: 8, color: "var(--amber)", label: "8%" }, { key: "base", rate, color: "var(--mint)", label: rate + "%" }, { key: "aggr", rate: 15, color: "#4ade80", label: "15%" }]
+              : [{ key: scenario, rate: activeRate, color: "var(--mint)", label: activeRate + "%" }];
 
             const allPts = scenarios.map(sc => {
               const pts = [];
@@ -7662,7 +7662,8 @@
             const toX = i => (i / 60) * W;
             const toY = v => H - PAD_B - ((v - minV) / range) * (H - PAD_T - PAD_B);
 
-            const activePts = allPts[showAll ? 1 : 0].pts;
+            const activeIdx = showAll ? Math.max(0, scenarios.findIndex(s => s.key === scenario)) : 0;
+            const activePts = allPts[activeIdx].pts;
             const cx = toX(currentStep);
             const cy = toY(activePts[currentStep]);
 
@@ -7676,7 +7677,7 @@
 
             const lines = allPts.map((sc, idx) => {
               const pts = sc.pts.map((v, i) => `${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(" ");
-              const isMain = !showAll || idx === 1;
+              const isMain = !showAll || idx === activeIdx;
               return `<polyline points="${pts}" fill="none" stroke="${sc.color}" stroke-width="${isMain ? 1.8 : 1.2}" stroke-linejoin="round" stroke-linecap="round" ${!isMain ? 'stroke-dasharray="4,3" opacity="0.7"' : ""}/>`;
             }).join("");
 
