@@ -7226,6 +7226,9 @@
               return;
             }
 
+            const OTHER_FIELDS = NW_FIELDS.filter(f => f.id !== "mfProfit");
+            const othersOf = (s) => OTHER_FIELDS.reduce((sum, f) => sum + (s[f.id] || 0), 0);
+
             const td = (v, c) => `<td style="text-align:right;${c ? "color:" + c + ";" : ""}">${fmt(v || 0)}</td>`;
             const rows = sorted.map((s, i) => {
               const prev = sorted[i + 1];
@@ -7235,7 +7238,7 @@
                 : "—";
               return `<tr>
                 <td>${fmtMonth(s.key)}</td>
-                ${td(s.mf)}${td(s.bank)}${td(s.mfProfit)}${td(s.ppf)}
+                ${td(s.mf)}${td(s.mfProfit)}${td(othersOf(s))}
                 <td style="text-align:right;color:var(--mint);font-weight:600;">${fmt(s.total)}</td>
                 <td style="text-align:right;">${dStr}</td>
                 ${editMode ? `<td style="text-align:right;padding-left:4px;"><button class="nw-hist-del" data-key="${s.key}" title="Delete snapshot" style="background:none;border:none;cursor:pointer;color:var(--dim);font-size:12px;padding:2px 5px;border-radius:5px;line-height:1;">✕</button></td>` : ""}
@@ -7247,9 +7250,8 @@
                 <thead><tr>
                   <th style="text-align:left;padding-bottom:8px;">Month</th>
                   <th style="text-align:right;padding-bottom:8px;">MF</th>
-                  <th style="text-align:right;padding-bottom:8px;">Bank</th>
-                  <th style="text-align:right;padding-bottom:8px;">MF Profit</th>
-                  <th style="text-align:right;padding-bottom:8px;">PPF</th>
+                  <th style="text-align:right;padding-bottom:8px;">MF Returns</th>
+                  <th style="text-align:right;padding-bottom:8px;">Others</th>
                   <th style="text-align:right;padding-bottom:8px;color:var(--mint);">Total</th>
                   <th style="text-align:right;padding-bottom:8px;">&Delta;</th>
                   ${editMode ? `<th style="padding-bottom:8px;width:28px;"></th>` : ""}
