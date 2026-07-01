@@ -3236,25 +3236,19 @@
               <div class="sec-head" style="margin-bottom: 14px">Starting Values</div>
               <div class="grid2">
                 <div class="field">
-                  <label class="flabel" for="fcBank">Bank Balance</label>
-                  <div class="ibox"><span class="pfx">&#8377;</span>
-                    <input class="num" id="fcBank" type="number" min="0" placeholder="0" inputmode="numeric" />
-                  </div>
-                </div>
-                <div class="field">
                   <label class="flabel" for="fcInvest">Investments</label>
                   <div class="ibox"><span class="pfx">&#8377;</span>
                     <input class="num" id="fcInvest" type="number" min="0" placeholder="0" inputmode="numeric" />
                   </div>
                 </div>
-              </div>
-              <div class="grid2" style="margin-top: 12px">
                 <div class="field">
                   <label class="flabel" for="fcMonthly">Monthly Investment</label>
                   <div class="ibox"><span class="pfx">&#8377;</span>
                     <input class="num" id="fcMonthly" type="number" min="0" placeholder="0" inputmode="numeric" />
                   </div>
                 </div>
+              </div>
+              <div class="grid2" style="margin-top: 12px">
                 <div class="field">
                   <label class="flabel" for="fcRate">Annual Return (%)</label>
                   <div class="ibox">
@@ -3262,8 +3256,6 @@
                     <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:13px;pointer-events:none;">%</span>
                   </div>
                 </div>
-              </div>
-              <div class="grid2" style="margin-top: 12px">
                 <div class="field">
                   <label class="flabel" for="fcStepUp">Annual Step-up (%)</label>
                   <div class="ibox">
@@ -3271,6 +3263,8 @@
                     <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:13px;pointer-events:none;">%</span>
                   </div>
                 </div>
+              </div>
+              <div class="grid2" style="margin-top: 12px">
                 <div class="field">
                   <label class="flabel" style="display:flex;align-items:center;gap:6px;">
                     Inflation-adjusted
@@ -3744,7 +3738,7 @@
                 ...Object.fromEntries(NW_FIELDS.map((f) => [f.id, 0])),
                 snapshots: {},
               },
-              forecast: { bankBalance: 0, investments: 0, monthlyInvest: 0, annualRate: 12, stepUp: 0, inflationRate: 6, mode: "project", goalBank: 0, goalTarget: 0, goalYears: 10, goalRate: 12, fcScenario: "base", fcShowAll: false },
+              forecast: { investments: 0, monthlyInvest: 0, annualRate: 12, stepUp: 0, inflationRate: 6, mode: "project", goalBank: 0, goalTarget: 0, goalYears: 10, goalRate: 12, fcScenario: "base", fcShowAll: false },
               surplus: { income: 0, expenses: 0 },
               idealWeights: { "Large Cap": 45, "Flexi Cap": 33, "Mid Cap": 22 },
               transactions: [],
@@ -6572,7 +6566,6 @@
               state = defaultState();
               syncFundArrays();
               rebuildFundCollapsibles();
-              el("fcBank").value = "";
               el("fcInvest").value = "";
               el("fcMonthly").value = "";
               el("fcRate").value = "12";
@@ -7539,7 +7532,6 @@
             if (mode === "goal") { renderGoalMode(); return; }
 
             // ── Projection mode ──
-            const bank    = fc.bankBalance   || 0;
             const invest  = fc.investments   || 0;
             const monthly = fc.monthlyInvest || 0;
             const rate    = fc.annualRate    != null ? fc.annualRate : 12;
@@ -7555,8 +7547,8 @@
             const step     = sliderEl ? parseInt(sliderEl.value, 10) : 0;
             const T        = step * 0.5;
 
-            let projected = fcProjectedAdv(bank, invest, monthly, activeRate, T, stepUp);
-            let totalInvested = fcTotalInvested(bank, invest, monthly, T, stepUp);
+            let projected = fcProjectedAdv(0, invest, monthly, activeRate, T, stepUp);
+            let totalInvested = fcTotalInvested(0, invest, monthly, T, stepUp);
 
             // Inflation adjustment
             if (useInflation && T > 0) {
@@ -7592,12 +7584,12 @@
               pctEl.style.color = profit >= 0 ? "var(--mint)" : "var(--coral)";
             }
 
-            drawForecastChart(bank, invest, monthly, rate, activeRate, step, stepUp, inflation, useInflation, showAll, scenario);
+            drawForecastChart(invest, monthly, rate, activeRate, step, stepUp, inflation, useInflation, showAll, scenario);
             updateFcSliderFill(step);
 
             // Sync inputs
             const safe = (id, v) => { const e = el(id); if (e && document.activeElement !== e) e.value = v || ""; };
-            safe("fcBank", bank); safe("fcInvest", invest); safe("fcMonthly", monthly);
+            safe("fcInvest", invest); safe("fcMonthly", monthly);
             safe("fcRate", rate); safe("fcStepUp", stepUp);
             const fcInflEl = el("fcInflation");
             if (fcInflEl) fcInflEl.checked = useInflation;
@@ -7635,7 +7627,7 @@
               </div>`;
           }
 
-          function drawForecastChart(bank, invest, monthly, rate, activeRate, currentStep, stepUp = 0, inflation = 6, useInflation = false, showAll = false, scenario = "base") {
+          function drawForecastChart(invest, monthly, rate, activeRate, currentStep, stepUp = 0, inflation = 6, useInflation = false, showAll = false, scenario = "base") {
             const svg = el("fcChart");
             if (!svg) return;
             const W = 600, H = 110, PAD_T = 12, PAD_B = 18;
@@ -7647,7 +7639,7 @@
             const allPts = scenarios.map(sc => {
               const pts = [];
               for (let i = 0; i <= 60; i++) {
-                let v = fcProjectedAdv(bank, invest, monthly, sc.rate, i * 0.5, stepUp);
+                let v = fcProjectedAdv(0, invest, monthly, sc.rate, i * 0.5, stepUp);
                 if (useInflation && i > 0) v /= Math.pow(1 + inflation / 100, i * 0.5);
                 pts.push(v);
               }
@@ -7740,11 +7732,6 @@
           })();
 
           /* Forecast inputs */
-          el("fcBank").addEventListener("input", (e) => {
-            state.forecast.bankBalance = num(e.target.value);
-            renderForecast();
-            saveState();
-          });
           el("fcInvest").addEventListener("input", (e) => {
             state.forecast.investments = num(e.target.value);
             renderForecast();
