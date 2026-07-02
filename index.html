@@ -1123,7 +1123,6 @@
         table-layout: fixed;
         border-collapse: collapse;
         font-size: 9.5px;
-        border: 1px solid var(--line);
       }
       .nw-hist-table th {
         font-size: 7.5px;
@@ -1132,9 +1131,8 @@
         color: var(--dim);
         font-weight: 600;
         text-align: right;
-        padding: 4px 2px;
-        background: var(--bg);
-        border: 1px solid var(--line);
+        padding: 5px 2px;
+        border-bottom: 1px solid var(--line);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -1144,8 +1142,8 @@
       }
       .nw-hist-table td {
         text-align: right;
-        padding: 4px 2px;
-        border: 1px solid var(--line);
+        padding: 6px 2px;
+        border-bottom: 1px solid rgba(255,255,255,0.04);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -1154,6 +1152,16 @@
         text-align: left;
         color: var(--dim);
       }
+      .nw-hist-table tr { cursor: pointer; transition: background 0.15s; }
+      .nw-hist-table tr:hover { background: rgba(255,255,255,0.03); }
+      .nw-hist-table tr.hist-row-active { background: rgba(0,245,160,0.06); }
+      /* Detail panel shown below a clicked row */
+      .nw-hist-detail-row td { padding: 0; border-bottom: 1px solid var(--line); cursor: default; }
+      .nw-hist-detail-row:hover { background: none !important; }
+      .nw-hist-detail { padding: 10px 4px 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; }
+      .nw-hist-detail-item { display: flex; flex-direction: column; gap: 2px; }
+      .nw-hist-detail-key { font-size: 7.5px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--dim); }
+      .nw-hist-detail-val { font-family: "Space Mono", monospace; font-size: 11px; font-weight: 700; color: var(--txt); }
       .nw-proj-cards {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
@@ -3162,14 +3170,14 @@
         </div>
 
         <!-- Enter Values — collapsible, snapshot button inside -->
-        <div class="nw-enter-toggle open" id="nwEnterToggle">
+        <div class="nw-enter-toggle" id="nwEnterToggle">
           <div>
             <div class="nw-enter-title">Enter Values</div>
             <div class="nw-enter-hint">Bank · FD · PPF · Cash · Bonds</div>
           </div>
           <span class="nw-enter-chevron" id="nwEnterChevron">▾</span>
         </div>
-        <div class="nw-enter-body" id="nwEnterBody">
+        <div class="nw-enter-body" id="nwEnterBody" style="display:none">
           <div class="nw-auto-item">
             <div class="nw-auto-label">
               Mutual Funds
@@ -7178,10 +7186,8 @@
             }
 
             // Asset breakdown bars
-            const mfCost = Math.max(0, mfVal - profit);
             const cats = [
-              { label: "MF Invested (cost)", value: mfCost, color: "rgba(74,222,156,0.4)" },
-              { label: "MF Unrealized Returns", value: profit, color: "#4ade9c" },
+              { label: "Mutual Funds", value: mfVal, color: "#4ade9c" },
               { label: "Bank & Savings", value: state.networth.bank || 0, color: "var(--liq)" },
               { label: "Fixed Deposit", value: state.networth.fd || 0, color: "#5bc4f5" },
               { label: "Cash", value: state.networth.cash || 0, color: "var(--amber)" },
@@ -7260,13 +7266,14 @@
             const othersOf = (s) => OTHER_FIELDS.reduce((sum, f) => sum + (s[f.id] || 0), 0);
 
             const td = (v, c) => `<td style="${c ? "color:" + c + ";" : ""}">${fmtCompact(v || 0)}</td>`;
+            const colSpan = editMode ? 7 : 6;
             const rows = sorted.map((s, i) => {
               const prev = sorted[i + 1];
               const delta = prev !== undefined ? s.total - prev.total : null;
               const dStr = delta !== null
                 ? `<span style="color:${delta >= 0 ? "var(--mint)" : "var(--coral)"};font-weight:600;">${delta >= 0 ? "+" : ""}${fmtCompact(delta)}</span>`
                 : "—";
-              return `<tr>
+              return `<tr data-key="${s.key}">
                 <td>${fmtMonth(s.key)}</td>
                 ${td(s.mf)}${td(s.mfProfit)}${td(othersOf(s))}
                 <td style="color:var(--mint);font-weight:600;">${fmtCompact(s.total)}</td>
@@ -7295,8 +7302,50 @@
               </table>
             </div>`;
 
+            /* Row click — toggle inline detail panel */
+            let activeKey = null;
+            el("nwHistory").querySelectorAll(".nw-hist-table tbody tr[data-key]").forEach(tr => {
+              tr.addEventListener("click", e => {
+                if (e.target.classList.contains("nw-hist-del")) return;
+                const key = tr.dataset.key;
+                const snap = snaps[key];
+                /* Remove any existing detail row */
+                const existing = tr.parentNode.querySelector(".nw-hist-detail-row");
+                if (existing) existing.remove();
+                if (activeKey === key) {
+                  tr.classList.remove("hist-row-active");
+                  activeKey = null;
+                  return;
+                }
+                tr.parentNode.querySelectorAll("tr").forEach(r => r.classList.remove("hist-row-active"));
+                tr.classList.add("hist-row-active");
+                activeKey = key;
+                const prev = sorted[sorted.findIndex(s => s.key === key) + 1];
+                const delta = prev ? snap.total - prev.total : null;
+                const othersTotal = OTHER_FIELDS.reduce((sum, f) => sum + (snap[f.id] || 0), 0);
+                const detailItems = [
+                  { label: "Mutual Funds", value: snap.mf || 0, color: "var(--mint)" },
+                  { label: "MF Returns", value: snap.mfProfit || 0, color: "var(--mint)" },
+                  ...OTHER_FIELDS.map(f => ({ label: f.label, value: snap[f.id] || 0 })),
+                  { label: "Total Net Worth", value: snap.total || 0, color: "var(--mint)", bold: true },
+                  { label: "MoM Change", value: delta, color: delta !== null ? (delta >= 0 ? "var(--mint)" : "var(--coral)") : null, prefix: delta !== null && delta >= 0 ? "+" : "" },
+                ].filter(d => d.value !== null && d.value !== undefined);
+                const detailHtml = detailItems.map(d =>
+                  `<div class="nw-hist-detail-item">
+                    <span class="nw-hist-detail-key">${d.label}</span>
+                    <span class="nw-hist-detail-val" style="${d.color ? "color:" + d.color + ";" : ""}${d.bold ? "font-size:13px;" : ""}">${d.value !== null ? (d.prefix || "") + fmt(d.value) : "—"}</span>
+                  </div>`
+                ).join("");
+                const detailRow = document.createElement("tr");
+                detailRow.className = "nw-hist-detail-row";
+                detailRow.innerHTML = `<td colspan="${colSpan}"><div class="nw-hist-detail">${detailHtml}</div></td>`;
+                tr.insertAdjacentElement("afterend", detailRow);
+              });
+            });
+
             el("nwHistory").querySelectorAll(".nw-hist-del").forEach(btn => {
-              btn.addEventListener("click", () => {
+              btn.addEventListener("click", e => {
+                e.stopPropagation();
                 const key = btn.dataset.key;
                 UI.confirm("Delete snapshot for " + fmtMonth(key) + "?", "Delete snapshot", "Delete", () => {
                   if (state.networth.snapshots) delete state.networth.snapshots[key];
