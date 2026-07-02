@@ -1121,51 +1121,40 @@
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
       }
-      .nw-hist-table {
-        width: 100%;
-        table-layout: fixed;
-        border-collapse: collapse;
-        font-size: 9.5px;
-        border: 1px solid var(--line);
-      }
-      .nw-hist-table th {
+      .nw-hist-list { width: 100%; font-size: 9.5px; }
+      .nw-hist-hdr {
+        display: grid;
+        padding: 0 0 5px;
+        border-bottom: 1px solid var(--line);
+        margin-bottom: 2px;
         font-size: 7.5px;
         text-transform: uppercase;
         letter-spacing: 0.3px;
         color: var(--dim);
         font-weight: 600;
+      }
+      .nw-hist-hdr > *, .nw-hist-main > * {
         text-align: right;
-        padding: 4px 2px;
-        background: var(--bg);
-        border: 1px solid var(--line);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        padding: 0 2px;
       }
-      .nw-hist-table th:first-child {
-        text-align: left;
+      .nw-hist-hdr > *:first-child, .nw-hist-main > *:first-child { text-align: left; }
+      .nw-hist-item { border-bottom: 1px solid rgba(255,255,255,0.04); }
+      .nw-hist-item:last-child { border-bottom: none; }
+      .nw-hist-main {
+        display: grid;
+        padding: 7px 0;
+        cursor: pointer;
+        border-radius: 5px;
+        transition: background 0.15s;
       }
-      .nw-hist-table td {
-        text-align: right;
-        padding: 4px 2px;
-        border: 1px solid var(--line);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-      .nw-hist-table td:first-child {
-        text-align: left;
-        color: var(--dim);
-      }
-      .nw-hist-row { cursor: pointer; }
-      .nw-hist-row:hover { background: rgba(255,255,255,0.03); }
-      .nw-hist-detail td {
-        cursor: default;
-        white-space: normal;
-        overflow: visible;
-        text-overflow: clip;
-        padding: 10px 8px;
+      .nw-hist-main:hover { background: rgba(255,255,255,0.03); }
+      .nw-hist-expand {
+        padding: 10px 8px 12px;
         background: rgba(255,255,255,0.02);
+        border-radius: 0 0 8px 8px;
       }
       .nw-hist-detail-row {
         display: flex;
@@ -7502,7 +7491,6 @@
 
             const OTHER_FIELDS = NW_FIELDS.filter(f => f.id !== "mfProfit");
             const othersOf = (s) => OTHER_FIELDS.reduce((sum, f) => sum + (s[f.id] || 0), 0);
-            const colCount = 6 + (editMode ? 1 : 0);
             const DETAIL_FIELDS = [
               { key: "mf",       label: "MF Value" },
               { key: "mfProfit", label: "MF Returns" },
@@ -7510,7 +7498,10 @@
               { key: "total",    label: "Total" },
             ];
 
-            const td = (v, c) => `<td style="${c ? "color:" + c + ";" : ""}">${fmtCompact(v || 0)}</td>`;
+            const colTpl = editMode
+              ? "1.5fr 1fr 1fr 1fr 1.2fr 1fr 20px"
+              : "1.5fr 1fr 1fr 1fr 1.2fr 1fr";
+
             const rows = sorted.map((s, i) => {
               const prev = sorted[i + 1];
               const delta = prev !== undefined ? s.total - prev.total : null;
@@ -7518,65 +7509,55 @@
                 ? `<span style="color:${delta >= 0 ? "var(--mint)" : "var(--coral)"};font-weight:600;">${delta >= 0 ? "+" : ""}${fmtCompact(delta)}</span>`
                 : "—";
               const isOpen = nwHistExpanded.has(s.key);
-              const mainRow = `<tr class="nw-hist-row" data-key="${s.key}">
-                <td>${isOpen ? "▾" : "▸"} ${fmtMonth(s.key)}</td>
-                ${td(s.mf)}${td(s.mfProfit)}${td(othersOf(s))}
-                <td style="color:var(--mint);font-weight:600;">${fmtCompact(s.total)}</td>
-                <td>${dStr}</td>
-                ${editMode ? `<td><button class="nw-hist-del" data-key="${s.key}" title="Delete snapshot" style="background:none;border:none;cursor:pointer;color:var(--dim);font-size:11px;padding:2px;line-height:1;">✕</button></td>` : ""}
-              </tr>`;
-              if (!isOpen) return mainRow;
 
-              const showCompare = nwHistCompare.has(s.key);
-              const cur = showCompare ? buildCurrentSnapshot() : null;
-              const body = showCompare
-                ? `<div class="nw-hist-cmp-head"><span>Field</span><span>${fmtMonth(s.key)}</span><span>Current</span><span>&Delta;</span></div>` +
-                  DETAIL_FIELDS.map(f => {
-                    const snapV = s[f.key] || 0, curV = cur[f.key] || 0, d = curV - snapV;
-                    const dColor = d > 0 ? "var(--mint)" : d < 0 ? "var(--coral)" : "var(--dim)";
-                    return `<div class="nw-hist-cmp-row">
-                      <span class="nw-hist-cmp-label">${f.label}</span>
-                      <span class="nw-hist-cmp-val">${fmtCompact(snapV)}</span>
-                      <span class="nw-hist-cmp-val">${fmtCompact(curV)}</span>
-                      <span class="nw-hist-cmp-delta" style="color:${dColor}">${d === 0 ? "—" : (d > 0 ? "+" : "") + fmtCompact(d)}</span>
-                    </div>`;
-                  }).join("")
-                : DETAIL_FIELDS.map(f =>
-                    `<div class="nw-hist-detail-row"><span>${f.label}</span><span>${fmtCompact(s[f.key] || 0)}</span></div>`
-                  ).join("");
+              let expandHtml = "";
+              if (isOpen) {
+                const showCompare = nwHistCompare.has(s.key);
+                const cur = showCompare ? buildCurrentSnapshot() : null;
+                expandHtml = (showCompare
+                  ? `<div class="nw-hist-cmp-head"><span>Field</span><span>${fmtMonth(s.key)}</span><span>Current</span><span>&Delta;</span></div>` +
+                    DETAIL_FIELDS.map(f => {
+                      const snapV = s[f.key] || 0, curV = cur[f.key] || 0, d = curV - snapV;
+                      const dColor = d > 0 ? "var(--mint)" : d < 0 ? "var(--coral)" : "var(--dim)";
+                      return `<div class="nw-hist-cmp-row">
+                        <span class="nw-hist-cmp-label">${f.label}</span>
+                        <span class="nw-hist-cmp-val">${fmtCompact(snapV)}</span>
+                        <span class="nw-hist-cmp-val">${fmtCompact(curV)}</span>
+                        <span class="nw-hist-cmp-delta" style="color:${dColor}">${d === 0 ? "—" : (d > 0 ? "+" : "") + fmtCompact(d)}</span>
+                      </div>`;
+                    }).join("")
+                  : DETAIL_FIELDS.map(f =>
+                      `<div class="nw-hist-detail-row"><span>${f.label}</span><span>${fmtCompact(s[f.key] || 0)}</span></div>`
+                    ).join("")
+                ) + `<button class="nw-hist-cmp-btn" data-key="${s.key}">${showCompare ? "Hide comparison" : "Compare with Current"}</button>`;
+              }
 
-              const detailRow = `<tr class="nw-hist-detail" data-key="${s.key}">
-                <td colspan="${colCount}">
-                  ${body}
-                  <button class="nw-hist-cmp-btn" data-key="${s.key}">${showCompare ? "Hide comparison" : "Compare with Current"}</button>
-                </td>
-              </tr>`;
-              return mainRow + detailRow;
+              return `<div class="nw-hist-item">
+                <div class="nw-hist-main" data-key="${s.key}" style="grid-template-columns:${colTpl}">
+                  <span style="color:var(--dim)">${isOpen ? "▾" : "▸"} ${fmtMonth(s.key)}</span>
+                  <span>${fmtCompact(s.mf || 0)}</span>
+                  <span>${fmtCompact(s.mfProfit || 0)}</span>
+                  <span>${fmtCompact(othersOf(s))}</span>
+                  <span style="color:var(--mint);font-weight:600;">${fmtCompact(s.total)}</span>
+                  <span>${dStr}</span>
+                  ${editMode ? `<span><button class="nw-hist-del" data-key="${s.key}" title="Delete" style="background:none;border:none;cursor:pointer;color:var(--dim);font-size:11px;padding:2px;line-height:1;">✕</button></span>` : ""}
+                </div>
+                ${isOpen ? `<div class="nw-hist-expand">${expandHtml}</div>` : ""}
+              </div>`;
             }).join("");
 
-            el("nwHistory").innerHTML = `<div class="nw-hist-wrap" id="nwHistWrap">
-              <table class="nw-hist-table">
-                <colgroup>
-                  <col style="width:23%"><col style="width:15%"><col style="width:15%">
-                  <col style="width:15%"><col style="width:17%"><col style="width:15%">
-                  ${editMode ? `<col style="width:18px">` : ""}
-                </colgroup>
-                <thead><tr>
-                  <th style="text-align:left;">Month</th>
-                  <th>MF</th>
-                  <th>Returns</th>
-                  <th>Others</th>
-                  <th style="color:var(--mint);">Total</th>
-                  <th>&Delta;</th>
-                  ${editMode ? `<th></th>` : ""}
-                </tr></thead>
-                <tbody>${rows}</tbody>
-              </table>
+            el("nwHistory").innerHTML = `<div class="nw-hist-list">
+              <div class="nw-hist-hdr" style="grid-template-columns:${colTpl}">
+                <span>Month</span><span>MF</span><span>Returns</span><span>Others</span>
+                <span style="color:var(--mint)">Total</span><span>&Delta;</span>
+                ${editMode ? "<span></span>" : ""}
+              </div>
+              ${rows}
             </div>`;
 
-            el("nwHistory").querySelectorAll(".nw-hist-row").forEach(tr => {
-              tr.addEventListener("click", () => {
-                const key = tr.dataset.key;
+            el("nwHistory").querySelectorAll(".nw-hist-main").forEach(row => {
+              row.addEventListener("click", () => {
+                const key = row.dataset.key;
                 if (nwHistExpanded.has(key)) nwHistExpanded.delete(key);
                 else nwHistExpanded.add(key);
                 renderNwHistory();
