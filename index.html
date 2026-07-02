@@ -1033,6 +1033,7 @@
       }
       .nwpm b {
         color: var(--txt);
+        margin-left: 6px;
       }
       .nw-auto-item {
         background: var(--panel-2);
@@ -2854,7 +2855,7 @@
       .data-action-desc { font-size: 11px; color: var(--dim); line-height: 1.5; }
       .backup-list-wrap { border-top: 1px solid var(--line); padding: 10px 0 4px; }
       .backup-list { max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; }
-      .backup-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 2px; border-bottom: 1px solid var(--line); }
+      .backup-item { display: flex; align-items: center; gap: 10px; padding: 10px 2px; border-bottom: 1px solid var(--line); }
       .backup-item:last-child { border-bottom: none; }
       .backup-item-date { font-size: 13px; font-weight: 600; color: var(--txt); }
       .backup-item-time { font-size: 11px; color: var(--dim); font-weight: 400; margin-left: 4px; }
@@ -3088,6 +3089,12 @@
         <span id="fundedBar" style="display:none"></span>
         <span id="totDuty" style="display:none"></span>
 
+        <!-- Portfolio Health Score -->
+        <div class="card" id="sumHealthCard" style="display:none;margin-bottom:12px">
+          <div class="sec-head" style="margin-bottom:14px">Portfolio Health Score</div>
+          <div id="sumHealthScore"></div>
+        </div>
+
         <!-- Total Allocation bars -->
         <div class="card" style="margin-bottom:12px">
           <div class="sec-head" style="margin-bottom:16px">Total Allocation</div>
@@ -3190,9 +3197,9 @@
                 <span class="nw-delta-chip" id="nwYoyChip"></span>
               </div>
               <div class="nw-hero-meta">
-                <div class="nwpm">Mutual Funds&nbsp;<b id="nwMfChip">₹0</b></div>
-                <div class="nwpm">MF Profit&nbsp;<b id="nwMfProfitChip">₹0</b></div>
-                <div class="nwpm">Other Assets&nbsp;<b id="nwOtherChip">₹0</b></div>
+                <div class="nwpm">Mutual Funds <b id="nwMfChip">₹0</b></div>
+                <div class="nwpm">MF Profit <b id="nwMfProfitChip">₹0</b></div>
+                <div class="nwpm">Other Assets <b id="nwOtherChip">₹0</b></div>
               </div>
             </div>
             <svg id="nwHeroSparkline" class="nw-hero-sparkline" viewBox="0 0 110 52" preserveAspectRatio="none"></svg>
@@ -3212,14 +3219,14 @@
         </div>
 
         <!-- Enter Values — collapsible, snapshot button inside -->
-        <div class="nw-enter-toggle open" id="nwEnterToggle">
+        <div class="nw-enter-toggle" id="nwEnterToggle">
           <div>
             <div class="nw-enter-title">Enter Values</div>
             <div class="nw-enter-hint">Bank · FD · PPF · Cash · Bonds</div>
           </div>
           <span class="nw-enter-chevron" id="nwEnterChevron">▾</span>
         </div>
-        <div class="nw-enter-body" id="nwEnterBody">
+        <div class="nw-enter-body" id="nwEnterBody" style="display:none">
           <div class="nw-auto-item">
             <div class="nw-auto-label">
               Mutual Funds
@@ -4014,13 +4021,39 @@
                 const timeStr = t ? t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
                 const bytes = (data.state || "").length;
                 const sizeStr = bytes > 1024 ? (bytes / 1024).toFixed(1) + " KB" : bytes + " B";
+
+                // Parse backup to extract preview info
+                let nwStr = "", fundsStr = "";
+                try {
+                  const raw = JSON.parse(data.state || "{}");
+                  const liqOrder = raw.liquidOrder || Object.keys(raw.liquid || {});
+                  const eqOrder  = raw.equityOrder  || Object.keys(raw.equity  || {});
+                  const liqVal  = liqOrder.reduce((s, id) => s + (raw.liquid?.[id]?.value  || 0), 0);
+                  const eqVal   = eqOrder.reduce((s, id)  => s + (raw.equity?.[id]?.shown  || 0), 0);
+                  const otherNW = Object.values(raw.networth || {}).reduce((s, v) => s + (typeof v === "number" ? v : 0), 0);
+                  const totalNW = liqVal + eqVal + otherNW;
+                  if (totalNW > 0) nwStr = fmt(Math.round(totalNW));
+                  const fundCount = liqOrder.length + eqOrder.length;
+                  if (fundCount > 0) fundsStr = fundCount + " fund" + (fundCount !== 1 ? "s" : "");
+                } catch (_) {}
+
                 const item = document.createElement("div");
                 item.className = "backup-item";
                 item.innerHTML = `
-                  <div class="backup-item-date">${doc.id}<span class="backup-item-time">${timeStr ? "· " + timeStr : ""} · ${sizeStr}</span></div>
-                  <button class="btn btn-ghost btn-sm">Restore</button>
+                  <div style="flex:1;min-width:0;">
+                    <div class="backup-item-date">${doc.id}<span class="backup-item-time">${timeStr ? " · " + timeStr : ""}</span></div>
+                    <div style="font-size:10px;color:var(--dim);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap;">
+                      ${nwStr ? `<span style="color:var(--mint);font-family:'IBM Plex Mono',monospace;">${nwStr}</span>` : ""}
+                      ${fundsStr ? `<span>${fundsStr}</span>` : ""}
+                      <span>${sizeStr}</span>
+                    </div>
+                  </div>
+                  <div style="display:flex;gap:6px;flex-shrink:0;">
+                    <button class="btn btn-ghost btn-sm restore-btn">Restore</button>
+                    <button class="btn btn-ghost btn-sm delete-btn" style="color:var(--coral)">✕</button>
+                  </div>
                 `;
-                item.querySelector("button").addEventListener("click", () => {
+                item.querySelector(".restore-btn").addEventListener("click", () => {
                   UI.confirm(
                     `Restore the snapshot from ${doc.id}? This replaces all current data.`,
                     "Restore Backup", "Restore",
@@ -4035,6 +4068,23 @@
                         UI.toast("success", "Restored backup from " + doc.id, 3000);
                       } catch (e) {
                         UI.toast("err", "Failed to restore — " + e.message, 4000);
+                      }
+                    }, false
+                  );
+                });
+                item.querySelector(".delete-btn").addEventListener("click", () => {
+                  UI.confirm(
+                    `Delete cloud backup from ${doc.id}? This cannot be undone.`,
+                    "Delete Backup", "Delete",
+                    async () => {
+                      try {
+                        await db.collection("dailyBackups").doc(doc.id).delete();
+                        item.remove();
+                        UI.toast("success", "Backup " + doc.id + " deleted", 2500);
+                        if (!el("backupList").children.length)
+                          el("backupList").innerHTML = '<div class="backup-list-msg">No cloud backups found.</div>';
+                      } catch (e) {
+                        UI.toast("err", "Delete failed — " + e.message, 4000);
                       }
                     }, false
                   );
@@ -6331,6 +6381,9 @@
               driftEl.style.display = "none";
             }
 
+            /* — Health Score — */
+            renderHealthScore();
+
             /* — Ideal Allocation card — */
             renderIdealAlloc();
 
@@ -6374,6 +6427,142 @@
                   <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:var(--liq)">${fmt(surplusLiq)}</div>
                 </div>
               </div>` : surplus < 0 ? `<div style="font-size:11px;color:var(--coral)">Expenses exceed income by ${fmt(Math.abs(surplus))}/month.</div>` : ""}`;
+          }
+
+          /* ════════════════════════════════════════════
+             PORTFOLIO HEALTH SCORE
+          ════════════════════════════════════════════ */
+          function renderHealthScore() {
+            const card = el("sumHealthCard");
+            const wrap = el("sumHealthScore");
+            if (!wrap) return;
+
+            // ── Dimension 1: Consistency (investment streak) ──
+            const txnMonths = new Set((state.transactions || [])
+              .filter(t => t.type !== "redemption" && t.date)
+              .map(t => t.date.slice(0, 7)));
+            const now = new Date();
+            let streak = 0;
+            for (let i = 0; i < 120; i++) {
+              const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+              const k = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+              if (txnMonths.has(k)) streak++;
+              else if (i > 0) break;
+            }
+            let cScore = 0, cNote = "No recent investments";
+            if (streak >= 24) { cScore = 25; cNote = streak + " month streak"; }
+            else if (streak >= 12) { cScore = 20; cNote = streak + " month streak"; }
+            else if (streak >= 6)  { cScore = 15; cNote = streak + " month streak"; }
+            else if (streak >= 3)  { cScore = 10; cNote = streak + " month streak"; }
+            else if (streak >= 1)  { cScore = 5;  cNote = streak === 1 ? "1 month streak" : streak + " month streak"; }
+
+            // ── Dimension 2: Allocation drift vs ideal ──
+            let aScore = 15, aNote = "Set fund categories to measure";
+            const activeCats = [...new Set(EQ_FUNDS.map(f => state.equity[f.id]?.category).filter(c => c && c !== ""))];
+            const wts = {};
+            const DEF_WTS = { "Large Cap": 45, "Flexi Cap": 33, "Mid Cap": 22 };
+            EQ_CATEGORIES.forEach(c => { wts[c] = state.idealWeights?.[c] !== undefined ? state.idealWeights[c] : (DEF_WTS[c] || 0); });
+            const totalIdealWt = activeCats.reduce((s, c) => s + (wts[c] || 0), 0);
+            if (activeCats.length > 0 && totalIdealWt > 0) {
+              const eqTotal = EQ_FUNDS.reduce((s, f) => s + (state.equity[f.id]?.shown || 0), 0);
+              if (eqTotal > 0) {
+                let drift = 0;
+                activeCats.forEach(cat => {
+                  const actual = EQ_FUNDS.filter(f => state.equity[f.id]?.category === cat)
+                    .reduce((s, f) => s + (state.equity[f.id]?.shown || 0), 0);
+                  drift += Math.abs((actual / eqTotal * 100) - (wts[cat] / totalIdealWt * 100));
+                });
+                aScore = Math.max(0, Math.round(25 - drift * 0.8));
+                aNote = drift < 5 ? "On target" : drift < 15 ? Math.round(drift) + "% drift" : Math.round(drift) + "% drift — rebalance";
+              }
+            }
+
+            // ── Dimension 3: Liquidity buffer (vs 6-month expenses) ──
+            const totalLiqFree = LIQ_FUNDS.reduce((s, f) => s + Math.max(0, (state.liquid[f.id]?.value || 0) - (state.liquid[f.id]?.reserve || 0)), 0);
+            const monthlyExp = state.surplus?.expenses || 0;
+            let bScore = 15, bNote = "Enter expenses to measure";
+            if (monthlyExp > 0) {
+              const bufMonths = totalLiqFree / monthlyExp;
+              if (bufMonths >= 6)  { bScore = 25; bNote = bufMonths.toFixed(1) + " mo buffer"; }
+              else if (bufMonths >= 3) { bScore = 17; bNote = bufMonths.toFixed(1) + " mo buffer (need 6)"; }
+              else if (bufMonths >= 1) { bScore = 10; bNote = bufMonths.toFixed(1) + " mo buffer (need 6)"; }
+              else                 { bScore = 0;  bNote = "< 1 month buffer"; }
+            }
+
+            // ── Dimension 4: Returns (portfolio XIRR) ──
+            let rScore = 12, rNote = "Add transactions to measure";
+            const allTxns2 = (state.transactions || []).filter(t => t.date && Number(t.invested) > 0);
+            const totalVal2 = LIQ_FUNDS.reduce((s, f) => s + (state.liquid[f.id]?.value || 0), 0) +
+                              EQ_FUNDS.reduce((s, f) => s + (state.equity[f.id]?.shown || 0), 0);
+            if (allTxns2.length && totalVal2 > 0) {
+              const cfs2 = allTxns2.map(t => ({ amount: -Number(t.invested), date: new Date(t.date).getTime() }));
+              cfs2.push({ amount: totalVal2, date: Date.now() });
+              const xirr2 = xirrCalc(cfs2);
+              if (xirr2 !== null) {
+                const pct2 = xirr2 * 100;
+                if (pct2 >= 18)      { rScore = 25; }
+                else if (pct2 >= 12) { rScore = 20; }
+                else if (pct2 >= 8)  { rScore = 15; }
+                else if (pct2 >= 0)  { rScore = 8; }
+                else                 { rScore = 0; }
+                rNote = (pct2 >= 0 ? "+" : "") + pct2.toFixed(1) + "% XIRR";
+              }
+            }
+
+            const total = cScore + aScore + bScore + rScore;
+            const grade = total >= 80 ? "Excellent" : total >= 60 ? "Good" : total >= 40 ? "Fair" : "Needs Work";
+            const gc    = total >= 80 ? "var(--mint)" : total >= 60 ? "#86efac" : total >= 40 ? "var(--amber)" : "var(--coral)";
+
+            // SVG arc gauge (225° start → sweeps clockwise 270° at 100%)
+            const CX = 50, CY = 50, R = 36;
+            function gPolar(deg) {
+              const rad = (deg - 90) * Math.PI / 180;
+              return { x: (CX + R * Math.cos(rad)).toFixed(1), y: (CY + R * Math.sin(rad)).toFixed(1) };
+            }
+            function gArc(startDeg, sweepDeg) {
+              const endDeg = startDeg + sweepDeg;
+              const s = gPolar(startDeg), e = gPolar(endDeg);
+              return `M ${s.x} ${s.y} A ${R} ${R} 0 ${sweepDeg > 180 ? 1 : 0} 1 ${e.x} ${e.y}`;
+            }
+            const bgPath = gArc(225, 270);
+            const fgSweep = Math.max(0, 270 * total / 100);
+            const fgPath  = fgSweep > 1 ? gArc(225, fgSweep) : null;
+
+            const dims = [
+              { label: "Consistency",  score: cScore, note: cNote, color: "var(--liq)" },
+              { label: "Allocation",   score: aScore, note: aNote, color: "var(--mint)" },
+              { label: "Liq. Buffer",  score: bScore, note: bNote, color: "var(--amber)" },
+              { label: "Returns",      score: rScore, note: rNote, color: "#c084fc" },
+            ];
+
+            wrap.innerHTML = `
+              <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+                <div style="flex-shrink:0;position:relative;width:100px;height:100px;">
+                  <svg viewBox="0 0 100 100" style="width:100%;height:100%;overflow:visible;">
+                    <path d="${bgPath}" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="9" stroke-linecap="round"/>
+                    ${fgPath ? `<path d="${fgPath}" fill="none" stroke="${gc}" stroke-width="9" stroke-linecap="round"/>` : ""}
+                  </svg>
+                  <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;margin-top:4px;">
+                    <div style="font-family:'Fraunces',serif;font-size:28px;font-weight:700;color:${gc};line-height:1">${total}</div>
+                    <div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px">${grade}</div>
+                  </div>
+                </div>
+                <div style="flex:1;min-width:180px;display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;">
+                  ${dims.map(d => `
+                    <div>
+                      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
+                        <span style="font-size:9px;text-transform:uppercase;letter-spacing:0.5px;color:var(--dim)">${d.label}</span>
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;color:${d.color}">${d.score}/25</span>
+                      </div>
+                      <div style="height:3px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;margin-bottom:3px;">
+                        <div style="height:100%;width:${(d.score / 25 * 100).toFixed(0)}%;background:${d.color};border-radius:3px;"></div>
+                      </div>
+                      <div style="font-size:9.5px;color:var(--dim)">${d.note}</div>
+                    </div>`).join("")}
+                </div>
+              </div>`;
+
+            if (card) card.style.display = "";
           }
 
           /* ════════════════════════════════════════════
@@ -7236,10 +7425,8 @@
             }
 
             // Asset breakdown bars
-            const mfCost = Math.max(0, mfVal - profit);
             const cats = [
-              { label: "MF Invested (cost)", value: mfCost, color: "rgba(74,222,156,0.4)" },
-              { label: "MF Unrealized Returns", value: profit, color: "#4ade9c" },
+              { label: "Mutual Funds", value: mfVal, color: "#4ade9c" },
               { label: "Bank & Savings", value: state.networth.bank || 0, color: "var(--liq)" },
               { label: "Fixed Deposit", value: state.networth.fd || 0, color: "#5bc4f5" },
               { label: "Cash", value: state.networth.cash || 0, color: "var(--amber)" },
