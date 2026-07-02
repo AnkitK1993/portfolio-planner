@@ -380,12 +380,14 @@
       .ratechip b { color: var(--txt); }
       /* ── XIRR inside expanded card ── */
       .fund-xirr-line {
-        font-family: "IBM Plex Mono", monospace;
-        font-size: 10px; font-weight: 700;
-        margin-top: 5px; display: none;
+        font-family: "IBM Plex Mono", monospace; font-size: 12px; font-weight: 700;
+        padding: 0 10px; border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 10px; background: rgba(255,255,255,0.04);
+        min-height: 38px; display: none; align-items: center; gap: 6px;
+        color: var(--dim); margin-top: 6px;
       }
-      .fund-xirr-line.up { color: #4ade80; }
-      .fund-xirr-line.dn { color: var(--coral); }
+      .fund-xirr-line.up { color: #4ade80; border-color: rgba(74,222,128,0.2); background: rgba(74,222,128,0.04); }
+      .fund-xirr-line.dn { color: #f87171; border-color: rgba(248,113,113,0.2); background: rgba(248,113,113,0.04); }
 
       /* ── SIP ROW ── */
       .sip-divider {
@@ -5798,7 +5800,7 @@
                   if (inner) {
                     inner.textContent = "XIRR " + label;
                     inner.className = "fund-xirr-line " + (up ? "up" : "dn");
-                    inner.style.display = "block";
+                    inner.style.display = "flex";
                   }
                 } else {
                   lxirrBadge.style.display = "none";
@@ -5931,7 +5933,7 @@
                   if (inner) {
                     inner.textContent = "XIRR " + label;
                     inner.className = "fund-xirr-line " + (up ? "up" : "dn");
-                    inner.style.display = "block";
+                    inner.style.display = "flex";
                   }
                 } else {
                   exirrBadge.style.display = "none";
