@@ -362,7 +362,7 @@
       .pbar .fill {
         height: 100%;
         border-radius: 3px;
-        transition: width 0.3s;
+        transition: width 1.2s cubic-bezier(0, 0, 0.2, 1);
       }
       .pbar .fill.liq {
         background: var(--liq);
@@ -6025,6 +6025,24 @@
           }
           animateNumber._ctr = 0;
 
+          function animateWidth(targetEl, toPct, duration = 900) {
+            if (!targetEl) return;
+            if (!targetEl._ak) targetEl._ak = ++animateNumber._ctr;
+            const key = "w" + targetEl._ak;
+            if (_animRaf[key]) cancelAnimationFrame(_animRaf[key]);
+            targetEl.style.transition = "none";
+            targetEl.style.width = "0%";
+            const start = performance.now();
+            const tick = (now) => {
+              const t = Math.min(1, (now - start) / duration);
+              const ease = 1 - Math.pow(1 - t, 3);
+              targetEl.style.width = (toPct * ease).toFixed(1) + "%";
+              if (t < 1) _animRaf[key] = requestAnimationFrame(tick);
+              else { delete _animRaf[key]; targetEl.style.transition = ""; }
+            };
+            _animRaf[key] = requestAnimationFrame(tick);
+          }
+
           // Set a fmtInner element with optional count-up from zero
           function setFmtInner(elId, value, fallback = "—") {
             const element = document.getElementById(elId);
@@ -6565,6 +6583,7 @@
             const bgPath = gArc(225, 270);
             const fgSweep = Math.max(0, 270 * total / 100);
             const fgPath  = fgSweep > 1 ? gArc(225, fgSweep) : null;
+            const fgArcLen = R * fgSweep * Math.PI / 180;
 
             const dims = [
               { label: "Consistency",  score: cScore, note: cNote, color: "var(--liq)" },
@@ -6578,10 +6597,10 @@
                 <div style="flex-shrink:0;position:relative;width:100px;height:100px;">
                   <svg viewBox="0 0 100 100" style="width:100%;height:100%;overflow:visible;">
                     <path d="${bgPath}" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="9" stroke-linecap="round"/>
-                    ${fgPath ? `<path d="${fgPath}" fill="none" stroke="${gc}" stroke-width="9" stroke-linecap="round"/>` : ""}
+                    ${fgPath ? `<path id="phsArcFg" d="${fgPath}" fill="none" stroke="${gc}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${fgArcLen.toFixed(1)}" stroke-dashoffset="${fgArcLen.toFixed(1)}"/>` : ""}
                   </svg>
                   <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;margin-top:4px;">
-                    <div style="font-family:'Fraunces',serif;font-size:28px;font-weight:700;color:${gc};line-height:1">${total}</div>
+                    <div id="phsScoreNum" style="font-family:'Fraunces',serif;font-size:28px;font-weight:700;color:${gc};line-height:1">0</div>
                     <div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px">${grade}</div>
                   </div>
                 </div>
@@ -6593,7 +6612,7 @@
                         <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;color:${d.color}">${d.score}/25</span>
                       </div>
                       <div style="height:3px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;margin-bottom:3px;">
-                        <div style="height:100%;width:${(d.score / 25 * 100).toFixed(0)}%;background:${d.color};border-radius:3px;"></div>
+                        <div class="phs-dim-bar" data-w="${(d.score / 25 * 100).toFixed(0)}" style="height:100%;width:0%;background:${d.color};border-radius:3px;"></div>
                       </div>
                       <div style="font-size:9.5px;color:var(--dim)">${d.note}</div>
                     </div>`).join("")}
@@ -6601,6 +6620,36 @@
               </div>`;
 
             if (card) card.style.display = "";
+
+            // Animate arc, score number, and dimension bars
+            if (_animOnRender) {
+              const arcEl = el("phsArcFg");
+              if (arcEl && fgArcLen > 0) {
+                const arcKey = "arc_phs";
+                if (_animRaf[arcKey]) cancelAnimationFrame(_animRaf[arcKey]);
+                const arcStart = performance.now();
+                const arcTick = (now) => {
+                  const t = Math.min(1, (now - arcStart) / 2000);
+                  const ease = 1 - Math.pow(1 - t, 3);
+                  arcEl.setAttribute("stroke-dashoffset", (fgArcLen * (1 - ease)).toFixed(2));
+                  if (t < 1) _animRaf[arcKey] = requestAnimationFrame(arcTick);
+                  else delete _animRaf[arcKey];
+                };
+                _animRaf[arcKey] = requestAnimationFrame(arcTick);
+              }
+              animateNumber(el("phsScoreNum"), total, 2000, true);
+              wrap.querySelectorAll(".phs-dim-bar").forEach(bar => {
+                animateWidth(bar, parseFloat(bar.dataset.w) || 0, 1400);
+              });
+            } else {
+              const arcEl = el("phsArcFg");
+              if (arcEl) arcEl.setAttribute("stroke-dashoffset", "0");
+              const numEl = el("phsScoreNum");
+              if (numEl) numEl.textContent = String(total);
+              wrap.querySelectorAll(".phs-dim-bar").forEach(bar => {
+                bar.style.width = (bar.dataset.w || "0") + "%";
+              });
+            }
           }
 
           /* ════════════════════════════════════════════
@@ -7498,10 +7547,15 @@
               const share = total > 0 ? Math.round((c.value / total) * 100) : 0;
               return `<div class="nw-bar-row">
                 <div class="nw-bar-label" title="${c.label}">${c.label}</div>
-                <div class="nw-bar-track"><div class="nw-bar-fill" style="width:${barW}%;background:${c.color};"></div></div>
+                <div class="nw-bar-track"><div class="nw-bar-fill" data-w="${barW}" style="width:0%;background:${c.color};"></div></div>
                 <div class="nw-bar-val">${fmt(c.value)}<span class="nw-bar-pct">${share}%</span></div>
               </div>`;
             }).join("");
+            el("nwBreakdown").querySelectorAll(".nw-bar-fill").forEach(bar => {
+              const tw = parseFloat(bar.dataset.w) || 0;
+              if (_animOnRender && !editMode) animateWidth(bar, tw, 1200);
+              else bar.style.width = tw + "%";
+            });
           }
 
           function takeSnapshot() {
