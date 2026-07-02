@@ -121,13 +121,9 @@
         color: var(--txt);
         background: rgba(255, 255, 255, 0.05);
       }
-      /* Per-section subtle tint — visible only in resting (non-active, non-hover) state */
-      #homeBtn:not(.active):not(:hover)     { background: rgba(255,255,255,0.035); }
-      #summaryBtn:not(.active):not(:hover)  { background: rgba(255,210,80,0.04);   }
-      #networthBtn:not(.active):not(:hover) { background: rgba(0,245,160,0.035);   }
-      #txnsBtn:not(.active):not(:hover)     { background: rgba(100,160,255,0.05);  }
-      #editToggleBtn:not(.active):not(:hover) { background: rgba(210,120,255,0.04); }
-      #adminBtn:not(.active):not(:hover)    { background: rgba(255,120,100,0.04);  }
+      /* Uniform resting background for all nav buttons */
+      .tabs button:not(.active):not(:hover),
+      .nav-home-btn:not(.active):not(:hover) { background: rgba(255,255,255,0.04); }
 
       /* ── APP SHELL ── */
       .app {
