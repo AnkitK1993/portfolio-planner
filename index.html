@@ -4778,6 +4778,7 @@
             el("ddForecastBtn").classList.toggle("active", tabId === "forecast");
             el("txnsBtn").classList.toggle("active", tabId === "transactions");
             el("adminBtn").classList.remove("active");
+            _animOnRender = true; // trigger count-up animation on tab enter
             if (tabId === "transactions") {
               el("txnTabInvest").classList.add("active");
               el("txnTabReturns").classList.remove("active");
@@ -5236,7 +5237,7 @@
             const sign    = isUp ? "+" : "−";
             const arrow   = isUp ? "↑" : "↓";
 
-            el("holdingsTotal").innerHTML = hasData ? fmtInner(curVal, "—") : "—";
+            if (hasData) setFmtInner("holdingsTotal", curVal); else el("holdingsTotal").innerHTML = "—";
 
             const rtnEl = el("holdingsRtn");
             if (rtnEl) {
@@ -5791,7 +5792,7 @@
                 : "Enter liquid fund values above";
 
             /* — Liquid division row + per-fund collapsible headers — */
-            el("liqDivTotal").innerHTML = fmtInner(totalLiqVal, "—");
+            setFmtInner("liqDivTotal", totalLiqVal);
             const liqDivRtnEl = el("liqDivRtn");
             if (liqDivRtnEl) {
               if (totalLiqAE > 0) {
@@ -5908,7 +5909,7 @@
             });
 
             /* — Equity division row + per-fund collapsible headers — */
-            el("eqDivTotal").innerHTML = fmtInner(eqCur, "—");
+            setFmtInner("eqDivTotal", eqCur);
             const eqDivRtnEl = el("eqDivRtn");
             if (eqDivRtnEl) {
               if (totalEqAE > 0) {
@@ -5966,26 +5967,60 @@
             renderCalendar();
             const _activeTab = document.querySelector(".tab-section.active")?.id;
             if (_activeTab === "tab-forecast") renderForecast();
+            _animOnRender = false; // reset after first render; re-set by navigateTo()
           }
 
           /* ── Count-up animation ── */
           const _animRaf = {};
-          function animateNumber(targetEl, toVal, duration = 600) {
+          let _animOnRender = true; // true on initial load and tab switches → animates from 0
+
+          function animateNumber(targetEl, toVal, duration = 600, fromZero = false) {
             if (!targetEl) return;
-            const key = targetEl.id || targetEl.className;
+            // Stable per-element key using a lazily assigned counter
+            if (!targetEl._ak) targetEl._ak = ++animateNumber._ctr;
+            const key = targetEl._ak;
             if (_animRaf[key]) cancelAnimationFrame(_animRaf[key]);
-            const fromText = targetEl.textContent.replace(/[₹,\s]/g, "");
-            const fromVal = parseFloat(fromText) || 0;
-            if (Math.abs(toVal - fromVal) < 1) { targetEl.textContent = fmt(Math.round(toVal)); return; }
+
+            // Support fmtInner containers: animate the inner .val-num span
+            const numSpan = (typeof targetEl.querySelector === "function")
+              ? targetEl.querySelector(".val-num") : null;
+            const renderEl = numSpan || targetEl;
+
+            const fromVal = fromZero ? 0
+              : (parseFloat(renderEl.textContent.replace(/[₹,\s]/g, "")) || 0);
+            if (!fromZero && Math.abs(toVal - fromVal) < 1) {
+              renderEl.textContent = numSpan
+                ? Math.round(toVal).toLocaleString("en-IN")
+                : fmt(Math.round(toVal));
+              return;
+            }
+
             const start = performance.now();
             const tick = (now) => {
               const t = Math.min(1, (now - start) / duration);
               const ease = 1 - Math.pow(1 - t, 3);
               const cur = fromVal + (toVal - fromVal) * ease;
-              targetEl.textContent = fmt(Math.round(cur));
+              renderEl.textContent = numSpan
+                ? Math.round(cur).toLocaleString("en-IN")
+                : fmt(Math.round(cur));
               if (t < 1) _animRaf[key] = requestAnimationFrame(tick);
+              else delete _animRaf[key];
             };
             _animRaf[key] = requestAnimationFrame(tick);
+          }
+          animateNumber._ctr = 0;
+
+          // Set a fmtInner element with optional count-up from zero
+          function setFmtInner(elId, value, fallback = "—") {
+            const element = document.getElementById(elId);
+            if (!element) return;
+            if (value <= 0) { element.innerHTML = fallback; return; }
+            if (_animOnRender && !editMode) {
+              element.innerHTML = `<span class="val-pfx">₹</span><span class="val-num">0</span>`;
+              animateNumber(element, value, 2000, true);
+            } else {
+              element.innerHTML = `<span class="val-pfx">₹</span><span class="val-num">${Math.round(value).toLocaleString("en-IN")}</span>`;
+            }
           }
 
           /* ── Profit milestones ── */
@@ -6633,6 +6668,18 @@
             return xirrCalc(cfs);
           }
 
+          // XIRR cache — avoids Newton-Raphson re-iteration when inputs haven't changed
+          let _xirrCache = { key: null, val: null };
+          function cachedPortfolioXirr(allTxns, totalVal) {
+            const cacheKey = allTxns.length + "|" + totalVal.toFixed(0) +
+              "|" + (allTxns[0]?.date || "") + "|" + (allTxns[allTxns.length - 1]?.date || "");
+            if (_xirrCache.key === cacheKey) return _xirrCache.val;
+            const cfs = allTxns.map(t => ({ amount: -Number(t.invested), date: new Date(t.date).getTime() }));
+            cfs.push({ amount: totalVal, date: Date.now() });
+            _xirrCache = { key: cacheKey, val: xirrCalc(cfs) };
+            return _xirrCache.val;
+          }
+
           function renderXirrAndHeatmap() {
             // Portfolio XIRR
             const xirrCard = el("sumXirrCard");
@@ -6644,9 +6691,7 @@
                                EQ_FUNDS.reduce((s, f) => s + (state.equity[f.id]?.shown || 0), 0);
               let portfolioXirr = null;
               if (allTxns.length && totalVal > 0) {
-                const cfs = allTxns.map(t => ({ amount: -Number(t.invested), date: new Date(t.date).getTime() }));
-                cfs.push({ amount: totalVal, date: Date.now() });
-                portfolioXirr = xirrCalc(cfs);
+                portfolioXirr = cachedPortfolioXirr(allTxns, totalVal);
               }
               if (portfolioXirr !== null) {
                 xirrCard.style.display = "";
@@ -7303,7 +7348,7 @@
             el("nwMfChip").textContent = fmt(mfVal);
             el("nwMfProfitChip").textContent = fmt(profit);
             el("nwOtherChip").textContent = fmt(other);
-            animateNumber(el("nwHeroVal"), total);
+            animateNumber(el("nwHeroVal"), total, _animOnRender && !editMode ? 2000 : 500, _animOnRender && !editMode);
             const _snapKey   = snapshotKey();
             const _hasSnap   = !!(state.networth.snapshots && state.networth.snapshots[_snapKey]);
             const _snapBtn   = el("nwSnapshotBtn");
