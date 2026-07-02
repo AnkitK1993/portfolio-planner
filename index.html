@@ -1154,6 +1154,56 @@
         text-align: left;
         color: var(--dim);
       }
+      .nw-hist-row { cursor: pointer; }
+      .nw-hist-row:hover { background: rgba(255,255,255,0.03); }
+      .nw-hist-detail td {
+        cursor: default;
+        white-space: normal;
+        padding: 10px 8px;
+        background: rgba(255,255,255,0.02);
+      }
+      .nw-hist-detail-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 3px 0;
+        font-size: 10px;
+      }
+      .nw-hist-detail-row span:first-child { color: var(--dim); }
+      .nw-hist-detail-row span:last-child { font-weight: 600; }
+      .nw-hist-cmp-head, .nw-hist-cmp-row {
+        display: grid;
+        grid-template-columns: 1.3fr 1fr 1fr 1fr;
+        gap: 4px;
+        padding: 3px 0;
+        font-size: 9.5px;
+        text-align: right;
+      }
+      .nw-hist-cmp-head {
+        color: var(--dim);
+        font-size: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 5px;
+        margin-bottom: 3px;
+      }
+      .nw-hist-cmp-head span:first-child, .nw-hist-cmp-label { text-align: left; }
+      .nw-hist-cmp-label { color: var(--dim); }
+      .nw-hist-cmp-val { font-weight: 600; }
+      .nw-hist-cmp-delta { font-weight: 700; }
+      .nw-hist-cmp-btn {
+        margin-top: 8px;
+        width: 100%;
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        color: var(--mint);
+        font-size: 10.5px;
+        font-weight: 600;
+        padding: 7px;
+        cursor: pointer;
+      }
+      .nw-hist-cmp-btn:hover { border-color: var(--mint); }
       .nw-proj-cards {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
@@ -3851,6 +3901,8 @@
           let fbUnsubscribe = null;   // cleanup handle for real-time onSnapshot listener
           let nwEditingKey  = null;   // set when editing an existing snapshot
           let nwLiveSaved   = null;   // live NW field values saved before entering edit mode
+          let nwHistExpanded = new Set(); // snapshot keys with their history row expanded
+          let nwHistCompare  = new Set(); // snapshot keys currently showing the "compare with current" panel
 
           function fbSyncUI(status, msg) {
             const dot = el("saveDot");
@@ -4359,6 +4411,12 @@
               0,
             );
             return mfTotalValue() + other;
+          }
+
+          function buildCurrentSnapshot() {
+            const cur = { mf: mfTotalValue(), total: nwTotal() };
+            NW_FIELDS.forEach((f) => { cur[f.id] = state.networth[f.id] || 0; });
+            return cur;
           }
 
           function fmtMonth(key) {
@@ -7258,6 +7316,13 @@
 
             const OTHER_FIELDS = NW_FIELDS.filter(f => f.id !== "mfProfit");
             const othersOf = (s) => OTHER_FIELDS.reduce((sum, f) => sum + (s[f.id] || 0), 0);
+            const colCount = 6 + (editMode ? 1 : 0);
+            const DETAIL_FIELDS = [
+              { key: "mf",       label: "MF Value" },
+              { key: "mfProfit", label: "MF Returns" },
+              ...OTHER_FIELDS.map(f => ({ key: f.id, label: f.label })),
+              { key: "total",    label: "Total" },
+            ];
 
             const td = (v, c) => `<td style="${c ? "color:" + c + ";" : ""}">${fmtCompact(v || 0)}</td>`;
             const rows = sorted.map((s, i) => {
@@ -7266,13 +7331,41 @@
               const dStr = delta !== null
                 ? `<span style="color:${delta >= 0 ? "var(--mint)" : "var(--coral)"};font-weight:600;">${delta >= 0 ? "+" : ""}${fmtCompact(delta)}</span>`
                 : "—";
-              return `<tr>
-                <td>${fmtMonth(s.key)}</td>
+              const isOpen = nwHistExpanded.has(s.key);
+              const mainRow = `<tr class="nw-hist-row" data-key="${s.key}">
+                <td>${isOpen ? "▾" : "▸"} ${fmtMonth(s.key)}</td>
                 ${td(s.mf)}${td(s.mfProfit)}${td(othersOf(s))}
                 <td style="color:var(--mint);font-weight:600;">${fmtCompact(s.total)}</td>
                 <td>${dStr}</td>
                 ${editMode ? `<td><button class="nw-hist-del" data-key="${s.key}" title="Delete snapshot" style="background:none;border:none;cursor:pointer;color:var(--dim);font-size:11px;padding:2px;line-height:1;">✕</button></td>` : ""}
               </tr>`;
+              if (!isOpen) return mainRow;
+
+              const showCompare = nwHistCompare.has(s.key);
+              const cur = showCompare ? buildCurrentSnapshot() : null;
+              const body = showCompare
+                ? `<div class="nw-hist-cmp-head"><span>Field</span><span>${fmtMonth(s.key)}</span><span>Current</span><span>&Delta;</span></div>` +
+                  DETAIL_FIELDS.map(f => {
+                    const snapV = s[f.key] || 0, curV = cur[f.key] || 0, d = curV - snapV;
+                    const dColor = d > 0 ? "var(--mint)" : d < 0 ? "var(--coral)" : "var(--dim)";
+                    return `<div class="nw-hist-cmp-row">
+                      <span class="nw-hist-cmp-label">${f.label}</span>
+                      <span class="nw-hist-cmp-val">${fmtCompact(snapV)}</span>
+                      <span class="nw-hist-cmp-val">${fmtCompact(curV)}</span>
+                      <span class="nw-hist-cmp-delta" style="color:${dColor}">${d === 0 ? "—" : (d > 0 ? "+" : "") + fmtCompact(d)}</span>
+                    </div>`;
+                  }).join("")
+                : DETAIL_FIELDS.map(f =>
+                    `<div class="nw-hist-detail-row"><span>${f.label}</span><span>${fmtCompact(s[f.key] || 0)}</span></div>`
+                  ).join("");
+
+              const detailRow = `<tr class="nw-hist-detail" data-key="${s.key}">
+                <td colspan="${colCount}">
+                  ${body}
+                  <button class="nw-hist-cmp-btn" data-key="${s.key}">${showCompare ? "Hide comparison" : "Compare with Current"}</button>
+                </td>
+              </tr>`;
+              return mainRow + detailRow;
             }).join("");
 
             el("nwHistory").innerHTML = `<div class="nw-hist-wrap" id="nwHistWrap">
@@ -7295,11 +7388,33 @@
               </table>
             </div>`;
 
+            el("nwHistory").querySelectorAll(".nw-hist-row").forEach(tr => {
+              tr.addEventListener("click", () => {
+                const key = tr.dataset.key;
+                if (nwHistExpanded.has(key)) nwHistExpanded.delete(key);
+                else nwHistExpanded.add(key);
+                renderNwHistory();
+              });
+            });
+
+            el("nwHistory").querySelectorAll(".nw-hist-cmp-btn").forEach(btn => {
+              btn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const key = btn.dataset.key;
+                if (nwHistCompare.has(key)) nwHistCompare.delete(key);
+                else nwHistCompare.add(key);
+                renderNwHistory();
+              });
+            });
+
             el("nwHistory").querySelectorAll(".nw-hist-del").forEach(btn => {
-              btn.addEventListener("click", () => {
+              btn.addEventListener("click", (e) => {
+                e.stopPropagation();
                 const key = btn.dataset.key;
                 UI.confirm("Delete snapshot for " + fmtMonth(key) + "?", "Delete snapshot", "Delete", () => {
                   if (state.networth.snapshots) delete state.networth.snapshots[key];
+                  nwHistExpanded.delete(key);
+                  nwHistCompare.delete(key);
                   saveState();
                   renderNetWorth();
                   renderNwHistory();
