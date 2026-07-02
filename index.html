@@ -3896,11 +3896,29 @@
                     updateAuthUI();
                     if (user) maybeLoadFromCloud().catch(() => {});
                   });
+                  // Completes sign-in started via signInWithRedirect (popup fallback)
+                  firebase.auth().getRedirectResult().then(handleSignInResult).catch(e => {
+                    if (e && e.code && e.code !== "auth/no-current-user") {
+                      UI.toast("err", "Sign-in failed: " + (e.message || e.code), 5000);
+                    }
+                  });
                 } catch (e) {
                   console.warn("Firebase init:", e.message);
                 }
               })
               .catch(e => console.warn("Firebase SDK load failed:", e));
+          }
+
+          function handleSignInResult(result) {
+            if (!result || !result.user) return;
+            if (result.user.email !== "ankit.konchady@gmail.com") {
+              firebase.auth().signOut();
+              UI.toast("err", "Unauthorized — access restricted to admin only", 5000);
+            } else {
+              const firstName = (result.user.displayName || "Ankit").split(" ")[0];
+              UI.toast("success", `Welcome back, ${firstName}! 👋`, 4500);
+              setTimeout(() => maybeDailyBackup(), 3000);
+            }
           }
 
           /* Browse and restore daily cloud backups */
@@ -4896,20 +4914,25 @@
               await firebase.auth().signOut()
                 .catch(e => UI.toast("err", "Sign-out failed: " + e.message, 4000));
             } else {
+              const provider = new firebase.auth.GoogleAuthProvider();
               try {
-                const provider = new firebase.auth.GoogleAuthProvider();
                 const result = await firebase.auth().signInWithPopup(provider);
-                if (result.user.email !== "ankit.konchady@gmail.com") {
-                  await firebase.auth().signOut();
-                  UI.toast("err", "Unauthorized — access restricted to admin only", 5000);
-                } else {
-                  const firstName = (result.user.displayName || "Ankit").split(" ")[0];
-                  UI.toast("success", `Welcome back, ${firstName}! 👋`, 4500);
-                  setTimeout(() => maybeDailyBackup(), 3000);
-                }
+                handleSignInResult(result);
               } catch (e) {
                 const ignored = ["auth/popup-closed-by-user", "auth/cancelled-popup-request"];
-                if (!ignored.includes(e.code)) {
+                if (ignored.includes(e.code)) return;
+                // Popups are blocked/unsupported on many mobile browsers & in-app
+                // webviews — fall back to a full-page redirect flow instead.
+                const fallbackToRedirect = [
+                  "auth/popup-blocked",
+                  "auth/operation-not-supported-in-this-environment",
+                  "auth/web-storage-unsupported",
+                  "auth/internal-error",
+                ];
+                if (fallbackToRedirect.includes(e.code)) {
+                  firebase.auth().signInWithRedirect(provider)
+                    .catch(e2 => UI.toast("err", e2.message || "Sign-in failed", 5000));
+                } else {
                   UI.toast("err", e.message || "Sign-in failed", 5000);
                 }
               }
