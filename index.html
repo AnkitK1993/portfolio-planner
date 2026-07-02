@@ -378,6 +378,14 @@
         margin: 4px 0 8px;
       }
       .ratechip b { color: var(--txt); }
+      /* ── XIRR inside expanded card ── */
+      .fund-xirr-line {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 10px; font-weight: 700;
+        margin-top: 5px; display: none;
+      }
+      .fund-xirr-line.up { color: #4ade80; }
+      .fund-xirr-line.dn { color: var(--coral); }
 
       /* ── SIP ROW ── */
       .sip-divider {
@@ -4521,6 +4529,7 @@
                 <div class="field">
                   <label class="flabel">Returns</label>
                   <div class="rtn-display" id="lrtn-${f.id}">—</div>
+                  <div class="fund-xirr-line" id="lxirr-inner-${f.id}"></div>
                 </div>
               </div>
               <div class="ratechip">Expense ratio: <b id="lrate-${f.id}">—</b></div>
@@ -4579,6 +4588,7 @@
                 <div class="field">
                   <label class="flabel">Returns</label>
                   <div class="rtn-display" id="ertn-${f.id}">—</div>
+                  <div class="fund-xirr-line" id="exirr-inner-${f.id}"></div>
                 </div>
               </div>
               <div class="ratechip">Expense ratio: <b id="erate-${f.id}">—</b></div>
@@ -5780,10 +5790,21 @@
                 if (x !== null) {
                   const p = (x * 100).toFixed(1);
                   const up = x >= 0;
-                  lxirrBadge.textContent = (up ? "+" : "") + p + "% pa";
+                  const label = (up ? "+" : "") + p + "% pa";
+                  lxirrBadge.textContent = label;
                   lxirrBadge.className = "coll-xirr " + (up ? "up" : "dn");
                   lxirrBadge.style.display = "";
-                } else { lxirrBadge.style.display = "none"; }
+                  const inner = el("lxirr-inner-" + f.id);
+                  if (inner) {
+                    inner.textContent = "XIRR " + label;
+                    inner.className = "fund-xirr-line " + (up ? "up" : "dn");
+                    inner.style.display = "";
+                  }
+                } else {
+                  lxirrBadge.style.display = "none";
+                  const inner = el("lxirr-inner-" + f.id);
+                  if (inner) inner.style.display = "none";
+                }
               }
               /* Split row */
               const lsplit = el("lsplit-" + f.id);
@@ -5902,10 +5923,21 @@
                 if (x !== null) {
                   const p = (x * 100).toFixed(1);
                   const up = x >= 0;
-                  exirrBadge.textContent = (up ? "+" : "") + p + "% pa";
+                  const label = (up ? "+" : "") + p + "% pa";
+                  exirrBadge.textContent = label;
                   exirrBadge.className = "coll-xirr " + (up ? "up" : "dn");
                   exirrBadge.style.display = "";
-                } else { exirrBadge.style.display = "none"; }
+                  const inner = el("exirr-inner-" + f.id);
+                  if (inner) {
+                    inner.textContent = "XIRR " + label;
+                    inner.className = "fund-xirr-line " + (up ? "up" : "dn");
+                    inner.style.display = "";
+                  }
+                } else {
+                  exirrBadge.style.display = "none";
+                  const inner = el("exirr-inner-" + f.id);
+                  if (inner) inner.style.display = "none";
+                }
               }
               /* Split row */
               const esplit = el("esplit-" + f.id);
