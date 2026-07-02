@@ -1117,46 +1117,41 @@
       .nw-hist-wrap {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
-        position: relative;
       }
       .nw-hist-table {
         width: 100%;
+        table-layout: fixed;
         border-collapse: collapse;
-        font-size: 11px;
-        min-width: 520px;
-      }
-      .nw-hist-scroll-hint {
-        display: none;
-        align-items: center;
-        gap: 4px;
         font-size: 9.5px;
-        color: var(--dim);
-        margin-top: 6px;
-      }
-      .nw-hist-wrap.has-overflow + .nw-hist-scroll-hint {
-        display: flex;
+        border: 1px solid var(--line);
       }
       .nw-hist-table th {
-        font-size: 9px;
+        font-size: 7.5px;
         text-transform: uppercase;
-        letter-spacing: 0.6px;
+        letter-spacing: 0.3px;
         color: var(--dim);
-        font-weight: 400;
+        font-weight: 600;
         text-align: right;
-        padding: 0 4px 8px;
+        padding: 4px 2px;
+        background: var(--bg);
+        border: 1px solid var(--line);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
       .nw-hist-table th:first-child {
         text-align: left;
-        padding-left: 0;
       }
       .nw-hist-table td {
         text-align: right;
-        padding: 7px 4px;
-        border-top: 1px solid var(--line);
+        padding: 4px 2px;
+        border: 1px solid var(--line);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
       .nw-hist-table td:first-child {
         text-align: left;
-        padding-left: 0;
         color: var(--dim);
       }
       .nw-proj-cards {
@@ -4248,6 +4243,15 @@
           };
           const num = (v) => Number(String(v || "").replace(/,/g, "")) || 0;
           const fmtNum = (v) => (v > 0 ? Math.round(v).toLocaleString("en-IN") : "");
+          const fmtCompact = (n) => {
+            const v = Math.round(n || 0);
+            const sign = v < 0 ? "−" : "";
+            const abs = Math.abs(v);
+            if (abs >= 1e7) return sign + "₹" + (abs / 1e7).toFixed(2).replace(/\.?0+$/, "") + "Cr";
+            if (abs >= 1e5) return sign + "₹" + (abs / 1e5).toFixed(2).replace(/\.?0+$/, "") + "L";
+            if (abs >= 1e3) return sign + "₹" + (abs / 1e3).toFixed(1).replace(/\.?0+$/, "") + "K";
+            return sign + "₹" + abs;
+          };
           const pct = (a, b) => (b > 0 ? (a / b) * 100 : 0);
           function setStatReturn(elId, curVal, invested) {
             const statEl = el(elId);
@@ -7255,42 +7259,41 @@
             const OTHER_FIELDS = NW_FIELDS.filter(f => f.id !== "mfProfit");
             const othersOf = (s) => OTHER_FIELDS.reduce((sum, f) => sum + (s[f.id] || 0), 0);
 
-            const td = (v, c) => `<td style="text-align:right;${c ? "color:" + c + ";" : ""}">${fmt(v || 0)}</td>`;
+            const td = (v, c) => `<td style="${c ? "color:" + c + ";" : ""}">${fmtCompact(v || 0)}</td>`;
             const rows = sorted.map((s, i) => {
               const prev = sorted[i + 1];
               const delta = prev !== undefined ? s.total - prev.total : null;
               const dStr = delta !== null
-                ? `<span style="color:${delta >= 0 ? "var(--mint)" : "var(--coral)"};font-weight:600;">${delta >= 0 ? "+" : "−"}${fmt(Math.abs(delta))}</span>`
+                ? `<span style="color:${delta >= 0 ? "var(--mint)" : "var(--coral)"};font-weight:600;">${delta >= 0 ? "+" : ""}${fmtCompact(delta)}</span>`
                 : "—";
               return `<tr>
                 <td>${fmtMonth(s.key)}</td>
                 ${td(s.mf)}${td(s.mfProfit)}${td(othersOf(s))}
-                <td style="text-align:right;color:var(--mint);font-weight:600;">${fmt(s.total)}</td>
-                <td style="text-align:right;">${dStr}</td>
-                ${editMode ? `<td style="text-align:right;padding-left:4px;"><button class="nw-hist-del" data-key="${s.key}" title="Delete snapshot" style="background:none;border:none;cursor:pointer;color:var(--dim);font-size:12px;padding:2px 5px;border-radius:5px;line-height:1;">✕</button></td>` : ""}
+                <td style="color:var(--mint);font-weight:600;">${fmtCompact(s.total)}</td>
+                <td>${dStr}</td>
+                ${editMode ? `<td><button class="nw-hist-del" data-key="${s.key}" title="Delete snapshot" style="background:none;border:none;cursor:pointer;color:var(--dim);font-size:11px;padding:2px;line-height:1;">✕</button></td>` : ""}
               </tr>`;
             }).join("");
 
             el("nwHistory").innerHTML = `<div class="nw-hist-wrap" id="nwHistWrap">
               <table class="nw-hist-table">
+                <colgroup>
+                  <col style="width:23%"><col style="width:15%"><col style="width:15%">
+                  <col style="width:15%"><col style="width:17%"><col style="width:15%">
+                  ${editMode ? `<col style="width:18px">` : ""}
+                </colgroup>
                 <thead><tr>
-                  <th style="text-align:left;padding-bottom:8px;">Month</th>
-                  <th style="text-align:right;padding-bottom:8px;">MF</th>
-                  <th style="text-align:right;padding-bottom:8px;">MF Returns</th>
-                  <th style="text-align:right;padding-bottom:8px;">Others</th>
-                  <th style="text-align:right;padding-bottom:8px;color:var(--mint);">Total</th>
-                  <th style="text-align:right;padding-bottom:8px;">&Delta;</th>
-                  ${editMode ? `<th style="padding-bottom:8px;width:28px;"></th>` : ""}
+                  <th style="text-align:left;">Month</th>
+                  <th>MF</th>
+                  <th>Returns</th>
+                  <th>Others</th>
+                  <th style="color:var(--mint);">Total</th>
+                  <th>&Delta;</th>
+                  ${editMode ? `<th></th>` : ""}
                 </tr></thead>
                 <tbody>${rows}</tbody>
               </table>
-            </div>
-            <div class="nw-hist-scroll-hint">&#8596;&nbsp; Swipe to see Others, Total &amp; change</div>`;
-
-            const histWrap = el("nwHistWrap");
-            if (histWrap && histWrap.scrollWidth > histWrap.clientWidth + 2) {
-              histWrap.classList.add("has-overflow");
-            }
+            </div>`;
 
             el("nwHistory").querySelectorAll(".nw-hist-del").forEach(btn => {
               btn.addEventListener("click", () => {
