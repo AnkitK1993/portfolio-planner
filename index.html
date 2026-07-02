@@ -62,7 +62,8 @@
       .tabs {
         display: flex;
         justify-content: center;
-        background: rgba(7, 7, 15, 0.88);
+        align-items: center;
+        background: rgba(7, 7, 15, 0.92);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         border-top: 1px solid rgba(255,255,255,0.06);
@@ -72,7 +73,8 @@
         right: 0;
         z-index: 100;
         overflow-x: auto;
-        padding: 0 10px;
+        padding: 6px 10px;
+        gap: 2px;
         scrollbar-width: none;
       }
       .nav-actions {
@@ -87,26 +89,24 @@
       .tabs button {
         background: none;
         border: none;
+        border-radius: 9px;
         color: var(--dim);
         font-family: "Outfit", sans-serif;
         font-size: 10.5px;
         letter-spacing: 0.8px;
         text-transform: uppercase;
-        padding: 13px 14px;
+        padding: 7px 14px;
         cursor: pointer;
         white-space: nowrap;
-        border-top: 2px solid transparent;
-        margin-top: -1px;
-        transition:
-          color 0.15s,
-          border-color 0.15s;
+        transition: color 0.15s, background 0.15s;
       }
       .tabs button.active {
         color: var(--mint);
-        border-top-color: var(--mint);
+        background: rgba(0, 245, 160, 0.1);
       }
       .tabs button:hover:not(.active) {
         color: var(--txt);
+        background: rgba(255, 255, 255, 0.05);
       }
 
       /* ── APP SHELL ── */
@@ -964,9 +964,10 @@
       }
       @media (max-width: 600px) {
         .tabs {
-          padding: 0 0 env(safe-area-inset-bottom);
+          padding: 4px 3px calc(4px + env(safe-area-inset-bottom));
           justify-content: stretch;
           overflow: hidden;
+          gap: 1px;
         }
         .nav-actions {
           position: static;
@@ -976,21 +977,22 @@
         .tabs button {
           flex: 1;
           min-width: 0;
-          min-height: 44px;
-          padding: 10px 2px 9px;
+          min-height: 36px;
+          padding: 6px 2px;
           font-size: 8px;
           letter-spacing: 0.4px;
           flex-shrink: 1;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
+          border-radius: 7px;
         }
         /* Hide save indicator text on mobile — frees space for tab labels */
         .dot, #saveTxt { display: none; }
         .nav-actions { gap: 0; padding: 0 3px; }
         .edit-toggle { font-size: 8px; padding: 3px 6px; letter-spacing: 0.3px; }
         .app {
-          padding-bottom: calc(80px + env(safe-area-inset-bottom));
+          padding-bottom: calc(72px + env(safe-area-inset-bottom));
         }
         /* Prevent iOS zoom on input focus (requires font-size ≥ 16px) */
         .num, .fundname, .cal-paid-input, .curval-inp, .form-inp {
@@ -1430,7 +1432,7 @@
       /* ════ DESKTOP LAYOUT ════ */
       @media (min-width: 1100px) {
         .app { padding: 28px 40px 60px; }
-        .tabs button { padding: 15px 20px; font-size: 11px; letter-spacing: 0.9px; }
+        .tabs button { padding: 7px 20px; font-size: 11px; letter-spacing: 0.9px; }
         .pg-head h1 { font-size: clamp(28px, 3vw, 44px); }
         .pg-head p { font-size: 12.5px; max-width: 720px; }
         .fund-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
@@ -1773,30 +1775,24 @@
       .nav-home-btn {
         background: none;
         border: none;
-        border-bottom: 2px solid transparent;
+        border-radius: 9px;
         color: var(--dim);
         cursor: pointer;
-        padding: 13px 14px;
+        padding: 7px 14px;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: color 0.15s, border-color 0.15s;
+        transition: color 0.15s, background 0.15s;
         flex-shrink: 0;
-        margin-bottom: -1px;
       }
-      .nav-home-btn.active { color: var(--mint); border-bottom-color: var(--mint); }
-      .nav-home-btn:hover:not(.active) { color: var(--txt); }
+      .nav-home-btn.active { color: var(--mint); background: rgba(0, 245, 160, 0.1); }
+      .nav-home-btn:hover:not(.active) { color: var(--txt); background: rgba(255,255,255,0.05); }
       @media (max-width: 600px) {
         .nav-home-btn {
           flex: 1;
-          min-height: 44px;
-          padding: 10px 2px 9px;
-          border-bottom: none;
-          border-top: 2px solid transparent;
-          margin-bottom: 0;
-          margin-top: -1px;
+          min-height: 36px;
+          padding: 6px 2px;
         }
-        .nav-home-btn.active { border-top-color: var(--mint); border-bottom-color: transparent; }
       }
       .nav-dd-trigger { display: flex; align-items: center; gap: 4px; }
       .nav-chevron { font-size: 7px; opacity: 0.55; pointer-events: none; transition: transform 0.2s; }
@@ -2083,11 +2079,10 @@
         box-shadow: 0 -1px 16px rgba(0,229,255,0.07);
       }
       body[data-theme="neo-cyber-grid"] .tabs button.active {
+        color: #00e5ff;
+        background: rgba(0,229,255,0.1);
         text-shadow: 0 0 14px rgba(0,229,255,0.6);
         letter-spacing: 1.1px;
-      }
-      body[data-theme="neo-cyber-grid"] .tabs button.active {
-        border-top-color: #00e5ff;
       }
 
       /* ── Portfolio hero ── */
@@ -2198,6 +2193,8 @@
         box-shadow: 0 -1px 18px rgba(0,200,255,0.07);
       }
       body[data-theme="ai-command-center"] .tabs button.active {
+        color: #00c8ff;
+        background: rgba(0,200,255,0.1);
         text-shadow: 0 0 12px rgba(0,200,255,0.6);
       }
 
