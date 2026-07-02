@@ -87,6 +87,7 @@
         display: none;
       }
       .tabs button {
+        position: relative;
         background: none;
         border: none;
         border-radius: 9px;
@@ -104,10 +105,29 @@
         color: var(--mint);
         background: rgba(0, 245, 160, 0.1);
       }
+      .tabs button.active::before,
+      .nav-home-btn.active::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 18%;
+        right: 18%;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, var(--mint), transparent);
+        border-radius: 0 0 2px 2px;
+        box-shadow: 0 0 10px 3px rgba(0,245,160,0.45);
+      }
       .tabs button:hover:not(.active) {
         color: var(--txt);
         background: rgba(255, 255, 255, 0.05);
       }
+      /* Per-section subtle tint — visible only in resting (non-active, non-hover) state */
+      #homeBtn:not(.active):not(:hover)     { background: rgba(255,255,255,0.035); }
+      #summaryBtn:not(.active):not(:hover)  { background: rgba(255,210,80,0.04);   }
+      #networthBtn:not(.active):not(:hover) { background: rgba(0,245,160,0.035);   }
+      #txnsBtn:not(.active):not(:hover)     { background: rgba(100,160,255,0.05);  }
+      #editToggleBtn:not(.active):not(:hover) { background: rgba(210,120,255,0.04); }
+      #adminBtn:not(.active):not(:hover)    { background: rgba(255,120,100,0.04);  }
 
       /* ── APP SHELL ── */
       .app {
@@ -1762,6 +1782,7 @@
 
       /* ═══ NAV DROPDOWNS ═══ */
       .nav-home-btn {
+        position: relative;
         background: none;
         border: none;
         border-radius: 9px;
@@ -5804,9 +5825,8 @@
             }
             LIQ_FUNDS.forEach(f => {
               const nameEl = el("coll-name-" + f.id);
-              const valEl = el("coll-val-" + f.id);
               if (nameEl && document.activeElement !== nameEl) nameEl.value = state.liquid[f.id].label || f.defaultName;
-              if (valEl) valEl.innerHTML = fmtInner(state.liquid[f.id].value || 0);
+              setFmtInner("coll-val-" + f.id, state.liquid[f.id].value || 0);
             });
 
             /* — Equity funds — */
@@ -5922,9 +5942,8 @@
             EQ_FUNDS.forEach(f => {
               const s = state.equity[f.id];
               const nameEl = el("coll-name-" + f.id);
-              const valEl = el("coll-val-" + f.id);
               if (nameEl && document.activeElement !== nameEl) nameEl.value = s.label || f.defaultName;
-              if (valEl) valEl.innerHTML = fmtInner(s.shown || 0);
+              setFmtInner("coll-val-" + f.id, s.shown || 0);
             });
 
             /* — Summary table — */
@@ -5974,7 +5993,7 @@
           const _animRaf = {};
           let _animOnRender = true; // true on initial load and tab switches → animates from 0
 
-          function animateNumber(targetEl, toVal, duration = 600, fromZero = false) {
+          function animateNumber(targetEl, toVal, duration = 600, fromZero = false, prefix = "") {
             if (!targetEl) return;
             // Stable per-element key using a lazily assigned counter
             if (!targetEl._ak) targetEl._ak = ++animateNumber._ctr;
@@ -5987,11 +6006,11 @@
             const renderEl = numSpan || targetEl;
 
             const fromVal = fromZero ? 0
-              : (parseFloat(renderEl.textContent.replace(/[₹,\s]/g, "")) || 0);
+              : (parseFloat(renderEl.textContent.replace(/[₹,+\-,\s]/g, "")) || 0);
             if (!fromZero && Math.abs(toVal - fromVal) < 1) {
               renderEl.textContent = numSpan
                 ? Math.round(toVal).toLocaleString("en-IN")
-                : fmt(Math.round(toVal));
+                : prefix + fmt(Math.round(toVal));
               return;
             }
 
@@ -6002,7 +6021,7 @@
               const cur = fromVal + (toVal - fromVal) * ease;
               renderEl.textContent = numSpan
                 ? Math.round(cur).toLocaleString("en-IN")
-                : fmt(Math.round(cur));
+                : prefix + fmt(Math.round(cur));
               if (t < 1) _animRaf[key] = requestAnimationFrame(tick);
               else delete _animRaf[key];
             };
@@ -7345,9 +7364,15 @@
             const total = mfVal + other;
 
             el("nwMfVal").textContent = fmt(mfVal);
-            el("nwMfChip").textContent = fmt(mfVal);
-            el("nwMfProfitChip").textContent = fmt(profit);
-            el("nwOtherChip").textContent = fmt(other);
+            if (_animOnRender && !editMode) {
+              animateNumber(el("nwMfChip"), mfVal, 2000, true);
+              animateNumber(el("nwMfProfitChip"), profit, 2000, true);
+              animateNumber(el("nwOtherChip"), other, 2000, true);
+            } else {
+              el("nwMfChip").textContent = fmt(mfVal);
+              el("nwMfProfitChip").textContent = fmt(profit);
+              el("nwOtherChip").textContent = fmt(other);
+            }
             animateNumber(el("nwHeroVal"), total, _animOnRender && !editMode ? 2000 : 500, _animOnRender && !editMode);
             const _snapKey   = snapshotKey();
             const _hasSnap   = !!(state.networth.snapshots && state.networth.snapshots[_snapKey]);
@@ -7941,8 +7966,13 @@
             const timeBadge = el("fcTimeBadge");
             if (!timeBadge) return;
             timeBadge.textContent = timeLabel;
-            el("fcInvested").textContent = fmt(Math.round(totalInvested));
-            el("fcBig").textContent      = fmt(Math.round(projected));
+            if (_animOnRender && !editMode) {
+              animateNumber(el("fcInvested"), Math.round(totalInvested), 2000, true);
+              animateNumber(el("fcBig"), Math.round(projected), 2000, true);
+            } else {
+              el("fcInvested").textContent = fmt(Math.round(totalInvested));
+              el("fcBig").textContent      = fmt(Math.round(projected));
+            }
 
             const profitEl = el("fcProfit"), pctEl = el("fcProfitPct");
             if (step === 0 || totalInvested === 0) {
@@ -7950,10 +7980,14 @@
               pctEl.textContent = ""; pctEl.style.color = "var(--dim)";
             } else {
               const sign = profit >= 0 ? "+" : "";
-              profitEl.textContent = sign + fmt(Math.round(profit));
               profitEl.style.color = profit >= 0 ? "var(--mint)" : "var(--coral)";
               pctEl.textContent = sign + profitPct.toFixed(1) + "%";
               pctEl.style.color = profit >= 0 ? "var(--mint)" : "var(--coral)";
+              if (_animOnRender && !editMode && profit > 0) {
+                animateNumber(profitEl, Math.round(profit), 2000, true, "+");
+              } else {
+                profitEl.textContent = sign + fmt(Math.round(profit));
+              }
             }
 
             drawForecastChart(invest, monthly, rate, activeRate, step, stepUp, inflation, useInflation, showAll, scenario);
