@@ -1116,12 +1116,25 @@
       }
       .nw-hist-wrap {
         overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        position: relative;
       }
       .nw-hist-table {
         width: 100%;
         border-collapse: collapse;
         font-size: 11px;
         min-width: 520px;
+      }
+      .nw-hist-scroll-hint {
+        display: none;
+        align-items: center;
+        gap: 4px;
+        font-size: 9.5px;
+        color: var(--dim);
+        margin-top: 6px;
+      }
+      .nw-hist-wrap.has-overflow + .nw-hist-scroll-hint {
+        display: flex;
       }
       .nw-hist-table th {
         font-size: 9px;
@@ -7258,7 +7271,7 @@
               </tr>`;
             }).join("");
 
-            el("nwHistory").innerHTML = `<div class="nw-hist-wrap">
+            el("nwHistory").innerHTML = `<div class="nw-hist-wrap" id="nwHistWrap">
               <table class="nw-hist-table">
                 <thead><tr>
                   <th style="text-align:left;padding-bottom:8px;">Month</th>
@@ -7271,7 +7284,13 @@
                 </tr></thead>
                 <tbody>${rows}</tbody>
               </table>
-            </div>`;
+            </div>
+            <div class="nw-hist-scroll-hint">&#8596;&nbsp; Swipe to see Others, Total &amp; change</div>`;
+
+            const histWrap = el("nwHistWrap");
+            if (histWrap && histWrap.scrollWidth > histWrap.clientWidth + 2) {
+              histWrap.classList.add("has-overflow");
+            }
 
             el("nwHistory").querySelectorAll(".nw-hist-del").forEach(btn => {
               btn.addEventListener("click", () => {
