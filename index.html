@@ -3203,7 +3203,7 @@
               </div>
               <div class="nw-hero-meta">
                 <div class="nwpm">Mutual Funds <b id="nwMfChip">₹0</b></div>
-                <div class="nwpm">MF Profit <b id="nwMfProfitChip">₹0</b></div>
+                <div class="nwpm">Unrealized Gain <b id="nwMfProfitChip">₹0</b></div>
                 <div class="nwpm">Other Assets <b id="nwOtherChip">₹0</b></div>
               </div>
             </div>
@@ -3753,7 +3753,7 @@
           ];
 
           const NW_FIELDS = [
-            { id: "mfProfit", label: "MF Unrealized Returns", color: "#4ade9c" },
+            { id: "mfProfit", label: "Unrealized Gain", color: "#86efac" },
             { id: "bank", label: "Bank & Savings", color: "var(--liq)" },
             { id: "fd", label: "Fixed Deposit", color: "#5bc4f5" },
             { id: "cash", label: "Cash", color: "var(--amber)" },
@@ -7538,6 +7538,7 @@
             // Asset breakdown bars
             const cats = [
               { label: "Mutual Funds", value: mfVal, color: "#4ade9c" },
+              { label: "Unrealized Gain", value: profit > 0 ? profit : 0, color: "#86efac" },
               { label: "Bank & Savings", value: state.networth.bank || 0, color: "var(--liq)" },
               { label: "Fixed Deposit", value: state.networth.fd || 0, color: "#5bc4f5" },
               { label: "Cash", value: state.networth.cash || 0, color: "var(--amber)" },
@@ -7621,7 +7622,7 @@
             const othersOf = (s) => OTHER_FIELDS.reduce((sum, f) => sum + (s[f.id] || 0), 0);
             const DETAIL_FIELDS = [
               { key: "mf",       label: "MF Value" },
-              { key: "mfProfit", label: "MF Returns" },
+              { key: "mfProfit", label: "Unrealized Gain" },
               ...OTHER_FIELDS.map(f => ({ key: f.id, label: f.label })),
               { key: "total",    label: "Total" },
             ];
