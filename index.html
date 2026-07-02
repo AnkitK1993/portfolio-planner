@@ -6150,7 +6150,7 @@
                   <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.9px;color:var(--dim)">${label}</span>
                   <span style="font-size:11px;color:var(--dim);font-family:'IBM Plex Mono',monospace;">${fmt(sectionTotal)} &nbsp;<span style="font-size:9px">(${pctOfGrand}% of total)</span></span>
                 </div>
-                <div style="display:flex;height:28px;border-radius:7px;overflow:hidden;gap:1px;">${segments}</div>
+                <div class="alloc-seg-bar" style="display:flex;height:28px;border-radius:7px;overflow:hidden;gap:1px;">${segments}</div>
                 <div style="margin-top:2px;">${legend}</div>
               </div>`;
             };
@@ -6159,6 +6159,8 @@
               mkSection("Liquid", liqFunds, liqTotal) +
               mkSection("Equity", eqFunds, eqTotal) +
               mkSection("Total", allFunds, grandTotal);
+            if (_animOnRender && !editMode)
+              container.querySelectorAll(".alloc-seg-bar").forEach(bar => animateWidth(bar, 100, 1000));
           }
 
           /* ════════════════════════════════════════════
@@ -6344,9 +6346,11 @@
                   <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--dim);margin-bottom:7px">
                     Ideal Equity Allocation &nbsp;— &nbsp;<span style="font-family:'IBM Plex Mono',monospace;color:var(--mint)">${fmt(Math.round(eqAfter))}</span>
                   </div>
-                  <div style="display:flex;height:28px;border-radius:7px;overflow:hidden;gap:1px;">${bar1Segs}</div>
+                  <div class="alloc-seg-bar" style="display:flex;height:28px;border-radius:7px;overflow:hidden;gap:1px;">${bar1Segs}</div>
                   <div>${bar1Rows}</div>
                 </div>`;
+              if (_animOnRender && !editMode)
+                bar1El.querySelectorAll(".alloc-seg-bar").forEach(bar => animateWidth(bar, 100, 1000));
             }
 
             // --- Bar 2: Liquid → Equity redistribution ---
@@ -6372,9 +6376,11 @@
                     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--dim);margin-bottom:7px">
                       Move Liquid → Equity &nbsp;— &nbsp;<span style="font-family:'IBM Plex Mono',monospace;color:var(--liq)">${fmt(Math.round(deployable))}</span>
                     </div>
-                    <div style="display:flex;height:28px;border-radius:7px;overflow:hidden;gap:1px;">${bar2Segs}</div>
+                    <div class="alloc-seg-bar" style="display:flex;height:28px;border-radius:7px;overflow:hidden;gap:1px;">${bar2Segs}</div>
                     <div>${bar2Rows}</div>
                   </div>`;
+                if (_animOnRender && !editMode)
+                  bar2El.querySelectorAll(".alloc-seg-bar").forEach(bar => animateWidth(bar, 100, 1000));
               } else {
                 bar2El.innerHTML = `<div style="font-size:11px;color:var(--mint);margin-top:10px;">✓ No deployable liquid to redistribute.</div>`;
               }
@@ -6421,9 +6427,11 @@
                     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--dim);margin-bottom:7px">
                       Portfolio After Rebalancing &nbsp;— &nbsp;<span style="font-family:'IBM Plex Mono',monospace;color:var(--txt)">${fmt(Math.round(grandTotal))}</span>
                     </div>
-                    <div style="display:flex;height:28px;border-radius:7px;overflow:hidden;gap:1px;">${bar3Segs}</div>
+                    <div class="alloc-seg-bar" style="display:flex;height:28px;border-radius:7px;overflow:hidden;gap:1px;">${bar3Segs}</div>
                     <div>${bar3Rows}</div>
                   </div>`;
+                if (_animOnRender && !editMode)
+                  bar3El.querySelectorAll(".alloc-seg-bar").forEach(bar => animateWidth(bar, 100, 1000));
               } else {
                 bar3El.innerHTML = "";
               }
