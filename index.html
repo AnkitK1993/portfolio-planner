@@ -7328,8 +7328,8 @@
                   { label: "MF Returns", value: snap.mfProfit || 0, color: "var(--mint)" },
                   ...OTHER_FIELDS.map(f => ({ label: f.label, value: snap[f.id] || 0 })),
                   { label: "Total Net Worth", value: snap.total || 0, color: "var(--mint)", bold: true },
-                  { label: "MoM Change", value: delta, color: delta !== null ? (delta >= 0 ? "var(--mint)" : "var(--coral)") : null, prefix: delta !== null && delta >= 0 ? "+" : "" },
-                ].filter(d => d.value !== null && d.value !== undefined);
+                  { label: "MoM Change", value: delta, color: delta !== null ? (delta >= 0 ? "var(--mint)" : "var(--coral)") : null, prefix: delta !== null && delta >= 0 ? "+" : "", always: true },
+                ].filter(d => d.always || (d.value !== null && d.value !== undefined));
                 const detailHtml = detailItems.map(d =>
                   `<div class="nw-hist-detail-item">
                     <span class="nw-hist-detail-key">${d.label}</span>
