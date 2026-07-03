@@ -2944,7 +2944,7 @@
         border-radius: 14px; overflow: hidden; margin-bottom: 12px;
       }
       .reb-col-hdrs {
-        display: grid; grid-template-columns: 1fr 82px 82px 68px;
+        display: grid; grid-template-columns: minmax(50px, 90px) 80px 80px 92px;
         padding: 8px 14px; background: rgba(255,255,255,0.03);
         border-bottom: 1px solid var(--line);
       }
@@ -2979,7 +2979,7 @@
       .reb-icon-btn:hover { background: rgba(255,255,255,0.1); color: var(--txt); }
       .reb-icon-btn.del:hover { background: rgba(248,113,113,0.15); color: #f87171; }
       .reb-row {
-        display: grid; grid-template-columns: 1fr 82px 82px 68px;
+        display: grid; grid-template-columns: minmax(50px, 90px) 80px 80px 92px;
         align-items: center; padding: 5px 14px;
         border-bottom: 1px solid rgba(255,255,255,0.04); gap: 0;
       }
@@ -3006,7 +3006,7 @@
       .reb-diff.up { color: #4ade80; }
       .reb-diff.dn { color: #f87171; }
       .reb-total-row {
-        display: grid; grid-template-columns: 1fr 82px 82px 68px;
+        display: grid; grid-template-columns: minmax(50px, 90px) 80px 80px 92px;
         align-items: center; padding: 6px 14px;
         background: rgba(255,255,255,0.03);
         border-top: 1px solid rgba(255,255,255,0.07);
@@ -5047,9 +5047,15 @@
 
           el("ddRebalanceBtn").addEventListener("click", () => { closeNavDropdowns(); navigateTo("rebalance"); });
 
+          function rebFmtDiff(d) {
+            const abs = Math.abs(d);
+            const sign = d > 0 ? "+" : d < 0 ? "−" : "";
+            return sign + "₹" + abs.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+          }
+
           function rebDiff(mm, real) {
             const d = real - mm;
-            const txt = mm === 0 && real === 0 ? "—" : (d > 0 ? "+" : "") + fmtCompact(d);
+            const txt = mm === 0 && real === 0 ? "—" : rebFmtDiff(d);
             const cls = "reb-diff" + (d > 0 ? " up" : d < 0 ? " dn" : "");
             return { txt, cls };
           }
