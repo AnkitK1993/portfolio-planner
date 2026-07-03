@@ -6021,7 +6021,7 @@
           const _animRaf = {};
           let _animOnRender = true; // true on initial load and tab switches → animates from 0
 
-          function animateNumber(targetEl, toVal, duration = 600, fromZero = false, prefix = "") {
+          function animateNumber(targetEl, toVal, duration = 600, fromZero = false, prefix = "", plain = false) {
             if (!targetEl) return;
             // Stable per-element key using a lazily assigned counter
             if (!targetEl._ak) targetEl._ak = ++animateNumber._ctr;
@@ -6032,13 +6032,14 @@
             const numSpan = (typeof targetEl.querySelector === "function")
               ? targetEl.querySelector(".val-num") : null;
             const renderEl = numSpan || targetEl;
+            const render = (v) => numSpan || plain
+              ? Math.round(v).toLocaleString("en-IN")
+              : prefix + fmt(Math.round(v));
 
             const fromVal = fromZero ? 0
               : (parseFloat(renderEl.textContent.replace(/[₹,+\-,\s]/g, "")) || 0);
             if (!fromZero && Math.abs(toVal - fromVal) < 1) {
-              renderEl.textContent = numSpan
-                ? Math.round(toVal).toLocaleString("en-IN")
-                : prefix + fmt(Math.round(toVal));
+              renderEl.textContent = render(toVal);
               return;
             }
 
@@ -6047,9 +6048,7 @@
               const t = Math.min(1, (now - start) / duration);
               const ease = 1 - Math.pow(1 - t, 3);
               const cur = fromVal + (toVal - fromVal) * ease;
-              renderEl.textContent = numSpan
-                ? Math.round(cur).toLocaleString("en-IN")
-                : prefix + fmt(Math.round(cur));
+              renderEl.textContent = render(cur);
               if (t < 1) _animRaf[key] = requestAnimationFrame(tick);
               else delete _animRaf[key];
             };
@@ -6677,7 +6676,7 @@
                 };
                 _animRaf[arcKey] = requestAnimationFrame(arcTick);
               }
-              animateNumber(el("phsScoreNum"), total, 2000, true);
+              animateNumber(el("phsScoreNum"), total, 2000, true, "", true);
               wrap.querySelectorAll(".phs-dim-bar").forEach(bar => {
                 animateWidth(bar, parseFloat(bar.dataset.w) || 0, 1400);
               });
