@@ -160,7 +160,7 @@ export async function loadBackupList() {
                   <div style="flex:1;min-width:0;">
                     <div class="backup-item-date">${doc.id}<span class="backup-item-time">${timeStr ? " · " + timeStr : ""}</span></div>
                     <div style="font-size:10px;color:var(--dim);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap;">
-                      ${nwStr ? `<span style="color:var(--mint);font-family:'IBM Plex Mono',monospace;">${nwStr}</span>` : ""}
+                      ${nwStr ? `<span style="color:var(--mint);font-family:'Roboto Mono',monospace;">${nwStr}</span>` : ""}
                       ${fundsStr ? `<span>${fundsStr}</span>` : ""}
                       <span>${sizeStr}</span>
                     </div>

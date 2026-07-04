@@ -122,19 +122,6 @@ export function renderNetWorth() {
               if (statRow)  statRow.style.display  = "none";
             }
 
-            // Savings rate stat
-            const srEl = el("nwSavingsRateStat");
-            if (srEl) {
-              if (state.surplus?.income > 0) {
-                const rate = ((state.surplus.income - (state.surplus.expenses || 0)) / state.surplus.income * 100).toFixed(1);
-                srEl.textContent = rate + "%";
-                srEl.style.color = "var(--mint)";
-              } else {
-                srEl.textContent = "—";
-                srEl.style.color = "var(--dim)";
-              }
-            }
-
             // Hero sparkline — last 6 snapshots + live total
             const sparkEl = el("nwHeroSparkline");
             if (sparkEl) {
@@ -397,7 +384,7 @@ export function renderNwLineChart() {
               const y = toY(v).toFixed(1);
               const lbl = v >= 10000000 ? (v/10000000).toFixed(1)+"Cr" : v >= 100000 ? (v/100000).toFixed(1)+"L" : (v/1000).toFixed(0)+"K";
               return `<line x1="${PAD_L}" y1="${y}" x2="${W}" y2="${y}" stroke="var(--line)" stroke-width="1"/>
-                <text x="${PAD_L - 4}" y="${parseFloat(y) + 3}" text-anchor="end" font-size="8" fill="var(--dim)" font-family="JetBrains Mono,monospace">${lbl}</text>`;
+                <text x="${PAD_L - 4}" y="${parseFloat(y) + 3}" text-anchor="end" font-size="8" fill="var(--dim)" font-family="Roboto Mono,monospace">${lbl}</text>`;
             }).join("");
 
             // Milestone lines
@@ -406,7 +393,7 @@ export function renderNwLineChart() {
               const y = toY(m).toFixed(1);
               const lbl = m >= 10000000 ? "₹"+(m/10000000).toFixed(0)+"Cr" : "₹"+(m/100000)+"L";
               return `<line x1="${PAD_L}" y1="${y}" x2="${W}" y2="${y}" stroke="var(--amber)" stroke-width="0.7" stroke-dasharray="4,4" opacity="0.35"/>
-                <text x="${W - 2}" y="${parseFloat(y) - 3}" text-anchor="end" font-size="7.5" fill="var(--amber)" opacity="0.55" font-family="JetBrains Mono,monospace">${lbl}</text>`;
+                <text x="${W - 2}" y="${parseFloat(y) - 3}" text-anchor="end" font-size="7.5" fill="var(--amber)" opacity="0.55" font-family="Roboto Mono,monospace">${lbl}</text>`;
             }).join("");
 
             // Month labels on x-axis — every point if ≤8, else every 2nd/3rd
@@ -416,7 +403,7 @@ export function renderNwLineChart() {
               const [yr, mo] = s.key.split("-");
               const lbl = new Date(+yr, +mo - 1, 1).toLocaleDateString("en-IN", { month: "short" });
               const anchor = i === 0 ? "start" : i === n-1 ? "end" : "middle";
-              return `<text x="${toX(i).toFixed(1)}" y="${H - 6}" text-anchor="${anchor}" font-size="8" fill="var(--dim)" font-family="JetBrains Mono,monospace">${lbl}</text>`;
+              return `<text x="${toX(i).toFixed(1)}" y="${H - 6}" text-anchor="${anchor}" font-size="8" fill="var(--dim)" font-family="Roboto Mono,monospace">${lbl}</text>`;
             }).join("");
 
             // Projection month labels
@@ -447,8 +434,8 @@ export function renderNwLineChart() {
               <circle cx="${lx}" cy="${ly}" r="4" fill="var(--mint)" stroke="var(--bg)" stroke-width="1.5"/>
               <circle cx="${px2}" cy="${py2}" r="3.5" fill="#c084fc" stroke="var(--bg)" stroke-width="1.5" opacity="0.9"/>
               ${tickLabels}
-              <text x="${px1}" y="${H - 6}" text-anchor="middle" font-size="8" fill="#c084fc" font-family="JetBrains Mono,monospace" opacity="0.7">${nextMonthLbl(lastKey, 1)}</text>
-              <text x="${px2}" y="${H - 6}" text-anchor="end" font-size="8" fill="#c084fc" font-family="JetBrains Mono,monospace" opacity="0.7">${nextMonthLbl(lastKey, 2)} ↗</text>
+              <text x="${px1}" y="${H - 6}" text-anchor="middle" font-size="8" fill="#c084fc" font-family="Roboto Mono,monospace" opacity="0.7">${nextMonthLbl(lastKey, 1)}</text>
+              <text x="${px2}" y="${H - 6}" text-anchor="end" font-size="8" fill="#c084fc" font-family="Roboto Mono,monospace" opacity="0.7">${nextMonthLbl(lastKey, 2)} ↗</text>
             `;
 
             // Stats row below chart
@@ -458,9 +445,9 @@ export function renderNwLineChart() {
             const statsEl = el("nwChartStats");
             if (statsEl) {
               statsEl.innerHTML = [
-                `<span style="font-size:10.5px;color:var(--dim)">Best month&nbsp;<b style="color:var(--txt);font-family:'IBM Plex Mono',monospace">${fmt(bestMonth)}</b></span>`,
-                `<span style="font-size:10.5px;color:var(--dim)">CAGR&nbsp;<b style="color:var(--mint);font-family:'IBM Plex Mono',monospace">${ann >= 0 ? "+" : ""}${ann.toFixed(1)}%</b></span>`,
-                `<span style="font-size:10.5px;color:var(--dim)">Proj ${nextMonthLbl(lastKey, 2)}&nbsp;<b style="color:#c084fc;font-family:'IBM Plex Mono',monospace">${fmt(proj2)}</b></span>`,
+                `<span style="font-size:10.5px;color:var(--dim)">Best month&nbsp;<b style="color:var(--txt);font-family:'Roboto Mono',monospace">${fmt(bestMonth)}</b></span>`,
+                `<span style="font-size:10.5px;color:var(--dim)">CAGR&nbsp;<b style="color:var(--mint);font-family:'Roboto Mono',monospace">${ann >= 0 ? "+" : ""}${ann.toFixed(1)}%</b></span>`,
+                `<span style="font-size:10.5px;color:var(--dim)">Proj ${nextMonthLbl(lastKey, 2)}&nbsp;<b style="color:#c084fc;font-family:'Roboto Mono',monospace">${fmt(proj2)}</b></span>`,
               ].join("");
             }
 

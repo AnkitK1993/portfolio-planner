@@ -195,9 +195,9 @@ export function refreshCalDayBody(dateStr) {
               const noteFunds = n.funds || (n.fundId ? [{ fundId: n.fundId, amount: n.amount }] : []);
               const actions = `<div class="calday-actions">
                 <span class="calday-badge ${badgeCls}">${label}</span>
-                <button class="calday-btn" onclick="openCalNoteModal('${n.date}','${n.id}')">Edit</button>
-                <button class="calday-btn" onclick="doneCalNote('${n.id}')">Done</button>
-                <button class="calday-btn danger" onclick="deleteCalNote('${n.id}')">Delete</button>
+                <button class="calday-btn" data-action="edit" data-id="${n.id}">Edit</button>
+                <button class="calday-btn" data-action="done" data-id="${n.id}">Done</button>
+                <button class="calday-btn danger" data-action="delete" data-id="${n.id}">Delete</button>
               </div>`;
               noteFunds.forEach(({ fundId, amount }, i) => {
                 html += `<div class="calday-row">
@@ -210,7 +210,14 @@ export function refreshCalDayBody(dateStr) {
                 </div>`;
               });
             });
-            el("calDayBody").innerHTML = html;
+            const bodyEl = el("calDayBody");
+            bodyEl.innerHTML = html;
+            bodyEl.querySelectorAll(".calday-btn").forEach(btn => {
+              const id = btn.dataset.id;
+              if (btn.dataset.action === "edit") btn.addEventListener("click", () => openCalNoteModal(null, id));
+              else if (btn.dataset.action === "done") btn.addEventListener("click", () => doneCalNote(id));
+              else if (btn.dataset.action === "delete") btn.addEventListener("click", () => deleteCalNote(id));
+            });
           }
 
 export function openCalNoteModal(dateStr, noteId) {

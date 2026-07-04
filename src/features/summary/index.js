@@ -1,9 +1,10 @@
 import { EQ_CATEGORIES } from "../../core/constants.js";
 import { EQ_FUNDS, LIQ_FUNDS, fundName, normalizeSnap, state } from "../../core/state.js";
+import { UI } from "../../core/ui.js";
 import { _animOnRender, _animRaf, animateNumber, animateWidth } from "../../core/animate.js";
-import { cachedPortfolioXirr, fundXirr, xirrCalc } from "../../domain/xirr.js";
+import { cachedPortfolioXirr, fundXirr } from "../../domain/xirr.js";
 import { el } from "../../core/dom.js";
-import { fmt, pct } from "../../core/format.js";
+import { fmt, fmtCompact, pct } from "../../core/format.js";
 import { renderAllocBars } from "../portfolio/allocation.js";
 import { renderIdealAlloc } from "./rebalance.js";
 
@@ -20,46 +21,93 @@ export function renderSummaryExtras(eqCur, liqCur, totCur, eqTgt, liqTgt, totTgt
             /* — Ideal Allocation card — */
             renderIdealAlloc();
 
-            /* — Surplus calculator — */
-            renderSurplus();
+            /* — Fund performance table — */
+            renderFundTable();
             /* — XIRR + heatmap — */
             renderXirrAndHeatmap();
             /* — Allocation bars — */
             renderAllocBars();
           }
 
-export function renderSurplus() {
-            if (!state.surplus) state.surplus = { income: 0, expenses: 0 };
-            const inc = state.surplus.income || 0;
-            const exp = state.surplus.expenses || 0;
-            const surplus = inc - exp;
-            const resultEl = el("surplusResult");
-            if (!resultEl) return;
-            if (inc === 0 && exp === 0) {
-              resultEl.innerHTML = `<div style="font-size:11px;color:var(--dim)">Enter your monthly income and expenses to see investable surplus.</div>`;
+const FUND_TABLE_COLS = [
+  { key: "name", label: "Fund" },
+  { key: "invested", label: "Invested" },
+  { key: "returns", label: "Returns" },
+  { key: "returnsPct", label: "Ret %" },
+  { key: "xirr", label: "XIRR" },
+];
+
+let fundTableSort = { col: "invested", dir: "desc" };
+
+const signedCompact = (n) => (n >= 0 ? "+" : "") + fmtCompact(n);
+
+export function renderFundTable() {
+            const wrap = el("sumFundTable");
+            if (!wrap) return;
+
+            const rows = [...LIQ_FUNDS.map(f => ({ f, isLiq: true })), ...EQ_FUNDS.map(f => ({ f, isLiq: false }))]
+              .map(({ f, isLiq }) => {
+                const s = isLiq ? state.liquid[f.id] : state.equity[f.id];
+                const invested = s.paid || 0;
+                const current = s.currentValue || (isLiq ? (s.value || 0) : (s.shown || 0));
+                const returns = current - invested;
+                return {
+                  name: fundName(f.id),
+                  isLiq,
+                  invested,
+                  current,
+                  returns,
+                  returnsPct: pct(returns, invested),
+                  xirr: fundXirr(f.id, isLiq),
+                };
+              })
+              .filter(r => r.invested > 0 || r.current > 0);
+
+            if (!rows.length) {
+              wrap.innerHTML = UI.emptyState("📊", "No fund data yet", "Add transactions and current values to see performance here.");
               return;
             }
-            const savingsRate = inc > 0 ? ((surplus / inc) * 100).toFixed(1) : 0;
-            const eqPct = (() => { const totCur = LIQ_FUNDS.reduce((s,f)=>s+(state.liquid[f.id].value||0),0) + EQ_FUNDS.reduce((s,f)=>s+(state.equity[f.id].shown||0),0); const eqCur = EQ_FUNDS.reduce((s,f)=>s+(state.equity[f.id].shown||0),0); return totCur > 0 ? eqCur / totCur : 0.6; })();
-            const surplusEq  = Math.max(0, Math.round(surplus * eqPct));
-            const surplusLiq = Math.max(0, Math.round(surplus * (1 - eqPct)));
-            const color = surplus >= 0 ? "var(--mint)" : "var(--coral)";
-            resultEl.innerHTML = `
-              <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px">
-                <span style="font-family:'Fraunces',serif;font-size:22px;font-weight:700;color:${color}">${fmt(surplus)}</span>
-                <span style="font-size:11px;color:var(--dim)">surplus/month · ${savingsRate}% savings rate</span>
-              </div>
-              ${surplus > 0 ? `<div style="font-size:11px;color:var(--dim);margin-bottom:4px">Suggested split (based on current allocation):</div>
-              <div style="display:flex;gap:8px;flex-wrap:wrap">
-                <div style="background:rgba(0,245,160,0.08);border:1px solid rgba(0,245,160,0.2);border-radius:8px;padding:6px 12px;">
-                  <div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px">Equity</div>
-                  <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:var(--mint)">${fmt(surplusEq)}</div>
-                </div>
-                <div style="background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.2);border-radius:8px;padding:6px 12px;">
-                  <div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px">Liquid</div>
-                  <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:var(--liq)">${fmt(surplusLiq)}</div>
-                </div>
-              </div>` : surplus < 0 ? `<div style="font-size:11px;color:var(--coral)">Expenses exceed income by ${fmt(Math.abs(surplus))}/month.</div>` : ""}`;
+
+            const dirMul = fundTableSort.dir === "asc" ? 1 : -1;
+            rows.sort((a, b) => {
+              if (fundTableSort.col === "name") return dirMul * a.name.localeCompare(b.name);
+              const av = a[fundTableSort.col], bv = b[fundTableSort.col];
+              const an = av == null ? -Infinity : av, bn = bv == null ? -Infinity : bv;
+              return dirMul * (an - bn);
+            });
+
+            const headHtml = FUND_TABLE_COLS.map(c => {
+              const active = fundTableSort.col === c.key;
+              const arrow = active ? (fundTableSort.dir === "asc" ? " ▲" : " ▼") : "";
+              return `<button type="button" class="fperf-th${c.key !== "name" ? " fperf-num" : ""}${active ? " active" : ""}" data-col="${c.key}">${c.label}${arrow}</button>`;
+            }).join("");
+
+            const rowsHtml = rows.map(r => {
+              const retClass = r.returns >= 0 ? "mint" : "coral";
+              const xirrTxt = r.xirr == null ? "—" : (r.xirr * 100 >= 0 ? "+" : "") + (r.xirr * 100).toFixed(2) + "%";
+              const xirrClass = r.xirr == null ? "" : r.xirr >= 0 ? "mint" : "coral";
+              return `<div class="fperf-row">
+                <span class="fperf-name">${r.name}<span class="fp-tag ${r.isLiq ? "liq" : "eq"}">${r.isLiq ? "LIQ" : "EQ"}</span></span>
+                <span class="fperf-num">${fmtCompact(r.invested)}</span>
+                <span class="fperf-num" style="color:var(--${retClass})">${signedCompact(r.returns)}</span>
+                <span class="fperf-num" style="color:var(--${retClass})">${(r.returnsPct >= 0 ? "+" : "")}${r.returnsPct.toFixed(2)}%</span>
+                <span class="fperf-num"${xirrClass ? ` style="color:var(--${xirrClass})"` : ""}>${xirrTxt}</span>
+              </div>`;
+            }).join("");
+
+            wrap.innerHTML = `<div class="fperf-table">
+              <div class="fperf-row fperf-head">${headHtml}</div>
+              ${rowsHtml}
+            </div>`;
+
+            wrap.querySelectorAll(".fperf-th").forEach(btn => {
+              btn.addEventListener("click", () => {
+                const col = btn.dataset.col;
+                if (fundTableSort.col === col) fundTableSort.dir = fundTableSort.dir === "asc" ? "desc" : "asc";
+                else fundTableSort = { col, dir: col === "name" ? "asc" : "desc" };
+                renderFundTable();
+              });
+            });
           }
 
 export function renderHealthScore() {
@@ -120,14 +168,16 @@ export function renderHealthScore() {
             }
 
             // ── Dimension 4: Returns (portfolio XIRR) ──
+            // Reuses cachedPortfolioXirr rather than re-deriving cash flows
+            // inline — an earlier inline copy here ignored currentValue and
+            // mis-signed redemptions as outflows, so this dimension could
+            // silently disagree with the Portfolio XIRR card below it.
             let rScore = 12, rNote = "Add transactions to measure";
             const allTxns2 = (state.transactions || []).filter(t => t.date && Number(t.invested) > 0);
-            const totalVal2 = LIQ_FUNDS.reduce((s, f) => s + (state.liquid[f.id]?.value || 0), 0) +
-                              EQ_FUNDS.reduce((s, f) => s + (state.equity[f.id]?.shown || 0), 0);
+            const totalVal2 = LIQ_FUNDS.reduce((s, f) => s + (state.liquid[f.id]?.currentValue || state.liquid[f.id]?.value || 0), 0) +
+                              EQ_FUNDS.reduce((s, f) => s + (state.equity[f.id]?.currentValue || state.equity[f.id]?.shown || 0), 0);
             if (allTxns2.length && totalVal2 > 0) {
-              const cfs2 = allTxns2.map(t => ({ amount: -Number(t.invested), date: new Date(t.date).getTime() }));
-              cfs2.push({ amount: totalVal2, date: Date.now() });
-              const xirr2 = xirrCalc(cfs2);
+              const xirr2 = cachedPortfolioXirr(allTxns2, totalVal2);
               if (xirr2 !== null) {
                 const pct2 = xirr2 * 100;
                 if (pct2 >= 18)      { rScore = 25; }
@@ -174,7 +224,7 @@ export function renderHealthScore() {
                     ${fgPath ? `<path id="phsArcFg" d="${fgPath}" fill="none" stroke="${gc}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${fgArcLen.toFixed(1)}" stroke-dashoffset="${fgArcLen.toFixed(1)}"/>` : ""}
                   </svg>
                   <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;margin-top:4px;">
-                    <div id="phsScoreNum" style="font-family:'Fraunces',serif;font-size:28px;font-weight:700;color:${gc};line-height:1">0</div>
+                    <div id="phsScoreNum" style="font-family:'Roboto',sans-serif;font-size:28px;font-weight:700;color:${gc};line-height:1">0</div>
                     <div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px">${grade}</div>
                   </div>
                 </div>
@@ -183,7 +233,7 @@ export function renderHealthScore() {
                     <div>
                       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
                         <span style="font-size:9px;text-transform:uppercase;letter-spacing:0.5px;color:var(--dim)">${d.label}</span>
-                        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;color:${d.color}">${d.score}/25</span>
+                        <span style="font-family:'Roboto Mono',monospace;font-size:10px;font-weight:700;color:${d.color}">${d.score}/25</span>
                       </div>
                       <div style="height:3px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;margin-bottom:3px;">
                         <div class="phs-dim-bar" data-w="${(d.score / 25 * 100).toFixed(0)}" style="height:100%;width:0%;background:${d.color};border-radius:3px;"></div>
@@ -273,8 +323,13 @@ export function renderXirrAndHeatmap() {
             const fundXirrsEl = el("sumFundXirrs");
             if (xirrCard && xirrEl) {
               const allTxns = (state.transactions || []).filter(t => t.date && Number(t.invested) > 0);
-              const totalVal = LIQ_FUNDS.reduce((s, f) => s + (state.liquid[f.id]?.value || 0), 0) +
-                               EQ_FUNDS.reduce((s, f) => s + (state.equity[f.id]?.shown || 0), 0);
+              // Must prefer currentValue over the value/shown baseline, same
+              // as fundXirr() and every other "current value" read in this
+              // app (render.js, transactions/index.js) — otherwise this card
+              // silently ignores whatever the user last entered via "Add
+              // Current Value" and computes XIRR against the stale baseline.
+              const totalVal = LIQ_FUNDS.reduce((s, f) => s + (state.liquid[f.id]?.currentValue || state.liquid[f.id]?.value || 0), 0) +
+                               EQ_FUNDS.reduce((s, f) => s + (state.equity[f.id]?.currentValue || state.equity[f.id]?.shown || 0), 0);
               let portfolioXirr = null;
               if (allTxns.length && totalVal > 0) {
                 portfolioXirr = cachedPortfolioXirr(allTxns, totalVal);
@@ -296,7 +351,7 @@ export function renderXirrAndHeatmap() {
                       const up = x >= 0;
                       return `<div style="background:var(--panel-2);border-radius:8px;padding:5px 10px;font-size:10px;">
                         <div style="color:var(--dim);margin-bottom:2px">${fundName(f.id)}</div>
-                        <div style="font-family:'IBM Plex Mono',monospace;font-weight:700;color:${up ? "var(--mint)" : "var(--coral)"}">${up ? "+" : ""}${p}%</div>
+                        <div style="font-family:'Roboto Mono',monospace;font-weight:700;color:${up ? "var(--mint)" : "var(--coral)"}">${up ? "+" : ""}${p}%</div>
                       </div>`;
                     }).join("");
                   fundXirrsEl.innerHTML = chips || `<span style="font-size:11px;color:var(--dim)">Add transactions to see per-fund XIRR.</span>`;
@@ -345,7 +400,7 @@ export function renderXirrAndHeatmap() {
                   const color = delta === null ? "transparent" : delta >= 0 ? `rgba(0,245,160,${Math.min(0.7, Math.abs(pct || 0) / 10)})` : `rgba(248,113,113,${Math.min(0.7, Math.abs(pct || 0) / 10)})`;
                   const lbl = new Date(s.key + "-01T00:00:00").toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
                   return `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:3px;min-width:48px;padding:6px 4px;background:${color};border-radius:6px;border:1px solid var(--line);">
-                    <div style="font-size:8px;color:var(--dim);font-family:'IBM Plex Mono',monospace;">${lbl}</div>
+                    <div style="font-size:8px;color:var(--dim);font-family:'Roboto Mono',monospace;">${lbl}</div>
                     <div style="font-size:10px;font-weight:700;color:${delta === null ? "var(--dim)" : delta >= 0 ? "var(--mint)" : "var(--coral)"};">${delta !== null ? (delta >= 0 ? "+" : "−") + fmt(Math.abs(delta)) : "—"}</div>
                     <div style="font-size:8px;color:var(--dim);">${pct !== null ? (pct >= 0 ? "+" : "") + pct.toFixed(1) + "%" : ""}</div>
                   </div>`;

@@ -4,7 +4,7 @@ import "./styles/components.css";
 
 import { EQ_FUNDS, LIQ_FUNDS, editMode, privacyMode, saveState, setEditMode, setPrivacyMode, snapshotKey, state, syncFundArrays, toggleEditMode } from "./core/state.js";
 import { NW_FIELDS } from "./core/constants.js";
-import { UI, _confirmCb, closeNavDropdowns, collapseTxpCard, navigateTo, openNavDropdown, setConfirmCb, toggleColl } from "./core/ui.js";
+import { UI, closeNavDropdowns, collapseTxpCard, navigateTo, openNavDropdown, toggleColl } from "./core/ui.js";
 import { _hasLocalData, authUser, fbAuthReady, fbEnabled, handleSignInResult, initFirebase, loadBackupList, resetBackupPanel, saveManualBackup } from "./infra/firebase.js";
 import { _upcomingHead } from "./features/portfolio/upcoming.js";
 import { animateNumber } from "./core/animate.js";
@@ -19,7 +19,6 @@ import { fmtMonth, num } from "./core/format.js";
 import { openManageSips, saveManageSips } from "./features/portfolio/sips.js";
 import { rebuildFundCollapsibles } from "./features/portfolio/funds.js";
 import { render } from "./features/portfolio/render.js";
-import { renderSurplus } from "./features/summary/index.js";
 
 import "./features/admin/pin.js";
 
@@ -163,9 +162,6 @@ el("calNoteSaveBtn").addEventListener("click", saveCalNote);
 el("calNoteModal").addEventListener("click", e => { if (e.target === el("calNoteModal")) closeCalNoteModal(); });
 el("sipModalCancelBtn").addEventListener("click", () => collapseTxpCard("txp-sip"));
 el("sipModalSaveBtn").addEventListener("click", saveManageSips);
-el("confirmCancel").addEventListener("click", () => { el("confirmModal").style.display = "none"; setConfirmCb(null); });
-el("confirmOk").addEventListener("click", () => { el("confirmModal").style.display = "none"; const cb = _confirmCb; setConfirmCb(null); if (cb) cb(); });
-el("confirmModal").addEventListener("click", e => { if (e.target === el("confirmModal")) { el("confirmModal").style.display = "none"; setConfirmCb(null); } });
 el("ddAuthBtn").addEventListener("click", async () => {
             if (!fbAuthReady) {
               UI.toast("err", "Firebase still connecting — try again in a moment", 3000);
@@ -206,20 +202,6 @@ el("ddThemeBtn").addEventListener("click", e => {
             if (themeMatrixOpen) { hideThemeMatrix(); } else { showThemeMatrix(el("adminBtn")); }
           });
 animateNumber._ctr = 0;
-el("surplusIncome").addEventListener("input", e => {
-            if (!state.surplus) state.surplus = {};
-            state.surplus.income = num(e.target.value);
-            saveState(); renderSurplus();
-          });
-el("surplusExpenses").addEventListener("input", e => {
-            if (!state.surplus) state.surplus = {};
-            state.surplus.expenses = num(e.target.value);
-            saveState(); renderSurplus();
-          });
-if (state.surplus) {
-            if (el("surplusIncome") && state.surplus.income) el("surplusIncome").value = state.surplus.income;
-            if (el("surplusExpenses") && state.surplus.expenses) el("surplusExpenses").value = state.surplus.expenses;
-          }
 (function restoreFcState() {
             const fc = state.forecast || {};
             const mode = fc.mode || "project";

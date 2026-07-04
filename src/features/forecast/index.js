@@ -124,8 +124,8 @@ export function renderGoalMode() {
                 <div class="fc-goal-amount">${fmt(needed)}</div>
                 <div class="fc-goal-label">to reach ${fmt(target)} in ${years} year${years !== 1 ? "s" : ""} at ${rate}% p.a.${stepUp > 0 ? ` (${stepUp}% step-up)` : ""}</div>
                 <div style="display:flex;gap:12px;justify-content:center;margin-top:12px;flex-wrap:wrap;">
-                  <div style="text-align:center"><div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px">Invested</div><div style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:var(--txt)">${fmt(Math.round(fcTotalInvested(bank, 0, needed, years, stepUp)))}</div></div>
-                  <div style="text-align:center"><div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px">Returns</div><div style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:var(--mint)">+${fmt(Math.round(projected - fcTotalInvested(bank, 0, needed, years, stepUp)))}</div></div>
+                  <div style="text-align:center"><div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px">Invested</div><div style="font-family:'Roboto Mono',monospace;font-size:13px;font-weight:700;color:var(--txt)">${fmt(Math.round(fcTotalInvested(bank, 0, needed, years, stepUp)))}</div></div>
+                  <div style="text-align:center"><div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px">Returns</div><div style="font-family:'Roboto Mono',monospace;font-size:13px;font-weight:700;color:var(--mint)">+${fmt(Math.round(projected - fcTotalInvested(bank, 0, needed, years, stepUp)))}</div></div>
                 </div>
               </div>`;
           }
@@ -167,7 +167,7 @@ export function drawForecastChart(invest, monthly, rate, activeRate, currentStep
 
             const tickLabels = [0,10,20,30,40,50,60].map(i => {
               const x = toX(i); const yr = i / 2;
-              return `<text x="${x.toFixed(1)}" y="${H - 3}" text-anchor="${i === 0 ? "start" : i === 60 ? "end" : "middle"}" font-size="8" fill="var(--dim)" font-family="JetBrains Mono, monospace">${yr === 0 ? "Now" : yr + "y"}</text>`;
+              return `<text x="${x.toFixed(1)}" y="${H - 3}" text-anchor="${i === 0 ? "start" : i === 60 ? "end" : "middle"}" font-size="8" fill="var(--dim)" font-family="Roboto Mono, monospace">${yr === 0 ? "Now" : yr + "y"}</text>`;
             }).join("");
 
             const lines = allPts.map((sc, idx) => {

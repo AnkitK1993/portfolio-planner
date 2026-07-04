@@ -3,21 +3,12 @@ import { el } from "./dom.js";
 import { renderTxns } from "../features/transactions/index.js";
 import { scheduleRender } from "../features/portfolio/render.js";
 import { setAnimOnRender } from "./animate.js";
-
-export let _confirmCb = null;
-
-export function setConfirmCb(v) { _confirmCb = v; }
+import { confirm as modalConfirm } from "./modal.js";
 
 export const UI = {
-            /* Custom confirmation dialog */
+            /* Custom confirmation dialog — see core/modal.js for the implementation */
             confirm(msg, title, okLabel, cb, danger = true) {
-              el("confirmTitle").textContent = title || "Are you sure?";
-              el("confirmMsg").textContent   = msg || "";
-              el("confirmOk").textContent    = okLabel || "Confirm";
-              el("confirmOk").className = "btn confirm-ok-btn " + (danger ? "is-danger" : "is-primary");
-              el("confirmIconWrap").className = "confirm-icon-wrap" + (danger ? "" : " info-type");
-              _confirmCb = cb || null;
-              el("confirmModal").style.display = "flex";
+              return modalConfirm(msg, title, okLabel, cb, danger);
             },
 
             /* Floating toast notification — type: success | error | info | warn */

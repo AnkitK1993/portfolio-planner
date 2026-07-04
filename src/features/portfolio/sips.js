@@ -40,7 +40,7 @@ export function openManageSips() {
             }, 0);
             html += `<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;">
               <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--dim);">Total Monthly SIP</span>
-              <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700;color:var(--mint);">${fmt(sipTotal)}</span>
+              <span style="font-family:'Roboto Mono',monospace;font-size:15px;font-weight:700;color:var(--mint);">${fmt(sipTotal)}</span>
             </div>`;
             el("sipModalBody").innerHTML = html;
             navigateTo("transactions");

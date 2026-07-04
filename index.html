@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;700&family=Fraunces:opsz,wght@9..144,300;9..144,600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700;800&family=Roboto+Mono:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
   </head>
@@ -242,7 +242,7 @@
               <div class="sec-head" style="margin-bottom:4px">Portfolio XIRR</div>
               <div style="font-size:10px;color:var(--dim)">Annualised return on all investments</div>
             </div>
-            <div id="sumXirr" style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;"></div>
+            <div id="sumXirr" style="font-family:'Roboto Mono',monospace;font-size:22px;font-weight:700;"></div>
           </div>
           <div id="sumFundXirrs" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap;"></div>
         </div>
@@ -253,24 +253,10 @@
           <div id="sumHeatmap" style="overflow-x:auto;"></div>
         </div>
 
-        <!-- Surplus calculator -->
+        <!-- Fund Performance table -->
         <div class="card" style="margin-bottom:12px">
-          <div class="sec-head" style="margin-bottom:12px">Surplus Calculator</div>
-          <div class="grid2" style="margin-bottom:10px">
-            <div class="field">
-              <label class="flabel">Monthly Income</label>
-              <div class="ibox"><span class="pfx">&#8377;</span>
-                <input class="num" id="surplusIncome" type="number" min="0" placeholder="0" inputmode="numeric"/>
-              </div>
-            </div>
-            <div class="field">
-              <label class="flabel">Monthly Expenses</label>
-              <div class="ibox"><span class="pfx">&#8377;</span>
-                <input class="num" id="surplusExpenses" type="number" min="0" placeholder="0" inputmode="numeric"/>
-              </div>
-            </div>
-          </div>
-          <div id="surplusResult"></div>
+          <div class="sec-head" style="margin-bottom:12px">Fund Performance</div>
+          <div id="sumFundTable"></div>
         </div>
 
         <div class="card cal-card">
@@ -319,10 +305,6 @@
           <div class="nw-stat-card">
             <div class="nw-stat-label">Avg Monthly Growth</div>
             <div class="nw-stat-val" id="nwAvgGrowth">—</div>
-          </div>
-          <div class="nw-stat-card">
-            <div class="nw-stat-label">Savings Rate</div>
-            <div class="nw-stat-val" id="nwSavingsRateStat">—</div>
           </div>
         </div>
 
@@ -759,24 +741,9 @@
     </div>
 
 
-    <!-- ═══ CONFIRM DIALOG ═══ -->
-    <div id="confirmModal" class="confirm-overlay" style="display:none" role="dialog" aria-modal="true">
-      <div class="confirm-card">
-        <div class="confirm-icon-wrap" id="confirmIconWrap">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        </div>
-        <div class="confirm-title" id="confirmTitle">Are you sure?</div>
-        <div class="confirm-msg" id="confirmMsg"></div>
-        <div class="confirm-btns">
-          <button class="btn btn-ghost confirm-cancel-btn" id="confirmCancel">Cancel</button>
-          <button class="btn confirm-ok-btn" id="confirmOk">Confirm</button>
-        </div>
-      </div>
-    </div>
-
     <!-- PIN lock overlay -->
     <div id="pinOverlay" style="display:none;position:fixed;inset:0;background:var(--bg,#0f1117);z-index:9999;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
-      <div style="font-family:'Fraunces',serif;font-size:28px;font-weight:700;color:var(--mint)">Enter PIN</div>
+      <div style="font-family:'Roboto',sans-serif;font-size:28px;font-weight:700;color:var(--mint)">Enter PIN</div>
       <div id="pinDots" style="display:flex;gap:10px;margin:4px 0;"></div>
       <div id="pinError" style="font-size:11px;color:var(--coral);min-height:16px;"></div>
       <div style="display:grid;grid-template-columns:repeat(3,64px);gap:10px;">

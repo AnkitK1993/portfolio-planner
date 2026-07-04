@@ -69,8 +69,8 @@ export function renderAllocBars() {
                 return `<div style="display:grid;grid-template-columns:12px 1fr auto auto;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);">
                   <span style="width:12px;height:12px;border-radius:3px;background:${f.color};flex-shrink:0;display:block;"></span>
                   <span style="font-size:12px;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.name}</span>
-                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--dim);text-align:right;white-space:nowrap;">${fmt(f.value)}</span>
-                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;color:${f.color};text-align:right;min-width:42px;white-space:nowrap;">${pct}%</span>
+                  <span style="font-family:'Roboto Mono',monospace;font-size:11px;color:var(--dim);text-align:right;white-space:nowrap;">${fmt(f.value)}</span>
+                  <span style="font-family:'Roboto Mono',monospace;font-size:11px;font-weight:700;color:${f.color};text-align:right;min-width:42px;white-space:nowrap;">${pct}%</span>
                 </div>`;
               }).join("");
 
@@ -78,7 +78,7 @@ export function renderAllocBars() {
               return `<div style="margin-bottom:22px;">
                 <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px;">
                   <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.9px;color:var(--dim)">${label}</span>
-                  <span style="font-size:11px;color:var(--dim);font-family:'IBM Plex Mono',monospace;">${fmt(sectionTotal)} &nbsp;<span style="font-size:9px">(${pctOfGrand}% of total)</span></span>
+                  <span style="font-size:11px;color:var(--dim);font-family:'Roboto Mono',monospace;">${fmt(sectionTotal)} &nbsp;<span style="font-size:9px">(${pctOfGrand}% of total)</span></span>
                 </div>
                 <div class="alloc-seg-bar" style="display:flex;height:28px;border-radius:7px;overflow:hidden;gap:1px;">${segments}</div>
                 <div style="margin-top:2px;">${legend}</div>

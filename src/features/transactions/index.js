@@ -319,7 +319,7 @@ export function renderTxns() {
               const mTotal = Object.values(days).flat().reduce((s, t) => s + (Number(t.invested) || 0), 0);
               html += `<div class="txn-month-head" style="display:flex;justify-content:space-between;align-items:center;">
                 <span>${mLabel}</span>
-                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--mint);">${fmt(mTotal)}</span>
+                <span style="font-family:'Roboto Mono',monospace;font-size:10px;color:var(--mint);">${fmt(mTotal)}</span>
               </div>`;
 
               Object.entries(days).forEach(([dKey, list]) => {
@@ -406,7 +406,7 @@ export function renderTxnCharts(txns) {
                 const lbl = new Date(mo + "-01T00:00:00").toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
                 const color = COLORS[i % COLORS.length];
                 return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw}" height="${bh.toFixed(1)}" rx="2" fill="${color}" opacity="0.85"/>
-                  <text x="${(x + bw / 2).toFixed(1)}" y="${H - 5}" text-anchor="middle" font-size="7" fill="var(--dim)" font-family="JetBrains Mono,monospace">${lbl}</text>`;
+                  <text x="${(x + bw / 2).toFixed(1)}" y="${H - 5}" text-anchor="middle" font-size="7" fill="var(--dim)" font-family="Roboto Mono,monospace">${lbl}</text>`;
               }).join("");
 
               barSvg.innerHTML = bars;
@@ -436,7 +436,7 @@ export function renderTxnCharts(txns) {
                 return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${DONUT_COLORS[i % DONUT_COLORS.length]}" stroke-width="${stroke}" stroke-dasharray="${dash.toFixed(2)} ${gap.toFixed(2)}" stroke-dashoffset="${offset.toFixed(2)}" opacity="0.9"/>`;
               }).join("");
 
-              donutSvg.innerHTML = arcs + `<text x="${cx}" y="${cy + 4}" text-anchor="middle" font-size="9" fill="var(--dim)" font-family="JetBrains Mono,monospace">${entries.length}F</text>`;
+              donutSvg.innerHTML = arcs + `<text x="${cx}" y="${cy + 4}" text-anchor="middle" font-size="9" fill="var(--dim)" font-family="Roboto Mono,monospace">${entries.length}F</text>`;
 
               if (legendEl) {
                 legendEl.innerHTML = entries.slice(0, 6).map(([fid, v], i) =>
@@ -445,7 +445,7 @@ export function renderTxnCharts(txns) {
                       <span style="width:8px;height:8px;border-radius:50%;background:${DONUT_COLORS[i % DONUT_COLORS.length]};flex-shrink:0;display:inline-block;"></span>
                       <span style="color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px;">${fundName(fid)}</span>
                     </span>
-                    <span style="color:var(--dim);font-family:'IBM Plex Mono',monospace;">${((v / total) * 100).toFixed(0)}%</span>
+                    <span style="color:var(--dim);font-family:'Roboto Mono',monospace;">${((v / total) * 100).toFixed(0)}%</span>
                   </div>`
                 ).join("");
               }

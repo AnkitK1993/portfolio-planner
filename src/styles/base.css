@@ -23,7 +23,7 @@
       body {
         background: var(--bg);
         color: var(--txt);
-        font-family: "Outfit", sans-serif;
+        font-family: "Roboto", sans-serif;
         min-height: 100vh;
         min-height: 100dvh;
         -webkit-text-size-adjust: 100%;
@@ -74,8 +74,8 @@
         background: none;
         border: none;
         border-radius: 9px;
-        color: var(--dim);
-        font-family: "Outfit", sans-serif;
+        color: var(--txt);
+        font-family: "Roboto", sans-serif;
         font-size: 10.5px;
         letter-spacing: 0.8px;
         text-transform: uppercase;
@@ -127,7 +127,7 @@
         position: relative;
       }
       .pg-head h1 {
-        font-family: "Fraunces", serif;
+        font-family: "Roboto", sans-serif;
         font-weight: 600;
         font-size: clamp(22px, 4vw, 36px);
         line-height: 1.05;
@@ -201,7 +201,7 @@
         background: transparent;
         border: none;
         color: var(--txt);
-        font-family: "Fraunces", serif;
+        font-family: "Roboto", sans-serif;
         font-size: 17px;
         font-weight: 600;
         outline: none;
@@ -268,7 +268,7 @@
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 10px;
         color: var(--txt);
-        font-family: "IBM Plex Mono", monospace;
+        font-family: "Roboto Mono", monospace;
         font-size: 14px;
         padding: 10px 10px 10px 24px;
         outline: none;
@@ -313,7 +313,7 @@
         letter-spacing: 0.3px;
       }
       .chip b {
-        font-family: "IBM Plex Mono", monospace;
+        font-family: "Roboto Mono", monospace;
         font-size: 17px;
         font-weight: 700;
         letter-spacing: -0.5px;
@@ -363,7 +363,7 @@
       .ratechip b { color: var(--txt); }
       /* ── XIRR inside expanded card ── */
       .fund-xirr-line {
-        font-family: "IBM Plex Mono", monospace; font-size: 12px; font-weight: 700;
+        font-family: "Roboto Mono", monospace; font-size: 12px; font-weight: 700;
         padding: 0 10px; border: 1px solid rgba(255,255,255,0.08);
         border-radius: 10px; background: rgba(255,255,255,0.04);
         min-height: 38px; display: none; align-items: center; gap: 6px;
@@ -392,7 +392,7 @@
       }
       .sip-pct {
         font-size: 19px;
-        font-family: "IBM Plex Mono", monospace;
+        font-family: "Roboto Mono", monospace;
         color: var(--mint);
         min-width: 46px;
         text-align: right;
@@ -401,10 +401,10 @@
 
       /* ── FORECAST ── */
       .fc-mode-row { display:flex; gap:6px; margin-bottom:12px; }
-      .fc-mode-btn { flex:1; background:none; border:1px solid var(--line); border-radius:20px; color:var(--dim); font-family:"Outfit",sans-serif; font-size:12px; font-weight:600; padding:7px 12px; cursor:pointer; transition:all 0.15s; }
+      .fc-mode-btn { flex:1; background:none; border:1px solid var(--line); border-radius:20px; color:var(--dim); font-family:"Roboto",sans-serif; font-size:12px; font-weight:600; padding:7px 12px; cursor:pointer; transition:all 0.15s; }
       .fc-mode-btn.active { background:rgba(0,245,160,0.12); border-color:var(--mint); color:var(--mint); }
       .fc-scenario-row { display:flex; gap:6px; margin-bottom:12px; align-items:center; flex-wrap:wrap; }
-      .fc-scenario-btn { background:none; border:1px solid var(--line); border-radius:20px; color:var(--dim); font-family:"Outfit",sans-serif; font-size:11px; font-weight:600; padding:5px 12px; cursor:pointer; transition:all 0.15s; }
+      .fc-scenario-btn { background:none; border:1px solid var(--line); border-radius:20px; color:var(--dim); font-family:"Roboto",sans-serif; font-size:11px; font-weight:600; padding:5px 12px; cursor:pointer; transition:all 0.15s; }
       .fc-scenario-btn.active { background:rgba(0,245,160,0.12); border-color:var(--mint); color:var(--mint); }
       .fc-scenario-btn.cons.active { background:rgba(251,191,36,0.12); border-color:var(--amber); color:var(--amber); }
       .fc-scenario-btn.aggr.active { background:rgba(74,222,128,0.12); border-color:#4ade80; color:#4ade80; }
@@ -419,7 +419,7 @@
       .fc-toggle-wrap input:checked + .fc-toggle-track::before { transform:translateX(16px); background:var(--mint); }
       /* Goal result */
       .fc-goal-result { text-align:center; }
-      .fc-goal-amount { font-family:"Fraunces",serif; font-size:28px; font-weight:700; color:var(--mint); }
+      .fc-goal-amount { font-family:"Roboto",sans-serif; font-size:28px; font-weight:700; color:var(--mint); }
       .fc-goal-label { font-size:11px; color:var(--dim); margin-top:4px; }
       .fc-inputs { margin-bottom: 14px; }
       /* Forecast inputs always act as a calculator — never locked by edit mode */
@@ -487,7 +487,7 @@
       }
       .fc-hero .fc-stat-label { color: var(--mint); opacity: 0.65; }
       .fc-stat-val {
-        font-family: "IBM Plex Mono", monospace;
+        font-family: "Roboto Mono", monospace;
         font-size: clamp(13px, 3.5vw, 18px);
         font-weight: 700;
         color: var(--txt);
@@ -585,7 +585,7 @@
         color: var(--liq);
       }
       .dep-summary .v {
-        font-family: "Fraunces", serif;
+        font-family: "Roboto", sans-serif;
         font-size: 22px;
         color: var(--liq);
         margin-left: 10px;
@@ -625,7 +625,7 @@
         min-width: 46px;
       }
       .upcoming-day {
-        font-family: "IBM Plex Mono", monospace;
+        font-family: "Roboto Mono", monospace;
         font-size: 20px;
         font-weight: 700;
         line-height: 1;
@@ -648,7 +648,7 @@
         min-width: 0;
       }
       .upcoming-amt {
-        font-family: "IBM Plex Mono", monospace;
+        font-family: "Roboto Mono", monospace;
         font-size: 14px;
         font-weight: 700;
         white-space: nowrap;
@@ -676,7 +676,7 @@
         color: var(--mint);
       }
       .sum-hero {
-        font-family: "IBM Plex Mono", monospace;
+        font-family: "Roboto Mono", monospace;
         font-size: 38px;
         font-weight: 700;
         color: var(--mint);
@@ -814,7 +814,7 @@
         color: var(--dim);
       }
       .stat .sv {
-        font-family: "IBM Plex Mono", monospace;
+        font-family: "Roboto Mono", monospace;
         font-size: 16px;
         font-weight: 700;
         margin-top: 3px;
@@ -843,7 +843,7 @@
         background: var(--panel-2);
         border: 1px solid var(--line);
         color: var(--txt);
-        font-family: "Outfit", sans-serif;
+        font-family: "Roboto", sans-serif;
         font-size: 12px;
         padding: 11px;
         border-radius: 10px;
@@ -852,6 +852,11 @@
       }
       .btn:active {
         transform: scale(0.97);
+      }
+      .btn:disabled, .confirm-btns button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
       }
       .btn.primary {
         background: var(--mint-dim);
@@ -875,8 +880,8 @@
         background: none;
         border: 1px solid var(--line);
         border-radius: 6px;
-        color: var(--dim);
-        font-family: "Outfit", sans-serif;
+        color: var(--txt);
+        font-family: "Roboto", sans-serif;
         font-size: 10px;
         letter-spacing: 0.5px;
         padding: 4px 10px;
@@ -1025,7 +1030,7 @@
         margin-bottom: 6px;
       }
       .nw-hero-val {
-        font-family: "Fraunces", serif;
+        font-family: "Roboto", sans-serif;
         font-size: clamp(36px, 6vw, 54px);
         font-weight: 600;
         color: var(--mint);
@@ -1064,7 +1069,7 @@
         gap: 6px;
       }
       .nw-auto-val {
-        font-family: "Fraunces", serif;
+        font-family: "Roboto", sans-serif;
         font-size: 22px;
         color: var(--mint);
         font-weight: 600;
@@ -1226,7 +1231,7 @@
         margin-bottom: 6px;
       }
       .nw-proj-card .pv {
-        font-family: "Fraunces", serif;
+        font-family: "Roboto", sans-serif;
         font-size: clamp(13px, 3.8vw, 17px);
         color: var(--mint);
         word-break: break-all;
@@ -1241,12 +1246,12 @@
       .nw-hero-inner { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
       .nw-hero-sparkline { width:110px; height:52px; flex-shrink:0; margin-top:8px; overflow:visible; }
       .nw-delta-chips { display:flex; gap:7px; flex-wrap:wrap; margin:8px 0 10px; }
-      .nw-delta-chip { display:inline-flex; align-items:center; background:rgba(61,214,140,0.12); border-radius:20px; padding:3px 10px; font-size:11px; font-weight:700; color:var(--mint); font-family:"Space Mono",monospace; }
+      .nw-delta-chip { display:inline-flex; align-items:center; background:rgba(61,214,140,0.12); border-radius:20px; padding:3px 10px; font-size:11px; font-weight:700; color:var(--mint); font-family:"Roboto Mono",monospace; }
       .nw-delta-chip.neg { background:rgba(255,107,107,0.12); color:var(--coral); }
-      .nw-stat-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+      .nw-stat-row { display:grid; grid-template-columns:1fr; gap:10px; margin-bottom:12px; }
       .nw-stat-card { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 14px; }
       .nw-stat-label { font-size:9px; text-transform:uppercase; letter-spacing:1px; color:var(--dim); margin-bottom:5px; }
-      .nw-stat-val { font-family:"Space Mono",monospace; font-size:16px; font-weight:700; color:var(--mint); }
+      .nw-stat-val { font-family:"Roboto Mono",monospace; font-size:16px; font-weight:700; color:var(--mint); }
       .nw-enter-toggle { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin-bottom:0; display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none; }
       .nw-enter-toggle.open { border-radius:14px 14px 0 0; border-bottom-color:transparent; }
       .nw-enter-title { font-size:12.5px; font-weight:700; color:var(--txt); margin-bottom:3px; }
@@ -1280,7 +1285,7 @@
         gap: 12px;
         padding: 13px 16px 13px 0;
         border-radius: 14px;
-        font-family: "Outfit", sans-serif;
+        font-family: "Roboto", sans-serif;
         font-size: 13px;
         font-weight: 500;
         line-height: 1.4;
@@ -1378,7 +1383,7 @@
         color: var(--dim);
       }
       .empty-icon  { font-size: 36px; margin-bottom: 14px; opacity: 0.35; }
-      .empty-title { font-family: "Fraunces", serif; font-size: 19px; color: var(--txt); margin-bottom: 8px; }
+      .empty-title { font-family: "Roboto", sans-serif; font-size: 19px; color: var(--txt); margin-bottom: 8px; }
       .empty-body  { font-size: 11px; line-height: 1.65; max-width: 280px; margin: 0 auto; }
 
       /* ════ EDIT MODE BANNER ════ */
@@ -1510,7 +1515,7 @@
         border: 1.5px solid transparent;
         background: var(--panel-2);
         transition: border-color 0.15s, background 0.15s;
-        font-family: "Outfit", sans-serif;
+        font-family: "Roboto", sans-serif;
       }
       .theme-swatch:hover {
         background: var(--bg);
@@ -1583,7 +1588,7 @@
         pointer-events: none;
       }
       .portfolio-hero-eyebrow {
-        font-family: "JetBrains Mono", monospace;
+        font-family: "Roboto Mono", monospace;
         font-size: 9px;
         text-transform: uppercase;
         letter-spacing: 2.5px;
@@ -1605,7 +1610,7 @@
         animation: dotpulse 2.4s ease-in-out infinite;
       }
       .portfolio-hero h1 {
-        font-family: "Outfit", sans-serif;
+        font-family: "Roboto", sans-serif;
         font-weight: 800;
         font-size: clamp(34px, 10vw, 58px);
         line-height: 0.88;
@@ -1655,8 +1660,8 @@
         background: none;
         border: none;
         cursor: pointer;
-        font-family: "Outfit", sans-serif;
-        color: var(--dim);
+        font-family: "Roboto", sans-serif;
+        color: var(--txt);
         gap: 10px;
         transition: color 0.15s;
         text-align: left;
@@ -1698,7 +1703,7 @@
         outline: none;
       }
       .coll-meta {
-        font-family: "IBM Plex Mono", monospace;
+        font-family: "Roboto Mono", monospace;
         font-size: 13px;
         font-weight: 700;
         color: var(--txt);
@@ -1751,13 +1756,13 @@
       .coll-section[draggable="true"] { cursor: default; }
       /* ── Fund category pill ── */
       .fund-cat-pill { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; padding: 2px 7px; border-radius: 10px; border: 1px solid var(--line); color: var(--dim); background: transparent; flex-shrink: 0; white-space: nowrap; }
-      .fund-cat-select { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; color: var(--txt); font-family: "Outfit", sans-serif; font-size: 10px; padding: 2px 5px; flex-shrink: 0; display: none; }
+      .fund-cat-select { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; color: var(--txt); font-family: "Roboto", sans-serif; font-size: 10px; padding: 2px 5px; flex-shrink: 0; display: none; }
       .fund-cat-select.cat-required { border-color: var(--coral) !important; outline: 2px solid rgba(248,113,113,0.45); animation: catPulse 1s ease-in-out 4; }
       @keyframes catPulse { 0%,100% { outline-color: rgba(248,113,113,0.35); } 50% { outline-color: rgba(248,113,113,0.9); } }
       body.edit-mode .fund-cat-pill { display: none; }
       body.edit-mode .fund-cat-select { display: block; }
       /* ── Archive button ── */
-      .fund-archive-btn { display: none; background: none; border: 1px solid var(--line); border-radius: 7px; color: var(--dim); font-size: 10px; font-family: "Outfit", sans-serif; padding: 2px 8px; cursor: pointer; flex-shrink: 0; }
+      .fund-archive-btn { display: none; background: none; border: 1px solid var(--line); border-radius: 7px; color: var(--txt); font-size: 10px; font-family: "Roboto", sans-serif; padding: 2px 8px; cursor: pointer; flex-shrink: 0; }
       body.edit-mode .fund-archive-btn { display: block; }
       .fund-archive-btn:hover { border-color: var(--coral); color: var(--coral); }
       /* ── Archived section ── */
@@ -1765,8 +1770,8 @@
       body.edit-mode .archived-section { display: block; }
       .archived-head { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--dim); padding: 8px 0 6px; }
       .archived-fund-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; margin-bottom: 6px; }
-      .archived-fund-name { flex: 1; font-size: 12px; color: var(--dim); }
-      .unarchive-btn { background: none; border: 1px solid var(--line); border-radius: 7px; color: var(--dim); font-size: 10px; padding: 2px 8px; cursor: pointer; }
+      .archived-fund-name { flex: 1; font-size: 12px; color: var(--txt); }
+      .unarchive-btn { background: none; border: 1px solid var(--line); border-radius: 7px; color: var(--txt); font-size: 10px; padding: 2px 8px; cursor: pointer; }
       .unarchive-btn:hover { border-color: var(--mint); color: var(--mint); }
 
       /* ═══ NAV DROPDOWNS ═══ */
@@ -1775,7 +1780,7 @@
         background: none;
         border: none;
         border-radius: 9px;
-        color: var(--dim);
+        color: var(--txt);
         cursor: pointer;
         padding: 7px 14px;
         display: flex;
@@ -1813,7 +1818,7 @@
         background: none;
         border: none;
         color: var(--dim);
-        font-family: "Outfit", sans-serif;
+        font-family: "Roboto", sans-serif;
         font-size: 12px;
         font-weight: 500;
         letter-spacing: 0.5px;
@@ -1835,7 +1840,7 @@
         padding: 8px 14px 4px;
         font-size: 11px;
         color: var(--dim);
-        font-family: "Outfit", sans-serif;
+        font-family: "Roboto", sans-serif;
       }
       .nav-dd-avatar {
         width: 24px;
@@ -1879,7 +1884,7 @@
         background: transparent;
         border: 1px dashed var(--line);
         color: var(--dim);
-        font-family: "Outfit", sans-serif;
+        font-family: "Roboto", sans-serif;
         font-size: 11px;
         letter-spacing: 0.5px;
         text-transform: uppercase;
@@ -1906,7 +1911,7 @@
         border-top: 1px solid var(--line);
       }
       .fund-div-title {
-        font-family: "Outfit", sans-serif;
+        font-family: "Roboto", sans-serif;
         font-size: 14px;
         font-weight: 700;
         text-transform: uppercase;
@@ -1927,7 +1932,7 @@
       .fund-div-liq .fund-div-title::before { background: var(--liq); }
       .fund-div-eq  .fund-div-title::before { background: var(--mint); }
       .fund-div-total {
-        font-family: "Fraunces", serif;
+        font-family: "Roboto", sans-serif;
         font-size: 18px;
         font-weight: 600;
         color: var(--txt);
@@ -1939,13 +1944,13 @@
       .fund-div-eq  .fund-div-total { color: var(--mint); }
       .fund-div-right { display: inline-flex; align-items: center; gap: 10px; margin-right: 20px; }
       .fund-div-rtn {
-        font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 700;
+        font-family: "Roboto Mono", monospace; font-size: 11px; font-weight: 700;
         white-space: nowrap; flex-shrink: 0;
       }
       .fund-div-rtn.up { color: #4ade80; }
       .fund-div-rtn.dn { color: #f87171; }
       .coll-rtn {
-        font-family: "IBM Plex Mono", monospace; font-size: 9.5px; font-weight: 700;
+        font-family: "Roboto Mono", monospace; font-size: 9.5px; font-weight: 700;
         white-space: nowrap; flex-shrink: 0; opacity: 0; transition: opacity 0.2s;
       }
       .coll-rtn:not(:empty) { opacity: 1; }
@@ -2006,7 +2011,7 @@
       body.privacy-mode #tab-portfolio .fund-div-total::after,
       body.privacy-mode #tab-portfolio .coll-meta:not(:empty):not(#coll-meta-upcoming)::after {
         content: "• • • •";
-        font-family: "IBM Plex Mono", monospace;
+        font-family: "Roboto Mono", monospace;
         font-size: 16px;
         color: var(--txt);
         opacity: 0.4;
@@ -2014,7 +2019,7 @@
       body.privacy-mode #tab-portfolio .chip b { font-size: 0; }
       body.privacy-mode #tab-portfolio .chip b::after {
         content: "• • • •";
-        font-family: "IBM Plex Mono", monospace;
+        font-family: "Roboto Mono", monospace;
         font-size: 16px;
         color: inherit;
         opacity: 0.5;
@@ -2022,7 +2027,7 @@
       body.privacy-mode #tab-portfolio .upcoming-amt { font-size: 0; }
       body.privacy-mode #tab-portfolio .upcoming-amt::after {
         content: "• • • •";
-        font-family: "IBM Plex Mono", monospace;
+        font-family: "Roboto Mono", monospace;
         font-size: 14px;
         color: inherit;
         opacity: 0.5;
@@ -2039,7 +2044,7 @@
         left: 14px;
         top: 50%;
         transform: translateY(-50%);
-        font-family: "IBM Plex Mono", monospace;
+        font-family: "Roboto Mono", monospace;
         font-size: 13px;
         color: var(--txt);
         opacity: 0.4;

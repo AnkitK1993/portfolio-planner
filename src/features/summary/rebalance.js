@@ -231,7 +231,7 @@ export function renderIdealAlloc() {
                   <span style="font-size:11px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${cat}</span>
                   <input type="number" class="ideal-wt-inp" data-cat="${cat}" min="0" max="100" step="1" value="${weights[cat]}"
                     style="background:var(--input-bg,rgba(255,255,255,0.06));border:1px solid var(--line);border-radius:5px;color:var(--txt);
-                           font-family:'IBM Plex Mono',monospace;font-size:11px;text-align:right;padding:3px 6px;width:100%"/>
+                           font-family:'Roboto Mono',monospace;font-size:11px;text-align:right;padding:3px 6px;width:100%"/>
                   <span style="font-size:10px;color:var(--dim)">%</span>
                 </div>`).join("");
 
@@ -353,17 +353,17 @@ export function renderIdealAlloc() {
                 </div>
                 <div style="text-align:right;min-width:58px">
                   <div style="font-size:8px;color:var(--dim);margin-bottom:1px">Current</div>
-                  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--txt)">${fmt(Math.round(f.current))}</div>
+                  <div style="font-family:'Roboto Mono',monospace;font-size:10px;color:var(--txt)">${fmt(Math.round(f.current))}</div>
                 </div>
                 <div style="text-align:right;min-width:58px">
                   <div style="font-size:8px;color:var(--dim);margin-bottom:1px">${f.toAdd >= 0 ? "To Add" : "Excess"}</div>
-                  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:${f.toAdd >= 0 ? "var(--mint)" : "var(--coral)"}">
+                  <div style="font-family:'Roboto Mono',monospace;font-size:10px;color:${f.toAdd >= 0 ? "var(--mint)" : "var(--coral)"}">
                     ${f.toAdd >= 0 ? "+" : ""}${fmt(Math.round(Math.abs(f.toAdd)))}
                   </div>
                 </div>
                 <div style="text-align:right;min-width:38px">
                   <div style="font-size:8px;color:var(--dim);margin-bottom:1px">Weight</div>
-                  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;color:${f.color}">${f.idealPct.toFixed(1)}%</div>
+                  <div style="font-family:'Roboto Mono',monospace;font-size:10px;font-weight:700;color:${f.color}">${f.idealPct.toFixed(1)}%</div>
                 </div>
               </div>`).join("");
 
@@ -371,7 +371,7 @@ export function renderIdealAlloc() {
               bar1El.innerHTML = `
                 <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line);">
                   <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--dim);margin-bottom:7px">
-                    Ideal Equity Allocation &nbsp;— &nbsp;<span style="font-family:'IBM Plex Mono',monospace;color:var(--mint)">${fmt(Math.round(eqAfter))}</span>
+                    Ideal Equity Allocation &nbsp;— &nbsp;<span style="font-family:'Roboto Mono',monospace;color:var(--mint)">${fmt(Math.round(eqAfter))}</span>
                   </div>
                   <div class="alloc-seg-bar" style="display:flex;height:28px;border-radius:7px;overflow:hidden;gap:1px;">${bar1Segs}</div>
                   <div>${bar1Rows}</div>
@@ -394,14 +394,14 @@ export function renderIdealAlloc() {
                   return `<div style="display:grid;grid-template-columns:10px 1fr auto auto;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--line);">
                     <span style="width:10px;height:10px;border-radius:2px;background:${f.color};display:block;flex-shrink:0"></span>
                     <span style="font-size:11px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${f.name}</span>
-                    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--liq);text-align:right;white-space:nowrap;">+${fmt(Math.round(f.fromLiq))}</span>
-                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;color:${f.color};text-align:right;min-width:38px;">${pct.toFixed(1)}%</span>
+                    <span style="font-family:'Roboto Mono',monospace;font-size:11px;color:var(--liq);text-align:right;white-space:nowrap;">+${fmt(Math.round(f.fromLiq))}</span>
+                    <span style="font-family:'Roboto Mono',monospace;font-size:10px;font-weight:700;color:${f.color};text-align:right;min-width:38px;">${pct.toFixed(1)}%</span>
                   </div>`;
                 }).join("");
                 bar2El.innerHTML = `
                   <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line);">
                     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--dim);margin-bottom:7px">
-                      Move Liquid → Equity &nbsp;— &nbsp;<span style="font-family:'IBM Plex Mono',monospace;color:var(--liq)">${fmt(Math.round(deployable))}</span>
+                      Move Liquid → Equity &nbsp;— &nbsp;<span style="font-family:'Roboto Mono',monospace;color:var(--liq)">${fmt(Math.round(deployable))}</span>
                     </div>
                     <div class="alloc-seg-bar" style="display:flex;height:28px;border-radius:7px;overflow:hidden;gap:1px;">${bar2Segs}</div>
                     <div>${bar2Rows}</div>
@@ -445,14 +445,14 @@ export function renderIdealAlloc() {
                       <div style="font-size:11px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${f.name}</div>
                       ${f.isLiq ? `<div style="font-size:9px;color:var(--dim)">liquid (reserved)</div>` : ""}
                     </div>
-                    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--txt);text-align:right;white-space:nowrap;">${fmt(Math.round(f.afterVal))}</span>
-                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;color:${f.color};text-align:right;min-width:38px;">${pct}%</span>
+                    <span style="font-family:'Roboto Mono',monospace;font-size:11px;color:var(--txt);text-align:right;white-space:nowrap;">${fmt(Math.round(f.afterVal))}</span>
+                    <span style="font-family:'Roboto Mono',monospace;font-size:10px;font-weight:700;color:${f.color};text-align:right;min-width:38px;">${pct}%</span>
                   </div>`;
                 }).join("");
                 bar3El.innerHTML = `
                   <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line);">
                     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--dim);margin-bottom:7px">
-                      Portfolio After Rebalancing &nbsp;— &nbsp;<span style="font-family:'IBM Plex Mono',monospace;color:var(--txt)">${fmt(Math.round(grandTotal))}</span>
+                      Portfolio After Rebalancing &nbsp;— &nbsp;<span style="font-family:'Roboto Mono',monospace;color:var(--txt)">${fmt(Math.round(grandTotal))}</span>
                     </div>
                     <div class="alloc-seg-bar" style="display:flex;height:28px;border-radius:7px;overflow:hidden;gap:1px;">${bar3Segs}</div>
                     <div>${bar3Rows}</div>
