@@ -5691,28 +5691,25 @@
               fundSel.value = txnFilter.fundId || "";
             }
 
-            // Apply filters
+            // Apply filters (single pass — chronoAll below reuses this result
+            // instead of re-filtering the full transaction list a second time)
             const { from, to } = txnDateRange();
-            let txns = [...(state.transactions || [])];
-            txns = txns.filter(t => {
+            let txns = (state.transactions || []).filter(t => {
               const d = t.date || "";
               if (d < from || d > to) return false;
               if (txnFilter.fundId && t.fundId !== txnFilter.fundId) return false;
               return true;
             });
 
-            // Apply sort
+            // Build running total map (always chronological regardless of sort)
+            const chronoAll = [...txns].sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+
+            // Apply sort (chronoAll is captured above, before this reorders txns)
             const srt = txnFilter.sort || "newest";
             if (srt === "newest")  txns.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
             else if (srt === "oldest") txns.sort((a, b) => (a.date || "").localeCompare(b.date || ""));
             else if (srt === "highest") txns.sort((a, b) => (Number(b.invested) || 0) - (Number(a.invested) || 0));
             else if (srt === "lowest")  txns.sort((a, b) => (Number(a.invested) || 0) - (Number(b.invested) || 0));
-
-            // Build running total map (always chronological regardless of sort)
-            const chronoAll = [...(state.transactions || [])].filter(t => {
-              const d = t.date || "";
-              return d >= from && d <= to && (!txnFilter.fundId || t.fundId === txnFilter.fundId);
-            }).sort((a, b) => (a.date || "").localeCompare(b.date || ""));
             const runMap = {};
             let runSum = 0;
             chronoAll.forEach(t => { runSum += Number(t.invested) || 0; runMap[t.id] = runSum; });
@@ -6403,6 +6400,10 @@
 
             const start = performance.now();
             const tick = (now) => {
+              // innerHTML rebuilds (e.g. renderHealthScore) can destroy this
+              // element mid-animation while a stale closure keeps ticking
+              // against it — bail out instead of wasting rAF cycles forever.
+              if (!renderEl.isConnected) { delete _animRaf[key]; return; }
               const t = Math.min(1, (now - start) / duration);
               const ease = 1 - Math.pow(1 - t, 3);
               const cur = fromVal + (toVal - fromVal) * ease;
@@ -6423,6 +6424,7 @@
             targetEl.style.width = "0%";
             const start = performance.now();
             const tick = (now) => {
+              if (!targetEl.isConnected) { delete _animRaf[key]; return; }
               const t = Math.min(1, (now - start) / duration);
               const ease = 1 - Math.pow(1 - t, 3);
               targetEl.style.width = (toPct * ease).toFixed(1) + "%";
@@ -7097,20 +7099,30 @@
           ════════════════════════════════════════════ */
           function xirrCalc(cashflows) {
             if (!cashflows || cashflows.length < 2) return null;
-            const hasPos = cashflows.some(c => c.amount > 0);
-            const hasNeg = cashflows.some(c => c.amount < 0);
+            let hasPos = false, hasNeg = false, t0 = Infinity;
+            for (const c of cashflows) {
+              if (c.amount > 0) hasPos = true;
+              if (c.amount < 0) hasNeg = true;
+              if (c.date < t0) t0 = c.date;
+            }
             if (!hasPos || !hasNeg) return null;
-            const t0 = Math.min(...cashflows.map(c => c.date));
             const yrs = cashflows.map(c => (c.date - t0) / (365.25 * 24 * 3600 * 1000));
 
-            const f = r => cashflows.reduce((s, c, i) => s + c.amount / Math.pow(1 + r, yrs[i]), 0);
-            const df = r => cashflows.reduce((s, c, i) => s - c.amount * yrs[i] / Math.pow(1 + r, yrs[i] + 1), 0);
-
+            // f(r) and df(r) share the same Math.pow(1+r, yrs[i]) term, and were
+            // previously computed via two separate array reduces per Newton
+            // iteration (each with its own Math.pow call) — merged into one
+            // pass that computes both values together and derives the
+            // derivative's pow term by multiplying instead of a second pow().
             let r = 0.1;
             for (let i = 0; i < 100; i++) {
-              const dv = df(r);
+              let fv = 0, dv = 0;
+              for (let j = 0; j < cashflows.length; j++) {
+                const pw = Math.pow(1 + r, yrs[j]);
+                fv += cashflows[j].amount / pw;
+                dv -= cashflows[j].amount * yrs[j] / (pw * (1 + r));
+              }
               if (Math.abs(dv) < 1e-10) break;
-              const nr = r - f(r) / dv;
+              const nr = r - fv / dv;
               if (!isFinite(nr) || Math.abs(nr) > 100) return null;
               if (Math.abs(nr - r) < 1e-7) return nr;
               r = nr;
@@ -7118,6 +7130,11 @@
             return Math.abs(r) < 100 ? r : null;
           }
 
+          // Per-fund XIRR cache — render() calls fundXirr() for every fund on
+          // every rAF-debounced re-render (i.e. on every keystroke in a fund
+          // field), so an uncached Newton-Raphson solve here is pure waste
+          // whenever the fund's own value/transactions haven't changed.
+          const _fundXirrCache = new Map();
           function fundXirr(fid, isLiq) {
             const s = isLiq ? state.liquid[fid] : state.equity[fid];
             const curVal = isLiq
@@ -7126,9 +7143,23 @@
             if (!curVal) return null;
             const txns = (state.transactions || []).filter(t => t.fundId === fid && t.date && Number(t.invested) > 0);
             if (!txns.length) return null;
+
+            let investedSum = 0, minDate = Infinity, maxDate = -Infinity;
+            for (const t of txns) {
+              investedSum += Number(t.invested);
+              const d = new Date(t.date).getTime();
+              if (d < minDate) minDate = d;
+              if (d > maxDate) maxDate = d;
+            }
+            const cacheKey = txns.length + "|" + investedSum.toFixed(2) + "|" + curVal.toFixed(2) + "|" + minDate + "|" + maxDate;
+            const cached = _fundXirrCache.get(fid);
+            if (cached && cached.key === cacheKey) return cached.val;
+
             const cfs = txns.map(t => ({ amount: -Number(t.invested), date: new Date(t.date).getTime() }));
             cfs.push({ amount: curVal, date: Date.now() });
-            return xirrCalc(cfs);
+            const val = xirrCalc(cfs);
+            _fundXirrCache.set(fid, { key: cacheKey, val });
+            return val;
           }
 
           // XIRR cache — avoids Newton-Raphson re-iteration when inputs haven't changed
