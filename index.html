@@ -3894,6 +3894,16 @@
             { id: "ppf", label: "PPF / EPF / NPS", color: "#8be8ff" },
             { id: "bonds", label: "Bonds", color: "#c084fc" },
           ];
+          const OTHER_FIELDS = NW_FIELDS.filter(f => f.id !== "mfProfit");
+          const othersOfSnap = (s) => OTHER_FIELDS.reduce((sum, f) => sum + (s[f.id] || 0), 0);
+          // Recomputes a snapshot's total from its stored components rather than
+          // trusting the stored .total field, since older snapshots were saved
+          // before Unrealized Gain was included in the total.
+          const normalizeSnap = (key, v) => {
+            const s = { key, ...v };
+            s.total = (s.mf || 0) + (s.mfProfit || 0) + othersOfSnap(s);
+            return s;
+          };
 
           /* ════════════════════════════════════════════
              STATE & PERSISTENCE
@@ -4610,17 +4620,33 @@
             return liq + eq;
           }
 
+          function mfUnrealizedGain() {
+            let total = 0;
+            LIQ_FUNDS.forEach(f => {
+              const s = state.liquid[f.id]; if (!s) return;
+              const cv = s.currentValue || 0;
+              if (cv > 0) total += cv - (s.value || 0);
+            });
+            EQ_FUNDS.forEach(f => {
+              const s = state.equity[f.id]; if (!s) return;
+              const cv = s.currentValue || 0;
+              if (cv > 0) total += cv - (s.shown || 0);
+            });
+            return total;
+          }
+
           function nwTotal() {
             const other = NW_FIELDS.filter((f) => f.id !== "mfProfit").reduce(
               (s, f) => s + (state.networth[f.id] || 0),
               0,
             );
-            return mfTotalValue() + other;
+            return mfTotalValue() + mfUnrealizedGain() + other;
           }
 
           function buildCurrentSnapshot() {
             const cur = { mf: mfTotalValue(), total: nwTotal() };
             NW_FIELDS.forEach((f) => { cur[f.id] = state.networth[f.id] || 0; });
+            cur.mfProfit = mfUnrealizedGain();
             return cur;
           }
 
@@ -7185,7 +7211,7 @@
             const hmEl = el("sumHeatmap");
             if (hmCard && hmEl) {
               const snaps = state.networth.snapshots || {};
-              const sorted = Object.entries(snaps).map(([k, v]) => ({ key: k, ...v })).sort((a, b) => a.key.localeCompare(b.key));
+              const sorted = Object.entries(snaps).map(([k, v]) => normalizeSnap(k, v)).sort((a, b) => a.key.localeCompare(b.key));
               if (sorted.length < 2) { hmCard.style.display = "none"; }
               else {
                 hmCard.style.display = "";
@@ -7759,20 +7785,7 @@
 
           function renderNetWorth() {
             const mfVal = mfTotalValue();
-            const profit = (() => {
-              let total = 0;
-              LIQ_FUNDS.forEach(f => {
-                const s = state.liquid[f.id]; if (!s) return;
-                const cv = s.currentValue || 0;
-                if (cv > 0) total += cv - (s.value || 0);
-              });
-              EQ_FUNDS.forEach(f => {
-                const s = state.equity[f.id]; if (!s) return;
-                const cv = s.currentValue || 0;
-                if (cv > 0) total += cv - (s.shown || 0);
-              });
-              return total;
-            })();
+            const profit = mfUnrealizedGain();
             // While editing a historical snapshot, keep its frozen unrealized
             // gain instead of overwriting it with today's live figure.
             if (!nwEditingKey) state.networth.mfProfit = profit;
@@ -7782,7 +7795,7 @@
             const other = NW_FIELDS.filter((f) => f.id !== "mfProfit").reduce(
               (s, f) => s + (state.networth[f.id] || 0), 0,
             );
-            const total = mfVal + other;
+            const total = mfVal + displayedProfit + other;
 
             el("nwMfVal").textContent = fmt(mfVal);
             if (_animOnRender && !editMode) {
@@ -7822,7 +7835,7 @@
             // Delta chips, stats row, sparkline — driven by snapshots
             const snaps = state.networth.snapshots || {};
             const sorted = Object.entries(snaps)
-              .map(([k, v]) => ({ key: k, ...v }))
+              .map(([k, v]) => normalizeSnap(k, v))
               .sort((a, b) => a.key.localeCompare(b.key));
             const deltaRow = el("nwDeltaChips");
             const statRow  = el("nwStatRow");
@@ -7941,7 +7954,9 @@
             const other = NW_FIELDS.filter((f) => f.id !== "mfProfit").reduce(
               (s, f) => s + (state.networth[f.id] || 0), 0
             );
-            const total = mfVal + other;
+            // state.networth.mfProfit already holds the correct figure here —
+            // live if creating a new snapshot, frozen historical if editing one.
+            const total = mfVal + (state.networth.mfProfit || 0) + other;
             if (!state.networth.snapshots) state.networth.snapshots = {};
             const doSave = () => {
               const snap = { mf: mfVal, total, savedAt: new Date().toISOString() };
@@ -7977,7 +7992,7 @@
           function renderNwHistory() {
             const snaps = state.networth.snapshots || {};
             const sorted = Object.entries(snaps)
-              .map(([k, v]) => ({ key: k, ...v }))
+              .map(([k, v]) => normalizeSnap(k, v))
               .sort((a, b) => b.key.localeCompare(a.key));
 
             if (!sorted.length) {
@@ -7986,8 +8001,6 @@
               return;
             }
 
-            const OTHER_FIELDS = NW_FIELDS.filter(f => f.id !== "mfProfit");
-            const othersOf = (s) => OTHER_FIELDS.reduce((sum, f) => sum + (s[f.id] || 0), 0);
             const DETAIL_FIELDS = [
               { key: "mf",       label: "MF Value" },
               { key: "mfProfit", label: "Unrealized Gain" },
@@ -8014,10 +8027,7 @@
                 expandHtml = (showCompare
                   ? `<div class="nw-hist-cmp-head"><span>Field</span><span>${fmtMonth(s.key)}</span><span>Current</span><span>&Delta;</span></div>` +
                     DETAIL_FIELDS.map(f => {
-                      // Total row must include mfProfit so Δ equals sum of all individual row deltas
-                      const extra = f.key === "total" ? (s.mfProfit || 0) : 0;
-                      const curExtra = f.key === "total" ? (cur.mfProfit || 0) : 0;
-                      const snapV = (s[f.key] || 0) + extra, curV = (cur[f.key] || 0) + curExtra, d = curV - snapV;
+                      const snapV = s[f.key] || 0, curV = cur[f.key] || 0, d = curV - snapV;
                       const dColor = d > 0 ? "var(--mint)" : d < 0 ? "var(--coral)" : "var(--dim)";
                       return `<div class="nw-hist-cmp-row">
                         <span class="nw-hist-cmp-label">${f.label}</span>
@@ -8026,10 +8036,9 @@
                         <span class="nw-hist-cmp-delta" style="color:${dColor}">${d === 0 ? "—" : (d > 0 ? "+" : "") + fmtCompact(d)}</span>
                       </div>`;
                     }).join("")
-                  : DETAIL_FIELDS.map(f => {
-                      const v = (s[f.key] || 0) + (f.key === "total" ? (s.mfProfit || 0) : 0);
-                      return `<div class="nw-hist-detail-row"><span>${f.label}</span><span>${fmtCompact(v)}</span></div>`;
-                    }).join("")
+                  : DETAIL_FIELDS.map(f =>
+                      `<div class="nw-hist-detail-row"><span>${f.label}</span><span>${fmtCompact(s[f.key] || 0)}</span></div>`
+                    ).join("")
                 ) + `<button class="nw-hist-cmp-btn" data-key="${s.key}">${showCompare ? "Hide comparison" : "Compare with Current"}</button>`;
               }
 
@@ -8038,7 +8047,7 @@
                   <span style="color:var(--dim)">${isOpen ? "▾" : "▸"} ${fmtMonth(s.key)}</span>
                   <span>${fmtCompact(s.mf || 0)}</span>
                   <span>${fmtCompact(s.mfProfit || 0)}</span>
-                  <span>${fmtCompact(othersOf(s))}</span>
+                  <span>${fmtCompact(othersOfSnap(s))}</span>
                   <span style="color:var(--mint);font-weight:600;">${fmtCompact(s.total)}</span>
                   <span>${dStr}</span>
                   ${editMode ? `<span><button class="nw-hist-del" data-key="${s.key}" title="Delete" style="background:none;border:none;cursor:pointer;color:var(--dim);font-size:11px;padding:2px;line-height:1;">✕</button></span>` : ""}
@@ -8096,7 +8105,7 @@
           function renderNwLineChart() {
             const snaps = state.networth.snapshots || {};
             const sorted = Object.entries(snaps)
-              .map(([k, v]) => ({ key: k, ...v }))
+              .map(([k, v]) => normalizeSnap(k, v))
               .sort((a, b) => a.key.localeCompare(b.key));
 
             const card = el("nwChartCard");
@@ -8233,7 +8242,7 @@
           function renderNwProjection() {
             const snaps = state.networth.snapshots || {};
             const sorted = Object.entries(snaps)
-              .map(([k, v]) => ({ key: k, ...v }))
+              .map(([k, v]) => normalizeSnap(k, v))
               .sort((a, b) => a.key.localeCompare(b.key));
 
             if (sorted.length < 2) {
