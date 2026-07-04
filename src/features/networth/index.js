@@ -59,15 +59,6 @@ export function renderNetWorth() {
             const total = mfVal + displayedProfit + other;
 
             el("nwMfVal").textContent = fmt(mfVal);
-            if (_animOnRender && !editMode) {
-              animateNumber(el("nwMfChip"), mfVal, 2000, true);
-              animateNumber(el("nwMfProfitChip"), profit, 2000, true);
-              animateNumber(el("nwOtherChip"), other, 2000, true);
-            } else {
-              el("nwMfChip").textContent = fmt(mfVal);
-              el("nwMfProfitChip").textContent = fmt(profit);
-              el("nwOtherChip").textContent = fmt(other);
-            }
             animateNumber(el("nwHeroVal"), total, _animOnRender && !editMode ? 2000 : 500, _animOnRender && !editMode);
             const _snapKey   = snapshotKey();
             const _hasSnap   = !!(state.networth.snapshots && state.networth.snapshots[_snapKey]);
@@ -110,20 +101,6 @@ export function renderNetWorth() {
                 const sign = mom >= 0 ? "▲" : "▼";
                 momChip.textContent = `${sign} ${mom >= 0 ? "+" : "−"}${fmt(Math.abs(mom))} MoM`;
                 momChip.className = "nw-delta-chip" + (mom < 0 ? " neg" : "");
-              }
-              // YoY: snapshot closest to 12 months ago
-              const [ny, nm] = snapshotKey().split("-").map(Number);
-              const yoyTarget = `${ny - 1}-${String(nm).padStart(2, "0")}`;
-              const yoySnap = snaps[yoyTarget] || [...sorted].reverse().find(s => s.key <= yoyTarget);
-              const yoyChip = el("nwYoyChip");
-              if (yoySnap && yoyChip) {
-                const yoy = total - yoySnap.total;
-                const sign = yoy >= 0 ? "▲" : "▼";
-                yoyChip.textContent = `${sign} ${yoy >= 0 ? "+" : "−"}${fmt(Math.abs(yoy))} YoY`;
-                yoyChip.className = "nw-delta-chip" + (yoy < 0 ? " neg" : "");
-                yoyChip.style.display = "";
-              } else if (yoyChip) {
-                yoyChip.style.display = "none";
               }
               if (deltaRow) deltaRow.style.display = "flex";
 
