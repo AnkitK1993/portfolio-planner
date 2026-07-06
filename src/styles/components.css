@@ -376,6 +376,12 @@
       .curval-ibox { display: flex; align-items: center; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); flex-shrink: 0; }
       .curval-ibox .pfx { padding: 0 4px 0 8px; color: var(--dim); font-size: 12px; }
       .curval-inp { background: none; border: none; outline: none; color: var(--txt); font-size: 13px; width: 100px; padding: 7px 8px 7px 0; }
+      /* Add Transaction: Invested + After Expense side by side per fund */
+      .txn-fund-row-dual { flex-wrap: wrap; }
+      .txn-amt-group { display: flex; gap: 8px; margin-left: auto; }
+      .txn-amt-field { display: flex; flex-direction: column; gap: 3px; }
+      .txn-amt-label { font-size: 9px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.4px; }
+      .txn-fund-row-dual .curval-inp { width: 76px; }
       /* ── FUND CARD STAT ROW ── */
       .card-stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
       .card-stat { background: var(--panel-2); border-radius: 8px; padding: 8px 10px; }

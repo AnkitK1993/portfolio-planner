@@ -34,9 +34,9 @@ export function liqCardHTML(f) {
                   <div class="fund-split-row" id="lsplit-${f.id}"></div>
                 </div>
                 <div class="field">
-                  <label class="flabel" for="lval-${f.id}">After expense</label>
+                  <label class="flabel" for="lval-${f.id}">After expense <span class="txn-lock">via transactions</span></label>
                   <div class="ibox"><span class="pfx">&#8377;</span>
-                    <input class="num liq" id="lval-${f.id}" type="text" placeholder="0" inputmode="numeric" value="${fmtNum(s.value)}" />
+                    <input class="num liq txn-driven" id="lval-${f.id}" type="text" placeholder="0" inputmode="numeric" value="${fmtNum(s.value)}" readonly />
                   </div>
                 </div>
               </div>
@@ -93,9 +93,9 @@ export function eqCardHTML(f) {
                   <div class="fund-split-row" id="esplit-${f.id}"></div>
                 </div>
                 <div class="field">
-                  <label class="flabel" for="eshown-${f.id}">After expense</label>
+                  <label class="flabel" for="eshown-${f.id}">After expense <span class="txn-lock">via transactions</span></label>
                   <div class="ibox"><span class="pfx">&#8377;</span>
-                    <input class="num" id="eshown-${f.id}" type="text" placeholder="0" inputmode="numeric" value="${fmtNum(s.shown)}" />
+                    <input class="num txn-driven" id="eshown-${f.id}" type="text" placeholder="0" inputmode="numeric" value="${fmtNum(s.shown)}" readonly />
                   </div>
                 </div>
               </div>
@@ -177,8 +177,8 @@ export function bindFundEvents() {
             });
             /* Format with commas on blur, strip on focus for editable money fields */
             const moneyIds = [
-              ...LIQ_FUNDS.flatMap(f => ["lval-"+f.id, "lres-"+f.id, "ltgt-"+f.id]),
-              ...EQ_FUNDS.flatMap(f => ["eshown-"+f.id, "etgt-"+f.id, "esip-"+f.id]),
+              ...LIQ_FUNDS.flatMap(f => ["lres-"+f.id, "ltgt-"+f.id]),
+              ...EQ_FUNDS.flatMap(f => ["etgt-"+f.id, "esip-"+f.id]),
             ];
             moneyIds.forEach(id => {
               const inp = el(id);

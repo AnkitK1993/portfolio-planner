@@ -1,10 +1,33 @@
 import { EQ_FUNDS, LIQ_FUNDS, fundName, saveState, state } from "../../core/state.js";
 import { UI, closeNavDropdowns, collapseTxpCard, expandTxpCard, navigateTo } from "../../core/ui.js";
-import { checkProfitMilestones, fundRowHTML } from "../portfolio/funds.js";
+import { checkProfitMilestones } from "../portfolio/funds.js";
 import { el } from "../../core/dom.js";
 import { fmt, fmtNum, pct } from "../../core/format.js";
 import { render, scheduleRender } from "../portfolio/render.js";
 import { setFmtInner } from "../../core/animate.js";
+
+function txnFundRowHTML(fundId, name, invested, afterExpense) {
+            return `
+              <div class="curval-fund-row txn-fund-row-dual" data-fundid="${fundId}">
+                <span class="curval-fname">${name}</span>
+                <div class="txn-amt-group">
+                  <div class="txn-amt-field">
+                    <span class="txn-amt-label">Invested</span>
+                    <div class="curval-ibox">
+                      <span class="pfx">&#8377;</span>
+                      <input type="number" class="curval-inp" id="txi-${fundId}" min="0" inputmode="numeric" placeholder="0" value="${invested || ""}" />
+                    </div>
+                  </div>
+                  <div class="txn-amt-field">
+                    <span class="txn-amt-label">After expense</span>
+                    <div class="curval-ibox">
+                      <span class="pfx">&#8377;</span>
+                      <input type="number" class="curval-inp" id="txae-${fundId}" min="0" inputmode="numeric" placeholder="0" value="${afterExpense || ""}" />
+                    </div>
+                  </div>
+                </div>
+              </div>`;
+          }
 
 export function setTxnType(type) {
             el("txnType").value = type;
@@ -15,18 +38,24 @@ export function setTxnType(type) {
 
 export function applyTxnTotals() {
             if (!state.transactions || !state.transactions.length) return;
-            const net = {}, sipTot = {}, lumpTot = {}, redeemTot = {};
+            const net = {}, sipTot = {}, lumpTot = {}, redeemTot = {}, netAE = {};
             state.transactions.forEach(t => {
               const amt = Number(t.invested) || 0;
+              // Older transactions predate the After Expense field — fall
+              // back to the invested amount so their contribution isn't lost.
+              const aeAmt = Number(t.afterExpense ?? t.invested) || 0;
               if (t.type === "redemption") {
                 redeemTot[t.fundId] = (redeemTot[t.fundId] || 0) + amt;
                 net[t.fundId] = (net[t.fundId] || 0) - amt;
+                netAE[t.fundId] = (netAE[t.fundId] || 0) - aeAmt;
               } else if (t.type === "sip") {
                 sipTot[t.fundId]  = (sipTot[t.fundId]  || 0) + amt;
                 net[t.fundId]     = (net[t.fundId]     || 0) + amt;
+                netAE[t.fundId]   = (netAE[t.fundId]    || 0) + aeAmt;
               } else {
                 lumpTot[t.fundId] = (lumpTot[t.fundId] || 0) + amt;
                 net[t.fundId]     = (net[t.fundId]     || 0) + amt;
+                netAE[t.fundId]   = (netAE[t.fundId]    || 0) + aeAmt;
               }
             });
             LIQ_FUNDS.forEach(f => {
@@ -38,6 +67,11 @@ export function applyTxnTotals() {
                 state.liquid[f.id].redeemPaid= redeemTot[f.id] || 0;
                 const inp = document.getElementById("lpaid-" + f.id);
                 if (inp) inp.value = fmtNum(paid);
+
+                const afterExp = Math.max(0, netAE[f.id] || 0);
+                state.liquid[f.id].value = afterExp;
+                const aeInp = document.getElementById("lval-" + f.id);
+                if (aeInp) aeInp.value = fmtNum(afterExp);
               }
             });
             EQ_FUNDS.forEach(f => {
@@ -49,6 +83,11 @@ export function applyTxnTotals() {
                 state.equity[f.id].redeemPaid= redeemTot[f.id] || 0;
                 const inp = document.getElementById("epaid-" + f.id);
                 if (inp) inp.value = fmtNum(paid);
+
+                const afterExp = Math.max(0, netAE[f.id] || 0);
+                state.equity[f.id].shown = afterExp;
+                const aeInp = document.getElementById("eshown-" + f.id);
+                if (aeInp) aeInp.value = fmtNum(afterExp);
               }
             });
           }
@@ -69,7 +108,7 @@ export function openTxnModal(txnId) {
                 ? (LIQ_FUNDS.find(f => f.id === txn.fundId)?.defaultName || "Fund")
                 : (EQ_FUNDS.find(f => f.id === txn.fundId)?.defaultName || "Fund");
               const name = s?.name || defName;
-              el("txnFundInputList").innerHTML = fundRowHTML(txn.fundId, name, txn?.invested);
+              el("txnFundInputList").innerHTML = txnFundRowHTML(txn.fundId, name, txn?.invested, txn?.afterExpense);
             } else {
               el("txnDate").value = today;
               setTxnType("sip");
@@ -77,7 +116,7 @@ export function openTxnModal(txnId) {
                 ...LIQ_FUNDS.map(f => ({ id: f.id, name: state.liquid[f.id].name || f.defaultName })),
                 ...EQ_FUNDS.map(f => ({ id: f.id, name: state.equity[f.id].name || f.defaultName })),
               ];
-              el("txnFundInputList").innerHTML = allFunds.map(f => fundRowHTML(f.id, f.name, "")).join("");
+              el("txnFundInputList").innerHTML = allFunds.map(f => txnFundRowHTML(f.id, f.name, "", "")).join("");
             }
             navigateTo("transactions");
             expandTxpCard("txp-addtxn");
@@ -99,8 +138,10 @@ export function saveTxn() {
               if (!txn) return;
               const invested = Number(el("txi-" + txn.fundId)?.value) || 0;
               if (!invested) { UI.toast("error", "Amount is required", 2500); return; }
+              const afterExpense = Number(el("txae-" + txn.fundId)?.value) || invested;
               txn.date = date;
               txn.invested = invested;
+              txn.afterExpense = afterExpense;
               txn.type = txnType;
             } else {
               const allFunds = [...LIQ_FUNDS, ...EQ_FUNDS];
@@ -119,7 +160,8 @@ export function saveTxn() {
                 allFunds.forEach(f => {
                   const v = Number(el("txi-" + f.id)?.value) || 0;
                   if (v > 0) {
-                    state.transactions.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5), fundId: f.id, date, invested: v, notes: "" });
+                    const ae = Number(el("txae-" + f.id)?.value) || v;
+                    state.transactions.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5), fundId: f.id, date, invested: v, afterExpense: ae, notes: "", type: txnType });
                     added++;
                   }
                 });
@@ -133,7 +175,8 @@ export function saveTxn() {
               allFunds.forEach(f => {
                 const v = Number(el("txi-" + f.id)?.value) || 0;
                 if (v > 0) {
-                  state.transactions.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5), fundId: f.id, date, invested: v, notes: "", type: txnType });
+                  const ae = Number(el("txae-" + f.id)?.value) || v;
+                  state.transactions.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5), fundId: f.id, date, invested: v, afterExpense: ae, notes: "", type: txnType });
                   added++;
                 }
               });
