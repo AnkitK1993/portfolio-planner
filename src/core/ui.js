@@ -88,12 +88,19 @@ export function openNavDropdown(ddId, triggerEl) {
             dd.style.display = "block";
             const rect = triggerEl.getBoundingClientRect();
             const ddW = dd.offsetWidth || 160;
-            const isMobile = window.innerWidth <= 600;
+            const ddH = dd.offsetHeight || 200;
             let left = rect.left;
             if (left + ddW > window.innerWidth - 8) left = window.innerWidth - ddW - 8;
             if (left < 8) left = 8;
             dd.style.left = left + "px";
-            if (isMobile) {
+            // Open upward vs downward based on actual room in the viewport,
+            // not a screen-width breakpoint — the nav bar is pinned to the
+            // bottom of the viewport on every screen size (not just narrow
+            // ones), so a width check alone can pick "open downward" for a
+            // trigger that has no room below, rendering the menu off-screen.
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const openUpward = spaceBelow < ddH + 16 && rect.top > ddH + 16;
+            if (openUpward) {
               dd.style.bottom = (window.innerHeight - rect.top + 8) + "px";
               dd.style.top = "auto";
             } else {
