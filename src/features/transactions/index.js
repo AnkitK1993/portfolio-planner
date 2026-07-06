@@ -29,6 +29,29 @@ function txnFundRowHTML(fundId, name, invested, afterExpense) {
               </div>`;
           }
 
+// A transaction's after-expense amount, signed by direction: a
+// sip/lump contributes to the fund, a redemption withdraws from it.
+function signedAfterExpense(t) {
+            const ae = Number(t.afterExpense ?? t.invested) || 0;
+            return t.type === "redemption" ? -ae : ae;
+          }
+
+function isLiqFund(fundId) {
+            return LIQ_FUNDS.some(f => f.id === fundId);
+          }
+
+// Nudges a fund's tracked Current Value by `delta` without disturbing
+// any unrealized gain/loss already baked into it — used so that adding
+// (or editing/deleting) a transaction keeps Current Value in sync with
+// fresh contributions by default, rather than going stale until the
+// next manual "Add Current Value" update.
+function applyCurrentValueDelta(fundId, isLiq, delta) {
+            if (!delta) return;
+            const store = isLiq ? state.liquid[fundId] : state.equity[fundId];
+            if (!store) return;
+            store.currentValue = Math.max(0, (store.currentValue || 0) + delta);
+          }
+
 export function setTxnType(type) {
             el("txnType").value = type;
             el("txnTypeToggle").querySelectorAll(".txn-type-btn").forEach(b => {
@@ -139,10 +162,13 @@ export function saveTxn() {
               const invested = Number(el("txi-" + txn.fundId)?.value) || 0;
               if (!invested) { UI.toast("error", "Amount is required", 2500); return; }
               const afterExpense = Number(el("txae-" + txn.fundId)?.value) || invested;
+              const oldSigned = signedAfterExpense(txn);
               txn.date = date;
               txn.invested = invested;
               txn.afterExpense = afterExpense;
               txn.type = txnType;
+              const newSigned = signedAfterExpense(txn);
+              applyCurrentValueDelta(txn.fundId, isLiqFund(txn.fundId), newSigned - oldSigned);
             } else {
               const allFunds = [...LIQ_FUNDS, ...EQ_FUNDS];
               let added = 0;
@@ -161,7 +187,9 @@ export function saveTxn() {
                   const v = Number(el("txi-" + f.id)?.value) || 0;
                   if (v > 0) {
                     const ae = Number(el("txae-" + f.id)?.value) || v;
-                    state.transactions.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5), fundId: f.id, date, invested: v, afterExpense: ae, notes: "", type: txnType });
+                    const newTxn = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5), fundId: f.id, date, invested: v, afterExpense: ae, notes: "", type: txnType };
+                    state.transactions.push(newTxn);
+                    applyCurrentValueDelta(f.id, isLiqFund(f.id), signedAfterExpense(newTxn));
                     added++;
                   }
                 });
@@ -176,7 +204,9 @@ export function saveTxn() {
                 const v = Number(el("txi-" + f.id)?.value) || 0;
                 if (v > 0) {
                   const ae = Number(el("txae-" + f.id)?.value) || v;
-                  state.transactions.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5), fundId: f.id, date, invested: v, afterExpense: ae, notes: "", type: txnType });
+                  const newTxn = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5), fundId: f.id, date, invested: v, afterExpense: ae, notes: "", type: txnType };
+                  state.transactions.push(newTxn);
+                  applyCurrentValueDelta(f.id, isLiqFund(f.id), signedAfterExpense(newTxn));
                   added++;
                 }
               });
@@ -192,7 +222,9 @@ export function saveTxn() {
 
 export function deleteTxn(id) {
             UI.confirm("This cannot be undone.", "Delete transaction?", "Delete", () => {
+              const txn = (state.transactions || []).find(t => t.id === id);
               state.transactions = (state.transactions || []).filter(t => t.id !== id);
+              if (txn) applyCurrentValueDelta(txn.fundId, isLiqFund(txn.fundId), -signedAfterExpense(txn));
               applyTxnTotals(); saveState(); render(); renderTxns();
             });
           }
