@@ -148,7 +148,8 @@ export function renderNetWorth() {
               { label: "Bank & Savings", value: state.networth.bank || 0, color: "var(--liq)" },
               { label: "Fixed Deposit", value: state.networth.fd || 0, color: "#5bc4f5" },
               { label: "Cash", value: state.networth.cash || 0, color: "var(--amber)" },
-              { label: "PPF / EPF / NPS", value: state.networth.ppf || 0, color: "#8be8ff" },
+              { label: "PPF", value: state.networth.ppf || 0, color: "#8be8ff" },
+              { label: "EPF", value: state.networth.epf || 0, color: "#2dd4bf" },
               { label: "Bonds", value: state.networth.bonds || 0, color: "#c084fc" },
             ].filter((c) => c.value > 0);
 

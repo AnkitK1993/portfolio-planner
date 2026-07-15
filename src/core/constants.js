@@ -45,7 +45,8 @@ export const NW_FIELDS = [
             { id: "bank", label: "Bank & Savings", color: "var(--liq)" },
             { id: "fd", label: "Fixed Deposit", color: "#5bc4f5" },
             { id: "cash", label: "Cash", color: "var(--amber)" },
-            { id: "ppf", label: "PPF / EPF / NPS", color: "#8be8ff" },
+            { id: "ppf", label: "PPF", color: "#8be8ff" },
+            { id: "epf", label: "EPF", color: "#2dd4bf" },
             { id: "bonds", label: "Bonds", color: "#c084fc" },
           ];
 
