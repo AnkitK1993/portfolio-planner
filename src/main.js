@@ -81,7 +81,6 @@ el("txnTabInvest").addEventListener("click", () => {
             el("txnTabInvest").classList.add("active");
             el("txnTabReturns").classList.remove("active");
             el("txnList").style.display = "";
-            el("txnSummary").style.display = "";
             el("txnFilters").style.display = "";
             el("returnsList").style.display = "none";
             renderTxns();
@@ -90,7 +89,6 @@ el("txnTabReturns").addEventListener("click", () => {
             el("txnTabReturns").classList.add("active");
             el("txnTabInvest").classList.remove("active");
             el("txnList").style.display = "none";
-            el("txnSummary").style.display = "none";
             el("txnFilters").style.display = "none";
             el("returnsList").style.display = "";
             renderReturns();

@@ -71,9 +71,10 @@ export function navigateTo(tabId) {
               el("txnTabInvest").classList.add("active");
               el("txnTabReturns").classList.remove("active");
               el("txnList").style.display = "";
-              el("txnSummary").style.display = "";
               el("txnFilters").style.display = "";
               el("returnsList").style.display = "none";
+              renderTxns();
+            } else if (tabId === "summary") {
               renderTxns();
             }
             closeNavDropdowns();
