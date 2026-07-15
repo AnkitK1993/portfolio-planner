@@ -13,6 +13,26 @@ export function mfTotalValue() {
             return liq + eq;
           }
 
+// MF Value as of a given "YYYY-MM" snapshot month — the net after-expense
+// contribution (sip/lump minus redemptions) across all funds from
+// transactions dated on or before the end of that month. This is what a
+// Monthly History snapshot's MF Value should always reflect, whether the
+// snapshot is being created for the first time or edited later.
+export function mfValueAsOf(monthKey) {
+            const [y, m] = monthKey.split("-").map(Number);
+            const cutoff = new Date(y, m, 1).toISOString().slice(0, 10);
+            const netAE = {};
+            (state.transactions || []).forEach(t => {
+              if (!t.date || t.date >= cutoff) return;
+              const ae = Number(t.afterExpense ?? t.invested) || 0;
+              const signed = t.type === "redemption" ? -ae : ae;
+              netAE[t.fundId] = (netAE[t.fundId] || 0) + signed;
+            });
+            return [...LIQ_FUNDS, ...EQ_FUNDS].reduce(
+              (sum, f) => sum + Math.max(0, netAE[f.id] || 0), 0,
+            );
+          }
+
 export function mfUnrealizedGain() {
             let total = 0;
             LIQ_FUNDS.forEach(f => {

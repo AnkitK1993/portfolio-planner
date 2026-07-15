@@ -1,7 +1,7 @@
 import { NW_FIELDS, OTHER_FIELDS } from "../../core/constants.js";
 import { UI } from "../../core/ui.js";
 import { _animOnRender, animateNumber, animateWidth } from "../../core/animate.js";
-import { buildCurrentSnapshot, mfTotalValue, mfUnrealizedGain, nwTotal } from "../../domain/networth.js";
+import { buildCurrentSnapshot, mfTotalValue, mfUnrealizedGain, mfValueAsOf, nwTotal } from "../../domain/networth.js";
 import { editMode, normalizeSnap, othersOfSnap, saveState, snapshotKey, state } from "../../core/state.js";
 import { el } from "../../core/dom.js";
 import { fmt, fmtCompact, fmtMonth, fmtNum, num } from "../../core/format.js";
@@ -176,12 +176,10 @@ export function renderNetWorth() {
 
 export function takeSnapshot() {
             const key = nwEditingKey || snapshotKey();
-            const existingSnap = nwEditingKey && state.networth.snapshots
-              ? state.networth.snapshots[nwEditingKey]
-              : null;
-            // While editing a historical snapshot, keep its frozen MF value
-            // instead of overwriting it with today's live fund total.
-            const mfVal = existingSnap ? (existingSnap.mf || 0) : mfTotalValue();
+            // MF Value is always derived from transactions dated on or
+            // before this snapshot's month — not today's live fund total —
+            // so editing a past month's other fields never disturbs it.
+            const mfVal = mfValueAsOf(key);
             const other = NW_FIELDS.filter((f) => f.id !== "mfProfit").reduce(
               (s, f) => s + (state.networth[f.id] || 0), 0
             );
@@ -222,6 +220,19 @@ export function takeSnapshot() {
 
 export function renderNwHistory() {
             const snaps = state.networth.snapshots || {};
+            // Self-heal: recompute each snapshot's MF Value from transaction
+            // history as of its month, correcting any figure that was
+            // previously saved wrong (e.g. overwritten with a live total).
+            let healed = false;
+            Object.keys(snaps).forEach((k) => {
+              const correctMf = mfValueAsOf(k);
+              if ((snaps[k].mf || 0) !== correctMf) {
+                snaps[k].mf = correctMf;
+                snaps[k].total = correctMf + (snaps[k].mfProfit || 0) + othersOfSnap(snaps[k]);
+                healed = true;
+              }
+            });
+            if (healed) saveState();
             const sorted = Object.entries(snaps)
               .map(([k, v]) => normalizeSnap(k, v))
               .sort((a, b) => b.key.localeCompare(a.key));
