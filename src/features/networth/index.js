@@ -176,7 +176,12 @@ export function renderNetWorth() {
 
 export function takeSnapshot() {
             const key = nwEditingKey || snapshotKey();
-            const mfVal = mfTotalValue();
+            const existingSnap = nwEditingKey && state.networth.snapshots
+              ? state.networth.snapshots[nwEditingKey]
+              : null;
+            // While editing a historical snapshot, keep its frozen MF value
+            // instead of overwriting it with today's live fund total.
+            const mfVal = existingSnap ? (existingSnap.mf || 0) : mfTotalValue();
             const other = NW_FIELDS.filter((f) => f.id !== "mfProfit").reduce(
               (s, f) => s + (state.networth[f.id] || 0), 0
             );
