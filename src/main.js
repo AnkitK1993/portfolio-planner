@@ -22,6 +22,8 @@ import { render } from "./features/portfolio/render.js";
 
 import "./features/admin/pin.js";
 
+el("buildVersion").textContent = "v" + __BUILD_VERSION__;
+
 el("homeBtn").addEventListener("click", () => navigateTo("portfolio"));
 el("summaryBtn").addEventListener("click", () => {
             if (!authUser) { UI.toast("err", "Unauthorized — please sign in to access this section", 4000); return; }

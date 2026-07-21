@@ -1587,6 +1587,18 @@
         background: linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--mint) 38%, transparent) 50%, transparent 100%);
         pointer-events: none;
       }
+      .build-version {
+        position: absolute;
+        top: 12px;
+        right: 16px;
+        font-family: "Roboto Mono", monospace;
+        font-size: 9px;
+        letter-spacing: 0.5px;
+        color: var(--dim);
+        opacity: 0.55;
+        z-index: 2;
+        pointer-events: none;
+      }
       .portfolio-hero-eyebrow {
         font-family: "Roboto Mono", monospace;
         font-size: 9px;
