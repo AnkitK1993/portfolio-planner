@@ -149,7 +149,7 @@ export function render() {
             LIQ_FUNDS.forEach(f => {
               const nameEl = el("coll-name-" + f.id);
               if (nameEl && document.activeElement !== nameEl) nameEl.value = state.liquid[f.id].label || f.defaultName;
-              setFmtInner("coll-val-" + f.id, state.liquid[f.id].value || 0);
+              setFmtInner("coll-val-" + f.id, state.liquid[f.id].currentValue || state.liquid[f.id].value || 0);
             });
 
             /* — Equity funds — */
@@ -277,7 +277,7 @@ export function render() {
               const s = state.equity[f.id];
               const nameEl = el("coll-name-" + f.id);
               if (nameEl && document.activeElement !== nameEl) nameEl.value = s.label || f.defaultName;
-              setFmtInner("coll-val-" + f.id, s.shown || 0);
+              setFmtInner("coll-val-" + f.id, s.currentValue || s.shown || 0);
             });
 
             /* — Summary table — */
