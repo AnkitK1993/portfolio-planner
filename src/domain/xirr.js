@@ -41,23 +41,25 @@ export function fundXirr(fid, isLiq) {
               ? (s.currentValue || s.value || 0)
               : (s.currentValue || s.shown || 0);
             if (!curVal) return null;
-            const txns = (state.transactions || []).filter(t => t.fundId === fid && t.date && Number(t.invested) > 0);
+            const txns = (state.transactions || []).filter(t => t.fundId === fid && t.date && Number(t.afterExpense ?? t.invested) > 0);
             if (!txns.length) return null;
 
             // Key on every transaction's own date+amount (not just count/sum/
             // min-max date) so editing any one transaction — even in place,
             // without changing the total invested or the earliest/latest
             // date — invalidates the cache instead of returning a stale XIRR.
-            const cacheKey = curVal.toFixed(2) + "|" + txns.map(t => t.date + ":" + t.invested).join(",");
+            const cacheKey = curVal.toFixed(2) + "|" + txns.map(t => t.date + ":" + (t.afterExpense ?? t.invested)).join(",");
             const cached = _fundXirrCache.get(fid);
             if (cached && cached.key === cacheKey) return cached.val;
 
-            // Redemptions return cash to the investor — a positive inflow —
-            // not another outflow, so they can't share the SIP/lump sign.
-            const cfs = txns.map(t => ({
-              amount: t.type === "redemption" ? Number(t.invested) : -Number(t.invested),
-              date: new Date(t.date).getTime(),
-            }));
+            // XIRR is computed on the after-expense amount actually put to
+            // work in the fund, not the raw invested amount — redemptions
+            // return cash to the investor (a positive inflow), not another
+            // outflow, so they can't share the SIP/lump sign.
+            const cfs = txns.map(t => {
+              const ae = Number(t.afterExpense ?? t.invested);
+              return { amount: t.type === "redemption" ? ae : -ae, date: new Date(t.date).getTime() };
+            });
             cfs.push({ amount: curVal, date: Date.now() });
             const val = xirrCalc(cfs);
             _fundXirrCache.set(fid, { key: cacheKey, val });
@@ -71,12 +73,12 @@ export function cachedPortfolioXirr(allTxns, totalVal) {
             // every transaction's date+amount instead of just the count and
             // the array's positional first/last entries (which aren't even
             // guaranteed to be the earliest/latest by date).
-            const cacheKey = totalVal.toFixed(2) + "|" + allTxns.map(t => t.date + ":" + t.invested).join(",");
+            const cacheKey = totalVal.toFixed(2) + "|" + allTxns.map(t => t.date + ":" + (t.afterExpense ?? t.invested)).join(",");
             if (_xirrCache.key === cacheKey) return _xirrCache.val;
-            const cfs = allTxns.map(t => ({
-              amount: t.type === "redemption" ? Number(t.invested) : -Number(t.invested),
-              date: new Date(t.date).getTime(),
-            }));
+            const cfs = allTxns.map(t => {
+              const ae = Number(t.afterExpense ?? t.invested);
+              return { amount: t.type === "redemption" ? ae : -ae, date: new Date(t.date).getTime() };
+            });
             cfs.push({ amount: totalVal, date: Date.now() });
             _xirrCache = { key: cacheKey, val: xirrCalc(cfs) };
             return _xirrCache.val;

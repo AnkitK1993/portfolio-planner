@@ -49,15 +49,20 @@ export function renderFundTable() {
               .map(({ f, isLiq }) => {
                 const s = isLiq ? state.liquid[f.id] : state.equity[f.id];
                 const invested = s.paid || 0;
-                const current = s.currentValue || (isLiq ? (s.value || 0) : (s.shown || 0));
-                const returns = current - invested;
+                const afterExp = isLiq ? (s.value || 0) : (s.shown || 0);
+                const current = s.currentValue || afterExp;
+                // Returns are measured against the after-expense amount
+                // actually put to work, not the raw invested amount — and
+                // left blank when there's no after-expense basis to measure
+                // against, rather than showing a misleading 0%.
+                const returns = afterExp > 0 ? current - afterExp : null;
                 return {
                   name: fundName(f.id),
                   isLiq,
                   invested,
                   current,
                   returns,
-                  returnsPct: pct(returns, invested),
+                  returnsPct: afterExp > 0 ? pct(returns, afterExp) : null,
                   xirr: fundXirr(f.id, isLiq),
                 };
               })
@@ -83,14 +88,16 @@ export function renderFundTable() {
             }).join("");
 
             const rowsHtml = rows.map(r => {
-              const retClass = r.returns >= 0 ? "mint" : "coral";
+              const retClass = r.returns == null ? "" : r.returns >= 0 ? "mint" : "coral";
+              const retTxt = r.returns == null ? "—" : signedCompact(r.returns);
+              const retPctTxt = r.returnsPct == null ? "—" : (r.returnsPct >= 0 ? "+" : "") + r.returnsPct.toFixed(2) + "%";
               const xirrTxt = r.xirr == null ? "—" : (r.xirr * 100 >= 0 ? "+" : "") + (r.xirr * 100).toFixed(2) + "%";
               const xirrClass = r.xirr == null ? "" : r.xirr >= 0 ? "mint" : "coral";
               return `<div class="fperf-row">
                 <span class="fperf-name">${r.name}<span class="fp-tag ${r.isLiq ? "liq" : "eq"}">${r.isLiq ? "LIQ" : "EQ"}</span></span>
                 <span class="fperf-num">${fmtCompact(r.invested)}</span>
-                <span class="fperf-num" style="color:var(--${retClass})">${signedCompact(r.returns)}</span>
-                <span class="fperf-num" style="color:var(--${retClass})">${(r.returnsPct >= 0 ? "+" : "")}${r.returnsPct.toFixed(2)}%</span>
+                <span class="fperf-num"${retClass ? ` style="color:var(--${retClass})"` : ""}>${retTxt}</span>
+                <span class="fperf-num"${retClass ? ` style="color:var(--${retClass})"` : ""}>${retPctTxt}</span>
                 <span class="fperf-num"${xirrClass ? ` style="color:var(--${xirrClass})"` : ""}>${xirrTxt}</span>
               </div>`;
             }).join("");
@@ -173,7 +180,7 @@ export function renderHealthScore() {
             // mis-signed redemptions as outflows, so this dimension could
             // silently disagree with the Portfolio XIRR card below it.
             let rScore = 12, rNote = "Add transactions to measure";
-            const allTxns2 = (state.transactions || []).filter(t => t.date && Number(t.invested) > 0);
+            const allTxns2 = (state.transactions || []).filter(t => t.date && Number(t.afterExpense ?? t.invested) > 0);
             const totalVal2 = LIQ_FUNDS.reduce((s, f) => s + (state.liquid[f.id]?.currentValue || state.liquid[f.id]?.value || 0), 0) +
                               EQ_FUNDS.reduce((s, f) => s + (state.equity[f.id]?.currentValue || state.equity[f.id]?.shown || 0), 0);
             if (allTxns2.length && totalVal2 > 0) {
@@ -322,7 +329,7 @@ export function renderXirrAndHeatmap() {
             const xirrEl = el("sumXirr");
             const fundXirrsEl = el("sumFundXirrs");
             if (xirrCard && xirrEl) {
-              const allTxns = (state.transactions || []).filter(t => t.date && Number(t.invested) > 0);
+              const allTxns = (state.transactions || []).filter(t => t.date && Number(t.afterExpense ?? t.invested) > 0);
               // Must prefer currentValue over the value/shown baseline, same
               // as fundXirr() and every other "current value" read in this
               // app (render.js, transactions/index.js) — otherwise this card
