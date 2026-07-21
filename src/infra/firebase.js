@@ -333,6 +333,14 @@ export function scheduleCloudSave() {
             fbSaveTimer = setTimeout(() => saveToCloud(0), SAVE_DEBOUNCE);
           }
 
+/* Bypasses the debounce so a pending save isn't lost if the tab closes
+   before the timer fires — called on visibility/unload transitions. */
+export function flushCloudSave() {
+            if (!fbEnabled || !fbDirty) return;
+            clearTimeout(fbSaveTimer);
+            saveToCloud(0);
+          }
+
 export async function loadFromCloud() {
             if (!fbEnabled || !db) return null;
             try {

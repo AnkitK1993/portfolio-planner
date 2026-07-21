@@ -5,7 +5,7 @@ import "./styles/components.css";
 import { EQ_FUNDS, LIQ_FUNDS, editMode, privacyMode, saveState, setEditMode, setPrivacyMode, snapshotKey, state, syncFundArrays, toggleEditMode } from "./core/state.js";
 import { NW_FIELDS } from "./core/constants.js";
 import { UI, closeNavDropdowns, collapseTxpCard, navigateTo, openNavDropdown, toggleColl } from "./core/ui.js";
-import { _hasLocalData, authUser, fbAuthReady, fbEnabled, handleSignInResult, initFirebase, loadBackupList, resetBackupPanel, saveManualBackup } from "./infra/firebase.js";
+import { _hasLocalData, authUser, fbAuthReady, fbEnabled, flushCloudSave, handleSignInResult, initFirebase, loadBackupList, resetBackupPanel, saveManualBackup } from "./infra/firebase.js";
 import { _upcomingHead } from "./features/portfolio/upcoming.js";
 import { animateNumber } from "./core/animate.js";
 import { applyTxnTotals, closeCurValModal, closeTxnModal, openCurValModal, openTxnModal, renderReturns, renderTxns, saveCurVal, saveTxn, setTxnType, txnFilter } from "./features/transactions/index.js";
@@ -315,6 +315,12 @@ el("addEqBtn").addEventListener("click", () => {
             }, 50);
           });
 initFirebase();
+/* Debounced cloud saves can be stranded if the tab closes before the
+   timer fires — flush immediately on any hide/unload transition. */
+document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "hidden") flushCloudSave();
+          });
+window.addEventListener("pagehide", () => flushCloudSave());
 syncFundArrays();
 rebuildFundCollapsibles();
 buildNwGrid();
