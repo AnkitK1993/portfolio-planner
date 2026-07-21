@@ -9,13 +9,7 @@ import { renderAllocBars } from "../portfolio/allocation.js";
 import { renderIdealAlloc } from "./rebalance.js";
 
 export function renderSummaryExtras(eqCur, liqCur, totCur, eqTgt, liqTgt, totTgt, nowEqPct, tgtEqPct) {
-            /* — Drift alert — */
-            const driftEl = el("sumDriftAlert");
-            if (driftEl) {
-              driftEl.style.display = "none";
-            }
-
-            /* — Health Score — */
+            /* — Health Score (also renders the drift alert banner) — */
             renderHealthScore();
 
             /* — Ideal Allocation card — */
@@ -41,6 +35,17 @@ let fundTableSort = { col: "invested", dir: "desc" };
 
 const signedCompact = (n) => (n >= 0 ? "+" : "") + fmtCompact(n);
 
+/* Shared by the Portfolio XIRR card and the Fund Performance table's total
+   row so both always agree — cachedPortfolioXirr memoizes on a fingerprint
+   of the inputs, so calling it from both call sites is effectively free. */
+function portfolioXirrSummary() {
+            const allTxns = (state.transactions || []).filter(t => t.date && Number(t.afterExpense ?? t.invested) > 0);
+            const totalVal = LIQ_FUNDS.reduce((s, f) => s + (state.liquid[f.id]?.currentValue || state.liquid[f.id]?.value || 0), 0) +
+                             EQ_FUNDS.reduce((s, f) => s + (state.equity[f.id]?.currentValue || state.equity[f.id]?.shown || 0), 0);
+            if (!allTxns.length || totalVal <= 0) return null;
+            return cachedPortfolioXirr(allTxns, totalVal);
+          }
+
 export function renderFundTable() {
             const wrap = el("sumFundTable");
             if (!wrap) return;
@@ -60,6 +65,7 @@ export function renderFundTable() {
                   name: fundName(f.id),
                   isLiq,
                   invested,
+                  afterExp,
                   current,
                   returns,
                   returnsPct: afterExp > 0 ? pct(returns, afterExp) : null,
@@ -102,9 +108,31 @@ export function renderFundTable() {
               </div>`;
             }).join("");
 
+            // Portfolio total row — folds in the same XIRR shown on the
+            // Portfolio XIRR card above, so the two never disagree.
+            let totalRowHtml = "";
+            if (rows.length > 1) {
+              const totalInvested = rows.reduce((s, r) => s + r.invested, 0);
+              const totalAfterExp = rows.reduce((s, r) => s + (r.returns != null ? r.afterExp : 0), 0);
+              const totalReturns = rows.reduce((s, r) => s + (r.returns || 0), 0);
+              const totalReturnsPct = totalAfterExp > 0 ? pct(totalReturns, totalAfterExp) : null;
+              const portfolioXirr = portfolioXirrSummary();
+              const totRetClass = totalReturns >= 0 ? "mint" : "coral";
+              const totXirrTxt = portfolioXirr == null ? "—" : (portfolioXirr * 100 >= 0 ? "+" : "") + (portfolioXirr * 100).toFixed(2) + "%";
+              const totXirrClass = portfolioXirr == null ? "" : portfolioXirr >= 0 ? "mint" : "coral";
+              totalRowHtml = `<div class="fperf-row fperf-total">
+                <span class="fperf-name">Portfolio</span>
+                <span class="fperf-num">${fmtCompact(totalInvested)}</span>
+                <span class="fperf-num" style="color:var(--${totRetClass})">${signedCompact(totalReturns)}</span>
+                <span class="fperf-num" style="color:var(--${totRetClass})">${totalReturnsPct == null ? "—" : (totalReturnsPct >= 0 ? "+" : "") + totalReturnsPct.toFixed(2) + "%"}</span>
+                <span class="fperf-num"${totXirrClass ? ` style="color:var(--${totXirrClass})"` : ""}>${totXirrTxt}</span>
+              </div>`;
+            }
+
             wrap.innerHTML = `<div class="fperf-table">
               <div class="fperf-row fperf-head">${headHtml}</div>
               ${rowsHtml}
+              ${totalRowHtml}
             </div>`;
 
             wrap.querySelectorAll(".fperf-th").forEach(btn => {
@@ -143,6 +171,7 @@ export function renderHealthScore() {
 
             // ── Dimension 2: Allocation drift vs ideal ──
             let aScore = 15, aNote = "Set fund categories to measure";
+            let driftPct = null;
             const activeCats = [...new Set(EQ_FUNDS.map(f => state.equity[f.id]?.category).filter(c => c && c !== ""))];
             const wts = {};
             const DEF_WTS = { "Large Cap": 45, "Flexi Cap": 33, "Mid Cap": 22 };
@@ -157,8 +186,20 @@ export function renderHealthScore() {
                     .reduce((s, f) => s + (state.equity[f.id]?.shown || 0), 0);
                   drift += Math.abs((actual / eqTotal * 100) - (wts[cat] / totalIdealWt * 100));
                 });
+                driftPct = drift;
                 aScore = Math.max(0, Math.round(25 - drift * 0.8));
                 aNote = drift < 5 ? "On target" : drift < 15 ? Math.round(drift) + "% drift" : Math.round(drift) + "% drift — rebalance";
+              }
+            }
+
+            // ── Drift alert banner — surfaces the same drift computed above ──
+            const driftEl = el("sumDriftAlert");
+            if (driftEl) {
+              if (driftPct !== null && driftPct >= 15) {
+                driftEl.style.display = "";
+                driftEl.innerHTML = `<span class="drift-alert-icon">⚠️</span><div>Your equity allocation has drifted <b>${Math.round(driftPct)}%</b> from target — consider rebalancing (see Ideal Allocation below).</div>`;
+              } else {
+                driftEl.style.display = "none";
               }
             }
 
@@ -198,7 +239,7 @@ export function renderHealthScore() {
 
             const total = cScore + aScore + bScore + rScore;
             const grade = total >= 80 ? "Excellent" : total >= 60 ? "Good" : total >= 40 ? "Fair" : "Needs Work";
-            const gc    = total >= 80 ? "var(--mint)" : total >= 60 ? "#86efac" : total >= 40 ? "var(--amber)" : "var(--coral)";
+            const gc    = total >= 80 ? "var(--mint)" : total >= 60 ? "var(--mint-soft)" : total >= 40 ? "var(--amber)" : "var(--coral)";
 
             // SVG arc gauge (225° start → sweeps clockwise 270° at 100%)
             const CX = 50, CY = 50, R = 36;
@@ -217,10 +258,14 @@ export function renderHealthScore() {
             const fgArcLen = R * fgSweep * Math.PI / 180;
 
             const dims = [
-              { label: "Consistency",  score: cScore, note: cNote, color: "var(--liq)" },
-              { label: "Allocation",   score: aScore, note: aNote, color: "var(--mint)" },
-              { label: "Liq. Buffer",  score: bScore, note: bNote, color: "var(--amber)" },
-              { label: "Returns",      score: rScore, note: rNote, color: "#c084fc" },
+              { label: "Consistency",  score: cScore, note: cNote, color: "var(--liq)",
+                desc: "Consecutive months with investments: 25 pts at 24+ months, 20 at 12+, 15 at 6+, 10 at 3+, 5 at 1+." },
+              { label: "Allocation",   score: aScore, note: aNote, color: "var(--mint)",
+                desc: "25 pts minus your equity category drift from target weights (0.8 pts lost per 1% drift)." },
+              { label: "Liq. Buffer",  score: bScore, note: bNote, color: "var(--amber)",
+                desc: "Deployable liquid funds vs monthly expenses: 25 pts at 6+ months buffer, 17 at 3+, 10 at 1+, 0 below." },
+              { label: "Returns",      score: rScore, note: rNote, color: "var(--purple)",
+                desc: "Based on annualised portfolio XIRR: 25 pts at 18%+, 20 at 12%+, 15 at 8%+, 8 at 0%+, 0 if negative." },
             ];
 
             wrap.innerHTML = `
@@ -237,15 +282,15 @@ export function renderHealthScore() {
                 </div>
                 <div style="flex:1;min-width:180px;display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;">
                   ${dims.map(d => `
-                    <div>
+                    <div title="${d.desc}">
                       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
-                        <span style="font-size:9px;text-transform:uppercase;letter-spacing:0.5px;color:var(--dim)">${d.label}</span>
-                        <span style="font-family:'Roboto Mono',monospace;font-size:10px;font-weight:700;color:${d.color}">${d.score}/25</span>
+                        <span style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:var(--dim)">${d.label}</span>
+                        <span style="font-family:'Roboto Mono',monospace;font-size:10.5px;font-weight:700;color:${d.color}">${d.score}/25</span>
                       </div>
                       <div style="height:3px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;margin-bottom:3px;">
                         <div class="phs-dim-bar" data-w="${(d.score / 25 * 100).toFixed(0)}" style="height:100%;width:0%;background:${d.color};border-radius:3px;"></div>
                       </div>
-                      <div style="font-size:9.5px;color:var(--dim)">${d.note}</div>
+                      <div style="font-size:10.5px;color:var(--dim)">${d.note}</div>
                     </div>`).join("")}
                 </div>
               </div>`;
@@ -324,45 +369,19 @@ export function renderSparklines() {
           }
 
 export function renderXirrAndHeatmap() {
-            // Portfolio XIRR
+            // Portfolio XIRR — per-fund breakdown lives in the Fund
+            // Performance table's sortable XIRR column + Portfolio total
+            // row below, so this card only needs the headline number.
             const xirrCard = el("sumXirrCard");
             const xirrEl = el("sumXirr");
-            const fundXirrsEl = el("sumFundXirrs");
             if (xirrCard && xirrEl) {
-              const allTxns = (state.transactions || []).filter(t => t.date && Number(t.afterExpense ?? t.invested) > 0);
-              // Must prefer currentValue over the value/shown baseline, same
-              // as fundXirr() and every other "current value" read in this
-              // app (render.js, transactions/index.js) — otherwise this card
-              // silently ignores whatever the user last entered via "Add
-              // Current Value" and computes XIRR against the stale baseline.
-              const totalVal = LIQ_FUNDS.reduce((s, f) => s + (state.liquid[f.id]?.currentValue || state.liquid[f.id]?.value || 0), 0) +
-                               EQ_FUNDS.reduce((s, f) => s + (state.equity[f.id]?.currentValue || state.equity[f.id]?.shown || 0), 0);
-              let portfolioXirr = null;
-              if (allTxns.length && totalVal > 0) {
-                portfolioXirr = cachedPortfolioXirr(allTxns, totalVal);
-              }
+              const portfolioXirr = portfolioXirrSummary();
               if (portfolioXirr !== null) {
                 xirrCard.style.display = "";
                 const pct = (portfolioXirr * 100).toFixed(2);
                 const isUp = portfolioXirr >= 0;
                 xirrEl.textContent = (isUp ? "+" : "") + pct + "%";
                 xirrEl.style.color = isUp ? "var(--mint)" : "var(--coral)";
-
-                // Per-fund XIRR chips
-                if (fundXirrsEl) {
-                  const chips = [...LIQ_FUNDS.map(f => ({ f, isLiq: true })), ...EQ_FUNDS.map(f => ({ f, isLiq: false }))]
-                    .map(({ f, isLiq }) => {
-                      const x = fundXirr(f.id, isLiq);
-                      if (x === null) return "";
-                      const p = (x * 100).toFixed(1);
-                      const up = x >= 0;
-                      return `<div style="background:var(--panel-2);border-radius:8px;padding:5px 10px;font-size:10px;">
-                        <div style="color:var(--dim);margin-bottom:2px">${fundName(f.id)}</div>
-                        <div style="font-family:'Roboto Mono',monospace;font-weight:700;color:${up ? "var(--mint)" : "var(--coral)"}">${up ? "+" : ""}${p}%</div>
-                      </div>`;
-                    }).join("");
-                  fundXirrsEl.innerHTML = chips || `<span style="font-size:11px;color:var(--dim)">Add transactions to see per-fund XIRR.</span>`;
-                }
               } else {
                 xirrCard.style.display = "none";
               }
@@ -385,6 +404,12 @@ export function renderXirrAndHeatmap() {
               if (streak >= 2) {
                 el("sumStreakCount").textContent = streak;
                 el("sumStreakLabel").textContent = `consecutive month${streak !== 1 ? "s" : ""} investing`;
+                const rangeEl = el("sumStreakRange");
+                if (rangeEl) {
+                  const startD = new Date(now.getFullYear(), now.getMonth() - (streak - 1), 1);
+                  const fmtMo = d => d.toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
+                  rangeEl.textContent = `${fmtMo(startD)} – ${fmtMo(now)}`;
+                }
                 streakWrap.style.display = "";
               } else {
                 streakWrap.style.display = "none";
@@ -412,7 +437,8 @@ export function renderXirrAndHeatmap() {
                     <div style="font-size:8px;color:var(--dim);">${pct !== null ? (pct >= 0 ? "+" : "") + pct.toFixed(1) + "%" : ""}</div>
                   </div>`;
                 }).join("");
-                hmEl.innerHTML = `<div style="display:flex;gap:6px;flex-wrap:wrap;">${rows}</div>`;
+                hmEl.innerHTML = `<div style="display:flex;gap:6px;flex-wrap:wrap;">${rows}</div>
+                  <div style="font-size:9px;color:var(--dim);margin-top:8px;">Darker = bigger month-over-month swing, green = gain, red = loss.</div>`;
               }
             }
           }

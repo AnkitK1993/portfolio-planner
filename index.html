@@ -210,10 +210,46 @@
           <div id="sumHealthScore"></div>
         </div>
 
+        <!-- Portfolio XIRR -->
+        <div class="card" id="sumXirrCard" style="display:none;margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+            <div>
+              <div class="sec-head" style="margin-bottom:4px">Portfolio XIRR</div>
+              <div style="font-size:10px;color:var(--dim)">Annualised return on all investments</div>
+            </div>
+            <div id="sumXirr" style="font-family:'Roboto Mono',monospace;font-size:22px;font-weight:700;"></div>
+          </div>
+        </div>
+
         <!-- Total Allocation bars -->
         <div class="card" style="margin-bottom:12px">
           <div class="sec-head" style="margin-bottom:16px">Total Allocation</div>
           <div id="sumAllocBarsMain"></div>
+        </div>
+
+        <!-- Investment streak -->
+        <div id="sumStreakWrap" style="display:none">
+          <div class="streak-banner">
+            <div>
+              <div class="streak-count">🔥 <span id="sumStreakCount">0</span></div>
+            </div>
+            <div>
+              <div class="streak-label" id="sumStreakLabel">consecutive months investing</div>
+              <div class="streak-range" id="sumStreakRange"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fund Performance table -->
+        <div class="card" style="margin-bottom:12px">
+          <div class="sec-head" style="margin-bottom:12px">Fund Performance</div>
+          <div id="sumFundTable"></div>
+        </div>
+
+        <!-- Returns heatmap -->
+        <div class="card" id="sumHeatmapCard" style="display:none;margin-bottom:12px">
+          <div class="sec-head" style="margin-bottom:10px">Monthly Net Worth Change</div>
+          <div id="sumHeatmap" style="overflow-x:auto;"></div>
         </div>
 
         <!-- Ideal Allocation -->
@@ -223,41 +259,6 @@
           <div id="idealAllocBarSection"></div>
           <div id="rebalMoveSection"></div>
           <div id="afterRebalBarSection"></div>
-          <div id="sumRebalance" style="display:none;"></div>
-        </div>
-
-        <!-- Investment streak -->
-        <div id="sumStreakWrap" style="display:none">
-          <div class="streak-banner">
-            <div>
-              <div class="streak-count" id="sumStreakCount">0</div>
-            </div>
-            <div class="streak-label" id="sumStreakLabel">consecutive months investing</div>
-          </div>
-        </div>
-
-        <!-- Portfolio XIRR -->
-        <div class="card" style="margin-bottom:12px" id="sumXirrCard" style="display:none">
-          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-            <div>
-              <div class="sec-head" style="margin-bottom:4px">Portfolio XIRR</div>
-              <div style="font-size:10px;color:var(--dim)">Annualised return on all investments</div>
-            </div>
-            <div id="sumXirr" style="font-family:'Roboto Mono',monospace;font-size:22px;font-weight:700;"></div>
-          </div>
-          <div id="sumFundXirrs" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap;"></div>
-        </div>
-
-        <!-- Returns heatmap -->
-        <div class="card" id="sumHeatmapCard" style="display:none;margin-bottom:12px">
-          <div class="sec-head" style="margin-bottom:10px">Monthly Net Worth Change</div>
-          <div id="sumHeatmap" style="overflow-x:auto;"></div>
-        </div>
-
-        <!-- Fund Performance table -->
-        <div class="card" style="margin-bottom:12px">
-          <div class="sec-head" style="margin-bottom:12px">Fund Performance</div>
-          <div id="sumFundTable"></div>
         </div>
 
         <div class="card cal-card">

@@ -12,6 +12,8 @@
         --amber: #fbbf24;
         --amber-dim: #5c3b0a;
         --coral: #f87171;
+        --purple: #c084fc;
+        --mint-soft: #86efac;
       }
       * {
         box-sizing: border-box;

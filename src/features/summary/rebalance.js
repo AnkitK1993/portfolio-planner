@@ -338,6 +338,17 @@ export function renderIdealAlloc() {
               </div>`;
             };
 
+            // Shared shell for the three sub-sections below (Ideal Allocation,
+            // Move Liquid→Equity, After Rebalancing) — keeps their heading
+            // style in sync with the rest of the app's `.sec-head` sections
+            // instead of three near-identical hand-rolled header blocks.
+            const barSectionHtml = (title, color, totalText, segsHtml, rowsHtml) => `
+              <div class="sec-head mt">
+                ${title} &nbsp;— &nbsp;<span style="font-family:'Roboto Mono',monospace;color:${color}">${totalText}</span>
+              </div>
+              <div class="alloc-seg-bar" style="display:flex;height:28px;border-radius:7px;overflow:hidden;gap:1px;">${segsHtml}</div>
+              <div>${rowsHtml}</div>`;
+
             // --- Bar 1: Ideal Allocation ---
             const bar1Segs = fundTargets.map(f =>
               mkSeg(f.idealPct, f.color, `${f.name}: ${fmt(Math.round(f.idealAmt))}`)).join("");
@@ -368,14 +379,7 @@ export function renderIdealAlloc() {
               </div>`).join("");
 
             if (bar1El) {
-              bar1El.innerHTML = `
-                <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line);">
-                  <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--dim);margin-bottom:7px">
-                    Ideal Equity Allocation &nbsp;— &nbsp;<span style="font-family:'Roboto Mono',monospace;color:var(--mint)">${fmt(Math.round(eqAfter))}</span>
-                  </div>
-                  <div class="alloc-seg-bar" style="display:flex;height:28px;border-radius:7px;overflow:hidden;gap:1px;">${bar1Segs}</div>
-                  <div>${bar1Rows}</div>
-                </div>`;
+              bar1El.innerHTML = barSectionHtml("Ideal Equity Allocation", "var(--mint)", fmt(Math.round(eqAfter)), bar1Segs, bar1Rows);
               if (_animOnRender && !editMode)
                 bar1El.querySelectorAll(".alloc-seg-bar").forEach(bar => animateWidth(bar, 100, 1000));
             }
@@ -398,14 +402,7 @@ export function renderIdealAlloc() {
                     <span style="font-family:'Roboto Mono',monospace;font-size:10px;font-weight:700;color:${f.color};text-align:right;min-width:38px;">${pct.toFixed(1)}%</span>
                   </div>`;
                 }).join("");
-                bar2El.innerHTML = `
-                  <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line);">
-                    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--dim);margin-bottom:7px">
-                      Move Liquid → Equity &nbsp;— &nbsp;<span style="font-family:'Roboto Mono',monospace;color:var(--liq)">${fmt(Math.round(deployable))}</span>
-                    </div>
-                    <div class="alloc-seg-bar" style="display:flex;height:28px;border-radius:7px;overflow:hidden;gap:1px;">${bar2Segs}</div>
-                    <div>${bar2Rows}</div>
-                  </div>`;
+                bar2El.innerHTML = barSectionHtml("Move Liquid → Equity", "var(--liq)", fmt(Math.round(deployable)), bar2Segs, bar2Rows);
                 if (_animOnRender && !editMode)
                   bar2El.querySelectorAll(".alloc-seg-bar").forEach(bar => animateWidth(bar, 100, 1000));
               } else {
@@ -449,14 +446,7 @@ export function renderIdealAlloc() {
                     <span style="font-family:'Roboto Mono',monospace;font-size:10px;font-weight:700;color:${f.color};text-align:right;min-width:38px;">${pct}%</span>
                   </div>`;
                 }).join("");
-                bar3El.innerHTML = `
-                  <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line);">
-                    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--dim);margin-bottom:7px">
-                      Portfolio After Rebalancing &nbsp;— &nbsp;<span style="font-family:'Roboto Mono',monospace;color:var(--txt)">${fmt(Math.round(grandTotal))}</span>
-                    </div>
-                    <div class="alloc-seg-bar" style="display:flex;height:28px;border-radius:7px;overflow:hidden;gap:1px;">${bar3Segs}</div>
-                    <div>${bar3Rows}</div>
-                  </div>`;
+                bar3El.innerHTML = barSectionHtml("Portfolio After Rebalancing", "var(--txt)", fmt(Math.round(grandTotal)), bar3Segs, bar3Rows);
                 if (_animOnRender && !editMode)
                   bar3El.querySelectorAll(".alloc-seg-bar").forEach(bar => animateWidth(bar, 100, 1000));
               } else {
