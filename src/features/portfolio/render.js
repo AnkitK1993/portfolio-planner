@@ -22,6 +22,7 @@ export function scheduleRender() {
 export function render() {
             /* — Liquid funds — */
             let totalLiqVal = 0,
+              totalLiqCurVal = 0,
               totalDep = 0,
               totalLiqTgt = 0,
               totalLiqInv = 0,
@@ -61,6 +62,7 @@ export function render() {
                 val > 0 ? Math.round((dep / val) * 100) + "%" : "0%";
               /* Current Value + Returns (vs after expense) */
               const lcv = state.liquid[f.id].currentValue || val;
+              totalLiqCurVal += lcv;
               const lcvInp = el("lcurval-" + f.id);
               if (lcvInp) lcvInp.value = lcv > 0 ? Math.round(lcv).toLocaleString("en-IN") : "";
               const lret = lcv - val;
@@ -136,7 +138,7 @@ export function render() {
                 : "Enter liquid fund values above";
 
             /* — Liquid division row + per-fund collapsible headers — */
-            setFmtInner("liqDivTotal", totalLiqVal);
+            setFmtInner("liqDivTotal", totalLiqCurVal);
             const liqDivRtnEl = el("liqDivRtn");
             if (liqDivRtnEl) {
               if (totalLiqAE > 0) {
@@ -154,6 +156,7 @@ export function render() {
 
             /* — Equity funds — */
             let eqCur = 0,
+              totalEqCurVal = 0,
               eqTgt = 0,
               eqInv = 0,
               totDuty = 0,
@@ -194,6 +197,7 @@ export function render() {
 
               /* Current Value + Returns (vs after expense) */
               const ecv = s.currentValue || shown;
+              totalEqCurVal += ecv;
               const ecvInp = el("ecurvval-" + f.id);
               if (ecvInp) ecvInp.value = ecv > 0 ? Math.round(ecv).toLocaleString("en-IN") : "";
               const eret = ecv - shown;
@@ -263,7 +267,7 @@ export function render() {
             });
 
             /* — Equity division row + per-fund collapsible headers — */
-            setFmtInner("eqDivTotal", eqCur);
+            setFmtInner("eqDivTotal", totalEqCurVal);
             const eqDivRtnEl = el("eqDivRtn");
             if (eqDivRtnEl) {
               if (totalEqAE > 0) {
