@@ -667,6 +667,66 @@
       /* ── Fund XIRR header badge (#9) ── */
       .coll-xirr { display:none; }
 
+      /* ── Expenses card ── */
+      .exp-row {
+        display: grid; grid-template-columns: 8px 1fr auto 18px;
+        align-items: center; gap: 10px;
+        padding: 8px 6px; border-radius: 8px;
+        transition: background 0.15s;
+      }
+      .exp-row:hover { background: rgba(255,255,255,0.03); }
+      .exp-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+      .exp-name-inp {
+        background: none; border: 1px solid transparent; border-radius: 6px;
+        color: var(--txt); font-size: 12.5px; font-weight: 600;
+        padding: 5px 7px; width: 100%; font-family: inherit;
+      }
+      .exp-amt-txt { font-family: "Roboto Mono", monospace; font-size: 12.5px; color: var(--txt); text-align: right; white-space: nowrap; }
+      .exp-amt-inp {
+        background: none; border: 1px solid transparent; border-radius: 6px;
+        color: var(--txt); font-family: "Roboto Mono", monospace; font-size: 12.5px;
+        text-align: right; padding: 5px 7px; width: 92px;
+      }
+      body.edit-mode .exp-name-inp, body.edit-mode .exp-amt-inp {
+        background: var(--input-bg, rgba(255,255,255,0.06)); border-color: var(--line);
+      }
+      .exp-del-btn {
+        background: none; border: none; color: var(--coral); font-size: 14px;
+        cursor: pointer; padding: 0; opacity: 0.65; transition: opacity 0.15s;
+      }
+      .exp-del-btn:hover { opacity: 1; }
+      .exp-add-btn { width: 100%; margin-top: 6px; font-size: 11px; }
+      .exp-empty { font-size: 11.5px; color: var(--dim); padding: 10px 2px; line-height: 1.5; }
+
+      .exp-stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); gap: 8px; margin: 14px 0 2px; }
+      .exp-stat-card { background: var(--panel-2); border-radius: 10px; padding: 10px 12px; }
+      .exp-stat-card .lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--dim); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .exp-stat-card .val { font-family: "Roboto Mono", monospace; font-size: 13.5px; font-weight: 700; color: var(--txt); }
+
+      .exp-bank-block { padding: 12px 0; border-top: 1px solid var(--line); margin-top: 10px; }
+      .exp-bank-row { display: flex; justify-content: space-between; align-items: baseline; font-size: 11.5px; color: var(--txt); margin-bottom: 3px; gap: 8px; }
+      .exp-bank-fig { font-family: "Roboto Mono", monospace; white-space: nowrap; }
+      .exp-bank-arrow { color: var(--dim); margin: 0 5px; }
+      .exp-bank-sub { font-size: 9.5px; color: var(--dim); }
+
+      .exp-extra-row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+      .exp-extra-badge {
+        font-family: "Roboto Mono", monospace; font-size: 12px; font-weight: 700;
+        padding: 3px 9px; border-radius: 20px; white-space: nowrap;
+      }
+      .exp-extra-badge.over  { color: #fbbf24; background: rgba(251,191,36,0.12); border: 1px solid rgba(251,191,36,0.25); }
+      .exp-extra-badge.under { color: #4ade80; background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.22); }
+
+      .exp-hero {
+        margin-top: 14px; border-radius: 14px; padding: 16px 18px;
+        background: linear-gradient(135deg, rgba(0,245,160,0.07) 0%, transparent 55%), var(--panel-2);
+        border: 1px solid rgba(0,245,160,0.18); border-top: 3px solid var(--mint);
+      }
+      .exp-hero-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+      .exp-hero-lbl { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; color: var(--dim); }
+      .exp-hero-val { font-family: "Roboto", sans-serif; font-size: 25px; font-weight: 700; color: var(--mint); }
+      .exp-hero-sub { font-size: 9.5px; color: var(--dim); margin-top: 5px; }
+
       /* ── Rebalance Full Page ── */
       #tab-rebalance { padding-bottom: 80px; }
       .reb-page-head {

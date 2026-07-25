@@ -8,7 +8,7 @@ import { el } from "../../core/dom.js";
 import { estimateCapitalGainsTax, LTCG_EXEMPTION } from "../../domain/tax.js";
 import { fmt, fmtCompact, fmtMonth, pct } from "../../core/format.js";
 import { totalMonthlyExpenses } from "../../domain/expenses.js";
-import { renderAllocBars, renderCompositionDonut } from "../portfolio/allocation.js";
+import { ALLOC_PALETTE, renderAllocBars, renderCompositionDonut } from "../portfolio/allocation.js";
 import { renderIdealAlloc } from "./rebalance.js";
 
 export function renderSummaryExtras(eqCur, liqCur, totCur, eqTgt, liqTgt, totTgt, nowEqPct, tgtEqPct) {
@@ -412,27 +412,24 @@ function renderExpenses() {
             const items = state.surplus?.fixedExpenses || [];
             const { fixed, sip, planned, bankSpend, extra, total } = totalMonthlyExpenses();
 
-            const rowStyle = (bg) => `background:${bg};border:1px solid ${editMode ? "var(--line)" : "transparent"};border-radius:5px;color:var(--txt);padding:4px 7px;${editMode ? "" : "cursor:default;"}`;
             // In view mode, the amount renders as plain formatted text
             // (fmt() gives "₹1,00,000") rather than a number input — native
             // <input type="number"> can't display comma grouping even when
             // readonly, so it was showing raw digits ("100000") next to
-            // properly formatted totals right below it.
-            const rows = items.map(item => `
-              <div class="exp-row" style="display:grid;grid-template-columns:1fr 100px 18px;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);">
-                <input class="exp-name-inp" data-id="${item.id}" value="${item.name || ""}" placeholder="Expense name" ${editMode ? "" : "readonly"}
-                  style="${rowStyle(editMode ? "var(--input-bg,rgba(255,255,255,0.06))" : "transparent")}font-size:11.5px;width:100%;"/>
+            // properly formatted totals elsewhere on the card. A colored
+            // dot (cycling the same palette as the Composition donut) gives
+            // each line item a scannable identity at a glance.
+            const rows = items.map((item, i) => `
+              <div class="exp-row">
+                <span class="exp-dot" style="background:${ALLOC_PALETTE[i % ALLOC_PALETTE.length]}"></span>
+                <input class="exp-name-inp" data-id="${item.id}" value="${item.name || ""}" placeholder="Expense name" ${editMode ? "" : "readonly"}/>
                 ${editMode
-                  ? `<div style="display:flex;align-items:center;gap:3px;justify-content:flex-end;">
-                      <span style="font-size:10px;color:var(--dim)">₹</span>
-                      <input type="number" class="exp-amt-inp" data-id="${item.id}" min="0" step="100" value="${item.amount || ""}" placeholder="0"
-                        style="${rowStyle("var(--input-bg,rgba(255,255,255,0.06))")}font-family:'Roboto Mono',monospace;font-size:11px;text-align:right;width:80px;"/>
-                    </div>`
-                  : `<span style="font-family:'Roboto Mono',monospace;font-size:11px;color:var(--txt);text-align:right;">${fmt(item.amount || 0)}</span>`}
-                <button class="exp-del-btn" data-id="${item.id}" style="visibility:${editMode ? "visible" : "hidden"};background:none;border:none;color:var(--coral);font-size:13px;cursor:pointer;padding:0;">✕</button>
+                  ? `<input type="number" class="exp-amt-inp" data-id="${item.id}" min="0" step="100" value="${item.amount || ""}" placeholder="0"/>`
+                  : `<span class="exp-amt-txt">${fmt(item.amount || 0)}</span>`}
+                <button class="exp-del-btn" data-id="${item.id}" style="visibility:${editMode ? "visible" : "hidden"}">✕</button>
               </div>`).join("");
 
-            const emptyHtml = `<div style="font-size:11px;color:var(--dim);padding:8px 0;">
+            const emptyHtml = `<div class="exp-empty">
               ${editMode ? `No fixed expenses yet — use "+ Add Fixed Expense" below.` : `No fixed expenses added. Tap Edit to add rent, EMIs, subscriptions, etc.`}
             </div>`;
 
@@ -441,48 +438,62 @@ function renderExpenses() {
             // out "extra", whatever of that drop neither accounts for (can
             // go negative: less left the account than was planned, e.g. a
             // bill or SIP hasn't hit yet). SIP itself is excluded from
-            // Total This Month below since it's an investment, not spend.
-            const bankHtml = bankSpend
-              ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);">
-                  <div style="display:flex;justify-content:space-between;align-items:center;">
-                    <span style="font-size:11px;color:var(--txt)">Bank balance this month</span>
-                    <span style="font-family:'Roboto Mono',monospace;font-size:12px;color:var(--txt)">${fmt(bankSpend.openingBank)} &rarr; ${fmt(bankSpend.currentBank)}</span>
-                  </div>
-                  <div style="font-size:9px;color:var(--dim);margin-top:2px;">
-                    As of ${fmtMonth(bankSpend.asOfKey)} snapshot vs. now on the Net Worth tab &mdash; a drop of ${fmt(bankSpend.amount)}
-                  </div>
+            // Total This Month since it's an investment, not spend.
+            const segs = (bankSpend && extra >= 0)
+              ? [
+                  { label: "Fixed", value: fixed, color: "var(--mint)" },
+                  { label: "SIP", value: sip, color: "var(--liq)" },
+                  { label: "Extra", value: extra, color: "var(--amber)" },
+                ].filter(s => s.value > 0)
+              : [];
+            const segBarHtml = segs.length
+              ? `<div class="alloc-seg-bar" style="display:flex;height:10px;border-radius:6px;overflow:hidden;gap:1px;margin-top:12px;">
+                  ${segs.map(s => `<div style="flex:${((s.value / bankSpend.amount) * 100).toFixed(2)};background:${s.color};min-width:2px;" title="${s.label}: ${fmt(s.value)}"></div>`).join("")}
                 </div>
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
-                  <span style="font-size:11px;color:var(--txt)">${extra >= 0 ? "Extra beyond planned" : "Under planned"}</span>
-                  <span style="font-family:'Roboto Mono',monospace;font-size:13px;font-weight:700;color:${extra > 0 ? "var(--amber)" : "var(--mint)"}">${extra >= 0 ? "+" : "−"}${fmt(Math.abs(extra))}</span>
+                <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:7px;">
+                  ${segs.map(s => `<span style="display:inline-flex;align-items:center;gap:4px;font-size:9.5px;color:var(--dim);">
+                    <span style="width:7px;height:7px;border-radius:50%;background:${s.color};display:inline-block;"></span>${s.label} ${fmt(s.value)}
+                  </span>`).join("")}
                 </div>`
-              : `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:10.5px;color:var(--dim);">
-                  Save a Net Worth snapshot to start tracking bank spending automatically &mdash; until then, Total This Month is just your Fixed Total below.
+              : "";
+
+            const bankHtml = bankSpend
+              ? `<div class="exp-bank-block">
+                  <div class="exp-bank-row">
+                    <span>Bank balance this month</span>
+                    <span class="exp-bank-fig">${fmt(bankSpend.openingBank)}<span class="exp-bank-arrow">&rarr;</span>${fmt(bankSpend.currentBank)}</span>
+                  </div>
+                  <div class="exp-bank-sub">As of ${fmtMonth(bankSpend.asOfKey)} snapshot vs. now on the Net Worth tab &mdash; a drop of ${fmt(bankSpend.amount)}</div>
+                  ${segBarHtml}
+                  <div class="exp-extra-row">
+                    <span style="font-size:11px;color:var(--txt)">${extra >= 0 ? "Extra beyond planned" : "Under planned"}</span>
+                    <span class="exp-extra-badge ${extra > 0 ? "over" : "under"}">${extra >= 0 ? "+" : "−"}${fmt(Math.abs(extra))}</span>
+                  </div>
+                </div>`
+              : `<div class="exp-bank-block" style="font-size:10.5px;color:var(--dim);">
+                  Save a Net Worth snapshot to start tracking bank spending automatically &mdash; until then, Total This Month is just your Fixed Total.
                 </div>`;
 
             wrap.innerHTML = `
               <div>${rows || emptyHtml}</div>
-              ${editMode ? `<button class="btn btn-ghost" id="expAddBtn" style="width:100%;font-size:11px;margin-top:8px;">+ Add Fixed Expense</button>` : ""}
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);">
-                <span style="font-size:11px;color:var(--dim)">Fixed Total</span>
-                <span style="font-family:'Roboto Mono',monospace;font-size:12px;font-weight:700;color:var(--txt)">${fmt(fixed)}</span>
+              ${editMode ? `<button class="btn btn-ghost exp-add-btn" id="expAddBtn">+ Add Fixed Expense</button>` : ""}
+              <div class="exp-stat-grid">
+                <div class="exp-stat-card"><div class="lbl">Fixed Total</div><div class="val">${fmt(fixed)}</div></div>
+                <div class="exp-stat-card"><div class="lbl">Monthly SIP</div><div class="val">${fmt(sip)}</div></div>
+                <div class="exp-stat-card"><div class="lbl">Planned Outflow</div><div class="val">${fmt(planned)}</div></div>
               </div>
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
-                <span style="font-size:11px;color:var(--dim)">Monthly SIP <span style="opacity:0.7">(all funds — set on Portfolio tab)</span></span>
-                <span style="font-family:'Roboto Mono',monospace;font-size:12px;font-weight:700;color:var(--txt)">${fmt(sip)}</span>
-              </div>
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;padding-top:6px;border-top:1px solid var(--line);">
-                <span style="font-size:11px;color:var(--txt)">Planned Bank Outflow <span style="opacity:0.7">(Fixed + SIP)</span></span>
-                <span style="font-family:'Roboto Mono',monospace;font-size:12px;font-weight:700;color:var(--txt)">${fmt(planned)}</span>
-              </div>
+              <div style="font-size:9px;color:var(--dim);opacity:0.8;">SIP total is set per-fund on the Portfolio tab</div>
               ${bankHtml}
-              <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line);">
-                <div style="display:flex;justify-content:space-between;align-items:center;">
-                  <span style="font-size:12px;font-weight:700;color:var(--txt)">Total This Month</span>
-                  <span style="font-family:'Roboto Mono',monospace;font-size:18px;font-weight:700;color:var(--mint)">${fmt(total)}</span>
+              <div class="exp-hero">
+                <div class="exp-hero-top">
+                  <span class="exp-hero-lbl">Total This Month</span>
+                  <span class="exp-hero-val">${fmt(total)}</span>
                 </div>
-                <div style="font-size:9px;color:var(--dim);margin-top:2px;">SIP excluded &mdash; it's an investment, not an expense</div>
+                <div class="exp-hero-sub">SIP excluded &mdash; it's an investment, not an expense</div>
               </div>`;
+
+            if (_animOnRender && !editMode)
+              wrap.querySelectorAll(".alloc-seg-bar").forEach(bar => animateWidth(bar, 100, 800));
 
             wrap.querySelectorAll(".exp-name-inp").forEach(inp => {
               inp.addEventListener("change", e => {
