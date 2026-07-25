@@ -171,7 +171,6 @@ export function renderHealthScore() {
 
             // ── Dimension 2: Allocation drift vs ideal ──
             let aScore = 15, aNote = "Set fund categories to measure";
-            let driftPct = null;
             const activeCats = [...new Set(EQ_FUNDS.map(f => state.equity[f.id]?.category).filter(c => c && c !== ""))];
             const wts = {};
             const DEF_WTS = { "Large Cap": 45, "Flexi Cap": 33, "Mid Cap": 22 };
@@ -186,20 +185,8 @@ export function renderHealthScore() {
                     .reduce((s, f) => s + (state.equity[f.id]?.shown || 0), 0);
                   drift += Math.abs((actual / eqTotal * 100) - (wts[cat] / totalIdealWt * 100));
                 });
-                driftPct = drift;
                 aScore = Math.max(0, Math.round(25 - drift * 0.8));
                 aNote = drift < 5 ? "On target" : drift < 15 ? Math.round(drift) + "% drift" : Math.round(drift) + "% drift — rebalance";
-              }
-            }
-
-            // ── Drift alert banner — surfaces the same drift computed above ──
-            const driftEl = el("sumDriftAlert");
-            if (driftEl) {
-              if (driftPct !== null && driftPct >= 15) {
-                driftEl.style.display = "";
-                driftEl.innerHTML = `<span class="drift-alert-icon">⚠️</span><div>Your equity allocation has drifted <b>${Math.round(driftPct)}%</b> from target — consider rebalancing (see Ideal Allocation below).</div>`;
-              } else {
-                driftEl.style.display = "none";
               }
             }
 
