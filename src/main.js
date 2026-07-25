@@ -9,7 +9,7 @@ import { _hasLocalData, authUser, fbAuthReady, fbEnabled, flushCloudSave, handle
 import { _upcomingHead } from "./features/portfolio/upcoming.js";
 import { animateNumber } from "./core/animate.js";
 import { applyTxnTotals, closeCurValModal, closeTxnModal, openCurValModal, openTxnModal, renderReturns, renderTxns, saveCurVal, saveTxn, setTxnType, txnFilter } from "./features/transactions/index.js";
-import { buildNwGrid, nwLiveSaved, renderNetWorth, renderNwHistory, renderNwLineChart, renderNwProjection, setNwEditingKey, setNwLiveSaved, takeSnapshot } from "./features/networth/index.js";
+import { buildNwGrid, nwLiveSaved, renderNetWorth, renderNwCompositionChart, renderNwHistory, renderNwLineChart, renderNwProjection, setNwEditingKey, setNwLiveSaved, takeSnapshot } from "./features/networth/index.js";
 import { buildThemeMatrix, hideThemeMatrix, loadSavedAccent, showThemeMatrix, themeMatrixOpen } from "./features/admin/themes.js";
 import { calDayDate, calMonth, calView, calWeekOffset, calYear, closeCalNoteModal, openCalNoteModal, renderCalendar, saveCalNote, setCalMonth, setCalView, setCalWeekOffset, setCalYear } from "./features/portfolio/calendar.js";
 import { el } from "./core/dom.js";
@@ -356,6 +356,7 @@ el("nwSnapDeleteBtn").addEventListener("click", () => {
               renderNetWorth();
               renderNwHistory();
               renderNwLineChart();
+              renderNwCompositionChart();
               renderNwProjection();
             });
           });
@@ -384,6 +385,7 @@ el("liqDivRtn").addEventListener("click", e => { e.stopPropagation(); toggleRtnM
 el("eqDivRtn").addEventListener("click", e => { e.stopPropagation(); toggleRtnMode(); });
 renderNwHistory();
 renderNwLineChart();
+renderNwCompositionChart();
 renderNwProjection();
 applyTxnTotals();
 render();

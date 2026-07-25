@@ -66,6 +66,31 @@ export function fundXirr(fid, isLiq) {
             return val;
           }
 
+/* Point-in-time portfolio XIRR as of each snapshot's month-end, using only
+   transactions dated before that month and the snapshot's own MF value
+   (mf + mfProfit) as the terminal cashflow — a trend of "what would XIRR
+   have read if computed back then". Bypasses cachedPortfolioXirr's single
+   cache slot deliberately: this loops many distinct input sets in one
+   pass, and reusing that slot here would just repeatedly evict the
+   "real" cached headline XIRR other call sites (Summary card, Fund
+   Performance total row) rely on. */
+export function rollingPortfolioXirr(sortedSnaps) {
+            return sortedSnaps.map(s => {
+              const [y, m] = s.key.split("-").map(Number);
+              const cutoff = new Date(y, m, 1).toISOString().slice(0, 10);
+              const asOfMs = new Date(y, m, 0).getTime();
+              const txns = (state.transactions || []).filter(t => t.date && t.date < cutoff && Number(t.afterExpense ?? t.invested) > 0);
+              const terminalVal = (s.mf || 0) + (s.mfProfit || 0);
+              if (!txns.length || terminalVal <= 0) return { key: s.key, xirr: null };
+              const cfs = txns.map(t => {
+                const ae = Number(t.afterExpense ?? t.invested);
+                return { amount: t.type === "redemption" ? ae : -ae, date: new Date(t.date).getTime() };
+              });
+              cfs.push({ amount: terminalVal, date: asOfMs });
+              return { key: s.key, xirr: xirrCalc(cfs) };
+            });
+          }
+
 export let _xirrCache = { key: null, val: null };
 
 export function cachedPortfolioXirr(allTxns, totalVal) {

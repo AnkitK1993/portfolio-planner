@@ -1,11 +1,11 @@
 import { EQ_CATEGORIES } from "../../core/constants.js";
-import { EQ_FUNDS, LIQ_FUNDS, fundName, normalizeSnap, state } from "../../core/state.js";
+import { EQ_FUNDS, LIQ_FUNDS, editMode, fundName, normalizeSnap, saveState, state } from "../../core/state.js";
 import { UI } from "../../core/ui.js";
 import { _animOnRender, _animRaf, animateNumber, animateWidth } from "../../core/animate.js";
-import { cachedPortfolioXirr, fundXirr } from "../../domain/xirr.js";
+import { cachedPortfolioXirr, fundXirr, rollingPortfolioXirr } from "../../domain/xirr.js";
 import { el } from "../../core/dom.js";
 import { fmt, fmtCompact, pct } from "../../core/format.js";
-import { renderAllocBars } from "../portfolio/allocation.js";
+import { renderAllocBars, renderCompositionDonut } from "../portfolio/allocation.js";
 import { renderIdealAlloc } from "./rebalance.js";
 
 export function renderSummaryExtras(eqCur, liqCur, totCur, eqTgt, liqTgt, totTgt, nowEqPct, tgtEqPct) {
@@ -21,6 +21,8 @@ export function renderSummaryExtras(eqCur, liqCur, totCur, eqTgt, liqTgt, totTgt
             renderXirrAndHeatmap();
             /* — Allocation bars — */
             renderAllocBars();
+            /* — Portfolio composition donut — */
+            renderCompositionDonut();
           }
 
 const FUND_TABLE_COLS = [
@@ -280,9 +282,29 @@ export function renderHealthScore() {
                       <div style="font-size:10.5px;color:var(--dim)">${d.note}</div>
                     </div>`).join("")}
                 </div>
+              </div>
+              <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+                <span style="font-size:10px;color:var(--dim)">Monthly expenses <span style="opacity:0.7">— used for Liq. Buffer above${editMode ? "" : " (tap Edit to change)"}</span></span>
+                <div style="display:flex;align-items:center;gap:4px;">
+                  <span style="font-size:11px;color:var(--dim)">₹</span>
+                  <input type="number" id="phsExpensesInp" min="0" step="1000" value="${monthlyExp || ""}" placeholder="0" ${editMode ? "" : "readonly"}
+                    style="background:var(--input-bg,rgba(255,255,255,0.06));border:1px solid var(--line);border-radius:5px;color:${editMode ? "var(--txt)" : "var(--dim)"};
+                           font-family:'Roboto Mono',monospace;font-size:11px;text-align:right;padding:4px 7px;width:100px;${editMode ? "" : "cursor:default;"}"/>
+                </div>
               </div>`;
 
             if (card) card.style.display = "";
+
+            const expInp = el("phsExpensesInp");
+            if (expInp) {
+              expInp.addEventListener("change", e => {
+                if (!editMode) { renderHealthScore(); return; }
+                if (!state.surplus) state.surplus = { expenses: 0 };
+                state.surplus.expenses = parseFloat(e.target.value) || 0;
+                saveState();
+                renderHealthScore();
+              });
+            }
 
             // Animate arc, score number, and dimension bars
             if (_animOnRender) {
@@ -355,6 +377,43 @@ export function renderSparklines() {
             });
           }
 
+/* Small trend line inside the Portfolio XIRR card — recomputes XIRR as of
+   each historical net worth snapshot (see rollingPortfolioXirr) rather than
+   just showing today's single number, so a slipping/improving return rate
+   is visible at a glance. Needs 3+ snapshots with a computable XIRR to be
+   worth showing as a "trend" at all. */
+function renderXirrTrend() {
+            const wrap = el("sumXirrTrendWrap");
+            const svg  = el("sumXirrTrend");
+            if (!wrap || !svg) return;
+
+            const snaps = state.networth.snapshots || {};
+            const sorted = Object.entries(snaps).map(([k, v]) => normalizeSnap(k, v)).sort((a, b) => a.key.localeCompare(b.key));
+            const points = rollingPortfolioXirr(sorted).filter(p => p.xirr !== null);
+
+            if (points.length < 3) { wrap.style.display = "none"; return; }
+            wrap.style.display = "";
+
+            const vals = points.map(p => p.xirr * 100);
+            const minV = Math.min(...vals, 0), maxV = Math.max(...vals, 0);
+            const range = (maxV - minV) || 1;
+            const W = 300, H = 44, P = 4;
+            const n = vals.length;
+            const toX = i => P + (i / (n - 1)) * (W - P * 2);
+            const toY = v => H - P - ((v - minV) / range) * (H - P * 2);
+            const zeroY = toY(0).toFixed(1);
+
+            const lineStr = vals.map((v, i) => `${i === 0 ? "M" : "L"}${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(" ");
+            const last = vals[n - 1];
+            const lastColor = last >= 0 ? "var(--mint)" : "var(--coral)";
+
+            svg.innerHTML = `
+              <line x1="${P}" y1="${zeroY}" x2="${W - P}" y2="${zeroY}" stroke="var(--line)" stroke-width="1" stroke-dasharray="3,3"/>
+              <path d="${lineStr}" fill="none" stroke="${lastColor}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
+              <circle cx="${toX(n - 1).toFixed(1)}" cy="${toY(last).toFixed(1)}" r="2.5" fill="${lastColor}"/>
+            `;
+          }
+
 export function renderXirrAndHeatmap() {
             // Portfolio XIRR — per-fund breakdown lives in the Fund
             // Performance table's sortable XIRR column + Portfolio total
@@ -373,6 +432,7 @@ export function renderXirrAndHeatmap() {
                 xirrCard.style.display = "none";
               }
             }
+            renderXirrTrend();
 
             // Investment streak
             const streakWrap = el("sumStreakWrap");

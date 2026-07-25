@@ -216,12 +216,25 @@
             </div>
             <div id="sumXirr" style="font-family:'Roboto Mono',monospace;font-size:22px;font-weight:700;"></div>
           </div>
+          <div id="sumXirrTrendWrap" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);">
+            <div style="font-size:9px;color:var(--dim);margin-bottom:4px;">XIRR trend — recomputed as of each monthly snapshot</div>
+            <svg id="sumXirrTrend" viewBox="0 0 300 44" preserveAspectRatio="none" style="width:100%;height:40px;display:block;"></svg>
+          </div>
         </div>
 
         <!-- Total Allocation bars -->
         <div class="card" style="margin-bottom:12px">
           <div class="sec-head" style="margin-bottom:16px">Total Allocation</div>
           <div id="sumAllocBarsMain"></div>
+        </div>
+
+        <!-- Portfolio Composition donut (by category) -->
+        <div class="card" id="sumCompositionCard" style="display:none;margin-bottom:12px">
+          <div class="sec-head" style="margin-bottom:12px">Portfolio Composition</div>
+          <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+            <svg id="sumCompositionDonut" viewBox="0 0 100 100" style="width:100px;height:100px;flex-shrink:0;"></svg>
+            <div id="sumCompositionLegend" style="flex:1;min-width:160px;font-size:11px;"></div>
+          </div>
         </div>
 
         <!-- Investment streak -->
@@ -370,6 +383,14 @@
           <svg id="nwLineChart" viewBox="0 0 600 150" preserveAspectRatio="none" style="width:100%;height:140px;display:block;"></svg>
           <div id="nwChartStats" style="margin-top:8px;padding-top:10px;border-top:1px solid var(--line);display:flex;gap:16px;flex-wrap:wrap;"></div>
           <div id="nwChartLegend" style="display:flex;gap:16px;margin-top:8px;"></div>
+        </div>
+
+        <!-- Net Worth Composition Over Time -->
+        <div class="card" id="nwCompChartCard" style="display:none;margin-bottom:12px">
+          <div class="sec-head" style="margin-bottom:4px">Composition Over Time</div>
+          <div style="font-size:10px;color:var(--dim);margin-bottom:10px">How your net worth is split across asset types each month</div>
+          <svg id="nwCompChart" viewBox="0 0 600 150" preserveAspectRatio="none" style="width:100%;height:140px;display:block;"></svg>
+          <div id="nwCompChartLegend" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);"></div>
         </div>
 
         <!-- Projections -->

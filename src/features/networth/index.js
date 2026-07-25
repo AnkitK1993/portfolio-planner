@@ -204,6 +204,7 @@ export function takeSnapshot() {
               renderNetWorth();
               renderNwHistory();
               renderNwLineChart();
+              renderNwCompositionChart();
               renderNwProjection();
               const msg = el("nwSnapMsg");
               if (msg) {
@@ -338,6 +339,7 @@ export function renderNwHistory() {
                   renderNetWorth();
                   renderNwHistory();
                   renderNwLineChart();
+                  renderNwCompositionChart();
                   renderNwProjection();
                 });
               });
@@ -478,6 +480,86 @@ export function renderNwLineChart() {
                 <span style="display:inline-flex;align-items:center;gap:5px;font-size:9.5px;color:var(--dim)">
                   <svg width="16" height="3"><line x1="0" y1="1.5" x2="16" y2="1.5" stroke="#c084fc" stroke-width="1.5" stroke-dasharray="4,2"/></svg>Projection
                 </span>`;
+            }
+          }
+
+const NW_COMP_SERIES = [
+            { key: "bank",     label: "Bank & Savings", color: "var(--liq)" },
+            { key: "fd",       label: "Fixed Deposit",  color: "#5bc4f5" },
+            { key: "cash",     label: "Cash",           color: "var(--amber)" },
+            { key: "ppf",      label: "PPF",            color: "#8be8ff" },
+            { key: "epf",      label: "EPF",            color: "#2dd4bf" },
+            { key: "bonds",    label: "Bonds",          color: "#c084fc" },
+            { key: "mf",       label: "MF Principal",   color: "#4ade9c" },
+            { key: "mfProfit", label: "MF Growth",      color: "#86efac" },
+          ];
+
+export function renderNwCompositionChart() {
+            const snaps = state.networth.snapshots || {};
+            const sorted = Object.entries(snaps)
+              .map(([k, v]) => normalizeSnap(k, v))
+              .sort((a, b) => a.key.localeCompare(b.key));
+
+            const card = el("nwCompChartCard");
+            if (!card) return;
+            if (sorted.length < 2) { card.style.display = "none"; return; }
+            card.style.display = "";
+
+            const svg = el("nwCompChart");
+            const W = 600, H = 150, PAD_T = 10, PAD_B = 24, PAD_L = 48, PAD_R = 8;
+            const n = sorted.length;
+
+            // Stacked-area bands — a snapshot's unrealized gain can be
+            // negative (a paper loss), which a simple stack can't represent
+            // as a slice; clip to 0 so a loss month just shows no growth
+            // band rather than distorting the whole stack.
+            const stacks = sorted.map(s => {
+              let cum = 0;
+              return NW_COMP_SERIES.map(ser => {
+                const v = Math.max(0, s[ser.key] || 0);
+                const base = cum;
+                cum += v;
+                return { base, top: cum };
+              });
+            });
+            const maxV = Math.max(...stacks.map(row => row[row.length - 1].top), 1);
+
+            const toX = i => PAD_L + (i / (n - 1)) * (W - PAD_L - PAD_R);
+            const toY = v => PAD_T + (1 - v / maxV) * (H - PAD_T - PAD_B);
+
+            const areas = NW_COMP_SERIES.map((ser, si) => {
+              const topPts  = stacks.map((row, i) => `${toX(i).toFixed(1)},${toY(row[si].top).toFixed(1)}`);
+              const basePts = stacks.map((row, i) => `${toX(i).toFixed(1)},${toY(row[si].base).toFixed(1)}`).reverse();
+              const d = `M${topPts.join(" L")} L${basePts.join(" L")} Z`;
+              return `<path d="${d}" fill="${ser.color}" opacity="0.82" stroke="var(--bg)" stroke-width="0.5"/>`;
+            }).join("");
+
+            const gridLines = Array.from({ length: 4 }, (_, i) => {
+              const v = maxV * (i + 1) / 5;
+              const y = toY(v).toFixed(1);
+              const lbl = v >= 10000000 ? (v/10000000).toFixed(1)+"Cr" : v >= 100000 ? (v/100000).toFixed(1)+"L" : (v/1000).toFixed(0)+"K";
+              return `<line x1="${PAD_L}" y1="${y}" x2="${W}" y2="${y}" stroke="var(--line)" stroke-width="1"/>
+                <text x="${PAD_L - 4}" y="${parseFloat(y) + 3}" text-anchor="end" font-size="8" fill="var(--dim)" font-family="Roboto Mono,monospace">${lbl}</text>`;
+            }).join("");
+
+            const step = n <= 8 ? 1 : n <= 16 ? 2 : 3;
+            const tickLabels = sorted.map((s, i) => {
+              if (i !== 0 && i !== n-1 && i % step !== 0) return "";
+              const [yr, mo] = s.key.split("-");
+              const lbl = new Date(+yr, +mo - 1, 1).toLocaleDateString("en-IN", { month: "short" });
+              const anchor = i === 0 ? "start" : i === n-1 ? "end" : "middle";
+              return `<text x="${toX(i).toFixed(1)}" y="${H - 6}" text-anchor="${anchor}" font-size="8" fill="var(--dim)" font-family="Roboto Mono,monospace">${lbl}</text>`;
+            }).join("");
+
+            svg.innerHTML = `${gridLines}${areas}${tickLabels}`;
+
+            const legendEl = el("nwCompChartLegend");
+            if (legendEl) {
+              const active = NW_COMP_SERIES.filter((ser, si) => stacks.some(row => (row[si].top - row[si].base) > 0));
+              legendEl.innerHTML = active.map(ser => `
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;color:var(--dim);margin-right:12px;margin-bottom:4px;">
+                  <span style="width:8px;height:8px;border-radius:2px;background:${ser.color};display:inline-block;"></span>${ser.label}
+                </span>`).join("");
             }
           }
 
