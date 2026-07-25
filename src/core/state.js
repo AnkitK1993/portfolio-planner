@@ -179,7 +179,7 @@ export function toggleEditMode() {
    return. A UI-only display preference (not persisted) toggled by clicking
    any returns badge on the Portfolio tab — applies to all of them at once
    so Total / division / per-fund badges never show mixed metrics. */
-export let rtnMode = "pct";
+export let rtnMode = "xirr";
 
 export function toggleRtnMode() {
             rtnMode = rtnMode === "pct" ? "xirr" : "pct";
