@@ -7,7 +7,7 @@ import { cachedPortfolioXirr, fundXirr, rollingPortfolioXirr } from "../../domai
 import { el } from "../../core/dom.js";
 import { estimateCapitalGainsTax, LTCG_EXEMPTION } from "../../domain/tax.js";
 import { fmt, fmtCompact, fmtMonth, pct } from "../../core/format.js";
-import { totalMonthlyExpenses } from "../../domain/expenses.js";
+import { averageExpenseBreakdown, EXPENSE_PERIODS, monthlyExpenseSeries, resolvePeriodKeys, totalMonthlyExpenses } from "../../domain/expenses.js";
 import { ALLOC_PALETTE, renderAllocBars, renderCompositionDonut } from "../portfolio/allocation.js";
 import { renderIdealAlloc } from "./rebalance.js";
 
@@ -398,6 +398,14 @@ export function renderHealthScore() {
             }
           }
 
+// Expense Trends section state — view-only UI preferences (which period to
+// look back over, which categories count toward the average), not
+// persisted, same as rtnMode/txnFilter elsewhere in the app.
+let expPeriod = "month";
+let expIncludeFixed = true;
+let expIncludeExtra = true;
+let expIncludeSip = false;
+
 // Fixed items are a user-maintained itemized list (rent, EMIs, subscriptions,
 // ...); the bank-spend line is fully derived from data the app already has
 // (Net Worth tab's Bank field vs. last month's snapshot), so there's no
@@ -474,6 +482,60 @@ function renderExpenses() {
                   Save a Net Worth snapshot to start tracking bank spending automatically &mdash; until then, Total This Month is just your Fixed Total.
                 </div>`;
 
+            // ── Expense Trends: average/mo + projections over a chosen
+            // lookback period, with each category (Fixed / Extra / SIP)
+            // individually toggleable so the average only counts what the
+            // user actually wants counted (SIP defaults off — see above). ──
+            const periodKeys = resolvePeriodKeys(expPeriod);
+            const series = monthlyExpenseSeries(periodKeys);
+            const brk = averageExpenseBreakdown(series);
+            let avgTotal = 0;
+            if (expIncludeFixed) avgTotal += brk.avgFixed;
+            if (expIncludeExtra) avgTotal += brk.avgExtra;
+            if (expIncludeSip) avgTotal += brk.avgSip;
+
+            const periodChipsHtml = EXPENSE_PERIODS.map(p =>
+              `<button class="txn-preset${expPeriod === p.key ? " active" : ""}" data-period="${p.key}">${p.label}</button>`
+            ).join("");
+
+            // fmt() clamps negatives to ₹0 (fine for amounts that are
+            // never negative) — but avgExtra genuinely can go negative
+            // (months where less left the bank than was planned), and
+            // silently showing "₹0" there would hide a real underspend
+            // instead of revealing it, which is the whole point of this row.
+            const fmtAvg = (n) => (n < 0 ? "−" : "") + fmt(Math.abs(n));
+            const catRow = (key, label, checked, avgVal) => `
+              <label style="display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;padding:7px 10px;border-radius:8px;background:var(--panel-2);">
+                <span style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--txt);">
+                  <input type="checkbox" class="exp-cat-chk" data-cat="${key}" ${checked ? "checked" : ""} style="accent-color:var(--mint);width:14px;height:14px;cursor:pointer;margin:0;"/>
+                  ${label}
+                </span>
+                <span style="font-family:'Roboto Mono',monospace;font-size:11px;color:var(--dim);">${fmtAvg(avgVal)}/mo</span>
+              </label>`;
+
+            const trendsBodyHtml = brk.monthsWithData > 0
+              ? `<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;">
+                  ${catRow("fixed", "Fixed (Planned)", expIncludeFixed, brk.avgFixed)}
+                  ${catRow("extra", "Unplanned (Extra)", expIncludeExtra, brk.avgExtra)}
+                  ${catRow("sip", "SIP (Investment)", expIncludeSip, brk.avgSip)}
+                </div>
+                <div class="exp-hero">
+                  <div class="exp-hero-top">
+                    <span class="exp-hero-lbl">Average Expenses / Month</span>
+                    <span class="exp-hero-val">${fmtAvg(avgTotal)}</span>
+                  </div>
+                  <div class="exp-hero-sub">Based on ${brk.monthsWithData} of ${brk.totalMonths} month${brk.totalMonths !== 1 ? "s" : ""} with Net Worth snapshot data${brk.monthsWithData < brk.totalMonths ? " — save more snapshots for a fuller picture" : ""}. Fixed &amp; SIP use today's amounts applied to each month.</div>
+                </div>
+                <div style="margin-top:14px;">
+                  <div style="font-size:10px;color:var(--dim);margin-bottom:8px;">Projected Expenses</div>
+                  <div class="nw-proj-cards">
+                    <div class="nw-proj-card"><div class="pk">3 months</div><div class="pv">${fmtAvg(avgTotal * 3)}</div></div>
+                    <div class="nw-proj-card"><div class="pk">6 months</div><div class="pv">${fmtAvg(avgTotal * 6)}</div></div>
+                    <div class="nw-proj-card"><div class="pk">12 months</div><div class="pv">${fmtAvg(avgTotal * 12)}</div></div>
+                  </div>
+                </div>`
+              : `<div style="font-size:10.5px;color:var(--dim);padding:8px 0;">No Net Worth snapshots in this period yet — save monthly snapshots on the Net Worth tab to see trends and projections.</div>`;
+
             wrap.innerHTML = `
               <div>${rows || emptyHtml}</div>
               ${editMode ? `<button class="btn btn-ghost exp-add-btn" id="expAddBtn">+ Add Fixed Expense</button>` : ""}
@@ -490,10 +552,31 @@ function renderExpenses() {
                   <span class="exp-hero-val">${fmt(total)}</span>
                 </div>
                 <div class="exp-hero-sub">SIP excluded &mdash; it's an investment, not an expense</div>
+              </div>
+              <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--line);">
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--dim);margin-bottom:10px;">Expense Trends</div>
+                <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px;">${periodChipsHtml}</div>
+                ${trendsBodyHtml}
               </div>`;
 
             if (_animOnRender && !editMode)
               wrap.querySelectorAll(".alloc-seg-bar").forEach(bar => animateWidth(bar, 100, 800));
+
+            wrap.querySelectorAll("[data-period]").forEach(btn => {
+              btn.addEventListener("click", () => {
+                expPeriod = btn.dataset.period;
+                renderExpenses();
+              });
+            });
+            wrap.querySelectorAll(".exp-cat-chk").forEach(chk => {
+              chk.addEventListener("change", e => {
+                const cat = e.target.dataset.cat;
+                if (cat === "fixed") expIncludeFixed = e.target.checked;
+                if (cat === "extra") expIncludeExtra = e.target.checked;
+                if (cat === "sip") expIncludeSip = e.target.checked;
+                renderExpenses();
+              });
+            });
 
             wrap.querySelectorAll(".exp-name-inp").forEach(inp => {
               inp.addEventListener("change", e => {
