@@ -413,15 +413,22 @@ function renderExpenses() {
             const { fixed, sip, planned, bankSpend, extra, total } = totalMonthlyExpenses();
 
             const rowStyle = (bg) => `background:${bg};border:1px solid ${editMode ? "var(--line)" : "transparent"};border-radius:5px;color:var(--txt);padding:4px 7px;${editMode ? "" : "cursor:default;"}`;
+            // In view mode, the amount renders as plain formatted text
+            // (fmt() gives "₹1,00,000") rather than a number input — native
+            // <input type="number"> can't display comma grouping even when
+            // readonly, so it was showing raw digits ("100000") next to
+            // properly formatted totals right below it.
             const rows = items.map(item => `
               <div class="exp-row" style="display:grid;grid-template-columns:1fr 100px 18px;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);">
                 <input class="exp-name-inp" data-id="${item.id}" value="${item.name || ""}" placeholder="Expense name" ${editMode ? "" : "readonly"}
                   style="${rowStyle(editMode ? "var(--input-bg,rgba(255,255,255,0.06))" : "transparent")}font-size:11.5px;width:100%;"/>
-                <div style="display:flex;align-items:center;gap:3px;justify-content:flex-end;">
-                  <span style="font-size:10px;color:var(--dim)">₹</span>
-                  <input type="number" class="exp-amt-inp" data-id="${item.id}" min="0" step="100" value="${item.amount || ""}" placeholder="0" ${editMode ? "" : "readonly"}
-                    style="${rowStyle(editMode ? "var(--input-bg,rgba(255,255,255,0.06))" : "transparent")}font-family:'Roboto Mono',monospace;font-size:11px;text-align:right;width:80px;"/>
-                </div>
+                ${editMode
+                  ? `<div style="display:flex;align-items:center;gap:3px;justify-content:flex-end;">
+                      <span style="font-size:10px;color:var(--dim)">₹</span>
+                      <input type="number" class="exp-amt-inp" data-id="${item.id}" min="0" step="100" value="${item.amount || ""}" placeholder="0"
+                        style="${rowStyle("var(--input-bg,rgba(255,255,255,0.06))")}font-family:'Roboto Mono',monospace;font-size:11px;text-align:right;width:80px;"/>
+                    </div>`
+                  : `<span style="font-family:'Roboto Mono',monospace;font-size:11px;color:var(--txt);text-align:right;">${fmt(item.amount || 0)}</span>`}
                 <button class="exp-del-btn" data-id="${item.id}" style="visibility:${editMode ? "visible" : "hidden"};background:none;border:none;color:var(--coral);font-size:13px;cursor:pointer;padding:0;">✕</button>
               </div>`).join("");
 
