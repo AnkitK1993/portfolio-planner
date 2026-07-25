@@ -19,10 +19,27 @@ export const STCG_RATE = 0.20;
 // long-term (>=365 days old) vs short-term, as fractions of the currently
 // held basis, so the caller can apportion today's unrealized gain between
 // the two without needing an independent, possibly-drifted basis figure.
+const _fifoCache = new Map();
+
 function fifoLtStFractions(fundId) {
             const txns = (state.transactions || [])
               .filter(t => t.fundId === fundId && t.date)
               .sort((a, b) => a.date.localeCompare(b.date));
+
+            // This runs on every render (i.e. every keystroke anywhere in
+            // the app, via scheduleRender), so a fresh filter+sort of the
+            // full transaction list per equity fund with a gain is the
+            // single most expensive uncached step in the render path.
+            // Cache key mirrors fundXirr's (every txn's own date+amount+
+            // type, not just count/sum, so an in-place edit still
+            // invalidates) plus a day-bucket, since the lt/st split can
+            // flip at the 365-day boundary from time passing alone, with
+            // zero new transactions.
+            const dayBucket = Math.floor(Date.now() / MS_PER_DAY);
+            const cacheKey = dayBucket + "|" + txns.map(t => t.date + ":" + (t.afterExpense ?? t.invested) + ":" + t.type).join(",");
+            const cached = _fifoCache.get(fundId);
+            if (cached && cached.key === cacheKey) return cached.val;
+
             const lots = [];
             txns.forEach(t => {
               const ae = Number(t.afterExpense ?? t.invested) || 0;
@@ -52,7 +69,9 @@ function fifoLtStFractions(fundId) {
             // direction. Silently assuming long-term would understate tax
             // for a recently-bought fund; assuming short-term would
             // overstate it for a years-old one.
-            return total > 0 ? { ltFrac: lt / total, stFrac: st / total } : null;
+            const val = total > 0 ? { ltFrac: lt / total, stFrac: st / total } : null;
+            _fifoCache.set(fundId, { key: cacheKey, val });
+            return val;
           }
 
 // Rough estimate of capital-gains tax if every current holding were

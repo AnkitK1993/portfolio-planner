@@ -9,11 +9,10 @@ export function fixedExpensesTotal() {
 // bankSpentThisMonth() diffs, so like fixed expenses they're a planned
 // chunk of that drop, not a separate outflow layered on top of it.
 export function totalMonthlySip() {
-            return [...LIQ_FUNDS, ...EQ_FUNDS].reduce((s, f) => {
-              const isLiq = LIQ_FUNDS.some(x => x.id === f.id);
-              const fs = isLiq ? state.liquid[f.id] : state.equity[f.id];
-              return s + (fs?.sipAmt || 0);
-            }, 0);
+            let total = 0;
+            LIQ_FUNDS.forEach(f => { total += state.liquid[f.id]?.sipAmt || 0; });
+            EQ_FUNDS.forEach(f => { total += state.equity[f.id]?.sipAmt || 0; });
+            return total;
           }
 
 // Bank spend this month = the most recent monthly snapshot's Bank balance
