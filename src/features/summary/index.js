@@ -429,12 +429,12 @@ function renderExpenses() {
               ${editMode ? `No fixed expenses yet — use "+ Add Fixed Expense" below.` : `No fixed expenses added. Tap Edit to add rent, EMIs, subscriptions, etc.`}
             </div>`;
 
-            // Fixed items + SIPs are both a BREAKDOWN of the bank drop, not
-            // a separate spend on top of it (SIPs auto-debit from the same
-            // account) — so this shows the bank drop as the real total,
-            // with "extra" being whatever of that drop the planned amount
-            // doesn't account for (can go negative: less left the account
-            // than was planned, e.g. a bill or SIP hasn't hit yet).
+            // Fixed items + SIPs are both a BREAKDOWN of the bank drop
+            // (SIPs auto-debit from the same account) — used only to work
+            // out "extra", whatever of that drop neither accounts for (can
+            // go negative: less left the account than was planned, e.g. a
+            // bill or SIP hasn't hit yet). SIP itself is excluded from
+            // Total This Month below since it's an investment, not spend.
             const bankHtml = bankSpend
               ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);">
                   <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -450,7 +450,7 @@ function renderExpenses() {
                   <span style="font-family:'Roboto Mono',monospace;font-size:13px;font-weight:700;color:${extra > 0 ? "var(--amber)" : "var(--mint)"}">${extra >= 0 ? "+" : "−"}${fmt(Math.abs(extra))}</span>
                 </div>`
               : `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:10.5px;color:var(--dim);">
-                  Save a Net Worth snapshot to start tracking bank spending automatically &mdash; until then, Total This Month is just your planned total below.
+                  Save a Net Worth snapshot to start tracking bank spending automatically &mdash; until then, Total This Month is just your Fixed Total below.
                 </div>`;
 
             wrap.innerHTML = `
@@ -465,13 +465,16 @@ function renderExpenses() {
                 <span style="font-family:'Roboto Mono',monospace;font-size:12px;font-weight:700;color:var(--txt)">${fmt(sip)}</span>
               </div>
               <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;padding-top:6px;border-top:1px solid var(--line);">
-                <span style="font-size:11px;color:var(--txt)">Planned Total</span>
+                <span style="font-size:11px;color:var(--txt)">Planned Bank Outflow <span style="opacity:0.7">(Fixed + SIP)</span></span>
                 <span style="font-family:'Roboto Mono',monospace;font-size:12px;font-weight:700;color:var(--txt)">${fmt(planned)}</span>
               </div>
               ${bankHtml}
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);">
-                <span style="font-size:12px;font-weight:700;color:var(--txt)">Total This Month</span>
-                <span style="font-family:'Roboto Mono',monospace;font-size:18px;font-weight:700;color:var(--mint)">${fmt(total)}</span>
+              <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line);">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <span style="font-size:12px;font-weight:700;color:var(--txt)">Total This Month</span>
+                  <span style="font-family:'Roboto Mono',monospace;font-size:18px;font-weight:700;color:var(--mint)">${fmt(total)}</span>
+                </div>
+                <div style="font-size:9px;color:var(--dim);margin-top:2px;">SIP excluded &mdash; it's an investment, not an expense</div>
               </div>`;
 
             wrap.querySelectorAll(".exp-name-inp").forEach(inp => {
