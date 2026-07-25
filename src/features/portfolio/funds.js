@@ -1,5 +1,5 @@
 import { EQ_CATEGORIES, LIQ_CATEGORIES } from "../../core/constants.js";
-import { EQ_FUNDS, LIQ_FUNDS, editMode, fundName, saveState, state, syncFundArrays } from "../../core/state.js";
+import { EQ_FUNDS, LIQ_FUNDS, editMode, fundName, saveState, state, syncFundArrays, toggleRtnMode } from "../../core/state.js";
 import { UI, toggleColl, updateCollNameReadonly } from "../../core/ui.js";
 import { el } from "../../core/dom.js";
 import { fmt, fmtNum, num } from "../../core/format.js";
@@ -145,6 +145,8 @@ export function bindFundEvents() {
             [...LIQ_FUNDS, ...EQ_FUNDS].forEach(f => {
               const head = el("coll-head-" + f.id);
               if (head) head.addEventListener("click", () => toggleColl(f.id));
+              const rtn = el("coll-rtn-" + f.id);
+              if (rtn) rtn.addEventListener("click", e => { e.stopPropagation(); toggleRtnMode(); });
             });
             LIQ_FUNDS.forEach(f => {
               const inp = el("coll-name-" + f.id);

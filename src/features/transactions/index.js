@@ -1,5 +1,6 @@
-import { EQ_FUNDS, LIQ_FUNDS, fundName, saveState, state } from "../../core/state.js";
+import { EQ_FUNDS, LIQ_FUNDS, fundName, rtnMode, saveState, state } from "../../core/state.js";
 import { UI, closeNavDropdowns, collapseTxpCard, expandTxpCard, navigateTo } from "../../core/ui.js";
+import { cachedPortfolioXirr } from "../../domain/xirr.js";
 import { checkProfitMilestones } from "../portfolio/funds.js";
 import { el } from "../../core/dom.js";
 import { fmt, fmtNum, pct } from "../../core/format.js";
@@ -256,7 +257,15 @@ export function renderHoldings() {
 
             const rtnEl = el("holdingsRtn");
             if (rtnEl) {
-              if (hasData) {
+              if (rtnMode === "xirr") {
+                const allTxns = (state.transactions || []).filter(t => t.date && Number(t.afterExpense ?? t.invested) > 0);
+                const x = allTxns.length && curVal > 0 ? cachedPortfolioXirr(allTxns, curVal) : null;
+                if (x !== null) {
+                  const up = x >= 0;
+                  rtnEl.textContent = `${up ? "+" : "−"}${(Math.abs(x) * 100).toFixed(1)}% pa`;
+                  rtnEl.className = `holdings-rtn ${up ? "up" : "dn"}`;
+                } else { rtnEl.textContent = "—"; rtnEl.className = "holdings-rtn"; }
+              } else if (hasData) {
                 rtnEl.textContent = `${arrow} ${sign}${Math.abs(retPct).toFixed(2)}%`;
                 rtnEl.className = `holdings-rtn ${isUp ? "up" : "dn"}`;
               } else { rtnEl.textContent = ""; rtnEl.className = "holdings-rtn"; }

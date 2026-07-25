@@ -1,7 +1,7 @@
-import { EQ_FUNDS, LIQ_FUNDS, state } from "../../core/state.js";
+import { EQ_FUNDS, LIQ_FUNDS, rtnMode, state } from "../../core/state.js";
 import { clamp, fmt, pct, roundUpInvest } from "../../core/format.js";
 import { el } from "../../core/dom.js";
-import { fundXirr } from "../../domain/xirr.js";
+import { cachedPortfolioXirr, fundXirr } from "../../domain/xirr.js";
 import { renderCalendar } from "./calendar.js";
 import { renderForecast } from "../forecast/index.js";
 import { renderHoldings } from "../transactions/index.js";
@@ -13,6 +13,15 @@ import { setAllocBar } from "./allocation.js";
 import { setAnimOnRender, setFmtInner } from "../../core/animate.js";
 
 export let _raf = 0;
+
+/* Shared formatting for the XIRR half of the returns-badge toggle — mirrors
+   the "pa" convention already used by the (CSS-hidden) coll-xirr badge, so
+   XIRR reads as visually distinct from the "↑ +X.XX%" absolute-return form. */
+function xirrBadge(x) {
+            if (x === null) return { text: "—", cls: "" };
+            const up = x >= 0;
+            return { text: (up ? "+" : "−") + (Math.abs(x) * 100).toFixed(1) + "% pa", cls: up ? "up" : "dn" };
+          }
 
 export function scheduleRender() {
             cancelAnimationFrame(_raf);
@@ -84,7 +93,11 @@ export function render() {
               /* Per-fund collapsible header badge */
               const lcollRtn = el("coll-rtn-" + f.id);
               if (lcollRtn) {
-                if (lcv > 0 && val > 0) {
+                if (rtnMode === "xirr") {
+                  const b = xirrBadge(fundXirr(f.id, true));
+                  lcollRtn.textContent = b.text;
+                  lcollRtn.className = "coll-rtn" + (b.cls ? " " + b.cls : "");
+                } else if (lcv > 0 && val > 0) {
                   const isUp = lret >= 0;
                   const pct  = (Math.abs(lret) / val * 100).toFixed(2);
                   lcollRtn.textContent = (isUp ? "↑" : "↓") + " " + (isUp ? "+" : "−") + pct + "%";
@@ -141,7 +154,14 @@ export function render() {
             setFmtInner("liqDivTotal", totalLiqCurVal);
             const liqDivRtnEl = el("liqDivRtn");
             if (liqDivRtnEl) {
-              if (totalLiqAE > 0) {
+              if (rtnMode === "xirr") {
+                const liqTxns = (state.transactions || []).filter(t =>
+                  LIQ_FUNDS.some(f => f.id === t.fundId) && t.date && Number(t.afterExpense ?? t.invested) > 0);
+                const x = liqTxns.length && totalLiqCurVal > 0 ? cachedPortfolioXirr(liqTxns, totalLiqCurVal) : null;
+                const b = xirrBadge(x);
+                liqDivRtnEl.textContent = b.text;
+                liqDivRtnEl.className = "fund-div-rtn" + (b.cls ? " " + b.cls : "");
+              } else if (totalLiqAE > 0) {
                 const isUp = totalLiqRet >= 0;
                 const pct  = (Math.abs(totalLiqRet) / totalLiqAE * 100).toFixed(2);
                 liqDivRtnEl.textContent = (isUp ? "↑" : "↓") + " " + (isUp ? "+" : "−") + pct + "%";
@@ -219,7 +239,11 @@ export function render() {
               /* Per-fund collapsible header badge */
               const ecollRtn = el("coll-rtn-" + f.id);
               if (ecollRtn) {
-                if (ecv > 0 && shown > 0) {
+                if (rtnMode === "xirr") {
+                  const b = xirrBadge(fundXirr(f.id, false));
+                  ecollRtn.textContent = b.text;
+                  ecollRtn.className = "coll-rtn" + (b.cls ? " " + b.cls : "");
+                } else if (ecv > 0 && shown > 0) {
                   const isUp = eret >= 0;
                   const pct  = (Math.abs(eret) / shown * 100).toFixed(2);
                   ecollRtn.textContent = (isUp ? "↑" : "↓") + " " + (isUp ? "+" : "−") + pct + "%";
@@ -270,7 +294,14 @@ export function render() {
             setFmtInner("eqDivTotal", totalEqCurVal);
             const eqDivRtnEl = el("eqDivRtn");
             if (eqDivRtnEl) {
-              if (totalEqAE > 0) {
+              if (rtnMode === "xirr") {
+                const eqTxns = (state.transactions || []).filter(t =>
+                  EQ_FUNDS.some(f => f.id === t.fundId) && t.date && Number(t.afterExpense ?? t.invested) > 0);
+                const x = eqTxns.length && totalEqCurVal > 0 ? cachedPortfolioXirr(eqTxns, totalEqCurVal) : null;
+                const b = xirrBadge(x);
+                eqDivRtnEl.textContent = b.text;
+                eqDivRtnEl.className = "fund-div-rtn" + (b.cls ? " " + b.cls : "");
+              } else if (totalEqAE > 0) {
                 const isUp = totalEqRet >= 0;
                 const pct  = (Math.abs(totalEqRet) / totalEqAE * 100).toFixed(2);
                 eqDivRtnEl.textContent = (isUp ? "↑" : "↓") + " " + (isUp ? "+" : "−") + pct + "%";

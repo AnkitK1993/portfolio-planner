@@ -2,7 +2,7 @@ import "./styles/base.css";
 import "./styles/themes.css";
 import "./styles/components.css";
 
-import { EQ_FUNDS, LIQ_FUNDS, editMode, privacyMode, saveState, setEditMode, setPrivacyMode, snapshotKey, state, syncFundArrays, toggleEditMode } from "./core/state.js";
+import { EQ_FUNDS, LIQ_FUNDS, editMode, privacyMode, saveState, setEditMode, setPrivacyMode, snapshotKey, state, syncFundArrays, toggleEditMode, toggleRtnMode } from "./core/state.js";
 import { NW_FIELDS } from "./core/constants.js";
 import { UI, closeNavDropdowns, collapseTxpCard, navigateTo, openNavDropdown, toggleColl } from "./core/ui.js";
 import { _hasLocalData, authUser, fbAuthReady, fbEnabled, flushCloudSave, handleSignInResult, initFirebase, loadBackupList, resetBackupPanel, saveManualBackup } from "./infra/firebase.js";
@@ -376,6 +376,12 @@ el("holdingsToggle").addEventListener("click", () => {
             body.hidden = isOpen;
             el("holdingsToggle").setAttribute("aria-expanded", String(!isOpen));
           });
+// Returns badges (Total bar + Liquid/Equity division rows) toggle between
+// absolute return% and XIRR on click — all badges switch together since
+// they're one shared display preference (see rtnMode in core/state.js).
+el("holdingsRtn").addEventListener("click", e => { e.stopPropagation(); toggleRtnMode(); });
+el("liqDivRtn").addEventListener("click", e => { e.stopPropagation(); toggleRtnMode(); });
+el("eqDivRtn").addEventListener("click", e => { e.stopPropagation(); toggleRtnMode(); });
 renderNwHistory();
 renderNwLineChart();
 renderNwProjection();
