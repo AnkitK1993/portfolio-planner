@@ -1,4 +1,4 @@
-import { EQ_FUNDS, LIQ_FUNDS, defaultRebSections, defaultState, editMode, saveState, setPrivacyMode, setState, state, syncFundArrays } from "../core/state.js";
+import { EQ_FUNDS, LIQ_FUNDS, defaultRebSections, defaultState, editMode, normalizeSurplus, saveState, setPrivacyMode, setState, state, syncFundArrays } from "../core/state.js";
 import { FIREBASE_CONFIG, NW_FIELDS, STORE_KEY } from "../core/constants.js";
 import { UI, closeNavDropdowns } from "../core/ui.js";
 import { el } from "../core/dom.js";
@@ -232,7 +232,7 @@ export function applyCloudState(raw) {
               },
               forecast: { ...def.forecast, ...(raw.forecast || {}) },
               idealWeights: { ...def.idealWeights, ...(raw.idealWeights || {}) },
-              surplus: { ...def.surplus, ...(raw.surplus || {}) },
+              surplus: normalizeSurplus(raw.surplus),
               transactions: Array.isArray(raw.transactions) ? raw.transactions : [],
               returnsLog: Array.isArray(raw.returnsLog) ? raw.returnsLog : [],
               calendarNotes: Array.isArray(raw.calendarNotes) ? raw.calendarNotes : [],

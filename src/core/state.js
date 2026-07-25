@@ -71,12 +71,31 @@ export function defaultState() {
               },
               forecast: { investments: 0, monthlyInvest: 0, annualRate: 12, stepUp: 0, inflationRate: 6, mode: "project", goalBank: 0, goalTarget: 0, goalYears: 10, goalRate: 12, fcScenario: "base", fcShowAll: false },
               idealWeights: { "Large Cap": 45, "Flexi Cap": 33, "Mid Cap": 22 },
-              surplus: { expenses: 0, taxSlabPct: 30 },
+              surplus: normalizeSurplus(null),
               transactions: [],
               returnsLog: [],
               calendarNotes: [],
               rebalance: { sections: defaultRebSections() },
               _meta: { v: 0, savedAt: null, syncedAt: null },
+            };
+          }
+
+// Fixed expenses moved from a single number to an itemized list, so this
+// also migrates any pre-existing flat `surplus.expenses` value into a
+// single "Monthly Expenses" line item rather than silently dropping it —
+// shared by loadState() and firebase.js's applyCloudState() so both stay
+// in sync with the same shape and the same migration behaviour.
+export function normalizeSurplus(raw) {
+            const r = raw || {};
+            let fixedExpenses = Array.isArray(r.fixedExpenses) ? r.fixedExpenses : null;
+            if (!fixedExpenses) {
+              fixedExpenses = r.expenses > 0
+                ? [{ id: "exp_migrated", name: "Monthly Expenses", amount: r.expenses }]
+                : [];
+            }
+            return {
+              fixedExpenses,
+              taxSlabPct: r.taxSlabPct ?? 30,
             };
           }
 
@@ -114,7 +133,7 @@ export function loadState() {
                 },
                 forecast: { ...def.forecast, ...(s.forecast || {}) },
                 idealWeights: { ...def.idealWeights, ...(s.idealWeights || {}) },
-                surplus: { ...def.surplus, ...(s.surplus || {}) },
+                surplus: normalizeSurplus(s.surplus),
                 transactions: Array.isArray(s.transactions) ? s.transactions : [],
                 returnsLog: Array.isArray(s.returnsLog) ? s.returnsLog : [],
                 calendarNotes: Array.isArray(s.calendarNotes) ? s.calendarNotes : [],

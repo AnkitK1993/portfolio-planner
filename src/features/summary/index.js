@@ -6,13 +6,17 @@ import { avgMonthlyGrowthRate, nwTotal } from "../../domain/networth.js";
 import { cachedPortfolioXirr, fundXirr, rollingPortfolioXirr } from "../../domain/xirr.js";
 import { el } from "../../core/dom.js";
 import { estimateCapitalGainsTax, LTCG_EXEMPTION } from "../../domain/tax.js";
-import { fmt, fmtCompact, pct } from "../../core/format.js";
+import { fmt, fmtCompact, fmtMonth, pct } from "../../core/format.js";
+import { totalMonthlyExpenses } from "../../domain/expenses.js";
 import { renderAllocBars, renderCompositionDonut } from "../portfolio/allocation.js";
 import { renderIdealAlloc } from "./rebalance.js";
 
 export function renderSummaryExtras(eqCur, liqCur, totCur, eqTgt, liqTgt, totTgt, nowEqPct, tgtEqPct) {
             /* — Health Score (also renders the drift alert banner) — */
             renderHealthScore();
+
+            /* — Expenses (fixed items + auto bank-spend) — */
+            renderExpenses();
 
             /* — Financial Independence progress — */
             renderFireProgress();
@@ -263,7 +267,7 @@ export function renderHealthScore() {
 
             // ── Dimension 3: Liquidity buffer (vs 6-month expenses) ──
             const totalLiqFree = LIQ_FUNDS.reduce((s, f) => s + Math.max(0, (state.liquid[f.id]?.value || 0) - (state.liquid[f.id]?.reserve || 0)), 0);
-            const monthlyExp = state.surplus?.expenses || 0;
+            const monthlyExp = totalMonthlyExpenses().total;
             let bScore = 15, bNote = "Enter expenses to measure", bufMonths = null;
             if (monthlyExp > 0) {
               bufMonths = totalLiqFree / monthlyExp;
@@ -355,30 +359,13 @@ export function renderHealthScore() {
               ${bufMonths !== null ? `
               <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:11px;color:var(--dim);">
                 Emergency fund: <b style="color:${bufMonths >= 6 ? "var(--mint)" : bufMonths >= 3 ? "var(--amber)" : "var(--coral)"};font-family:'Roboto Mono',monospace">${bufMonths.toFixed(1)} months</b> of expenses covered
-                (<span style="color:var(--txt)">${fmt(totalLiqFree)}</span> deployable liquid ÷ <span style="color:var(--txt)">${fmt(monthlyExp)}</span>/mo)
-              </div>` : ""}
-              <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
-                <span style="font-size:10px;color:var(--dim)">Monthly expenses <span style="opacity:0.7">— used for Liq. Buffer above${editMode ? "" : " (tap Edit to change)"}</span></span>
-                <div style="display:flex;align-items:center;gap:4px;">
-                  <span style="font-size:11px;color:var(--dim)">₹</span>
-                  <input type="number" id="phsExpensesInp" min="0" step="1000" value="${monthlyExp || ""}" placeholder="0" ${editMode ? "" : "readonly"}
-                    style="background:var(--input-bg,rgba(255,255,255,0.06));border:1px solid var(--line);border-radius:5px;color:${editMode ? "var(--txt)" : "var(--dim)"};
-                           font-family:'Roboto Mono',monospace;font-size:11px;text-align:right;padding:4px 7px;width:100px;${editMode ? "" : "cursor:default;"}"/>
-                </div>
-              </div>`;
+                (<span style="color:var(--txt)">${fmt(totalLiqFree)}</span> deployable liquid ÷ <span style="color:var(--txt)">${fmt(monthlyExp)}</span>/mo &mdash; see Expenses card below)
+              </div>` : `
+              <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:10.5px;color:var(--dim);">
+                Add fixed expenses in the Expenses card below to measure this.
+              </div>`}`;
 
             if (card) card.style.display = "";
-
-            const expInp = el("phsExpensesInp");
-            if (expInp) {
-              expInp.addEventListener("change", e => {
-                if (!editMode) { renderHealthScore(); return; }
-                if (!state.surplus) state.surplus = { expenses: 0 };
-                state.surplus.expenses = parseFloat(e.target.value) || 0;
-                saveState();
-                renderHealthScore();
-              });
-            }
 
             // Animate arc, score number, and dimension bars
             if (_animOnRender) {
@@ -411,9 +398,107 @@ export function renderHealthScore() {
             }
           }
 
+// Fixed items are a user-maintained itemized list (rent, EMIs, subscriptions,
+// ...); the bank-spend line is fully derived from data the app already has
+// (Net Worth tab's Bank field vs. last month's snapshot), so there's no
+// input for it here — editing the underlying Bank value on the Net Worth
+// tab is what moves this number.
+function renderExpenses() {
+            const card = el("sumExpensesCard");
+            const wrap = el("sumExpensesBody");
+            if (!card || !wrap) return;
+            card.style.display = "";
+
+            const items = state.surplus?.fixedExpenses || [];
+            const { fixed, bankSpend, total } = totalMonthlyExpenses();
+
+            const rowStyle = (bg) => `background:${bg};border:1px solid ${editMode ? "var(--line)" : "transparent"};border-radius:5px;color:var(--txt);padding:4px 7px;${editMode ? "" : "cursor:default;"}`;
+            const rows = items.map(item => `
+              <div class="exp-row" style="display:grid;grid-template-columns:1fr 100px 18px;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);">
+                <input class="exp-name-inp" data-id="${item.id}" value="${item.name || ""}" placeholder="Expense name" ${editMode ? "" : "readonly"}
+                  style="${rowStyle(editMode ? "var(--input-bg,rgba(255,255,255,0.06))" : "transparent")}font-size:11.5px;width:100%;"/>
+                <div style="display:flex;align-items:center;gap:3px;justify-content:flex-end;">
+                  <span style="font-size:10px;color:var(--dim)">₹</span>
+                  <input type="number" class="exp-amt-inp" data-id="${item.id}" min="0" step="100" value="${item.amount || ""}" placeholder="0" ${editMode ? "" : "readonly"}
+                    style="${rowStyle(editMode ? "var(--input-bg,rgba(255,255,255,0.06))" : "transparent")}font-family:'Roboto Mono',monospace;font-size:11px;text-align:right;width:80px;"/>
+                </div>
+                <button class="exp-del-btn" data-id="${item.id}" style="visibility:${editMode ? "visible" : "hidden"};background:none;border:none;color:var(--coral);font-size:13px;cursor:pointer;padding:0;">✕</button>
+              </div>`).join("");
+
+            const emptyHtml = `<div style="font-size:11px;color:var(--dim);padding:8px 0;">
+              ${editMode ? `No fixed expenses yet — use "+ Add Fixed Expense" below.` : `No fixed expenses added. Tap Edit to add rent, EMIs, subscriptions, etc.`}
+            </div>`;
+
+            const bankHtml = bankSpend
+              ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);">
+                  <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <span style="font-size:11px;color:var(--txt)">Spent from Bank this month</span>
+                    <span style="font-family:'Roboto Mono',monospace;font-size:13px;font-weight:700;color:var(--amber)">${fmt(bankSpend.amount)}</span>
+                  </div>
+                  <div style="font-size:9px;color:var(--dim);margin-top:2px;">
+                    ${fmt(bankSpend.openingBank)} as of ${fmtMonth(bankSpend.asOfKey)} snapshot &rarr; ${fmt(bankSpend.currentBank)} now on the Net Worth tab
+                  </div>
+                </div>`
+              : `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:10.5px;color:var(--dim);">
+                  Save a Net Worth snapshot to start tracking bank spending automatically.
+                </div>`;
+
+            wrap.innerHTML = `
+              <div>${rows || emptyHtml}</div>
+              ${editMode ? `<button class="btn btn-ghost" id="expAddBtn" style="width:100%;font-size:11px;margin-top:8px;">+ Add Fixed Expense</button>` : ""}
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);">
+                <span style="font-size:11px;color:var(--dim)">Fixed Total</span>
+                <span style="font-family:'Roboto Mono',monospace;font-size:12px;font-weight:700;color:var(--txt)">${fmt(fixed)}</span>
+              </div>
+              ${bankHtml}
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);">
+                <span style="font-size:12px;font-weight:700;color:var(--txt)">Total This Month</span>
+                <span style="font-family:'Roboto Mono',monospace;font-size:18px;font-weight:700;color:var(--mint)">${fmt(total)}</span>
+              </div>`;
+
+            wrap.querySelectorAll(".exp-name-inp").forEach(inp => {
+              inp.addEventListener("change", e => {
+                if (!editMode) { renderExpenses(); return; }
+                const item = items.find(i => i.id === e.target.dataset.id);
+                if (item) { item.name = e.target.value; saveState(); }
+              });
+            });
+            wrap.querySelectorAll(".exp-amt-inp").forEach(inp => {
+              inp.addEventListener("change", e => {
+                if (!editMode) { renderExpenses(); return; }
+                const item = items.find(i => i.id === e.target.dataset.id);
+                if (!item) return;
+                item.amount = Math.max(0, parseFloat(e.target.value) || 0);
+                saveState();
+                renderExpenses();
+                renderHealthScore();
+                renderFireProgress();
+              });
+            });
+            wrap.querySelectorAll(".exp-del-btn").forEach(btn => {
+              btn.addEventListener("click", () => {
+                if (!editMode) return;
+                state.surplus.fixedExpenses = items.filter(i => i.id !== btn.dataset.id);
+                saveState();
+                renderExpenses();
+                renderHealthScore();
+                renderFireProgress();
+              });
+            });
+            const addBtn = el("expAddBtn");
+            if (addBtn) {
+              addBtn.addEventListener("click", () => {
+                if (!state.surplus.fixedExpenses) state.surplus.fixedExpenses = [];
+                state.surplus.fixedExpenses.push({ id: "exp_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6), name: "", amount: 0 });
+                saveState();
+                renderExpenses();
+              });
+            }
+          }
+
 /* FI number = 25× annual expenses (the standard 4%-withdrawal-rate rule of
-   thumb) — reuses the same expenses figure the Health Score's Liquidity
-   Buffer dimension already collects, and the same historical growth rate
+   thumb) — reuses the total the new Expenses card computes (fixed items +
+   this month's auto bank-spend), and the same historical growth rate
    the Net Worth Projections card uses, so this card needs no state of its
    own beyond what's already tracked. */
 function renderFireProgress() {
@@ -421,7 +506,7 @@ function renderFireProgress() {
             const wrap = el("sumFireBody");
             if (!card || !wrap) return;
 
-            const monthlyExp = state.surplus?.expenses || 0;
+            const monthlyExp = totalMonthlyExpenses().total;
             if (monthlyExp <= 0) { card.style.display = "none"; return; }
             card.style.display = "";
 
