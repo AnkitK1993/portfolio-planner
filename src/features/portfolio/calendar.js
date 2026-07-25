@@ -5,6 +5,7 @@ import { fundRowHTML } from "./funds.js";
 import { num } from "../../core/format.js";
 import { scheduleRender } from "./render.js";
 import { syncInputsFromState } from "../../infra/firebase.js";
+import { addCalendarNote, deleteCalendarNote, recalcFundTarget as recalcFundTargetAction, setFundTarget, updateCalendarNote } from "../../store/actions.js";
 
 export let calYear  = new Date().getFullYear();
 
@@ -266,23 +267,10 @@ export function saveCalNote() {
               if (v > 0) funds.push({ fundId: f.id, amount: v });
             });
             if (!funds.length) { UI.toast("warn", "Enter at least one amount", 2500); return; }
-            if (!state.calendarNotes) state.calendarNotes = [];
-            if (editId) {
-              const n = state.calendarNotes.find(x => x.id === editId);
-              if (n) { n.date = date; n.funds = funds; n.note = note; delete n.fundId; delete n.amount; }
-            } else {
-              state.calendarNotes.push({
-                id: Date.now().toString(36) + Math.random().toString(36).slice(2,5),
-                date, funds, note
-              });
-            }
+            if (editId) updateCalendarNote(editId, { date, funds, note });
+            else addCalendarNote({ date, funds, note });
             // Target = scheduled amount + current After Expense value
-            funds.forEach(({ fundId, amount }) => {
-              const isLiq = LIQ_FUNDS.some(f => f.id === fundId);
-              const afterExp = isLiq ? (state.liquid[fundId].value || 0) : (state.equity[fundId].shown || 0);
-              if (isLiq) state.liquid[fundId].target = amount + afterExp;
-              else state.equity[fundId].target = amount + afterExp;
-            });
+            funds.forEach(({ fundId, amount }) => setFundTarget(fundId, amount));
             saveState();
             renderCalendar();
             syncInputsFromState();
@@ -296,39 +284,11 @@ export function noteFundIds(note) {
               .map(f => f.fundId);
           }
 
-export function recalcFundTarget(fundId) {
-            const today = new Date().toISOString().split("T")[0];
-            const isLiq  = LIQ_FUNDS.some(f => f.id === fundId);
-            const s      = isLiq ? state.liquid[fundId] : state.equity[fundId];
-            const afterExp = isLiq ? (s.value || 0) : (s.shown || 0);
-
-            // Next upcoming calendar note for this fund (earliest date >= today)
-            const upcoming = (state.calendarNotes || [])
-              .filter(n => {
-                if (n.date < today) return false;
-                const fds = n.funds || (n.fundId ? [{ fundId: n.fundId, amount: n.amount }] : []);
-                return fds.some(f => f.fundId === fundId);
-              })
-              .sort((a, b) => a.date.localeCompare(b.date));
-
-            if (upcoming.length > 0) {
-              const fds = upcoming[0].funds || [{ fundId: upcoming[0].fundId, amount: upcoming[0].amount }];
-              const entry = fds.find(f => f.fundId === fundId);
-              if (entry) { s.target = entry.amount + afterExp; return; }
-            }
-
-            // Fall back to monthly SIP amount
-            const sipAmt = s.sipAmt || 0;
-            if (sipAmt > 0) { s.target = sipAmt + afterExp; return; }
-
-            // Nothing left — leave target as-is
-          }
-
 export function removeCalNote(id, successMsg) {
             const note = (state.calendarNotes || []).find(n => n.id === id);
             const affected = note ? noteFundIds(note) : [];
-            state.calendarNotes = (state.calendarNotes || []).filter(n => n.id !== id);
-            affected.forEach(recalcFundTarget);
+            deleteCalendarNote(id);
+            affected.forEach(recalcFundTargetAction);
             saveState();
             syncInputsFromState();
             scheduleRender();

@@ -4,6 +4,7 @@ import { el } from "../../core/dom.js";
 import { fmt, num } from "../../core/format.js";
 import { renderCalendar } from "./calendar.js";
 import { totalMonthlySip } from "../../domain/expenses.js";
+import { setFundSip } from "../../store/actions.js";
 
 export function openManageSips() {
             const sections = [
@@ -47,13 +48,10 @@ export function openManageSips() {
 
 export function saveManageSips() {
             [...LIQ_FUNDS, ...EQ_FUNDS].forEach(f => {
-              const isLiq = LIQ_FUNDS.some(x => x.id === f.id);
-              const s = isLiq ? state.liquid[f.id] : state.equity[f.id];
               const amtInp  = el("siamt-"  + f.id);
               const dateInp = el("sidate-" + f.id);
               if (!amtInp) return;
-              s.sipAmt  = num(amtInp.value);
-              s.sipDate = parseInt(dateInp.value) || 0;
+              setFundSip(f.id, num(amtInp.value), parseInt(dateInp.value) || 0);
             });
             saveState();
             renderCalendar();

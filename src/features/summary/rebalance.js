@@ -5,6 +5,7 @@ import { _animOnRender, animateWidth } from "../../core/animate.js";
 import { el } from "../../core/dom.js";
 import { fmt, fmtCompact, pct } from "../../core/format.js";
 import { navigateTo } from "../../core/ui.js";
+import { addRebalanceRow, addRebalanceSection, deleteRebalanceRow, deleteRebalanceSection, setIdealWeight, setRebalanceRowName, setRebalanceRowValue, setRebalanceSectionName } from "../../store/actions.js";
 
 export let rebEditMode = false;
 
@@ -113,7 +114,7 @@ export function renderRebalance() {
             wrap.querySelectorAll(".reb-section-name-inp").forEach(inp => {
               inp.addEventListener("input", () => {
                 const si = +inp.dataset.si;
-                state.rebalance.sections[si].name = inp.value;
+                setRebalanceSectionName(si, inp.value);
                 saveState();
               });
             });
@@ -122,7 +123,7 @@ export function renderRebalance() {
             wrap.querySelectorAll(".reb-label-inp").forEach(inp => {
               inp.addEventListener("input", () => {
                 const si = +inp.dataset.si, ri = +inp.dataset.ri;
-                state.rebalance.sections[si].rows[ri].name = inp.value;
+                setRebalanceRowName(si, ri, inp.value);
                 saveState();
               });
             });
@@ -131,7 +132,7 @@ export function renderRebalance() {
             wrap.querySelectorAll(".reb-inp").forEach(inp => {
               inp.addEventListener("input", () => {
                 const si = +inp.dataset.si, ri = +inp.dataset.ri, col = inp.dataset.col;
-                state.rebalance.sections[si].rows[ri][col] = parseFloat(inp.value) || 0;
+                setRebalanceRowValue(si, ri, col, parseFloat(inp.value) || 0);
                 // live-update diff cell in same row
                 const row = state.rebalance.sections[si].rows[ri];
                 const diffEl = inp.closest(".reb-row")?.querySelector(".reb-diff");
@@ -159,7 +160,7 @@ export function renderRebalance() {
             wrap.querySelectorAll(".reb-icon-btn.del").forEach(btn => {
               btn.addEventListener("click", () => {
                 const si = +btn.dataset.si, ri = +btn.dataset.ri;
-                state.rebalance.sections[si].rows.splice(ri, 1);
+                deleteRebalanceRow(si, ri);
                 saveState();
                 renderRebalance();
               });
@@ -169,7 +170,7 @@ export function renderRebalance() {
             wrap.querySelectorAll("[data-del-sec]").forEach(btn => {
               btn.addEventListener("click", () => {
                 const si = +btn.dataset.delSec;
-                state.rebalance.sections.splice(si, 1);
+                deleteRebalanceSection(si);
                 saveState();
                 renderRebalance();
               });
@@ -179,7 +180,7 @@ export function renderRebalance() {
             wrap.querySelectorAll(".reb-add-row-btn").forEach(btn => {
               btn.addEventListener("click", () => {
                 const si = +btn.dataset.si;
-                state.rebalance.sections[si].rows.push({ id: rebUid(), name: "New", mm: 0, real: 0 });
+                addRebalanceRow(si, { id: rebUid(), name: "New", mm: 0, real: 0 });
                 saveState();
                 renderRebalance();
               });
@@ -187,7 +188,7 @@ export function renderRebalance() {
 
             // Add section button
             el("rebAddSec")?.addEventListener("click", () => {
-              state.rebalance.sections.push({ id: rebSuid(), name: "New Section", rows: [{ id: rebUid(), name: "Total", mm: 0, real: 0 }] });
+              addRebalanceSection({ id: rebSuid(), name: "New Section", rows: [{ id: rebUid(), name: "Total", mm: 0, real: 0 }] });
               saveState();
               renderRebalance();
             });
@@ -250,8 +251,7 @@ export function renderIdealAlloc() {
                 // readonly blocks typing but not every browser's number-input
                 // spinner/scroll-wheel, so re-check editMode before writing.
                 if (!editMode) { renderIdealAlloc(); return; }
-                if (!state.idealWeights) state.idealWeights = {};
-                state.idealWeights[e.target.dataset.cat] = parseFloat(e.target.value) || 0;
+                setIdealWeight(e.target.dataset.cat, parseFloat(e.target.value) || 0);
                 saveState();
                 renderIdealAlloc();
               });
