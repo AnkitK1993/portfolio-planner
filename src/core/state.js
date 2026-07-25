@@ -96,6 +96,9 @@ export function normalizeSurplus(raw) {
             return {
               fixedExpenses,
               taxSlabPct: r.taxSlabPct ?? 30,
+              // 0/unset = Financial Goals card falls back to its suggested
+              // 25x-annual-expenses target instead of a user-picked figure.
+              goalAmount: Number(r.goalAmount) || 0,
             };
           }
 

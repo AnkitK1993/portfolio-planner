@@ -535,35 +535,42 @@ function renderExpenses() {
             }
           }
 
-/* FI number = 25× annual expenses (the standard 4%-withdrawal-rate rule of
-   thumb) — reuses the total the new Expenses card computes (fixed items +
-   this month's auto bank-spend), and the same historical growth rate
-   the Net Worth Projections card uses, so this card needs no state of its
-   own beyond what's already tracked. */
+/* Goal defaults to the suggested 25× annual expenses figure (the standard
+   4%-withdrawal-rate FI rule of thumb) but can be overridden with any
+   custom target (a house, a number, early retirement, whatever) via the
+   editable amount below — set in edit mode, persisted in
+   state.surplus.goalAmount, 0/unset meaning "use the suggestion". Reuses
+   the Expenses card's total and the Net Worth Projections card's growth
+   rate, so this needs no other state of its own. */
 function renderFireProgress() {
             const card = el("sumFireCard");
             const wrap = el("sumFireBody");
             if (!card || !wrap) return;
 
             const monthlyExp = totalMonthlyExpenses().total;
-            if (monthlyExp <= 0) { card.style.display = "none"; return; }
+            const suggestedTarget = monthlyExp * 12 * 25;
+            const customGoal = state.surplus?.goalAmount || 0;
+            const goalTarget = customGoal > 0 ? customGoal : suggestedTarget;
+
+            if (goalTarget <= 0 && !editMode) { card.style.display = "none"; return; }
             card.style.display = "";
 
-            const fiTarget = monthlyExp * 12 * 25;
             const cur = nwTotal();
-            const progressPct = fiTarget > 0 ? Math.min(100, (cur / fiTarget) * 100) : 0;
+            const progressPct = goalTarget > 0 ? Math.min(100, (cur / goalTarget) * 100) : 0;
 
             const snaps = state.networth.snapshots || {};
             const sorted = Object.entries(snaps).map(([k, v]) => normalizeSnap(k, v)).sort((a, b) => a.key.localeCompare(b.key));
             const r = sorted.length >= 2 ? avgMonthlyGrowthRate(sorted) : 0;
 
             let etaHtml;
-            if (cur >= fiTarget) {
-              etaHtml = `<span style="color:var(--mint);font-weight:600;">You've reached your FI number 🎉</span>`;
+            if (goalTarget <= 0) {
+              etaHtml = `<span style="color:var(--dim)">Set a custom goal below, or add fixed expenses to use the suggested 25× target.</span>`;
+            } else if (cur >= goalTarget) {
+              etaHtml = `<span style="color:var(--mint);font-weight:600;">You've reached your goal 🎉</span>`;
             } else if (sorted.length < 2 || r <= 0) {
               etaHtml = `<span style="color:var(--dim)">Add more monthly Net Worth snapshots to project a timeline.</span>`;
             } else {
-              const monthsAway = Math.log(fiTarget / cur) / Math.log(1 + r);
+              const monthsAway = Math.log(goalTarget / cur) / Math.log(1 + r);
               const yrsAway = monthsAway / 12;
               const etaDate = new Date();
               etaDate.setMonth(etaDate.getMonth() + Math.round(monthsAway));
@@ -571,23 +578,55 @@ function renderFireProgress() {
               etaHtml = `~<b style="color:var(--txt)">${yrsAway.toFixed(1)} years</b> away — projected <b style="color:var(--txt)">${etaLabel}</b> at your current net worth growth rate.`;
             }
 
+            const headlineHtml = goalTarget > 0
+              ? `Net worth <b style="color:var(--txt)">${fmt(cur)}</b> of <b style="color:var(--txt)">${fmt(goalTarget)}</b> Goal`
+              : `Net worth <b style="color:var(--txt)">${fmt(cur)}</b> &mdash; no goal set yet`;
+
+            const goalInputHtml = editMode
+              ? `<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+                  <span style="font-size:10px;color:var(--dim)">Custom Goal Amount <span style="opacity:0.7">— blank uses ${fmt(suggestedTarget)} (25&times; expenses)</span></span>
+                  <div style="display:flex;align-items:center;gap:4px;">
+                    <span style="font-size:11px;color:var(--dim)">₹</span>
+                    <input type="number" id="fireGoalInp" min="0" step="10000" value="${customGoal || ""}" placeholder="${suggestedTarget > 0 ? Math.round(suggestedTarget) : "0"}"
+                      style="background:var(--input-bg,rgba(255,255,255,0.06));border:1px solid var(--line);border-radius:5px;color:var(--txt);
+                             font-family:'Roboto Mono',monospace;font-size:11px;text-align:right;padding:4px 7px;width:130px;"/>
+                  </div>
+                </div>`
+              : "";
+
+            const footnoteText = customGoal > 0
+              ? `Custom goal${editMode ? "" : " — tap Edit to change or clear it"}. Suggested (25&times; expenses): ${fmt(suggestedTarget)}.`
+              : `Using the suggested 25&times; annual expenses target (4% withdrawal rule)${editMode ? "" : " — tap Edit to set a custom goal"}.`;
+
             wrap.innerHTML = `
               <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
-                <span style="font-size:11px;color:var(--dim)">Net worth <b style="color:var(--txt)">${fmt(cur)}</b> of <b style="color:var(--txt)">${fmt(fiTarget)}</b> FI number</span>
-                <span style="font-family:'Roboto Mono',monospace;font-size:16px;font-weight:700;color:var(--mint)">${progressPct.toFixed(1)}%</span>
+                <span style="font-size:11px;color:var(--dim)">${headlineHtml}</span>
+                <span style="font-family:'Roboto Mono',monospace;font-size:16px;font-weight:700;color:var(--mint)">${goalTarget > 0 ? progressPct.toFixed(1) + "%" : "—"}</span>
               </div>
               <div style="height:10px;background:rgba(255,255,255,0.06);border-radius:5px;overflow:hidden;margin-bottom:10px;">
                 <div class="fire-bar" data-w="${progressPct.toFixed(1)}" style="height:100%;width:0%;background:linear-gradient(90deg,var(--liq),var(--mint));border-radius:5px;"></div>
               </div>
               <div style="font-size:11px;color:var(--dim);line-height:1.5;">${etaHtml}</div>
+              ${goalInputHtml}
               <div style="font-size:9px;color:var(--dim);opacity:0.75;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);">
-                FI number = 25× annual expenses (4% withdrawal rule) — a rough target, not investment advice.
+                ${footnoteText}
               </div>`;
 
             const bar = wrap.querySelector(".fire-bar");
             if (bar) {
               if (_animOnRender) animateWidth(bar, progressPct, 1200);
               else bar.style.width = progressPct + "%";
+            }
+
+            const goalInp = el("fireGoalInp");
+            if (goalInp) {
+              goalInp.addEventListener("change", e => {
+                if (!editMode) { renderFireProgress(); return; }
+                if (!state.surplus) state.surplus = {};
+                state.surplus.goalAmount = Math.max(0, parseFloat(e.target.value) || 0);
+                saveState();
+                renderFireProgress();
+              });
             }
           }
 
