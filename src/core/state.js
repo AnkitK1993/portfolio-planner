@@ -71,7 +71,7 @@ export function defaultState() {
               },
               forecast: { investments: 0, monthlyInvest: 0, annualRate: 12, stepUp: 0, inflationRate: 6, mode: "project", goalBank: 0, goalTarget: 0, goalYears: 10, goalRate: 12, fcScenario: "base", fcShowAll: false },
               idealWeights: { "Large Cap": 45, "Flexi Cap": 33, "Mid Cap": 22 },
-              surplus: { expenses: 0 },
+              surplus: { expenses: 0, taxSlabPct: 30 },
               transactions: [],
               returnsLog: [],
               calendarNotes: [],

@@ -43,6 +43,7 @@ document.addEventListener("click", e => {
           });
 el("txnsBtn").addEventListener("click", () => { navigateTo("transactions"); });
 el("ddDataBtn").addEventListener("click", () => { closeNavDropdowns(); el("dataModal").style.display = "flex"; });
+el("ddPrintBtn").addEventListener("click", () => { closeNavDropdowns(); window.print(); });
 ["txp-addtxn", "txp-history", "txp-curval", "txp-sip"].forEach(id => {
             const head = el(id + "-head");
             if (!head) return;

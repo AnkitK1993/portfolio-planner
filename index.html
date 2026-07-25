@@ -40,6 +40,7 @@
       <button class="nav-dd-item" id="ddForecastBtn">Forecast</button>
       <button class="nav-dd-item" id="ddThemeBtn">Themes</button>
       <button class="nav-dd-item" id="ddDataBtn">Data</button>
+      <button class="nav-dd-item" id="ddPrintBtn">Print Report</button>
       <button class="nav-dd-item" id="ddRebalanceBtn">Rebalance</button>
       <button class="nav-dd-item" id="ddPinBtn">Set PIN Lock</button>
       <div class="nav-dd-sep"></div>
@@ -254,6 +255,13 @@
         <div class="card" style="margin-bottom:12px">
           <div class="sec-head" style="margin-bottom:12px">Fund Performance</div>
           <div id="sumFundTable"></div>
+        </div>
+
+        <!-- Tax estimate -->
+        <div class="card" id="sumTaxCard" style="display:none;margin-bottom:12px">
+          <div class="sec-head" style="margin-bottom:4px">Tax Estimate — If Redeemed Today</div>
+          <div style="font-size:10px;color:var(--dim);margin-bottom:12px">Rough estimate only, not tax advice — rates as of FY 2024-25, verify with a CA before filing. Losses aren't netted against gains.</div>
+          <div id="sumTaxBody"></div>
         </div>
 
         <!-- Returns heatmap -->

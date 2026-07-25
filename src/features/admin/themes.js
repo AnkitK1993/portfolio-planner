@@ -142,6 +142,38 @@ export function loadSavedAccent() {
             applyAccent(idx >= 0 ? idx : 0, true);
           }
 
+/* Accent colors are applied as inline styles on <html> (above), which beat
+   any stylesheet rule — including a `@media print` block — regardless of
+   which accent is active. So printing to a light, ink-friendly palette has
+   to swap the same custom properties via JS, not CSS; beforeprint/afterprint
+   fire for both the in-app "Print Report" button (window.print()) and a
+   plain Ctrl+P, so this covers both without any extra wiring. */
+const PRINT_PALETTE = {
+            "--bg": "#ffffff", "--panel": "#ffffff", "--panel-2": "#f3f4f6", "--line": "#d1d5db",
+            "--txt": "#111827", "--dim": "#4b5563",
+            "--mint": "#059669", "--mint-dim": "#d1fae5",
+            "--liq": "#0369a1", "--liq-dim": "#dbeafe",
+            "--amber": "#b45309", "--amber-dim": "#fef3c7",
+            "--coral": "#b91c1c", "--purple": "#6d28d9", "--mint-soft": "#16a34a",
+          };
+let _preprintVars = null;
+window.addEventListener("beforeprint", () => {
+            const r = document.documentElement.style;
+            _preprintVars = {};
+            Object.keys(PRINT_PALETTE).forEach(k => {
+              _preprintVars[k] = r.getPropertyValue(k);
+              r.setProperty(k, PRINT_PALETTE[k]);
+            });
+          });
+window.addEventListener("afterprint", () => {
+            if (!_preprintVars) return;
+            const r = document.documentElement.style;
+            Object.entries(_preprintVars).forEach(([k, v]) => {
+              if (v) r.setProperty(k, v); else r.removeProperty(k);
+            });
+            _preprintVars = null;
+          });
+
 export function buildThemeMatrix() {
             const grid = document.getElementById("themeMatrixGrid");
             if (!grid) return;

@@ -2072,3 +2072,58 @@
         color: rgba(255,255,255,0.5);
       }
 
+      /* ══════════════════════════════════════════════════════════════
+         PRINT — "Print Report" (Admin ▾ → Print Report) prints whichever
+         tab is currently open. The app's whole palette is light-on-dark
+         (--txt/--dim etc. are pale colors meant for a navy background),
+         so printing with the screen palette unchanged would be close to
+         illegible on white paper — remap the same custom properties every
+         component already reads (including chart SVGs, which set
+         stroke/fill from these vars) to light-mode equivalents instead of
+         restyling each component individually.
+         ══════════════════════════════════════════════════════════════ */
+      @media print {
+        :root {
+          --bg: #ffffff;
+          --panel: #ffffff;
+          --panel-2: #f3f4f6;
+          --line: #d1d5db;
+          --txt: #111827;
+          --dim: #4b5563;
+          --mint: #059669;
+          --mint-dim: #d1fae5;
+          --liq: #0369a1;
+          --liq-dim: #dbeafe;
+          --amber: #b45309;
+          --amber-dim: #fef3c7;
+          --coral: #b91c1c;
+          --purple: #6d28d9;
+          --mint-soft: #16a34a;
+        }
+        /* .card uses a hardcoded rgba(14,14,30,..) background rather than
+           var(--panel) (predates the accent-theme system), and .coll-section
+           (the Portfolio tab's fund cards) is the same story — neither
+           picks up the --panel remap above, so both need an explicit
+           override alongside it. */
+        body, .card, .coll-section, .tab-section { background: #fff !important; box-shadow: none !important; }
+        .card, .coll-section { border: 1px solid var(--line) !important; break-inside: avoid; }
+
+        /* Chrome: nav, dropdowns, modals, edit/action controls — nothing
+           interactive belongs on paper. Deliberately not a blanket
+           `button { display:none }`: several "buttons" in this app (fund
+           card headers, sortable table headers, the Total bar) are the
+           actual content row, not just an action. The hero banner has its
+           own hardcoded dark gradient background (unrelated to --bg) and
+           is purely decorative branding, so it's simplest to just hide it. */
+        .portfolio-hero,
+        nav.tabs, #themeMatrix, .nav-dropdown, .edit-banner, .modal-overlay,
+        .holdings-chevron, .coll-chevron, .drag-handle, .fund-archive-btn,
+        .add-fund-row, #privacyBtn, .reb-icon-btn, .reb-add-row-btn,
+        .reb-add-section-btn, .reb-edit-btn, .reb-back-btn, .nw-hist-del,
+        .nw-snap-row, .cal-nav, .txn-preset, .btn, .btn-ghost,
+        .btn-sm, .fund-cat-select
+        { display: none !important; }
+
+        input, select { border: none !important; background: transparent !important; box-shadow: none !important; color: inherit !important; padding: 0 !important; }
+      }
+
