@@ -25,12 +25,26 @@ export function bankSpentThisMonth() {
             };
           }
 
+// The Fixed items are budgeted amounts expected to come OUT of the same
+// bank balance bankSpentThisMonth() already measures — they're a breakdown
+// of that drop, not a separate spend on top of it. So the real total spent
+// this month is the bank drop itself; "extra" is whatever of that drop
+// isn't accounted for by the fixed plan (can go negative if less left the
+// account than was budgeted — e.g. a bill hasn't auto-debited yet).
+// Example: bank went 5L -> 2L (a 3L drop) and 2L of fixed expenses were
+// planned -> 1L of unplanned/extra spend, 3L total, not 5L.
 export function totalMonthlyExpenses() {
             const fixed = fixedExpensesTotal();
             const bankSpend = bankSpentThisMonth();
+            if (!bankSpend) {
+              // No snapshot to diff against yet — the only real number we
+              // have is the planned fixed total, so use that as the estimate.
+              return { fixed, bankSpend: null, extra: null, total: fixed };
+            }
             return {
               fixed,
               bankSpend,
-              total: fixed + (bankSpend?.amount || 0),
+              extra: bankSpend.amount - fixed,
+              total: bankSpend.amount,
             };
           }

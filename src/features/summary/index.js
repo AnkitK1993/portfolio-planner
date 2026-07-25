@@ -410,7 +410,7 @@ function renderExpenses() {
             card.style.display = "";
 
             const items = state.surplus?.fixedExpenses || [];
-            const { fixed, bankSpend, total } = totalMonthlyExpenses();
+            const { fixed, bankSpend, extra, total } = totalMonthlyExpenses();
 
             const rowStyle = (bg) => `background:${bg};border:1px solid ${editMode ? "var(--line)" : "transparent"};border-radius:5px;color:var(--txt);padding:4px 7px;${editMode ? "" : "cursor:default;"}`;
             const rows = items.map(item => `
@@ -429,25 +429,34 @@ function renderExpenses() {
               ${editMode ? `No fixed expenses yet — use "+ Add Fixed Expense" below.` : `No fixed expenses added. Tap Edit to add rent, EMIs, subscriptions, etc.`}
             </div>`;
 
+            // Fixed items are a BREAKDOWN of the bank drop, not a separate
+            // spend on top of it — so this shows the bank drop as the real
+            // total, with "extra" being whatever of that drop the fixed
+            // plan doesn't account for (can go negative: less left the
+            // account than was budgeted, e.g. a bill hasn't hit yet).
             const bankHtml = bankSpend
               ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);">
                   <div style="display:flex;justify-content:space-between;align-items:center;">
-                    <span style="font-size:11px;color:var(--txt)">Spent from Bank this month</span>
-                    <span style="font-family:'Roboto Mono',monospace;font-size:13px;font-weight:700;color:var(--amber)">${fmt(bankSpend.amount)}</span>
+                    <span style="font-size:11px;color:var(--txt)">Bank balance this month</span>
+                    <span style="font-family:'Roboto Mono',monospace;font-size:12px;color:var(--txt)">${fmt(bankSpend.openingBank)} &rarr; ${fmt(bankSpend.currentBank)}</span>
                   </div>
                   <div style="font-size:9px;color:var(--dim);margin-top:2px;">
-                    ${fmt(bankSpend.openingBank)} as of ${fmtMonth(bankSpend.asOfKey)} snapshot &rarr; ${fmt(bankSpend.currentBank)} now on the Net Worth tab
+                    As of ${fmtMonth(bankSpend.asOfKey)} snapshot vs. now on the Net Worth tab &mdash; a drop of ${fmt(bankSpend.amount)}
                   </div>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
+                  <span style="font-size:11px;color:var(--txt)">${extra >= 0 ? "Extra beyond planned" : "Under planned"}</span>
+                  <span style="font-family:'Roboto Mono',monospace;font-size:13px;font-weight:700;color:${extra > 0 ? "var(--amber)" : "var(--mint)"}">${extra >= 0 ? "+" : "−"}${fmt(Math.abs(extra))}</span>
                 </div>`
               : `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:10.5px;color:var(--dim);">
-                  Save a Net Worth snapshot to start tracking bank spending automatically.
+                  Save a Net Worth snapshot to start tracking bank spending automatically &mdash; until then, Total This Month is just your planned fixed total below.
                 </div>`;
 
             wrap.innerHTML = `
               <div>${rows || emptyHtml}</div>
               ${editMode ? `<button class="btn btn-ghost" id="expAddBtn" style="width:100%;font-size:11px;margin-top:8px;">+ Add Fixed Expense</button>` : ""}
               <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);">
-                <span style="font-size:11px;color:var(--dim)">Fixed Total</span>
+                <span style="font-size:11px;color:var(--dim)">Planned (Fixed)</span>
                 <span style="font-family:'Roboto Mono',monospace;font-size:12px;font-weight:700;color:var(--txt)">${fmt(fixed)}</span>
               </div>
               ${bankHtml}
