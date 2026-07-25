@@ -56,6 +56,26 @@ export function nwTotal() {
             return mfTotalValue() + mfUnrealizedGain() + other;
           }
 
+// Average monthly compounding rate across consecutive snapshot pairs —
+// shared by the Projections cards' forward estimate and any other feature
+// that needs "what rate has this net worth actually been growing at".
+export function avgMonthlyGrowthRate(sortedSnaps) {
+            let totalRate = 0, count = 0;
+            for (let i = 1; i < sortedSnaps.length; i++) {
+              const prev = sortedSnaps[i - 1], curr = sortedSnaps[i];
+              if (prev.total > 0) {
+                const [py, pm] = prev.key.split("-").map(Number);
+                const [cy, cm] = curr.key.split("-").map(Number);
+                const months = (cy - py) * 12 + (cm - pm);
+                if (months > 0) {
+                  totalRate += Math.pow(curr.total / prev.total, 1 / months) - 1;
+                  count++;
+                }
+              }
+            }
+            return count > 0 ? totalRate / count : 0;
+          }
+
 export function buildCurrentSnapshot() {
             const cur = { mf: mfTotalValue(), total: nwTotal() };
             NW_FIELDS.forEach((f) => { cur[f.id] = state.networth[f.id] || 0; });

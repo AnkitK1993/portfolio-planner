@@ -1,7 +1,7 @@
 import { NW_FIELDS, OTHER_FIELDS } from "../../core/constants.js";
 import { UI } from "../../core/ui.js";
 import { _animOnRender, animateNumber, animateWidth } from "../../core/animate.js";
-import { buildCurrentSnapshot, mfTotalValue, mfUnrealizedGain, mfValueAsOf, nwTotal } from "../../domain/networth.js";
+import { avgMonthlyGrowthRate, buildCurrentSnapshot, mfTotalValue, mfUnrealizedGain, mfValueAsOf, nwTotal } from "../../domain/networth.js";
 import { editMode, normalizeSnap, othersOfSnap, saveState, snapshotKey, state } from "../../core/state.js";
 import { el } from "../../core/dom.js";
 import { fmt, fmtCompact, fmtMonth, fmtNum, num } from "../../core/format.js";
@@ -577,22 +577,7 @@ export function renderNwProjection() {
               return;
             }
 
-            let totalRate = 0,
-              count = 0;
-            for (let i = 1; i < sorted.length; i++) {
-              const prev = sorted[i - 1],
-                curr = sorted[i];
-              if (prev.total > 0) {
-                const [py, pm] = prev.key.split("-").map(Number);
-                const [cy, cm] = curr.key.split("-").map(Number);
-                const months = (cy - py) * 12 + (cm - pm);
-                if (months > 0) {
-                  totalRate += Math.pow(curr.total / prev.total, 1 / months) - 1;
-                  count++;
-                }
-              }
-            }
-            const r = count > 0 ? totalRate / count : 0;
+            const r = avgMonthlyGrowthRate(sorted);
             const ann = (Math.pow(1 + r, 12) - 1) * 100;
             const cur = nwTotal();
 
@@ -625,4 +610,38 @@ export function renderNwProjection() {
               <p style="font-size:10px;color:var(--dim);margin-top:12px;line-height:1.6;">
                 Simple compound model using your actual historical rate. Real returns vary.
               </p>`;
+
+            renderNwMilestone(sorted, r, cur);
+          }
+
+// Next round net-worth milestone above your current total, and roughly when
+// you'd reach it at the growth rate the cards above already use — "how much"
+// vs "when", same underlying model.
+const MILESTONE_LADDER = [1000000, 2500000, 5000000, 10000000, 20000000, 50000000, 100000000, 200000000, 500000000, 1000000000, 2000000000];
+
+function renderNwMilestone(sorted, r, cur) {
+            const wrap = el("nwMilestone");
+            if (!wrap) return;
+            if (sorted.length < 2) { wrap.innerHTML = ""; return; }
+
+            const next = MILESTONE_LADDER.find(m => m > cur);
+            if (!next) { wrap.innerHTML = ""; return; }
+
+            if (r <= 0) {
+              wrap.innerHTML = `<div style="font-size:11px;color:var(--dim);margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--line);">
+                Next milestone <b style="color:var(--txt)">${fmtCompact(next)}</b> — can't project an ETA while your recent growth rate is flat or negative.
+              </div>`;
+              return;
+            }
+
+            const monthsAway = Math.log(next / cur) / Math.log(1 + r);
+            const etaDate = new Date();
+            etaDate.setMonth(etaDate.getMonth() + Math.round(monthsAway));
+            const etaLabel = etaDate.toLocaleDateString("en-IN", { month: "short", year: "numeric" });
+            const awayLabel = monthsAway >= 12 ? (monthsAway / 12).toFixed(1) + " yr" : Math.round(monthsAway) + " mo";
+
+            wrap.innerHTML = `<div style="font-size:11px;color:var(--dim);margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--line);">
+              Next milestone <b style="color:var(--mint);font-family:'Roboto Mono',monospace">${fmtCompact(next)}</b> —
+              projected <b style="color:var(--txt)">${etaLabel}</b> <span style="opacity:0.8">(~${awayLabel} away)</span> at your current growth rate.
+            </div>`;
           }

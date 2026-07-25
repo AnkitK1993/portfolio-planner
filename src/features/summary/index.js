@@ -2,6 +2,7 @@ import { EQ_CATEGORIES } from "../../core/constants.js";
 import { EQ_FUNDS, LIQ_FUNDS, editMode, fundName, normalizeSnap, saveState, state } from "../../core/state.js";
 import { UI } from "../../core/ui.js";
 import { _animOnRender, _animRaf, animateNumber, animateWidth } from "../../core/animate.js";
+import { avgMonthlyGrowthRate, nwTotal } from "../../domain/networth.js";
 import { cachedPortfolioXirr, fundXirr, rollingPortfolioXirr } from "../../domain/xirr.js";
 import { el } from "../../core/dom.js";
 import { estimateCapitalGainsTax, LTCG_EXEMPTION } from "../../domain/tax.js";
@@ -12,6 +13,9 @@ import { renderIdealAlloc } from "./rebalance.js";
 export function renderSummaryExtras(eqCur, liqCur, totCur, eqTgt, liqTgt, totTgt, nowEqPct, tgtEqPct) {
             /* — Health Score (also renders the drift alert banner) — */
             renderHealthScore();
+
+            /* — Financial Independence progress — */
+            renderFireProgress();
 
             /* — Ideal Allocation card — */
             renderIdealAlloc();
@@ -60,6 +64,13 @@ function renderTaxEstimate() {
               ${row("Equity LTCG", fmt(t.ltGain), fmt(t.equityLtTax), `Held 12+ mo · ${fmt(LTCG_EXEMPTION)} exempt/yr · 12.5% above that`)}
               ${row("Equity STCG", fmt(t.stGain), fmt(t.equityStTax), "Held under 12 mo · flat 20%")}
               ${row("Debt / Liquid / International", fmt(t.debtGain), fmt(t.debtTax), "Taxed at your income slab rate, any holding period")}
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);">
+                <span style="font-size:11px;color:var(--txt)">Post-tax corpus if redeemed today</span>
+                <span style="font-family:'Roboto Mono',monospace;font-size:13px;font-weight:700;color:var(--mint)">${fmt(t.grossValue)} → ${fmt(t.netAfterTax)}</span>
+              </div>
+              ${t.ltcgHeadroom > 0 ? `<div style="font-size:10.5px;color:var(--mint);margin-top:10px;line-height:1.5;">
+                💡 You have <b>${fmt(t.ltcgHeadroom)}</b> of unused LTCG exemption this FY — realize up to that much more long-term equity gain tax-free (assuming you haven't booked LTCG elsewhere this year).
+              </div>` : ""}
               <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;flex-wrap:wrap;">
                 <span style="font-size:10px;color:var(--dim)">Your income tax slab ${editMode ? "" : "(tap Edit to change)"}</span>
                 <div style="display:flex;align-items:center;gap:4px;">
@@ -253,9 +264,9 @@ export function renderHealthScore() {
             // ── Dimension 3: Liquidity buffer (vs 6-month expenses) ──
             const totalLiqFree = LIQ_FUNDS.reduce((s, f) => s + Math.max(0, (state.liquid[f.id]?.value || 0) - (state.liquid[f.id]?.reserve || 0)), 0);
             const monthlyExp = state.surplus?.expenses || 0;
-            let bScore = 15, bNote = "Enter expenses to measure";
+            let bScore = 15, bNote = "Enter expenses to measure", bufMonths = null;
             if (monthlyExp > 0) {
-              const bufMonths = totalLiqFree / monthlyExp;
+              bufMonths = totalLiqFree / monthlyExp;
               if (bufMonths >= 6)  { bScore = 25; bNote = bufMonths.toFixed(1) + " mo buffer"; }
               else if (bufMonths >= 3) { bScore = 17; bNote = bufMonths.toFixed(1) + " mo buffer (need 6)"; }
               else if (bufMonths >= 1) { bScore = 10; bNote = bufMonths.toFixed(1) + " mo buffer (need 6)"; }
@@ -341,6 +352,11 @@ export function renderHealthScore() {
                     </div>`).join("")}
                 </div>
               </div>
+              ${bufMonths !== null ? `
+              <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:11px;color:var(--dim);">
+                Emergency fund: <b style="color:${bufMonths >= 6 ? "var(--mint)" : bufMonths >= 3 ? "var(--amber)" : "var(--coral)"};font-family:'Roboto Mono',monospace">${bufMonths.toFixed(1)} months</b> of expenses covered
+                (<span style="color:var(--txt)">${fmt(totalLiqFree)}</span> deployable liquid ÷ <span style="color:var(--txt)">${fmt(monthlyExp)}</span>/mo)
+              </div>` : ""}
               <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
                 <span style="font-size:10px;color:var(--dim)">Monthly expenses <span style="opacity:0.7">— used for Liq. Buffer above${editMode ? "" : " (tap Edit to change)"}</span></span>
                 <div style="display:flex;align-items:center;gap:4px;">
@@ -392,6 +408,62 @@ export function renderHealthScore() {
               wrap.querySelectorAll(".phs-dim-bar").forEach(bar => {
                 bar.style.width = (bar.dataset.w || "0") + "%";
               });
+            }
+          }
+
+/* FI number = 25× annual expenses (the standard 4%-withdrawal-rate rule of
+   thumb) — reuses the same expenses figure the Health Score's Liquidity
+   Buffer dimension already collects, and the same historical growth rate
+   the Net Worth Projections card uses, so this card needs no state of its
+   own beyond what's already tracked. */
+function renderFireProgress() {
+            const card = el("sumFireCard");
+            const wrap = el("sumFireBody");
+            if (!card || !wrap) return;
+
+            const monthlyExp = state.surplus?.expenses || 0;
+            if (monthlyExp <= 0) { card.style.display = "none"; return; }
+            card.style.display = "";
+
+            const fiTarget = monthlyExp * 12 * 25;
+            const cur = nwTotal();
+            const progressPct = fiTarget > 0 ? Math.min(100, (cur / fiTarget) * 100) : 0;
+
+            const snaps = state.networth.snapshots || {};
+            const sorted = Object.entries(snaps).map(([k, v]) => normalizeSnap(k, v)).sort((a, b) => a.key.localeCompare(b.key));
+            const r = sorted.length >= 2 ? avgMonthlyGrowthRate(sorted) : 0;
+
+            let etaHtml;
+            if (cur >= fiTarget) {
+              etaHtml = `<span style="color:var(--mint);font-weight:600;">You've reached your FI number 🎉</span>`;
+            } else if (sorted.length < 2 || r <= 0) {
+              etaHtml = `<span style="color:var(--dim)">Add more monthly Net Worth snapshots to project a timeline.</span>`;
+            } else {
+              const monthsAway = Math.log(fiTarget / cur) / Math.log(1 + r);
+              const yrsAway = monthsAway / 12;
+              const etaDate = new Date();
+              etaDate.setMonth(etaDate.getMonth() + Math.round(monthsAway));
+              const etaLabel = etaDate.toLocaleDateString("en-IN", { month: "short", year: "numeric" });
+              etaHtml = `~<b style="color:var(--txt)">${yrsAway.toFixed(1)} years</b> away — projected <b style="color:var(--txt)">${etaLabel}</b> at your current net worth growth rate.`;
+            }
+
+            wrap.innerHTML = `
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
+                <span style="font-size:11px;color:var(--dim)">Net worth <b style="color:var(--txt)">${fmt(cur)}</b> of <b style="color:var(--txt)">${fmt(fiTarget)}</b> FI number</span>
+                <span style="font-family:'Roboto Mono',monospace;font-size:16px;font-weight:700;color:var(--mint)">${progressPct.toFixed(1)}%</span>
+              </div>
+              <div style="height:10px;background:rgba(255,255,255,0.06);border-radius:5px;overflow:hidden;margin-bottom:10px;">
+                <div class="fire-bar" data-w="${progressPct.toFixed(1)}" style="height:100%;width:0%;background:linear-gradient(90deg,var(--liq),var(--mint));border-radius:5px;"></div>
+              </div>
+              <div style="font-size:11px;color:var(--dim);line-height:1.5;">${etaHtml}</div>
+              <div style="font-size:9px;color:var(--dim);opacity:0.75;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);">
+                FI number = 25× annual expenses (4% withdrawal rule) — a rough target, not investment advice.
+              </div>`;
+
+            const bar = wrap.querySelector(".fire-bar");
+            if (bar) {
+              if (_animOnRender) animateWidth(bar, progressPct, 1200);
+              else bar.style.width = progressPct + "%";
             }
           }
 
@@ -530,6 +602,46 @@ export function renderXirrAndHeatmap() {
               if (sorted.length < 2) { hmCard.style.display = "none"; }
               else {
                 hmCard.style.display = "";
+
+                // Best/worst month-over-month % change, and max peak-to-trough
+                // drawdown — computed over the FULL snapshot history, unlike
+                // the heatmap grid below which only shows the last 12 months.
+                const fmtMo = key => new Date(key + "-01T00:00:00").toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
+                let bestMo = null, worstMo = null;
+                let peak = sorted[0].total, peakKey = sorted[0].key;
+                let maxDD = 0, maxDDPeakKey = null, maxDDTroughKey = null;
+                for (let i = 1; i < sorted.length; i++) {
+                  const prev = sorted[i - 1], curr = sorted[i];
+                  if (prev.total > 0) {
+                    const chPct = (curr.total - prev.total) / prev.total * 100;
+                    if (!bestMo || chPct > bestMo.pct) bestMo = { key: curr.key, pct: chPct };
+                    if (!worstMo || chPct < worstMo.pct) worstMo = { key: curr.key, pct: chPct };
+                  }
+                  if (curr.total > peak) { peak = curr.total; peakKey = curr.key; }
+                  else if (peak > 0) {
+                    const ddPct = (curr.total - peak) / peak * 100;
+                    if (ddPct < maxDD) { maxDD = ddPct; maxDDPeakKey = peakKey; maxDDTroughKey = curr.key; }
+                  }
+                }
+                const statsHtml = (bestMo || worstMo || maxDD < 0) ? `
+                  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--line);">
+                    ${bestMo ? `<div>
+                      <div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Best Month</div>
+                      <div style="font-family:'Roboto Mono',monospace;font-size:13px;font-weight:700;color:var(--mint)">+${bestMo.pct.toFixed(1)}%</div>
+                      <div style="font-size:9px;color:var(--dim)">${fmtMo(bestMo.key)}</div>
+                    </div>` : ""}
+                    ${worstMo ? `<div>
+                      <div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Worst Month</div>
+                      <div style="font-family:'Roboto Mono',monospace;font-size:13px;font-weight:700;color:${worstMo.pct < 0 ? "var(--coral)" : "var(--mint)"}">${worstMo.pct >= 0 ? "+" : ""}${worstMo.pct.toFixed(1)}%</div>
+                      <div style="font-size:9px;color:var(--dim)">${fmtMo(worstMo.key)}</div>
+                    </div>` : ""}
+                    ${maxDD < 0 ? `<div>
+                      <div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Max Drawdown</div>
+                      <div style="font-family:'Roboto Mono',monospace;font-size:13px;font-weight:700;color:var(--coral)">${maxDD.toFixed(1)}%</div>
+                      <div style="font-size:9px;color:var(--dim)">${fmtMo(maxDDPeakKey)} → ${fmtMo(maxDDTroughKey)}</div>
+                    </div>` : ""}
+                  </div>` : "";
+
                 const rows = sorted.slice(-12).map((s, i, arr) => {
                   const prev = arr[i - 1];
                   const delta = prev ? s.total - prev.total : null;
@@ -542,7 +654,7 @@ export function renderXirrAndHeatmap() {
                     <div style="font-size:8px;color:var(--dim);">${pct !== null ? (pct >= 0 ? "+" : "") + pct.toFixed(1) + "%" : ""}</div>
                   </div>`;
                 }).join("");
-                hmEl.innerHTML = `<div style="display:flex;gap:6px;flex-wrap:wrap;">${rows}</div>
+                hmEl.innerHTML = `${statsHtml}<div style="display:flex;gap:6px;flex-wrap:wrap;">${rows}</div>
                   <div style="font-size:9px;color:var(--dim);margin-top:8px;">Darker = bigger month-over-month swing, green = gain, red = loss.</div>`;
               }
             }

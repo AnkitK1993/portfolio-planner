@@ -66,7 +66,7 @@ function fifoLtStFractions(fundId) {
 // Meant as a directional number, not a filing figure.
 export function estimateCapitalGainsTax() {
             const taxSlabPct = state.surplus?.taxSlabPct ?? 30;
-            let ltGain = 0, stGain = 0, debtGain = 0;
+            let ltGain = 0, stGain = 0, debtGain = 0, grossValue = 0;
             let excludedGain = 0, excludedFunds = 0;
             let hasAnyHolding = false;
 
@@ -77,6 +77,7 @@ export function estimateCapitalGainsTax() {
               if (basis <= 0) return;
               hasAnyHolding = true;
               const cv = s.currentValue || basis;
+              grossValue += cv;
               const gain = cv - basis;
               if (gain <= 0) return;
               if (DEBT_TAXED_EQ_CATEGORIES.has(s.category)) { debtGain += gain; return; }
@@ -93,6 +94,7 @@ export function estimateCapitalGainsTax() {
               if (basis <= 0) return;
               hasAnyHolding = true;
               const cv = s.currentValue || basis;
+              grossValue += cv;
               const gain = cv - basis;
               if (gain > 0) debtGain += gain;
             });
@@ -101,14 +103,25 @@ export function estimateCapitalGainsTax() {
             const equityLtTax = ltcgTaxable * LTCG_RATE;
             const equityStTax = stGain * STCG_RATE;
             const debtTax = debtGain * (taxSlabPct / 100);
+            const totalTax = equityLtTax + equityStTax + debtTax;
+
+            // Unused headroom in this FY's ₹1.25L LTCG exemption, based on
+            // long-term gain sitting in current holdings. Assumes no other
+            // long-term equity gains have already been realized this FY
+            // elsewhere — the app has no ledger of that, so this is only
+            // ever a floor on how much headroom is actually left.
+            const ltcgHeadroom = Math.max(0, LTCG_EXEMPTION - ltGain);
 
             return {
               hasAnyHolding,
               ltGain, stGain, debtGain,
               ltcgTaxable,
               equityLtTax, equityStTax, debtTax,
-              totalTax: equityLtTax + equityStTax + debtTax,
+              totalTax,
               taxSlabPct,
               excludedGain, excludedFunds,
+              grossValue,
+              netAfterTax: grossValue - totalTax,
+              ltcgHeadroom,
             };
           }

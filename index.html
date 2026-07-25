@@ -208,6 +208,13 @@
           <div id="sumHealthScore"></div>
         </div>
 
+        <!-- Financial Independence progress -->
+        <div class="card" id="sumFireCard" style="display:none;margin-bottom:12px">
+          <div class="sec-head" style="margin-bottom:4px">Financial Independence</div>
+          <div style="font-size:10px;color:var(--dim);margin-bottom:12px">Progress toward 25&times; your annual expenses</div>
+          <div id="sumFireBody"></div>
+        </div>
+
         <!-- Portfolio XIRR -->
         <div class="card" id="sumXirrCard" style="display:none;margin-bottom:12px">
           <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
@@ -404,6 +411,7 @@
         <!-- Projections -->
         <div class="card">
           <div class="sec-head" style="margin-bottom:12px">Projections</div>
+          <div id="nwMilestone"></div>
           <div id="nwProjection"></div>
         </div>
 
@@ -593,7 +601,10 @@
         <div class="txp-card" id="txp-history">
           <div class="txp-card-head" id="txp-history-head">
             <span class="txp-card-title">History</span>
-            <span class="txp-card-chev">▾</span>
+            <span style="display:flex;align-items:center;gap:10px;">
+              <button class="btn btn-ghost" id="txnExportBtn" style="font-size:10.5px;padding:4px 10px;" title="Export the currently filtered transactions as CSV">Export CSV</button>
+              <span class="txp-card-chev">▾</span>
+            </span>
           </div>
           <div class="txp-card-body">
             <div class="txp-inner">

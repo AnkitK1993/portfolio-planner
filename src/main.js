@@ -8,7 +8,7 @@ import { UI, closeNavDropdowns, collapseTxpCard, navigateTo, openNavDropdown, to
 import { _hasLocalData, authUser, fbAuthReady, fbEnabled, flushCloudSave, handleSignInResult, initFirebase, loadBackupList, resetBackupPanel, saveManualBackup } from "./infra/firebase.js";
 import { _upcomingHead } from "./features/portfolio/upcoming.js";
 import { animateNumber } from "./core/animate.js";
-import { applyTxnTotals, closeCurValModal, closeTxnModal, openCurValModal, openTxnModal, renderReturns, renderTxns, saveCurVal, saveTxn, setTxnType, txnFilter } from "./features/transactions/index.js";
+import { applyTxnTotals, closeCurValModal, closeTxnModal, exportTxnsCSV, openCurValModal, openTxnModal, renderReturns, renderTxns, saveCurVal, saveTxn, setTxnType, txnFilter } from "./features/transactions/index.js";
 import { buildNwGrid, nwLiveSaved, renderNetWorth, renderNwCompositionChart, renderNwHistory, renderNwLineChart, renderNwProjection, setNwEditingKey, setNwLiveSaved, takeSnapshot } from "./features/networth/index.js";
 import { buildThemeMatrix, hideThemeMatrix, loadSavedAccent, showThemeMatrix, themeMatrixOpen } from "./features/admin/themes.js";
 import { calDayDate, calMonth, calView, calWeekOffset, calYear, closeCalNoteModal, openCalNoteModal, renderCalendar, saveCalNote, setCalMonth, setCalView, setCalWeekOffset, setCalYear } from "./features/portfolio/calendar.js";
@@ -44,6 +44,7 @@ document.addEventListener("click", e => {
 el("txnsBtn").addEventListener("click", () => { navigateTo("transactions"); });
 el("ddDataBtn").addEventListener("click", () => { closeNavDropdowns(); el("dataModal").style.display = "flex"; });
 el("ddPrintBtn").addEventListener("click", () => { closeNavDropdowns(); window.print(); });
+el("txnExportBtn").addEventListener("click", e => { e.stopPropagation(); exportTxnsCSV(); });
 ["txp-addtxn", "txp-history", "txp-curval", "txp-sip"].forEach(id => {
             const head = el(id + "-head");
             if (!head) return;

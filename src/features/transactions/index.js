@@ -315,6 +315,45 @@ export function txnDateRange() {
             return { from: "0000-01-01", to: "9999-12-31" };
           }
 
+// Snapshot of the last rendered (filtered + sorted) transaction list, so
+// "Export CSV" downloads exactly what's currently on screen rather than
+// silently re-deriving its own copy of the filter logic.
+let lastFilteredTxns = [];
+
+function csvEscape(v) {
+            const s = String(v ?? "");
+            return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+          }
+
+export function exportTxnsCSV() {
+            if (!lastFilteredTxns.length) { UI.toast("info", "No transactions to export", 2000); return; }
+
+            const rows = [["Date", "Fund", "Type", "Invested", "After Expense", "Notes"]];
+            [...lastFilteredTxns]
+              .sort((a, b) => (a.date || "").localeCompare(b.date || ""))
+              .forEach(t => {
+                rows.push([
+                  t.date || "",
+                  fundName(t.fundId),
+                  t.type || "",
+                  Number(t.invested) || 0,
+                  Number(t.afterExpense ?? t.invested) || 0,
+                  t.notes || "",
+                ]);
+              });
+
+            const csv = rows.map(r => r.map(csvEscape).join(",")).join("\r\n");
+            const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "transactions_" + new Date().toISOString().slice(0, 10) + ".csv";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+          }
+
 export function renderTxns() {
             const container = el("txnList");
             if (!container) return;
@@ -340,6 +379,7 @@ export function renderTxns() {
               if (txnFilter.fundId && t.fundId !== txnFilter.fundId) return false;
               return true;
             });
+            lastFilteredTxns = txns;
 
             // Build running total map (always chronological regardless of sort)
             const chronoAll = [...txns].sort((a, b) => (a.date || "").localeCompare(b.date || ""));
