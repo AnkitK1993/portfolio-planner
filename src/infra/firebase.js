@@ -226,12 +226,12 @@ export function applyCloudState(raw) {
               equity: Object.fromEntries(eqOrder.map(id => [id, { ...eqBase, ...(raw.equity?.[id] || {}) }])),
               liquidOrder: liqOrder,
               equityOrder: eqOrder,
-              stp: { ...def.stp, ...(raw.stp || {}) },
               networth: {
                 ...Object.fromEntries(NW_FIELDS.map((f) => [f.id, raw.networth?.[f.id] ?? 0])),
                 snapshots: { ...(raw.networth?.snapshots || {}) },
               },
               forecast: { ...def.forecast, ...(raw.forecast || {}) },
+              idealWeights: { ...def.idealWeights, ...(raw.idealWeights || {}) },
               transactions: Array.isArray(raw.transactions) ? raw.transactions : [],
               returnsLog: Array.isArray(raw.returnsLog) ? raw.returnsLog : [],
               calendarNotes: Array.isArray(raw.calendarNotes) ? raw.calendarNotes : [],

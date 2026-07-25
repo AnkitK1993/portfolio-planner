@@ -229,14 +229,16 @@ export function renderIdealAlloc() {
               const weightItems = activeCats.map(cat => `
                 <div style="display:grid;grid-template-columns:1fr 56px 16px;align-items:center;gap:5px;padding:4px 0;">
                   <span style="font-size:11px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${cat}</span>
-                  <input type="number" class="ideal-wt-inp" data-cat="${cat}" min="0" max="100" step="1" value="${weights[cat]}"
-                    style="background:var(--input-bg,rgba(255,255,255,0.06));border:1px solid var(--line);border-radius:5px;color:var(--txt);
-                           font-family:'Roboto Mono',monospace;font-size:11px;text-align:right;padding:3px 6px;width:100%"/>
+                  <input type="number" class="ideal-wt-inp" data-cat="${cat}" min="0" max="100" step="1" value="${weights[cat]}" ${editMode ? "" : "readonly"}
+                    style="background:var(--input-bg,rgba(255,255,255,0.06));border:1px solid var(--line);border-radius:5px;color:${editMode ? "var(--txt)" : "var(--dim)"};
+                           font-family:'Roboto Mono',monospace;font-size:11px;text-align:right;padding:3px 6px;width:100%;${editMode ? "" : "cursor:default;"}"/>
                   <span style="font-size:10px;color:var(--dim)">%</span>
                 </div>`).join("");
 
               editorEl.innerHTML = `
-                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--dim);margin-bottom:7px">Target Equity Split</div>
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--dim);margin-bottom:7px">
+                  Target Equity Split ${editMode ? "" : `<span style="font-weight:400;text-transform:none;letter-spacing:normal;">— tap Edit to change</span>`}
+                </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 18px;">${weightItems}</div>
                 <div style="text-align:right;font-size:10px;margin-top:5px;color:${weightOk ? "var(--mint)" : "var(--coral)"};">
                   Total: ${totalWeight.toFixed(0)}% ${weightOk ? "✓" : "— must equal 100%"}
@@ -245,6 +247,9 @@ export function renderIdealAlloc() {
 
             editorEl.querySelectorAll(".ideal-wt-inp").forEach(inp => {
               inp.addEventListener("change", e => {
+                // readonly blocks typing but not every browser's number-input
+                // spinner/scroll-wheel, so re-check editMode before writing.
+                if (!editMode) { renderIdealAlloc(); return; }
                 if (!state.idealWeights) state.idealWeights = {};
                 state.idealWeights[e.target.dataset.cat] = parseFloat(e.target.value) || 0;
                 saveState();
