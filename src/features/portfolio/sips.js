@@ -3,6 +3,7 @@ import { UI, collapseTxpCard, expandTxpCard, navigateTo } from "../../core/ui.js
 import { el } from "../../core/dom.js";
 import { fmt, num } from "../../core/format.js";
 import { renderCalendar } from "./calendar.js";
+import { totalMonthlySip } from "../../domain/expenses.js";
 
 export function openManageSips() {
             const sections = [
@@ -34,10 +35,7 @@ export function openManageSips() {
                 </div>`;
               });
             });
-            const sipTotal = [...LIQ_FUNDS, ...EQ_FUNDS].reduce((s, f) => {
-              const isLiq = LIQ_FUNDS.some(x => x.id === f.id);
-              return s + ((isLiq ? state.liquid[f.id] : state.equity[f.id]).sipAmt || 0);
-            }, 0);
+            const sipTotal = totalMonthlySip();
             html += `<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;">
               <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--dim);">Total Monthly SIP</span>
               <span style="font-family:'Roboto Mono',monospace;font-size:15px;font-weight:700;color:var(--mint);">${fmt(sipTotal)}</span>

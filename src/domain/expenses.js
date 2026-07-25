@@ -1,7 +1,19 @@
-import { state } from "../core/state.js";
+import { EQ_FUNDS, LIQ_FUNDS, state } from "../core/state.js";
 
 export function fixedExpensesTotal() {
             return (state.surplus?.fixedExpenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+          }
+
+// Total of every fund's monthly SIP amount (liquid + equity — the Manage
+// SIPs modal allows both). SIPs auto-debit from the same bank account
+// bankSpentThisMonth() diffs, so like fixed expenses they're a planned
+// chunk of that drop, not a separate outflow layered on top of it.
+export function totalMonthlySip() {
+            return [...LIQ_FUNDS, ...EQ_FUNDS].reduce((s, f) => {
+              const isLiq = LIQ_FUNDS.some(x => x.id === f.id);
+              const fs = isLiq ? state.liquid[f.id] : state.equity[f.id];
+              return s + (fs?.sipAmt || 0);
+            }, 0);
           }
 
 // Bank spend this month = the most recent monthly snapshot's Bank balance
@@ -25,26 +37,29 @@ export function bankSpentThisMonth() {
             };
           }
 
-// The Fixed items are budgeted amounts expected to come OUT of the same
-// bank balance bankSpentThisMonth() already measures — they're a breakdown
-// of that drop, not a separate spend on top of it. So the real total spent
-// this month is the bank drop itself; "extra" is whatever of that drop
-// isn't accounted for by the fixed plan (can go negative if less left the
-// account than was budgeted — e.g. a bill hasn't auto-debited yet).
-// Example: bank went 5L -> 2L (a 3L drop) and 2L of fixed expenses were
+// Fixed items and SIPs are both budgeted amounts expected to come OUT of
+// the same bank balance bankSpentThisMonth() already measures — together
+// they're a breakdown of that drop, not a separate spend on top of it. So
+// the real total spent this month is the bank drop itself; "extra" is
+// whatever of that drop isn't accounted for by fixed + SIP (can go
+// negative if less left the account than was planned — e.g. a bill or SIP
+// hasn't auto-debited yet).
+// Example: bank went 5L -> 2L (a 3L drop), 2L of fixed expenses were
 // planned -> 1L of unplanned/extra spend, 3L total, not 5L.
 export function totalMonthlyExpenses() {
             const fixed = fixedExpensesTotal();
+            const sip = totalMonthlySip();
+            const planned = fixed + sip;
             const bankSpend = bankSpentThisMonth();
             if (!bankSpend) {
               // No snapshot to diff against yet — the only real number we
-              // have is the planned fixed total, so use that as the estimate.
-              return { fixed, bankSpend: null, extra: null, total: fixed };
+              // have is the planned total, so use that as the estimate.
+              return { fixed, sip, planned, bankSpend: null, extra: null, total: planned };
             }
             return {
-              fixed,
+              fixed, sip, planned,
               bankSpend,
-              extra: bankSpend.amount - fixed,
+              extra: bankSpend.amount - planned,
               total: bankSpend.amount,
             };
           }

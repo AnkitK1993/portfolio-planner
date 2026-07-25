@@ -410,7 +410,7 @@ function renderExpenses() {
             card.style.display = "";
 
             const items = state.surplus?.fixedExpenses || [];
-            const { fixed, bankSpend, extra, total } = totalMonthlyExpenses();
+            const { fixed, sip, planned, bankSpend, extra, total } = totalMonthlyExpenses();
 
             const rowStyle = (bg) => `background:${bg};border:1px solid ${editMode ? "var(--line)" : "transparent"};border-radius:5px;color:var(--txt);padding:4px 7px;${editMode ? "" : "cursor:default;"}`;
             const rows = items.map(item => `
@@ -429,11 +429,12 @@ function renderExpenses() {
               ${editMode ? `No fixed expenses yet — use "+ Add Fixed Expense" below.` : `No fixed expenses added. Tap Edit to add rent, EMIs, subscriptions, etc.`}
             </div>`;
 
-            // Fixed items are a BREAKDOWN of the bank drop, not a separate
-            // spend on top of it — so this shows the bank drop as the real
-            // total, with "extra" being whatever of that drop the fixed
-            // plan doesn't account for (can go negative: less left the
-            // account than was budgeted, e.g. a bill hasn't hit yet).
+            // Fixed items + SIPs are both a BREAKDOWN of the bank drop, not
+            // a separate spend on top of it (SIPs auto-debit from the same
+            // account) — so this shows the bank drop as the real total,
+            // with "extra" being whatever of that drop the planned amount
+            // doesn't account for (can go negative: less left the account
+            // than was planned, e.g. a bill or SIP hasn't hit yet).
             const bankHtml = bankSpend
               ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);">
                   <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -449,15 +450,23 @@ function renderExpenses() {
                   <span style="font-family:'Roboto Mono',monospace;font-size:13px;font-weight:700;color:${extra > 0 ? "var(--amber)" : "var(--mint)"}">${extra >= 0 ? "+" : "−"}${fmt(Math.abs(extra))}</span>
                 </div>`
               : `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:10.5px;color:var(--dim);">
-                  Save a Net Worth snapshot to start tracking bank spending automatically &mdash; until then, Total This Month is just your planned fixed total below.
+                  Save a Net Worth snapshot to start tracking bank spending automatically &mdash; until then, Total This Month is just your planned total below.
                 </div>`;
 
             wrap.innerHTML = `
               <div>${rows || emptyHtml}</div>
               ${editMode ? `<button class="btn btn-ghost" id="expAddBtn" style="width:100%;font-size:11px;margin-top:8px;">+ Add Fixed Expense</button>` : ""}
               <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);">
-                <span style="font-size:11px;color:var(--dim)">Planned (Fixed)</span>
+                <span style="font-size:11px;color:var(--dim)">Fixed Total</span>
                 <span style="font-family:'Roboto Mono',monospace;font-size:12px;font-weight:700;color:var(--txt)">${fmt(fixed)}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
+                <span style="font-size:11px;color:var(--dim)">Monthly SIP <span style="opacity:0.7">(all funds — set on Portfolio tab)</span></span>
+                <span style="font-family:'Roboto Mono',monospace;font-size:12px;font-weight:700;color:var(--txt)">${fmt(sip)}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;padding-top:6px;border-top:1px solid var(--line);">
+                <span style="font-size:11px;color:var(--txt)">Planned Total</span>
+                <span style="font-family:'Roboto Mono',monospace;font-size:12px;font-weight:700;color:var(--txt)">${fmt(planned)}</span>
               </div>
               ${bankHtml}
               <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);">
