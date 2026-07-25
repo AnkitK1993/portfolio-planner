@@ -379,6 +379,17 @@ el("holdingsToggle").addEventListener("click", () => {
             body.hidden = isOpen;
             el("holdingsToggle").setAttribute("aria-expanded", String(!isOpen));
           });
+// Expenses card starts collapsed (see the `hidden` attribute in index.html)
+// and shows the Total This Month figure in its header while collapsed —
+// renderExpenses() keeps #expCollapsedTotal in sync regardless of open state.
+el("expCardToggle").addEventListener("click", () => {
+            const btn  = el("expCardToggle");
+            const body = el("expCardBody");
+            const isOpen = btn.classList.contains("open");
+            btn.classList.toggle("open", !isOpen);
+            body.hidden = isOpen;
+            btn.setAttribute("aria-expanded", String(!isOpen));
+          });
 // Returns badges (Total bar + Liquid/Equity division rows) toggle between
 // absolute return% and XIRR on click — all badges switch together since
 // they're one shared display preference (see rtnMode in core/state.js).

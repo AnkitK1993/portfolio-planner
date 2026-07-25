@@ -208,11 +208,19 @@
           <div id="sumHealthScore"></div>
         </div>
 
-        <!-- Expenses -->
+        <!-- Expenses (collapsed by default; shows Total This Month while collapsed) -->
         <div class="card" id="sumExpensesCard" style="display:none;margin-bottom:12px">
-          <div class="sec-head" style="margin-bottom:4px">Expenses</div>
-          <div style="font-size:10px;color:var(--dim);margin-bottom:12px">Fixed monthly costs, plus this month's Bank spending (auto-tracked from the Net Worth tab)</div>
-          <div id="sumExpensesBody"></div>
+          <button class="exp-card-head" id="expCardToggle" aria-expanded="false">
+            <div class="exp-card-head-text">
+              <div class="sec-head" style="margin-bottom:4px">Expenses</div>
+              <div style="font-size:10px;color:var(--dim)">Fixed monthly costs, plus this month's Bank spending (auto-tracked from the Net Worth tab)</div>
+            </div>
+            <span class="exp-card-collapsed-total" id="expCollapsedTotal"></span>
+            <span class="exp-card-chevron">▾</span>
+          </button>
+          <div class="exp-card-body" id="expCardBody" hidden>
+            <div id="sumExpensesBody"></div>
+          </div>
         </div>
 
         <!-- Financial Goals progress -->

@@ -420,6 +420,11 @@ function renderExpenses() {
             const items = state.surplus?.fixedExpenses || [];
             const { fixed, sip, planned, bankSpend, extra, total } = totalMonthlyExpenses();
 
+            // Kept in sync regardless of collapsed/open state — this is
+            // what's visible when the card is collapsed (the default).
+            const collapsedTotalEl = el("expCollapsedTotal");
+            if (collapsedTotalEl) collapsedTotalEl.textContent = fmt(total);
+
             // In view mode, the amount renders as plain formatted text
             // (fmt() gives "₹1,00,000") rather than a number input — native
             // <input type="number"> can't display comma grouping even when
