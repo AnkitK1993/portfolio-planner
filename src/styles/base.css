@@ -1727,11 +1727,12 @@
         flex-shrink: 0;
       }
       .val-pfx { flex-shrink: 0; }
-      /* Right-aligned so figures share a common right edge regardless of
-         digit count — previously left-aligned inside a flex:1 box, so a
-         7-digit and a 5-digit value started at the same X but ended at
-         different ones instead of lining up as a column. */
-      .val-num  { flex: 1; text-align: right; padding-left: 3px; }
+      /* Sized to its own content (not flex:1) so the ₹ symbol and the
+         digits sit right next to each other with no gap between them;
+         the parent's justify-content:flex-end is what pushes this tight
+         [₹][digits] pair as a unit to a consistent right edge, regardless
+         of digit count, instead of stretching the number away from the ₹. */
+      .val-num  { flex: 0 0 auto; text-align: right; }
       .coll-chevron {
         font-size: 11px;
         transition: transform 0.25s ease;
@@ -1758,8 +1759,6 @@
            growing past it — a box that only grows for bigger numbers means
            its right edge (and everything after it) drifts row to row. */
         .coll-meta { min-width: 108px; font-size: 12px; letter-spacing: -0.5px; justify-content: flex-end; }
-        .coll-meta .val-num { flex: 0 0 auto; }
-        .coll-rtn  { min-width: 62px; text-align: right; flex-shrink: 0; }
       }
 
       /* ── Mobile: HOLDINGS bar ── */
@@ -1974,6 +1973,9 @@
       .coll-rtn {
         font-family: "Roboto Mono", monospace; font-size: 9.5px; font-weight: 700;
         white-space: nowrap; flex-shrink: 0; opacity: 0; transition: opacity 0.2s; cursor: pointer;
+        /* Fixed width so the badge column starts at the same X on every
+           row regardless of its own text length ("+7.9% pa" vs "+91.8% pa"). */
+        min-width: 58px; text-align: right;
       }
       .coll-rtn:not(:empty) { opacity: 1; }
       .coll-rtn.up { color: #4ade80; }
