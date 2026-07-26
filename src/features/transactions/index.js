@@ -160,12 +160,11 @@ export function openTxnModal(txnId) {
               ];
               el("txnFundInputList").innerHTML = allFunds.map(f => txnFundRowHTML(f.id, f.name, "", "")).join("");
             }
-            navigateTo("transactions");
-            expandTxpCard("txp-addtxn");
+            UI.openOverlay(el("txnModal"));
           }
 
 export function closeTxnModal() {
-            collapseTxpCard("txp-addtxn");
+            UI.closeOverlay(el("txnModal"));
           }
 
 export function saveTxn() {

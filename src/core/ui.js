@@ -25,6 +25,13 @@ export const UI = {
               overlayEl?._modalCtl?.close();
             },
 
+            /* Symmetrical opener — e.g. openTxnModal() populating the
+               transaction form then opening #txnModal from within the same
+               module that will later call closeOverlay() on it. */
+            openOverlay(overlayEl) {
+              overlayEl?._modalCtl?.open();
+            },
+
             /* Single-line text input dialog — a styled replacement for the
                native prompt() (which is the one place in this app that
                broke out of the custom modal system into a jarring browser-

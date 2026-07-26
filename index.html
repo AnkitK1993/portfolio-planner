@@ -755,33 +755,11 @@
           <p>Manage investments, current values, and SIPs.</p>
         </div>
 
-        <!-- Add Transaction Card -->
-        <div class="txp-card" id="txp-addtxn">
-          <div class="txp-card-head" id="txp-addtxn-head">
-            <span class="txp-card-title" id="txnModalTitle">Add Transaction</span>
-            <span class="txp-card-chev">▾</span>
-          </div>
-          <div class="txp-card-body">
-            <div class="txp-inner">
-              <input type="hidden" id="txnEditId" />
-              <div class="curval-date-row">
-                <input class="form-inp" id="txnDate" type="date" />
-              </div>
-              <div class="txn-type-toggle" id="txnTypeToggle">
-                <button class="txn-type-btn active" data-type="sip">SIP</button>
-                <button class="txn-type-btn" data-type="lump">Lump Sum</button>
-                <button class="txn-type-btn" data-type="redemption">Redemption</button>
-                <button class="txn-type-btn" data-type="dividend">Dividend</button>
-              </div>
-              <input type="hidden" id="txnType" value="sip" />
-              <div id="txnFundInputList"></div>
-              <div class="txp-foot">
-                <button class="btn btn-ghost" id="txnCancelBtn">Cancel</button>
-                <button class="btn btn-primary" id="txnSaveBtn">Save</button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <!-- Add Transaction now opens as a floating modal (#txnModal, near
+             the other modals below) instead of an inline expanding card —
+             both the "+" entry point and a History row's "Edit" button
+             open the same modal, since they share the same form markup. -->
+        <button class="btn btn-primary" id="txnAddBtn" style="width:100%;margin-bottom:12px;">+ Add Transaction</button>
 
         <!-- History Card -->
         <div class="txp-card" id="txp-history">
@@ -941,6 +919,34 @@
     </div>
     <!-- /app -->
 
+
+    <!-- ═══ ADD / EDIT TRANSACTION MODAL ═══ -->
+    <div id="txnModal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <div class="modal-head">
+          <span class="modal-title" id="txnModalTitle">Add Transaction</span>
+          <button class="modal-close" id="txnModalClose" aria-label="Close">✕</button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="txnEditId" />
+          <div class="curval-date-row">
+            <input class="form-inp" id="txnDate" type="date" />
+          </div>
+          <div class="txn-type-toggle" id="txnTypeToggle">
+            <button class="txn-type-btn active" data-type="sip">SIP</button>
+            <button class="txn-type-btn" data-type="lump">Lump Sum</button>
+            <button class="txn-type-btn" data-type="redemption">Redemption</button>
+            <button class="txn-type-btn" data-type="dividend">Dividend</button>
+          </div>
+          <input type="hidden" id="txnType" value="sip" />
+          <div id="txnFundInputList"></div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn btn-ghost" id="txnCancelBtn">Cancel</button>
+          <button class="btn btn-primary" id="txnSaveBtn">Save</button>
+        </div>
+      </div>
+    </div>
 
     <!-- ═══ DATA EXPORT / IMPORT MODAL ═══ -->
     <div id="dataModal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true">

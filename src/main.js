@@ -71,7 +71,7 @@ el("txnImportFile").addEventListener("change", e => {
             importTxnsCSV(e.target.files[0]);
             e.target.value = ""; // reset so the same file can be re-imported
           });
-["txp-addtxn", "txp-history", "txp-curval", "txp-sip", "txp-entervalues", "txp-snapshot"].forEach(id => {
+["txp-history", "txp-curval", "txp-sip", "txp-entervalues", "txp-snapshot"].forEach(id => {
             const head = el(id + "-head");
             if (!head) return;
             head.addEventListener("click", () => {
@@ -79,12 +79,18 @@ el("txnImportFile").addEventListener("change", e => {
               const willOpen = !card.classList.contains("open");
               card.classList.toggle("open");
               if (willOpen) {
-                if (id === "txp-addtxn") openTxnModal();
                 if (id === "txp-curval") openCurValModal();
                 if (id === "txp-sip") openManageSips();
               }
             });
           });
+// Add/Edit Transaction is a floating modal rather than an inline
+// expanding card — both the "+" entry point here and a History row's
+// "Edit" button (openTxnModal(id), features/transactions/index.js) open
+// the same #txnModal, since they share the same form markup.
+UI.registerOverlay(el("txnModal"));
+el("txnAddBtn").addEventListener("click", () => openTxnModal());
+el("txnModalClose").addEventListener("click", closeTxnModal);
 el("dataModalClose").addEventListener("click", () => dataModalCtl.close());
 el("dataModalCancelBtn").addEventListener("click", () => dataModalCtl.close());
 el("ddRebalanceBtn").addEventListener("click", () => { closeNavDropdowns(); navigateTo("rebalance"); });
