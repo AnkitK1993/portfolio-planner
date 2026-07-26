@@ -1,10 +1,7 @@
-import { NW_FIELDS, STORE_KEY } from "../../core/constants.js";
 import { UI } from "../../core/ui.js";
 import { applyCloudState } from "../../infra/firebase.js";
-import { defaultState, saveState, setEditMode, setState, state, syncFundArrays } from "../../core/state.js";
+import { saveState, state } from "../../core/state.js";
 import { el } from "../../core/dom.js";
-import { rebuildFundCollapsibles } from "../portfolio/funds.js";
-import { render } from "../portfolio/render.js";
 import { renderReturns, renderTxns } from "../transactions/index.js";
 
 export function exportData() {
@@ -45,20 +42,4 @@ export function importData(e) {
               }
             };
             reader.readAsText(file);
-          }
-
-export function resetAll() {
-            UI.confirm("All fund data, transactions and settings will be erased.", "Reset everything?", "Reset", () => {
-              setState(defaultState());
-              syncFundArrays();
-              rebuildFundCollapsibles();
-              el("fcInvest").value = "";
-              el("fcMonthly").value = "";
-              el("fcRate").value = "12";
-              NW_FIELDS.forEach((f) => { const i = el("nw-" + f.id); if (i) i.value = ""; });
-              try { localStorage.removeItem(STORE_KEY); } catch {}
-              setEditMode(false);
-              render();
-              saveState();
-            });
           }
