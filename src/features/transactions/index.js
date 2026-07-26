@@ -61,9 +61,8 @@ export function setTxnType(type) {
           }
 
 export function applyTxnTotals() {
-            if (!state.transactions || !state.transactions.length) return;
             const net = {}, sipTot = {}, lumpTot = {}, redeemTot = {}, netAE = {};
-            state.transactions.forEach(t => {
+            (state.transactions || []).forEach(t => {
               const amt = Number(t.invested) || 0;
               // Older transactions predate the After Expense field — fall
               // back to the invested amount so their contribution isn't lost.
@@ -82,37 +81,42 @@ export function applyTxnTotals() {
                 netAE[t.fundId]   = (netAE[t.fundId]    || 0) + aeAmt;
               }
             });
+            // Every liq/eq fund is updated unconditionally — including funds
+            // absent from `net`/`netAE` entirely (zero transactions, e.g.
+            // right after the fund's last transaction was deleted) — so
+            // paid/value/shown correctly fall back to 0 instead of freezing
+            // at whatever was last computed. These fields are the ONLY
+            // source of truth for the (readonly) Invested/After-Expense
+            // inputs, so silently skipping a fund here left it permanently
+            // stuck on stale, persisted numbers with no way to correct them
+            // from the UI.
             LIQ_FUNDS.forEach(f => {
-              if (net[f.id] !== undefined) {
-                const paid = Math.max(0, net[f.id]);
-                state.liquid[f.id].paid      = paid;
-                state.liquid[f.id].sipPaid   = sipTot[f.id]    || 0;
-                state.liquid[f.id].lumpPaid  = lumpTot[f.id]   || 0;
-                state.liquid[f.id].redeemPaid= redeemTot[f.id] || 0;
-                const inp = document.getElementById("lpaid-" + f.id);
-                if (inp) inp.value = fmtNum(paid);
+              const paid = Math.max(0, net[f.id] || 0);
+              state.liquid[f.id].paid      = paid;
+              state.liquid[f.id].sipPaid   = sipTot[f.id]    || 0;
+              state.liquid[f.id].lumpPaid  = lumpTot[f.id]   || 0;
+              state.liquid[f.id].redeemPaid= redeemTot[f.id] || 0;
+              const inp = document.getElementById("lpaid-" + f.id);
+              if (inp) inp.value = fmtNum(paid);
 
-                const afterExp = Math.max(0, netAE[f.id] || 0);
-                state.liquid[f.id].value = afterExp;
-                const aeInp = document.getElementById("lval-" + f.id);
-                if (aeInp) aeInp.value = fmtNum(afterExp);
-              }
+              const afterExp = Math.max(0, netAE[f.id] || 0);
+              state.liquid[f.id].value = afterExp;
+              const aeInp = document.getElementById("lval-" + f.id);
+              if (aeInp) aeInp.value = fmtNum(afterExp);
             });
             EQ_FUNDS.forEach(f => {
-              if (net[f.id] !== undefined) {
-                const paid = Math.max(0, net[f.id]);
-                state.equity[f.id].paid      = paid;
-                state.equity[f.id].sipPaid   = sipTot[f.id]    || 0;
-                state.equity[f.id].lumpPaid  = lumpTot[f.id]   || 0;
-                state.equity[f.id].redeemPaid= redeemTot[f.id] || 0;
-                const inp = document.getElementById("epaid-" + f.id);
-                if (inp) inp.value = fmtNum(paid);
+              const paid = Math.max(0, net[f.id] || 0);
+              state.equity[f.id].paid      = paid;
+              state.equity[f.id].sipPaid   = sipTot[f.id]    || 0;
+              state.equity[f.id].lumpPaid  = lumpTot[f.id]   || 0;
+              state.equity[f.id].redeemPaid= redeemTot[f.id] || 0;
+              const inp = document.getElementById("epaid-" + f.id);
+              if (inp) inp.value = fmtNum(paid);
 
-                const afterExp = Math.max(0, netAE[f.id] || 0);
-                state.equity[f.id].shown = afterExp;
-                const aeInp = document.getElementById("eshown-" + f.id);
-                if (aeInp) aeInp.value = fmtNum(afterExp);
-              }
+              const afterExp = Math.max(0, netAE[f.id] || 0);
+              state.equity[f.id].shown = afterExp;
+              const aeInp = document.getElementById("eshown-" + f.id);
+              if (aeInp) aeInp.value = fmtNum(afterExp);
             });
           }
 
