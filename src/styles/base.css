@@ -806,7 +806,7 @@
           padding-bottom: calc(72px + env(safe-area-inset-bottom));
         }
         /* Prevent iOS zoom on input focus (requires font-size ≥ 16px) */
-        .num, .fundname, .curval-inp {
+        .num, .fundname, .curval-inp, .form-inp {
           font-size: 16px;
         }
       }

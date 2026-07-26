@@ -51,6 +51,20 @@
         border-top: 1px solid var(--line);
         justify-content: flex-end;
       }
+      .form-inp {
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        color: var(--txt);
+        font-family: "Roboto Mono", monospace;
+        font-size: 14px;
+        padding: 9px 12px;
+        width: 100%;
+        outline: none;
+        transition: border-color 0.15s;
+        -webkit-appearance: none;
+      }
+      .form-inp:focus { border-color: var(--mint); }
       .btn-primary {
         background: var(--mint);
         color: #000;
@@ -468,6 +482,7 @@
       .calday-btn:hover { border-color: var(--mint); color: var(--mint); }
       .calday-btn.danger { border-color: rgba(248,113,113,0.4); color: #f87171; }
       .calday-btn.danger:hover { background: rgba(248,113,113,0.1); }
+      .cal-note-field { margin-top: 12px; }
       /* ═══ CONFIRM DIALOG ═══ */
       .confirm-overlay {
         position: fixed; inset: 0; z-index: 10001;
