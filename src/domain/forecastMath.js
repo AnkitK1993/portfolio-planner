@@ -10,10 +10,6 @@ export function fcProjectedAdv(bank, invest, monthly, rate, years, stepUp = 0) {
             return value;
           }
 
-export function fcProjected(bank, invest, monthly, rate, T) {
-            return fcProjectedAdv(bank, invest, monthly, rate, T, 0);
-          }
-
 export function fcTotalInvested(bank, invest, monthly, years, stepUp = 0) {
             const annualStepUp = stepUp / 100;
             let total = bank + invest;

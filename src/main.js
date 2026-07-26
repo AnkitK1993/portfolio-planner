@@ -81,11 +81,11 @@ el("txnExportBtn").addEventListener("click", e => { e.stopPropagation(); exportT
               }
             });
           });
-el("ddPinBtn").addEventListener("click", () => {
+el("ddPinBtn").addEventListener("click", async () => {
             closeNavDropdowns();
             const hasPIN = !!localStorage.getItem("appPin");
             const msg = hasPIN ? "Enter a new 4-digit PIN (or leave blank to clear PIN lock):" : "Enter a 4-digit PIN to lock the app:";
-            const raw = prompt(msg);
+            const raw = await UI.prompt("PIN Lock", msg, { placeholder: "4-digit PIN" });
             if (raw === null) return; // cancelled
             if (raw.trim() === "") { window.clearAppPin(); }
             else { window.setAppPin(raw.trim()); }

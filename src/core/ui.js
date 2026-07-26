@@ -2,12 +2,63 @@ import { EQ_FUNDS, LIQ_FUNDS, editMode } from "./state.js";
 import { el } from "./dom.js";
 import { onTabActivate, triggerRender } from "./appEvents.js";
 import { setAnimOnRender } from "./animate.js";
-import { confirm as modalConfirm } from "./modal.js";
+import { confirm as modalConfirm, open as modalOpen } from "./modal.js";
 
 export const UI = {
             /* Custom confirmation dialog — see core/modal.js for the implementation */
             confirm(msg, title, okLabel, cb, danger = true) {
               return modalConfirm(msg, title, okLabel, cb, danger);
+            },
+
+            /* Single-line text input dialog — a styled replacement for the
+               native prompt() (which is the one place in this app that
+               broke out of the custom modal system into a jarring browser-
+               chrome dialog). Promise<string|null>, null meaning
+               cancelled/dismissed, matching prompt()'s own contract so
+               call sites barely change. */
+            prompt(title, message, { placeholder = "", defaultValue = "" } = {}) {
+              return new Promise((resolve) => {
+                let resolved = false;
+                let inputEl;
+                const handle = modalOpen({
+                  title,
+                  body: (target) => {
+                    target.innerHTML = `<p style="font-size:11.5px;color:var(--dim);margin-bottom:10px;">${message}</p>
+                      <input type="text" style="width:100%;background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--txt);font-family:'Roboto Mono',monospace;font-size:14px;padding:9px 12px;" placeholder="${placeholder}" />`;
+                    inputEl = target.querySelector("input");
+                    inputEl.value = defaultValue;
+                    inputEl.addEventListener("keydown", (e) => {
+                      if (e.key === "Enter") { resolved = true; resolve(inputEl.value); handle.close(); }
+                    });
+                  },
+                  footer: [
+                    { label: "Cancel", variant: "ghost" },
+                    { label: "OK", variant: "primary", onClick: () => { resolved = true; resolve(inputEl.value); } },
+                  ],
+                  initialFocus: "input",
+                  onClose: () => { if (!resolved) resolve(null); },
+                });
+              });
+            },
+
+            /* Select-to-copy fallback — for anywhere navigator.clipboard is
+               blocked/unavailable (insecure context, permission denied) and
+               the user still needs the text. Keeps that failure path inside
+               this app's own modal system instead of a jarring native
+               alert(), which is otherwise unused everywhere else here. */
+            showText(title, text) {
+              modalOpen({
+                title,
+                body: (target) => {
+                  target.innerHTML = `<p style="font-size:11px;color:var(--dim);margin-bottom:8px;">Clipboard access was blocked — select the text below and copy it manually.</p>
+                    <textarea readonly style="width:100%;min-height:160px;background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--txt);font-family:'Roboto Mono',monospace;font-size:11px;padding:10px;resize:vertical;"></textarea>`;
+                  const ta = target.querySelector("textarea");
+                  ta.value = text;
+                  ta.addEventListener("focus", () => ta.select());
+                },
+                footer: [{ label: "Close", variant: "primary" }],
+                initialFocus: "textarea",
+              });
             },
 
             /* Floating toast notification — type: success | error | info | warn */

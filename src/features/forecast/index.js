@@ -2,7 +2,7 @@ import { _animOnRender, animateNumber } from "../../core/animate.js";
 import { editMode, state } from "../../core/state.js";
 import { el } from "../../core/dom.js";
 import { fcGoalMonthly, fcProjectedAdv, fcTotalInvested } from "../../domain/forecastMath.js";
-import { fmt, pct } from "../../core/format.js";
+import { fmt } from "../../core/format.js";
 
 export function renderForecast() {
             const fc = state.forecast || {};

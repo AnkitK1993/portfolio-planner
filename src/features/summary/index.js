@@ -968,5 +968,5 @@ export function copySummary() {
                 b.textContent = "Copied ✓";
                 setTimeout(() => (b.textContent = o), 1600);
               })
-              .catch(() => alert(lines.join("\n")));
+              .catch(() => UI.showText("Portfolio Plan", lines.join("\n")));
           }
