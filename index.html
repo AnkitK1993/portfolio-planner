@@ -231,7 +231,7 @@
               <div class="sec-head" style="margin-bottom:4px">Expenses</div>
               <div style="font-size:10px;color:var(--dim)">Fixed monthly costs, plus this month's Bank spending (auto-tracked from the Net Worth tab)</div>
             </div>
-            <span class="exp-card-collapsed-total" id="expCollapsedTotal"></span>
+            <span class="card-toggle-preview" id="expCollapsedTotal"></span>
             <span class="card-toggle-chevron">▾</span>
           </button>
           <div class="exp-card-body" id="expCardBody">
@@ -359,7 +359,9 @@
             <h1>Net <span class="accent">Worth</span></h1>
             <p>Monthly snapshot tracker. Save each month to build your growth history.</p>
           </div>
-          <button class="pg-head-toggle-all" id="nwToggleAllBtn" title="Expand or collapse all cards below">Expand All</button>
+          <button class="pg-head-toggle-all" id="nwToggleAllBtn" title="Expand all cards" aria-label="Expand all cards">
+            <span class="pg-head-toggle-all-icon">▾</span>
+          </button>
         </div>
 
         <!-- Hero with inline sparkline -->
@@ -390,6 +392,7 @@
             <div class="card-toggle-head-text">
               <div class="sec-head">Asset Breakdown</div>
             </div>
+            <span class="card-toggle-preview" id="nwBreakdownPreview"></span>
             <span class="card-toggle-chevron">▾</span>
           </button>
           <div class="card-toggle-body" id="nwBreakdownBody">
@@ -405,6 +408,7 @@
             <div class="card-toggle-head-text">
               <div class="sec-head">Monthly History</div>
             </div>
+            <span class="card-toggle-preview" id="nwHistPreview"></span>
             <span class="card-toggle-chevron">▾</span>
           </button>
           <div class="card-toggle-body" id="nwHistBody">
@@ -420,6 +424,7 @@
             <div class="card-toggle-head-text">
               <div class="sec-head">Net Worth Over Time</div>
             </div>
+            <span class="card-toggle-preview" id="nwChartPreview"></span>
             <span class="card-toggle-chevron">▾</span>
           </button>
           <div class="card-toggle-body" id="nwChartBody">
@@ -454,6 +459,7 @@
             <div class="card-toggle-head-text">
               <div class="sec-head">Projections</div>
             </div>
+            <span class="card-toggle-preview" id="nwProjPreview"></span>
             <span class="card-toggle-chevron">▾</span>
           </button>
           <div class="card-toggle-body" id="nwProjBody">

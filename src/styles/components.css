@@ -614,16 +614,34 @@
         cursor: pointer; text-align: left; font-family: inherit; color: inherit;
       }
       .card-toggle-head-text { flex: 1; min-width: 0; }
+      /* Bigger + no divider while collapsed — a collapsed card should read
+         as a plain compact row, not a section header that's been cut in
+         half. The divider (and its breathing room) only makes sense once
+         there's expanded content directly underneath it. */
+      .card-toggle-head-text .sec-head {
+        font-size: 12px;
+        border-bottom: none;
+        padding-bottom: 0;
+        margin-bottom: 3px;
+      }
+      .card-toggle-head.open .card-toggle-head-text .sec-head {
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 8px;
+        margin-bottom: 4px;
+      }
       .card-toggle-chevron { font-size: 11px; color: var(--dim); transition: transform 0.25s; flex-shrink: 0; }
       .card-toggle-head.open .card-toggle-chevron { transform: rotate(180deg); }
       .card-toggle-body-inner { margin-top: 12px; }
 
-      /* ── Expenses card — collapsed-total preview is expense-specific ── */
-      .exp-card-collapsed-total {
+      /* Collapsed-state preview figure, right-aligned before the chevron —
+         shared by any card wired with createCollapsible()'s
+         collapsedSummary option (Expenses' total, Net Worth's per-card
+         figures, etc). */
+      .card-toggle-preview {
         font-family: "Roboto Mono", monospace; font-size: 15px; font-weight: 700;
         color: var(--mint); white-space: nowrap; flex-shrink: 0;
       }
-      .card-toggle-head.open .exp-card-collapsed-total { display: none; }
+      .card-toggle-head.open .card-toggle-preview { display: none; }
       /* Spacing lives on the inner content wrapper (#sumExpensesBody), not
          on .exp-card-body itself — the same reason .coll-body-inner exists
          separately from .coll-body: a margin/padding on the element whose

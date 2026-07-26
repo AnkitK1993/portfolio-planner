@@ -383,33 +383,52 @@ el("nwSnapDeleteBtn").addEventListener("click", () => {
               renderNwProjection();
             });
           });
-// Every collapsible card on the Net Worth tab is grouped here so
-// #nwToggleAllBtn can expand/collapse them all together — the button's
-// label always reflects the action the NEXT click performs, refreshed
-// whenever any card (individually or via the master button) changes open
-// state. Enter Values moved to the Transactions tab (see the txp-card
-// wiring above) and is no longer part of this group.
-const nwCollapsibles = [];
-function refreshNwToggleAllBtn() {
-            const btn = el("nwToggleAllBtn");
-            if (!btn || !nwCollapsibles.length) return;
-            btn.textContent = nwCollapsibles.every(c => c.isOpen()) ? "Collapse All" : "Expand All";
+// Groups a set of createCollapsible()-driven cards behind one icon
+// button that expands/collapses all of them together — used for both
+// the Net Worth and Summary tab card stacks. The button's aria-label/
+// title always reflects the action the NEXT click performs, refreshed
+// whenever any card (individually or via the button itself) changes
+// open state.
+function makeToggleAllGroup(btnId) {
+            const btn = el(btnId);
+            const items = [];
+            function refresh() {
+              if (!btn || !items.length) return;
+              const allOpen = items.every(c => c.isOpen());
+              btn.classList.toggle("all-open", allOpen);
+              const label = allOpen ? "Collapse all cards" : "Expand all cards";
+              btn.title = label;
+              btn.setAttribute("aria-label", label);
+            }
+            btn?.addEventListener("click", () => {
+              const allOpen = items.every(c => c.isOpen());
+              items.forEach(c => (allOpen ? c.close() : c.open()));
+              refresh();
+            });
+            return {
+              add(headerId, bodyId, previewId) {
+                const c = createCollapsible({
+                  header: el(headerId), body: el(bodyId), onToggle: refresh,
+                  collapsedSummary: previewId ? el(previewId) : null,
+                });
+                items.push(c);
+                return c;
+              },
+              refresh,
+            };
           }
+
+// Enter Values moved to the Transactions tab (see the txp-card wiring
+// above) and is no longer part of this group.
+const nwToggleAll = makeToggleAllGroup("nwToggleAllBtn");
 [
-            ["nwBreakdownToggle", "nwBreakdownBody"],
-            ["nwHistToggle", "nwHistBody"],
-            ["nwChartToggle", "nwChartBody"],
-            ["nwCompChartToggle", "nwCompChartBody"],
-            ["nwProjToggle", "nwProjBody"],
-          ].forEach(([headerId, bodyId]) => {
-            nwCollapsibles.push(createCollapsible({ header: el(headerId), body: el(bodyId), onToggle: refreshNwToggleAllBtn }));
-          });
-el("nwToggleAllBtn").addEventListener("click", () => {
-            const allOpen = nwCollapsibles.every(c => c.isOpen());
-            nwCollapsibles.forEach(c => (allOpen ? c.close() : c.open()));
-            refreshNwToggleAllBtn();
-          });
-refreshNwToggleAllBtn();
+            ["nwBreakdownToggle", "nwBreakdownBody", "nwBreakdownPreview"],
+            ["nwHistToggle", "nwHistBody", "nwHistPreview"],
+            ["nwChartToggle", "nwChartBody", "nwChartPreview"],
+            ["nwCompChartToggle", "nwCompChartBody", null],
+            ["nwProjToggle", "nwProjBody", "nwProjPreview"],
+          ].forEach(([headerId, bodyId, previewId]) => nwToggleAll.add(headerId, bodyId, previewId));
+nwToggleAll.refresh();
 createCollapsible({ header: el("holdingsToggle"), body: el("holdingsBody") });
 // Expenses card starts collapsed and shows the Total This Month figure in
 // its header while collapsed — renderExpenses() keeps #expCollapsedTotal

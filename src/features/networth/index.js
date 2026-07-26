@@ -58,6 +58,8 @@ export function renderNetWorth() {
               (s, f) => s + (state.networth[f.id] || 0), 0,
             );
             const total = mfVal + displayedProfit + other;
+            const breakdownPreview = el("nwBreakdownPreview");
+            if (breakdownPreview) breakdownPreview.textContent = fmt(total);
 
             el("nwMfVal").textContent = fmt(mfVal);
             animateNumber(el("nwHeroVal"), total, _animOnRender && !editMode ? 2000 : 500, _animOnRender && !editMode);
@@ -237,6 +239,9 @@ export function renderNwHistory() {
               .map(([k, v]) => normalizeSnap(k, v))
               .sort((a, b) => b.key.localeCompare(a.key));
 
+            const histPreview = el("nwHistPreview");
+            if (histPreview) histPreview.textContent = sorted.length ? fmt(sorted[0].total) : "";
+
             if (!sorted.length) {
               el("nwHistory").innerHTML =
                 `<div style="color:var(--dim);font-size:12px;">No snapshots yet. Fill in values above and click "Save snapshot".</div>`;
@@ -383,6 +388,11 @@ export function renderNwLineChart() {
             const r = rateCount > 0 ? sumRate / rateCount : 0;
             const lastTotal = sorted[n - 1].total;
             const proj1 = lastTotal * (1 + r), proj2 = proj1 * (1 + r);
+            const chartPreview = el("nwChartPreview");
+            if (chartPreview) {
+              const ann = (Math.pow(1 + r, 12) - 1) * 100;
+              chartPreview.textContent = "CAGR " + (ann >= 0 ? "+" : "") + ann.toFixed(1) + "%";
+            }
 
             const vals = sorted.map(s => s.total || 0);
             const minV = Math.min(...vals);
@@ -578,6 +588,8 @@ export function renderNwProjection() {
               .sort((a, b) => a.key.localeCompare(b.key));
 
             if (sorted.length < 2) {
+              const projPreviewEmpty = el("nwProjPreview");
+              if (projPreviewEmpty) projPreviewEmpty.textContent = "";
               el("nwProjection").innerHTML =
                 `<div style="color:var(--dim);font-size:12px;">
                 Need at least 2 monthly snapshots to project. You have <b style="color:var(--txt)">${sorted.length}</b> so far.
@@ -588,6 +600,8 @@ export function renderNwProjection() {
             const r = avgMonthlyGrowthRate(sorted);
             const ann = (Math.pow(1 + r, 12) - 1) * 100;
             const cur = nwTotal(state.networth, LIQ_FUNDS, EQ_FUNDS, state.liquid, state.equity);
+            const projPreview = el("nwProjPreview");
+            if (projPreview) projPreview.textContent = "1yr " + fmt(cur * Math.pow(1 + r, 12));
 
             const cards = [
               { label: "3 months", months: 3 },

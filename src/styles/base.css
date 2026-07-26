@@ -155,20 +155,27 @@
         gap: 12px;
         flex-wrap: wrap;
       }
+      /* Icon-only — reused on both the Net Worth and Summary tabs to
+         expand/collapse every card in that tab's group at once. Rotates
+         180deg when all cards are open, matching the per-card chevrons'
+         own rotate-on-open convention. */
       .pg-head-toggle-all {
         flex-shrink: 0;
+        width: 34px;
+        height: 34px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         background: var(--panel);
         border: 1px solid var(--line);
-        border-radius: 20px;
+        border-radius: 50%;
         color: var(--txt);
-        font-family: "Roboto", sans-serif;
-        font-size: 11px;
-        font-weight: 600;
-        padding: 7px 14px;
         cursor: pointer;
         transition: background 0.15s, border-color 0.15s;
       }
       .pg-head-toggle-all:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.2); }
+      .pg-head-toggle-all-icon { font-size: 16px; line-height: 1; display: inline-block; transition: transform 0.2s; }
+      .pg-head-toggle-all.all-open .pg-head-toggle-all-icon { transform: rotate(180deg); }
 
       /* ── SECTION HEADER ── */
       .sec-head {
