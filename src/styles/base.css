@@ -1251,12 +1251,18 @@
       .nw-stat-card { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 14px; }
       .nw-stat-label { font-size:9px; text-transform:uppercase; letter-spacing:1px; color:var(--dim); margin-bottom:5px; }
       .nw-stat-val { font-family:"Roboto Mono",monospace; font-size:16px; font-weight:700; color:var(--mint); }
-      .nw-enter-toggle { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin-bottom:0; display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none; }
+      .nw-enter-toggle { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin-bottom:0; display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none; width:100%; text-align:left; font:inherit; color:inherit; }
       .nw-enter-toggle.open { border-radius:14px 14px 0 0; border-bottom-color:transparent; }
       .nw-enter-title { font-size:12.5px; font-weight:700; color:var(--txt); margin-bottom:3px; }
       .nw-enter-hint { font-size:9.5px; color:var(--dim); }
-      .nw-enter-chevron { color:var(--dim); font-size:14px; transition:transform 0.2s; }
-      .nw-enter-body { background:var(--panel); border:1px solid var(--line); border-top:none; border-radius:0 0 14px 14px; padding:14px 16px 16px; margin-bottom:12px; }
+      .nw-enter-chevron { color:var(--dim); font-size:14px; transition:transform 0.2s; display:inline-block; }
+      .nw-enter-toggle.open .nw-enter-chevron { transform: rotate(180deg); }
+      /* Visuals live on the inner wrapper, not #nwEnterBody itself — see
+         core/collapsible.js: the outer element's max-height animates to 0
+         when collapsed, so anything with padding/border/margin needs to be
+         nested inside rather than on that element (same reason
+         .coll-body-inner exists separately from .coll-body). */
+      .nw-enter-body-inner { background:var(--panel); border:1px solid var(--line); border-top:none; border-radius:0 0 14px 14px; padding:14px 16px 16px; margin-bottom:12px; }
       @media (max-width: 680px) {
         .nw-bar-label {
           min-width: 100px;

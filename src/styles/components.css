@@ -463,8 +463,15 @@
       .holdings-rtn.up { color: #4ade80; background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.22); }
       .holdings-rtn.dn { color: #f87171; background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.22); }
       .holdings-chevron { font-size: 11px; color: var(--dim); transition: transform 0.25s; flex-shrink: 0; margin-left: 2px; }
-      .holdings-widget.open .holdings-chevron { transform: rotate(180deg); }
-      .holdings-body {
+      /* .open now lives on the header button itself (see
+         core/collapsible.js), not the outer .holdings-widget wrapper. */
+      .holdings-bar.open .holdings-chevron { transform: rotate(180deg); }
+      /* Visuals live on the inner wrapper, not #holdingsBody itself — the
+         outer element's max-height animates to 0 when collapsed, so any
+         padding/border here would still render as a visible sliver even
+         while "closed" (same reason .coll-body-inner is separate from
+         .coll-body). */
+      .holdings-body-inner {
         border-top: 1px solid rgba(0,245,160,0.1);
         padding: 6px 16px 14px;
         background: rgba(0,0,0,0.18);
@@ -667,6 +674,21 @@
       /* ── Fund XIRR header badge (#9) ── */
       .coll-xirr { display:none; }
 
+      /* ── Reusable Collapsible/Accordion (see core/collapsible.js) ──
+         Shared toggle mechanics (height animation + ARIA state) for any
+         header/body pair the component decorates. Card-specific classes
+         (like .exp-card-head below) sit alongside these for their own
+         layout/theme and rely on .acc-header/.acc-body for the behavior. */
+      .acc-header { cursor: pointer; }
+      .acc-body {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.32s ease;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .acc-body { transition: none; }
+      }
+
       /* ── Expenses card ── */
       .exp-card-head {
         width: 100%; display: flex; align-items: center; gap: 10px;
@@ -681,7 +703,11 @@
       .exp-card-head.open .exp-card-collapsed-total { display: none; }
       .exp-card-chevron { font-size: 11px; color: var(--dim); transition: transform 0.25s; flex-shrink: 0; }
       .exp-card-head.open .exp-card-chevron { transform: rotate(180deg); }
-      .exp-card-body { margin-top: 12px; }
+      /* Spacing lives on the inner content wrapper (#sumExpensesBody), not
+         on .exp-card-body itself — the same reason .coll-body-inner exists
+         separately from .coll-body: a margin/padding on the element whose
+         max-height animates to 0 would still occupy space while collapsed. */
+      #sumExpensesBody { margin-top: 12px; }
       .exp-row {
         display: grid; grid-template-columns: 8px 1fr auto 18px;
         align-items: center; gap: 10px;

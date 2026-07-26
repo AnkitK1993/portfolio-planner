@@ -4,7 +4,7 @@ import "./styles/components.css";
 
 import { EQ_FUNDS, LIQ_FUNDS, editMode, privacyMode, saveState, setEditMode, setPrivacyMode, snapshotKey, state, syncFundArrays, toggleEditMode, toggleRtnMode } from "./core/state.js";
 import { NW_FIELDS } from "./core/constants.js";
-import { UI, closeNavDropdowns, collapseTxpCard, navigateTo, openNavDropdown, toggleColl } from "./core/ui.js";
+import { UI, closeNavDropdowns, collapseTxpCard, navigateTo, openNavDropdown } from "./core/ui.js";
 import { setRenderTrigger, setTabActivateHandler } from "./core/appEvents.js";
 import { addEquityFund, addLiquidFund, deleteSnapshot, setForecastField, setNetworthField } from "./store/actions.js";
 import { _hasLocalData, authUser, fbAuthReady, fbEnabled, flushCloudSave, handleSignInResult, initFirebase, loadBackupList, resetBackupPanel, saveManualBackup } from "./infra/firebase.js";
@@ -14,12 +14,13 @@ import { applyTxnTotals, closeCurValModal, closeTxnModal, exportTxnsCSV, openCur
 import { buildNwGrid, nwLiveSaved, renderNetWorth, renderNwCompositionChart, renderNwHistory, renderNwLineChart, renderNwProjection, setNwEditingKey, setNwLiveSaved, takeSnapshot } from "./features/networth/index.js";
 import { buildThemeMatrix, hideThemeMatrix, loadSavedAccent, showThemeMatrix, themeMatrixOpen } from "./features/admin/themes.js";
 import { calDayDate, calMonth, calView, calWeekOffset, calYear, closeCalNoteModal, openCalNoteModal, renderCalendar, saveCalNote, setCalMonth, setCalView, setCalWeekOffset, setCalYear } from "./features/portfolio/calendar.js";
+import { createCollapsible } from "./core/collapsible.js";
 import { el } from "./core/dom.js";
 import { exportData, importData } from "./features/admin/data.js";
 import { fcInflEl, fcShowAllEl, fcStepUpEl, renderForecast } from "./features/forecast/index.js";
 import { fmtMonth, num } from "./core/format.js";
 import { openManageSips, saveManageSips } from "./features/portfolio/sips.js";
-import { rebuildFundCollapsibles } from "./features/portfolio/funds.js";
+import { openFundCollapsible, rebuildFundCollapsibles } from "./features/portfolio/funds.js";
 import { render, scheduleRender } from "./features/portfolio/render.js";
 
 import "./features/admin/pin.js";
@@ -300,7 +301,7 @@ el("privacyBtn").addEventListener("click", () => {
             setPrivacyMode(!privacyMode);
             document.body.classList.toggle("privacy-mode", privacyMode);
           });
-if (_upcomingHead) _upcomingHead.addEventListener("click", () => toggleColl("upcoming"));
+if (_upcomingHead) createCollapsible({ header: _upcomingHead, body: el("coll-body-upcoming") });
 el("addLiqBtn").addEventListener("click", () => {
             const order = state.liquidOrder || [];
             let n = order.length + 1;
@@ -311,7 +312,7 @@ el("addLiqBtn").addEventListener("click", () => {
             syncFundArrays();
             rebuildFundCollapsibles();
             render();
-            setTimeout(() => toggleColl(newId), 50);
+            setTimeout(() => openFundCollapsible(newId), 50);
           });
 el("addEqBtn").addEventListener("click", () => {
             const order = state.equityOrder || [];
@@ -324,7 +325,7 @@ el("addEqBtn").addEventListener("click", () => {
             rebuildFundCollapsibles();
             render();
             setTimeout(() => {
-              toggleColl(newId);
+              openFundCollapsible(newId);
               setTimeout(() => {
                 const catSel = el("cat-" + newId);
                 if (catSel) {
@@ -381,33 +382,15 @@ el("nwSnapDeleteBtn").addEventListener("click", () => {
               renderNwProjection();
             });
           });
-el("nwEnterToggle").addEventListener("click", () => {
-            const body    = el("nwEnterBody");
-            const toggle  = el("nwEnterToggle");
-            const chevron = el("nwEnterChevron");
-            const isOpen  = body.style.display !== "none";
-            body.style.display       = isOpen ? "none" : "";
-            chevron.style.transform  = isOpen ? "rotate(-90deg)" : "";
-            toggle.classList.toggle("open", !isOpen);
-          });
-el("holdingsToggle").addEventListener("click", () => {
-            const widget = el("holdingsWidget");
-            const body   = el("holdingsBody");
-            const isOpen = widget.classList.contains("open");
-            widget.classList.toggle("open", !isOpen);
-            body.hidden = isOpen;
-            el("holdingsToggle").setAttribute("aria-expanded", String(!isOpen));
-          });
-// Expenses card starts collapsed (see the `hidden` attribute in index.html)
-// and shows the Total This Month figure in its header while collapsed —
-// renderExpenses() keeps #expCollapsedTotal in sync regardless of open state.
-el("expCardToggle").addEventListener("click", () => {
-            const btn  = el("expCardToggle");
-            const body = el("expCardBody");
-            const isOpen = btn.classList.contains("open");
-            btn.classList.toggle("open", !isOpen);
-            body.hidden = isOpen;
-            btn.setAttribute("aria-expanded", String(!isOpen));
+createCollapsible({ header: el("nwEnterToggle"), body: el("nwEnterBody") });
+createCollapsible({ header: el("holdingsToggle"), body: el("holdingsBody") });
+// Expenses card starts collapsed and shows the Total This Month figure in
+// its header while collapsed — renderExpenses() keeps #expCollapsedTotal
+// in sync regardless of open state. See core/collapsible.js.
+createCollapsible({
+            header: el("expCardToggle"),
+            body: el("expCardBody"),
+            collapsedSummary: el("expCollapsedTotal"),
           });
 // Returns badges (Total bar + Liquid/Equity division rows) toggle between
 // absolute return% and XIRR on click — all badges switch together since

@@ -110,16 +110,6 @@ export function expandTxpCard(id) { const c = el(id); if (c) c.classList.add("op
 
 export function collapseTxpCard(id) { const c = el(id); if (c) c.classList.remove("open"); }
 
-export function toggleColl(id) {
-            const head = el("coll-head-" + id);
-            const body = el("coll-body-" + id);
-            if (!head || !body) return;
-            const opening = !body.classList.contains("open");
-            body.classList.toggle("open", opening);
-            head.classList.toggle("open", opening);
-            head.setAttribute("aria-expanded", String(opening));
-          }
-
 export function updateCollNameReadonly() {
             [...LIQ_FUNDS, ...EQ_FUNDS].forEach(f => {
               const inp = el("coll-name-" + f.id);

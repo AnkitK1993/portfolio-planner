@@ -90,31 +90,33 @@
             <span class="holdings-rtn" id="holdingsRtn"></span>
             <span class="holdings-chevron">▾</span>
           </button>
-          <div class="holdings-body" id="holdingsBody" hidden>
-            <div class="holdings-row">
-              <span class="holdings-key">Invested</span>
-              <span class="holdings-val" id="hInvested">—</span>
-            </div>
-            <div class="holdings-row">
-              <span class="holdings-key">After Expense</span>
-              <span class="holdings-val" id="hAfterExp">—</span>
-            </div>
-            <div class="holdings-row">
-              <span class="holdings-key">Current Value</span>
-              <span class="holdings-val" id="hCurVal">—</span>
-            </div>
-            <div class="holdings-row">
-              <span class="holdings-key">Returns</span>
-              <span class="holdings-val" id="hReturns">—</span>
-            </div>
-            <div class="holdings-hdivider"></div>
-            <div class="holdings-row">
-              <span class="holdings-key">Liquid Funds</span>
-              <span class="holdings-val" id="hLiquid">—</span>
-            </div>
-            <div class="holdings-row">
-              <span class="holdings-key">Equity Funds</span>
-              <span class="holdings-val" id="hEquity">—</span>
+          <div class="holdings-body" id="holdingsBody">
+            <div class="holdings-body-inner">
+              <div class="holdings-row">
+                <span class="holdings-key">Invested</span>
+                <span class="holdings-val" id="hInvested">—</span>
+              </div>
+              <div class="holdings-row">
+                <span class="holdings-key">After Expense</span>
+                <span class="holdings-val" id="hAfterExp">—</span>
+              </div>
+              <div class="holdings-row">
+                <span class="holdings-key">Current Value</span>
+                <span class="holdings-val" id="hCurVal">—</span>
+              </div>
+              <div class="holdings-row">
+                <span class="holdings-key">Returns</span>
+                <span class="holdings-val" id="hReturns">—</span>
+              </div>
+              <div class="holdings-hdivider"></div>
+              <div class="holdings-row">
+                <span class="holdings-key">Liquid Funds</span>
+                <span class="holdings-val" id="hLiquid">—</span>
+              </div>
+              <div class="holdings-row">
+                <span class="holdings-key">Equity Funds</span>
+                <span class="holdings-val" id="hEquity">—</span>
+              </div>
             </div>
           </div>
         </div>
@@ -218,7 +220,7 @@
             <span class="exp-card-collapsed-total" id="expCollapsedTotal"></span>
             <span class="exp-card-chevron">▾</span>
           </button>
-          <div class="exp-card-body" id="expCardBody" hidden>
+          <div class="exp-card-body" id="expCardBody">
             <div id="sumExpensesBody"></div>
           </div>
         </div>
@@ -366,32 +368,34 @@
         </div>
 
         <!-- Enter Values — collapsible, snapshot button inside -->
-        <div class="nw-enter-toggle" id="nwEnterToggle">
+        <button class="nw-enter-toggle" id="nwEnterToggle" aria-expanded="false">
           <div>
             <div class="nw-enter-title">Enter Values</div>
             <div class="nw-enter-hint">Bank · FD · PPF · EPF · Cash · Bonds</div>
           </div>
           <span class="nw-enter-chevron" id="nwEnterChevron">▾</span>
-        </div>
-        <div class="nw-enter-body" id="nwEnterBody" style="display:none">
-          <div class="nw-auto-item">
-            <div class="nw-auto-label">
-              Mutual Funds
-              <span class="tag equity" style="font-size:7.5px;padding:2px 6px">AUTO</span>
+        </button>
+        <div class="nw-enter-body" id="nwEnterBody">
+          <div class="nw-enter-body-inner">
+            <div class="nw-auto-item">
+              <div class="nw-auto-label">
+                Mutual Funds
+                <span class="tag equity" style="font-size:7.5px;padding:2px 6px">AUTO</span>
+              </div>
+              <div class="nw-auto-val" id="nwMfVal">₹0</div>
+              <div class="nw-auto-sub">Liquid + equity synced from Portfolio tab</div>
             </div>
-            <div class="nw-auto-val" id="nwMfVal">₹0</div>
-            <div class="nw-auto-sub">Liquid + equity synced from Portfolio tab</div>
-          </div>
-          <div class="nw-fields-grid" id="nwFieldsGrid"></div>
-          <div class="nw-snap-row">
-            <button class="btn primary" id="nwSnapshotBtn" style="flex:0 0 auto">Save snapshot</button>
-            <button class="btn btn-ghost" id="nwSnapCancelBtn" style="display:none;flex:0 0 auto;">Cancel</button>
-            <div id="nwSnapExisting" style="display:none;align-items:center;gap:8px;flex-wrap:wrap;">
-              <span id="nwSnapExistLabel" style="font-size:11px;font-weight:600;color:var(--mint);"></span>
-              <button class="btn btn-ghost" id="nwSnapEditBtn" style="font-size:11px;padding:4px 10px;">Edit</button>
-              <button class="btn btn-ghost" id="nwSnapDeleteBtn" style="font-size:11px;padding:4px 10px;color:var(--coral);">Delete</button>
+            <div class="nw-fields-grid" id="nwFieldsGrid"></div>
+            <div class="nw-snap-row">
+              <button class="btn primary" id="nwSnapshotBtn" style="flex:0 0 auto">Save snapshot</button>
+              <button class="btn btn-ghost" id="nwSnapCancelBtn" style="display:none;flex:0 0 auto;">Cancel</button>
+              <div id="nwSnapExisting" style="display:none;align-items:center;gap:8px;flex-wrap:wrap;">
+                <span id="nwSnapExistLabel" style="font-size:11px;font-weight:600;color:var(--mint);"></span>
+                <button class="btn btn-ghost" id="nwSnapEditBtn" style="font-size:11px;padding:4px 10px;">Edit</button>
+                <button class="btn btn-ghost" id="nwSnapDeleteBtn" style="font-size:11px;padding:4px 10px;color:var(--coral);">Delete</button>
+              </div>
+              <span id="nwSnapMsg" style="font-size:10.5px;color:var(--dim)"></span>
             </div>
-            <span id="nwSnapMsg" style="font-size:10.5px;color:var(--dim)"></span>
           </div>
         </div>
 

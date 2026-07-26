@@ -1,9 +1,22 @@
 import { EQ_CATEGORIES, LIQ_CATEGORIES } from "../../core/constants.js";
 import { EQ_FUNDS, LIQ_FUNDS, editMode, fundName, saveState, state, syncFundArrays, toggleRtnMode } from "../../core/state.js";
-import { UI, toggleColl, updateCollNameReadonly } from "../../core/ui.js";
+import { UI, updateCollNameReadonly } from "../../core/ui.js";
+import { createCollapsible } from "../../core/collapsible.js";
 import { el } from "../../core/dom.js";
 import { fmt, fmtNum, num } from "../../core/format.js";
 import { render, scheduleRender } from "./render.js";
+
+// Fund cards get torn down and rebuilt wholesale (drag-reorder, archive)
+// via rebuildFundCollapsibles() -> bindFundEvents(), so old controllers
+// are explicitly destroyed before new ones are created — otherwise each
+// rebuild would leak a ResizeObserver watching now-detached DOM nodes.
+let _fundCollapsibles = [];
+
+// Lets main.js auto-expand a freshly-added fund's card (see addLiqBtn/
+// addEqBtn handlers) without reaching into this module's private state.
+export function openFundCollapsible(fundId) {
+            _fundCollapsibles.find(c => c.id === fundId)?.controller.open();
+          }
 
 export function setStatReturn(elId, curVal, invested) {
             const statEl = el(elId);
@@ -142,9 +155,12 @@ export function eqCardHTML(f) {
           }
 
 export function bindFundEvents() {
+            _fundCollapsibles.forEach(c => c.controller.destroy());
+            _fundCollapsibles = [];
             [...LIQ_FUNDS, ...EQ_FUNDS].forEach(f => {
               const head = el("coll-head-" + f.id);
-              if (head) head.addEventListener("click", () => toggleColl(f.id));
+              const body = el("coll-body-" + f.id);
+              if (head && body) _fundCollapsibles.push({ id: f.id, controller: createCollapsible({ header: head, body }) });
               const rtn = el("coll-rtn-" + f.id);
               if (rtn) rtn.addEventListener("click", e => { e.stopPropagation(); toggleRtnMode(); });
             });
