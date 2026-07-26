@@ -22,6 +22,7 @@ import { fmtMonth, num } from "./core/format.js";
 import { openManageSips, saveManageSips } from "./features/portfolio/sips.js";
 import { openFundCollapsible, rebuildFundCollapsibles } from "./features/portfolio/funds.js";
 import { render, scheduleRender } from "./features/portfolio/render.js";
+import { copySummary } from "./features/summary/index.js";
 
 import "./features/admin/pin.js";
 
@@ -332,6 +333,7 @@ el("addEqBtn").addEventListener("click", () => {
               }, 150);
             }, 50);
           });
+el("copyBtn").addEventListener("click", copySummary);
 initFirebase();
 /* Debounced cloud saves can be stranded if the tab closes before the
    timer fires — flush immediately on any hide/unload transition. */
