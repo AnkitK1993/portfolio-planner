@@ -47,12 +47,16 @@ export function mfUnrealizedGain(liqFunds, eqFunds, liquid, equity) {
             return total;
           }
 
-export function nwTotal(networth, liqFunds, eqFunds, liquid, equity) {
+export function totalLiabilities(liabilities) {
+            return (liabilities || []).reduce((s, l) => s + (Number(l.balance) || 0), 0);
+          }
+
+export function nwTotal(networth, liqFunds, eqFunds, liquid, equity, liabilities) {
             const other = NW_FIELDS.filter((f) => f.id !== "mfProfit").reduce(
               (s, f) => s + (networth[f.id] || 0),
               0,
             );
-            return mfTotalValue(liqFunds, eqFunds, liquid, equity) + mfUnrealizedGain(liqFunds, eqFunds, liquid, equity) + other;
+            return mfTotalValue(liqFunds, eqFunds, liquid, equity) + mfUnrealizedGain(liqFunds, eqFunds, liquid, equity) + other - totalLiabilities(liabilities);
           }
 
 // Average monthly compounding rate across consecutive snapshot pairs —
@@ -75,9 +79,10 @@ export function avgMonthlyGrowthRate(sortedSnaps) {
             return count > 0 ? totalRate / count : 0;
           }
 
-export function buildCurrentSnapshot(networth, liqFunds, eqFunds, liquid, equity) {
-            const cur = { mf: mfTotalValue(liqFunds, eqFunds, liquid, equity), total: nwTotal(networth, liqFunds, eqFunds, liquid, equity) };
+export function buildCurrentSnapshot(networth, liqFunds, eqFunds, liquid, equity, liabilities) {
+            const cur = { mf: mfTotalValue(liqFunds, eqFunds, liquid, equity), total: nwTotal(networth, liqFunds, eqFunds, liquid, equity, liabilities) };
             NW_FIELDS.forEach((f) => { cur[f.id] = networth[f.id] || 0; });
             cur.mfProfit = mfUnrealizedGain(liqFunds, eqFunds, liquid, equity);
+            cur.liabilities = totalLiabilities(liabilities);
             return cur;
           }

@@ -702,7 +702,7 @@ function renderFireProgress() {
             if (goalTarget <= 0 && !editMode) { card.style.display = "none"; return; }
             card.style.display = "";
 
-            const cur = nwTotal(state.networth, LIQ_FUNDS, EQ_FUNDS, state.liquid, state.equity);
+            const cur = nwTotal(state.networth, LIQ_FUNDS, EQ_FUNDS, state.liquid, state.equity, state.liabilities);
             const progressPct = goalTarget > 0 ? Math.min(100, (cur / goalTarget) * 100) : 0;
 
             const snaps = state.networth.snapshots || {};

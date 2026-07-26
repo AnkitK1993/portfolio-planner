@@ -417,6 +417,17 @@
           </div>
         </div>
 
+        <!-- Liabilities — loans/EMI outstanding balances, subtracted from
+             the Net Worth total. Reuses the exp-row/-name-inp/-amt-inp/
+             -del-btn classes from the Expenses card's fixed-items list —
+             same name+amount+delete interaction, no new CSS needed. -->
+        <div class="card" id="nwLiabilitiesCard" style="margin-bottom:12px">
+          <div class="sec-head" style="margin-bottom:4px">Liabilities</div>
+          <div style="font-size:10px;color:var(--dim);margin-bottom:12px">Loans &amp; EMI outstanding balances — subtracted from your Net Worth total</div>
+          <div id="nwLiabilitiesList"></div>
+          <button class="btn btn-ghost exp-add-btn" id="nwLiabilityAddBtn" style="display:none;">+ Add Liability</button>
+        </div>
+
         <!-- Asset Breakdown — own card -->
         <div class="card" style="margin-bottom:12px">
           <div class="sec-head" style="margin-bottom:12px">Asset Breakdown</div>

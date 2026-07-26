@@ -149,7 +149,27 @@ export function healSnapshotMf(key, correctMf) {
             const snap = state.networth.snapshots?.[key];
             if (!snap) return;
             snap.mf = correctMf;
-            snap.total = correctMf + (snap.mfProfit || 0) + othersOfSnap(snap);
+            snap.total = correctMf + (snap.mfProfit || 0) + othersOfSnap(snap) - (snap.liabilities || 0);
+          }
+
+// ── Liabilities (loans/EMI outstanding balances) ──
+export function addLiability({ name, balance }) {
+            if (!state.liabilities) state.liabilities = [];
+            const id = "liab_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+            state.liabilities.push({ id, name, balance: Number(balance) || 0 });
+            return id;
+          }
+
+export function updateLiability(id, { name, balance }) {
+            const l = (state.liabilities || []).find(x => x.id === id);
+            if (!l) return false;
+            if (name !== undefined) l.name = name;
+            if (balance !== undefined) l.balance = Number(balance) || 0;
+            return true;
+          }
+
+export function deleteLiability(id) {
+            state.liabilities = (state.liabilities || []).filter(l => l.id !== id);
           }
 
 // ── Forecast — replaces main.js's 11 direct state.forecast.xxx = ... sites ──

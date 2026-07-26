@@ -1,11 +1,11 @@
 import { NW_FIELDS, OTHER_FIELDS } from "../../core/constants.js";
 import { UI } from "../../core/ui.js";
 import { _animOnRender, animateNumber, animateWidth } from "../../core/animate.js";
-import { avgMonthlyGrowthRate, buildCurrentSnapshot, mfTotalValue, mfUnrealizedGain, mfValueAsOf, nwTotal } from "../../domain/networth.js";
+import { avgMonthlyGrowthRate, buildCurrentSnapshot, mfTotalValue, mfUnrealizedGain, mfValueAsOf, nwTotal, totalLiabilities } from "../../domain/networth.js";
 import { editMode, EQ_FUNDS, LIQ_FUNDS, normalizeSnap, othersOfSnap, saveState, snapshotKey, state } from "../../core/state.js";
 import { el } from "../../core/dom.js";
 import { fmt, fmtCompact, fmtMonth, fmtNum, num } from "../../core/format.js";
-import { deleteSnapshot, healSnapshotMf, saveSnapshot, setNetworthField } from "../../store/actions.js";
+import { deleteLiability, deleteSnapshot, healSnapshotMf, saveSnapshot, setNetworthField, updateLiability } from "../../store/actions.js";
 
 export let nwEditingKey  = null;
 
@@ -57,7 +57,9 @@ export function renderNetWorth() {
             const other = NW_FIELDS.filter((f) => f.id !== "mfProfit").reduce(
               (s, f) => s + (state.networth[f.id] || 0), 0,
             );
-            const total = mfVal + displayedProfit + other;
+            const liabTotal = totalLiabilities(state.liabilities);
+            const total = mfVal + displayedProfit + other - liabTotal;
+            renderLiabilities();
 
             el("nwMfVal").textContent = fmt(mfVal);
             animateNumber(el("nwHeroVal"), total, _animOnRender && !editMode ? 2000 : 500, _animOnRender && !editMode);
@@ -175,6 +177,62 @@ export function renderNetWorth() {
             });
           }
 
+// Loans/EMI outstanding balances — reuses the Expenses card's fixed-item
+// row interaction (name + amount + delete) via the same exp-row/-name-
+// inp/-amt-inp/-del-btn classes, so this needed no new CSS at all.
+function renderLiabilities() {
+            const listEl = el("nwLiabilitiesList");
+            const addBtn = el("nwLiabilityAddBtn");
+            if (!listEl) return;
+            const items = state.liabilities || [];
+
+            addBtn.style.display = editMode ? "" : "none";
+
+            const rows = items.map((item) => `
+              <div class="exp-row">
+                <span class="exp-dot" style="background:var(--coral)"></span>
+                <input class="exp-name-inp" data-id="${item.id}" value="${item.name || ""}" placeholder="Loan name" ${editMode ? "" : "readonly"}/>
+                ${editMode
+                  ? `<input type="number" class="exp-amt-inp" data-id="${item.id}" min="0" step="1000" value="${item.balance || ""}" placeholder="0"/>`
+                  : `<span class="exp-amt-txt">${fmt(item.balance || 0)}</span>`}
+                <button class="exp-del-btn" data-id="${item.id}" style="visibility:${editMode ? "visible" : "hidden"}">✕</button>
+              </div>`).join("");
+
+            const emptyHtml = `<div class="exp-empty">
+              ${editMode ? `No liabilities yet — use "+ Add Liability" below.` : `No liabilities added. Tap Edit to add a loan or EMI balance.`}
+            </div>`;
+
+            const total = totalLiabilities(items);
+            listEl.innerHTML = `
+              <div>${rows || emptyHtml}</div>
+              ${items.length ? `<div style="display:flex;justify-content:space-between;padding:8px 6px 0;font-size:11px;color:var(--dim);">
+                <span>Total</span><span style="font-family:'Roboto Mono',monospace;color:var(--coral);">−${fmt(total)}</span>
+              </div>` : ""}`;
+
+            listEl.querySelectorAll(".exp-name-inp").forEach(inp => {
+              inp.addEventListener("change", e => {
+                if (!editMode) { renderLiabilities(); return; }
+                updateLiability(e.target.dataset.id, { name: e.target.value });
+                saveState();
+              });
+            });
+            listEl.querySelectorAll(".exp-amt-inp").forEach(inp => {
+              inp.addEventListener("change", e => {
+                if (!editMode) { renderLiabilities(); return; }
+                updateLiability(e.target.dataset.id, { balance: Math.max(0, parseFloat(e.target.value) || 0) });
+                saveState();
+                renderNetWorth();
+              });
+            });
+            listEl.querySelectorAll(".exp-del-btn").forEach(btn => {
+              btn.addEventListener("click", e => {
+                deleteLiability(e.target.dataset.id);
+                saveState();
+                renderNetWorth();
+              });
+            });
+          }
+
 export function takeSnapshot() {
             const key = nwEditingKey || snapshotKey();
             // MF Value is always derived from transactions dated on or
@@ -186,9 +244,12 @@ export function takeSnapshot() {
             );
             // state.networth.mfProfit already holds the correct figure here —
             // live if creating a new snapshot, frozen historical if editing one.
-            const total = mfVal + (state.networth.mfProfit || 0) + other;
+            // Liabilities aren't historized per-loan — only this frozen
+            // total-at-save-time, same treatment as bank/FD/PPF/etc above.
+            const liabTotal = totalLiabilities(state.liabilities);
+            const total = mfVal + (state.networth.mfProfit || 0) + other - liabTotal;
             const doSave = () => {
-              const snap = { mf: mfVal, total, savedAt: new Date().toISOString() };
+              const snap = { mf: mfVal, total, liabilities: liabTotal, savedAt: new Date().toISOString() };
               NW_FIELDS.forEach((f) => { snap[f.id] = state.networth[f.id] || 0; });
               saveSnapshot(key, snap);
               if (nwEditingKey) {
@@ -247,6 +308,7 @@ export function renderNwHistory() {
               { key: "mf",       label: "MF Value" },
               { key: "mfProfit", label: "Unrealized Gain" },
               ...OTHER_FIELDS.map(f => ({ key: f.id, label: f.label })),
+              { key: "liabilities", label: "Liabilities" },
               { key: "total",    label: "Total" },
             ];
 
@@ -265,7 +327,7 @@ export function renderNwHistory() {
               let expandHtml = "";
               if (isOpen) {
                 const showCompare = nwHistCompare.has(s.key);
-                const cur = showCompare ? buildCurrentSnapshot(state.networth, LIQ_FUNDS, EQ_FUNDS, state.liquid, state.equity) : null;
+                const cur = showCompare ? buildCurrentSnapshot(state.networth, LIQ_FUNDS, EQ_FUNDS, state.liquid, state.equity, state.liabilities) : null;
                 expandHtml = (showCompare
                   ? `<div class="nw-hist-cmp-head"><span>Field</span><span>${fmtMonth(s.key)}</span><span>Current</span><span>&Delta;</span></div>` +
                     DETAIL_FIELDS.map(f => {
@@ -578,7 +640,7 @@ export function renderNwProjection() {
 
             const r = avgMonthlyGrowthRate(sorted);
             const ann = (Math.pow(1 + r, 12) - 1) * 100;
-            const cur = nwTotal(state.networth, LIQ_FUNDS, EQ_FUNDS, state.liquid, state.equity);
+            const cur = nwTotal(state.networth, LIQ_FUNDS, EQ_FUNDS, state.liquid, state.equity, state.liabilities);
 
             const cards = [
               { label: "3 months", months: 3 },

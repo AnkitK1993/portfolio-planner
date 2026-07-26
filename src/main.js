@@ -6,7 +6,7 @@ import { EQ_FUNDS, LIQ_FUNDS, editMode, privacyMode, saveState, setEditMode, set
 import { NW_FIELDS } from "./core/constants.js";
 import { UI, closeNavDropdowns, collapseTxpCard, navigateTo, openNavDropdown } from "./core/ui.js";
 import { setRenderTrigger, setTabActivateHandler } from "./core/appEvents.js";
-import { addEquityFund, addLiquidFund, deleteSnapshot, setForecastField, setNetworthField } from "./store/actions.js";
+import { addEquityFund, addLiability, addLiquidFund, deleteSnapshot, setForecastField, setNetworthField } from "./store/actions.js";
 import { _hasLocalData, authUser, fbAuthReady, fbEnabled, flushCloudSave, handleSignInResult, initFirebase, loadBackupList, resetBackupPanel, saveManualBackup } from "./infra/firebase.js";
 import { _upcomingHead } from "./features/portfolio/upcoming.js";
 import { animateNumber } from "./core/animate.js";
@@ -346,6 +346,11 @@ syncFundArrays();
 rebuildFundCollapsibles();
 buildNwGrid();
 el("nwSnapshotBtn").addEventListener("click", takeSnapshot);
+el("nwLiabilityAddBtn").addEventListener("click", () => {
+            addLiability({ name: "", balance: 0 });
+            saveState();
+            renderNetWorth();
+          });
 el("nwSnapCancelBtn").addEventListener("click", () => {
             if (nwLiveSaved) {
               NW_FIELDS.forEach(f => setNetworthField(f.id, nwLiveSaved[f.id] || 0));
