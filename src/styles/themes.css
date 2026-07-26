@@ -1,3 +1,15 @@
+      /* Every rule in this file is purely decorative screen skinning for
+         the two themes with bespoke per-component overrides (most themes
+         work entirely through the CSS custom properties in :root, which
+         the @media print block in base.css already remaps). Several of
+         these rules set literal colors instead of var(--dim) etc (e.g.
+         .sec-head's rgba(0,229,255,0.45)) — those bypass that print remap
+         entirely and render illegibly on white paper. Simplest fix: this
+         whole file simply doesn't apply during print, so print always
+         falls through to the base component styles + the print color
+         remap, regardless of which theme is active on screen. */
+      @media screen {
+
       /* ════════════════════════════════════════════════════
          THEME: NEO CYBER GRID
          Full aesthetic override — grid background, glowing
@@ -225,4 +237,6 @@
         background: rgba(0,200,255,0.14);
         color: #00c8ff;
       }
+
+      } /* @media screen */
 

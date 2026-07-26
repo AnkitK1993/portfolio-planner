@@ -1828,22 +1828,29 @@
          restyling each component individually.
          ══════════════════════════════════════════════════════════════ */
       @media print {
+        /* !important on every one of these: applyAccent() (admin/themes.js)
+           sets the active theme's colors as INLINE styles on <html>, which
+           beat a plain stylesheet rule regardless of @media — without
+           !important here, this whole remap silently loses to whatever
+           accent theme happens to be active (i.e. always, since some theme
+           is applied at boot) and the print output stays in the dark
+           theme's colors, which is illegible on white paper. */
         :root {
-          --bg: #ffffff;
-          --panel: #ffffff;
-          --panel-2: #f3f4f6;
-          --line: #d1d5db;
-          --txt: #111827;
-          --dim: #4b5563;
-          --mint: #059669;
-          --mint-dim: #d1fae5;
-          --liq: #0369a1;
-          --liq-dim: #dbeafe;
-          --amber: #b45309;
-          --amber-dim: #fef3c7;
-          --coral: #b91c1c;
-          --purple: #6d28d9;
-          --mint-soft: #16a34a;
+          --bg: #ffffff !important;
+          --panel: #ffffff !important;
+          --panel-2: #f3f4f6 !important;
+          --line: #d1d5db !important;
+          --txt: #111827 !important;
+          --dim: #4b5563 !important;
+          --mint: #059669 !important;
+          --mint-dim: #d1fae5 !important;
+          --liq: #0369a1 !important;
+          --liq-dim: #dbeafe !important;
+          --amber: #b45309 !important;
+          --amber-dim: #fef3c7 !important;
+          --coral: #b91c1c !important;
+          --purple: #6d28d9 !important;
+          --mint-soft: #16a34a !important;
         }
         /* .card uses a hardcoded rgba(14,14,30,..) background rather than
            var(--panel) (predates the accent-theme system), and .coll-section
