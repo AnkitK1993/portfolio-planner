@@ -40,6 +40,11 @@ function fifoLtStFractions(fundId, transactions) {
 
             const lots = [];
             txns.forEach(t => {
+              // A dividend/IDCW payout doesn't buy new units or consume
+              // held ones — it's cash paid out on top of the holding, so
+              // it must not be treated as a purchase lot here (that would
+              // silently and wrongly inflate the cost basis every payout).
+              if (t.type === "dividend") return;
               const ae = Number(t.afterExpense ?? t.invested) || 0;
               if (ae <= 0) return;
               if (t.type === "redemption") {

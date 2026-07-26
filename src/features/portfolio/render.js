@@ -135,6 +135,7 @@ export function render() {
                   s2.sipPaid  > 0 ? `<span class="split-chip split-chip-sip">SIP ${fmt(s2.sipPaid)}</span>`    : "",
                   s2.lumpPaid > 0 ? `<span class="split-chip split-chip-lump">Lump ${fmt(s2.lumpPaid)}</span>` : "",
                   s2.redeemPaid > 0 ? `<span class="split-chip split-chip-redeem">−${fmt(s2.redeemPaid)}</span>` : "",
+                  s2.dividendPaid > 0 ? `<span class="split-chip split-chip-dividend">Div ${fmt(s2.dividendPaid)}</span>` : "",
                 ].join("");
                 lsplit.innerHTML = chips;
               }
@@ -281,6 +282,7 @@ export function render() {
                   s2.sipPaid  > 0 ? `<span class="split-chip split-chip-sip">SIP ${fmt(s2.sipPaid)}</span>`    : "",
                   s2.lumpPaid > 0 ? `<span class="split-chip split-chip-lump">Lump ${fmt(s2.lumpPaid)}</span>` : "",
                   s2.redeemPaid > 0 ? `<span class="split-chip split-chip-redeem">−${fmt(s2.redeemPaid)}</span>` : "",
+                  s2.dividendPaid > 0 ? `<span class="split-chip split-chip-dividend">Div ${fmt(s2.dividendPaid)}</span>` : "",
                 ].join("");
                 esplit.innerHTML = chips;
               }

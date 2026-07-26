@@ -56,7 +56,7 @@ export function fundXirr(fid, isLiq, fundState, transactions) {
             // outflow, so they can't share the SIP/lump sign.
             const cfs = txns.map(t => {
               const ae = Number(t.afterExpense ?? t.invested);
-              return { amount: t.type === "redemption" ? ae : -ae, date: new Date(t.date).getTime() };
+              return { amount: (t.type === "redemption" || t.type === "dividend") ? ae : -ae, date: new Date(t.date).getTime() };
             });
             cfs.push({ amount: curVal, date: Date.now() });
             const val = xirrCalc(cfs);
@@ -82,7 +82,7 @@ export function rollingPortfolioXirr(sortedSnaps, transactions) {
               if (!txns.length || terminalVal <= 0) return { key: s.key, xirr: null };
               const cfs = txns.map(t => {
                 const ae = Number(t.afterExpense ?? t.invested);
-                return { amount: t.type === "redemption" ? ae : -ae, date: new Date(t.date).getTime() };
+                return { amount: (t.type === "redemption" || t.type === "dividend") ? ae : -ae, date: new Date(t.date).getTime() };
               });
               cfs.push({ amount: terminalVal, date: asOfMs });
               return { key: s.key, xirr: xirrCalc(cfs) };
@@ -100,7 +100,7 @@ export function cachedPortfolioXirr(allTxns, totalVal) {
             if (_xirrCache.key === cacheKey) return _xirrCache.val;
             const cfs = allTxns.map(t => {
               const ae = Number(t.afterExpense ?? t.invested);
-              return { amount: t.type === "redemption" ? ae : -ae, date: new Date(t.date).getTime() };
+              return { amount: (t.type === "redemption" || t.type === "dividend") ? ae : -ae, date: new Date(t.date).getTime() };
             });
             cfs.push({ amount: totalVal, date: Date.now() });
             _xirrCache = { key: cacheKey, val: xirrCalc(cfs) };

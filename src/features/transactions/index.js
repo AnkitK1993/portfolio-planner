@@ -31,10 +31,16 @@ function txnFundRowHTML(fundId, name, invested, afterExpense) {
           }
 
 // A transaction's after-expense amount, signed by direction: a
-// sip/lump contributes to the fund, a redemption withdraws from it.
+// sip/lump contributes to the fund, a redemption withdraws from it. A
+// dividend/IDCW payout is neither — it's cash paid out without reducing
+// (or adding to) the held principal — so it contributes 0 here; it's
+// tracked separately (dividendPaid, see applyTxnTotals) rather than
+// nudging Current Value the way a real contribution/withdrawal does.
 function signedAfterExpense(t) {
             const ae = Number(t.afterExpense ?? t.invested) || 0;
-            return t.type === "redemption" ? -ae : ae;
+            if (t.type === "redemption") return -ae;
+            if (t.type === "dividend") return 0;
+            return ae;
           }
 
 function isLiqFund(fundId) {
@@ -61,7 +67,7 @@ export function setTxnType(type) {
           }
 
 export function applyTxnTotals() {
-            const net = {}, sipTot = {}, lumpTot = {}, redeemTot = {}, netAE = {};
+            const net = {}, sipTot = {}, lumpTot = {}, redeemTot = {}, dividendTot = {}, netAE = {};
             (state.transactions || []).forEach(t => {
               const amt = Number(t.invested) || 0;
               // Older transactions predate the After Expense field — fall
@@ -71,6 +77,12 @@ export function applyTxnTotals() {
                 redeemTot[t.fundId] = (redeemTot[t.fundId] || 0) + amt;
                 net[t.fundId] = (net[t.fundId] || 0) - amt;
                 netAE[t.fundId] = (netAE[t.fundId] || 0) - aeAmt;
+              } else if (t.type === "dividend") {
+                // A payout, not a new purchase or a withdrawal of principal
+                // — tracked in its own total but deliberately left out of
+                // net/netAE so it never touches paid/value (the fund's
+                // invested-capital basis).
+                dividendTot[t.fundId] = (dividendTot[t.fundId] || 0) + amt;
               } else if (t.type === "sip") {
                 sipTot[t.fundId]  = (sipTot[t.fundId]  || 0) + amt;
                 net[t.fundId]     = (net[t.fundId]     || 0) + amt;
@@ -96,6 +108,7 @@ export function applyTxnTotals() {
               state.liquid[f.id].sipPaid   = sipTot[f.id]    || 0;
               state.liquid[f.id].lumpPaid  = lumpTot[f.id]   || 0;
               state.liquid[f.id].redeemPaid= redeemTot[f.id] || 0;
+              state.liquid[f.id].dividendPaid = dividendTot[f.id] || 0;
               const inp = document.getElementById("lpaid-" + f.id);
               if (inp) inp.value = fmtNum(paid);
 
@@ -110,6 +123,7 @@ export function applyTxnTotals() {
               state.equity[f.id].sipPaid   = sipTot[f.id]    || 0;
               state.equity[f.id].lumpPaid  = lumpTot[f.id]   || 0;
               state.equity[f.id].redeemPaid= redeemTot[f.id] || 0;
+              state.equity[f.id].dividendPaid = dividendTot[f.id] || 0;
               const inp = document.getElementById("epaid-" + f.id);
               if (inp) inp.value = fmtNum(paid);
 
@@ -178,11 +192,11 @@ export function saveTxn() {
               const allFunds = [...LIQ_FUNDS, ...EQ_FUNDS];
               let added = 0;
               const dups = [];
-              if (txnType !== "redemption") {
+              if (txnType !== "redemption" && txnType !== "dividend") {
                 allFunds.forEach(f => {
                   const v = Number(el("txi-" + f.id)?.value) || 0;
                   if (v > 0) {
-                    const existing = (state.transactions || []).find(t => t.fundId === f.id && t.date === date && t.type !== "redemption");
+                    const existing = (state.transactions || []).find(t => t.fundId === f.id && t.date === date && t.type !== "redemption" && t.type !== "dividend");
                     if (existing) dups.push(fundName(f.id));
                   }
                 });
@@ -475,6 +489,8 @@ export function renderTxns() {
                     ? `<span class="txn-badge txn-badge-redeem">Redeemed</span>`
                     : t.type === "lump"
                     ? `<span class="txn-badge txn-badge-lump">Lump</span>`
+                    : t.type === "dividend"
+                    ? `<span class="txn-badge txn-badge-dividend">Dividend</span>`
                     : "";
                   html += `<div class="txn-row txn-row-child${isRedeem ? " txn-row-redeemed" : ""}">
                     <div class="txn-info">

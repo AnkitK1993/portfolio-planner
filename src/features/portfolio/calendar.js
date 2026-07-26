@@ -188,12 +188,13 @@ export function refreshCalDayBody(dateStr) {
               html = `<p style="color:var(--dim);font-size:12px;padding:8px 0">No events on this day.</p>`;
             }
             txns.forEach(t => {
+              const label = t.type === "redemption" ? "Redeemed" : t.type === "dividend" ? "Dividend" : "Invested";
               html += `<div class="calday-row">
                 <div class="calday-info">
                   <span class="calday-fund">${fundName(t.fundId)}</span>
                   <span class="calday-amt calday-green">&#8377;${Math.round(t.invested).toLocaleString("en-IN")}</span>
                 </div>
-                <span class="calday-badge green-b">Invested</span>
+                <span class="calday-badge green-b">${label}</span>
               </div>`;
             });
             sipEvts.forEach(s => {
