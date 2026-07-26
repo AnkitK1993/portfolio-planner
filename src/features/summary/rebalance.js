@@ -383,8 +383,49 @@ export function renderIdealAlloc() {
                 </div>
               </div>`).join("");
 
+            // --- Concrete sell/buy reallocation pairs ---
+            // Bar 2 below only ever deploys NEW liquid cash toward
+            // under-weighted funds — it has nothing to say when a fund is
+            // simply over-weighted with no fresh cash involved (drift from
+            // uneven growth, not new investing). This greedily pairs each
+            // over-weight fund's excess against under-weight funds' need,
+            // largest-first, so "drift exists" becomes an actual "sell ₹X
+            // from A, buy ₹X into B" instruction. A materiality floor (0.5%
+            // of the post-rebalance equity total, or ₹500, whichever is
+            // larger) keeps rounding-level noise from generating a
+            // pointless ₹40 "rebalance" suggestion.
+            const MATERIALITY = Math.max(500, eqAfter * 0.005);
+            const overQ  = fundTargets.filter(f => f.toAdd < -MATERIALITY)
+              .map(f => ({ name: f.name, color: f.color, remaining: -f.toAdd }))
+              .sort((a, b) => b.remaining - a.remaining);
+            const underQ = fundTargets.filter(f => f.toAdd > MATERIALITY)
+              .map(f => ({ name: f.name, color: f.color, remaining: f.toAdd }))
+              .sort((a, b) => b.remaining - a.remaining);
+            const transfers = [];
+            let oi = 0, ui = 0;
+            while (oi < overQ.length && ui < underQ.length) {
+              const amt = Math.min(overQ[oi].remaining, underQ[ui].remaining);
+              if (amt > MATERIALITY) transfers.push({ from: overQ[oi], to: underQ[ui], amount: amt });
+              overQ[oi].remaining  -= amt;
+              underQ[ui].remaining -= amt;
+              if (overQ[oi].remaining  <= MATERIALITY) oi++;
+              if (underQ[ui].remaining <= MATERIALITY) ui++;
+            }
+            const transfersHtml = transfers.length
+              ? `<div class="sec-head mt">Rebalance Actions &nbsp;— &nbsp;<span style="font-family:'Roboto Mono',monospace;color:var(--amber)">${transfers.length} move${transfers.length !== 1 ? "s" : ""}</span></div>
+                  <div>${transfers.map(t => `
+                    <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:11px;">
+                      <span style="width:8px;height:8px;border-radius:2px;background:${t.from.color};flex-shrink:0;"></span>
+                      <span style="color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.from.name}</span>
+                      <span style="color:var(--dim);flex-shrink:0;">&rarr;</span>
+                      <span style="width:8px;height:8px;border-radius:2px;background:${t.to.color};flex-shrink:0;"></span>
+                      <span style="color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;">${t.to.name}</span>
+                      <span style="font-family:'Roboto Mono',monospace;color:var(--amber);white-space:nowrap;">${fmt(Math.round(t.amount))}</span>
+                    </div>`).join("")}</div>`
+              : "";
+
             if (bar1El) {
-              bar1El.innerHTML = barSectionHtml("Ideal Equity Allocation", "var(--mint)", fmt(Math.round(eqAfter)), bar1Segs, bar1Rows);
+              bar1El.innerHTML = barSectionHtml("Ideal Equity Allocation", "var(--mint)", fmt(Math.round(eqAfter)), bar1Segs, bar1Rows) + transfersHtml;
               if (_animOnRender && !editMode)
                 bar1El.querySelectorAll(".alloc-seg-bar").forEach(bar => animateWidth(bar, 100, 1000));
             }
