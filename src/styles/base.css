@@ -1129,6 +1129,13 @@
         transition: color 0.15s; margin-right: 2px;
       }
       .toast-x:hover { color: rgba(255,255,255,0.8); }
+      .toast-undo {
+        background: none; border: 1px solid rgba(255,255,255,0.18); color: var(--txt);
+        font-family: "Roboto", sans-serif; font-size: 12px; font-weight: 600;
+        border-radius: 7px; padding: 4px 10px; cursor: pointer; flex-shrink: 0;
+        transition: background 0.15s, border-color 0.15s;
+      }
+      .toast-undo:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.32); }
       @keyframes toastIn {
         from { transform: translateY(16px) scale(0.96); opacity: 0; }
         to   { transform: none; opacity: 1; }

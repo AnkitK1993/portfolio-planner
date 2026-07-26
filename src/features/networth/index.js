@@ -392,10 +392,19 @@ export function renderNwHistory() {
               btn.addEventListener("click", (e) => {
                 e.stopPropagation();
                 const key = btn.dataset.key;
-                UI.confirm("Delete snapshot for " + fmtMonth(key) + "?", "Delete snapshot", "Delete", () => {
-                  deleteSnapshot(key);
-                  nwHistExpanded.delete(key);
-                  nwHistCompare.delete(key);
+                const snap = state.networth.snapshots && state.networth.snapshots[key];
+                if (!snap) return;
+                deleteSnapshot(key);
+                nwHistExpanded.delete(key);
+                nwHistCompare.delete(key);
+                saveState();
+                renderNetWorth();
+                renderNwHistory();
+                renderNwLineChart();
+                renderNwCompositionChart();
+                renderNwProjection();
+                UI.undoToast("Snapshot for " + fmtMonth(key) + " deleted", () => {
+                  saveSnapshot(key, snap);
                   saveState();
                   renderNetWorth();
                   renderNwHistory();

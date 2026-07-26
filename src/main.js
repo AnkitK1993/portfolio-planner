@@ -6,7 +6,7 @@ import { EQ_FUNDS, LIQ_FUNDS, editMode, privacyMode, saveState, setEditMode, set
 import { NW_FIELDS } from "./core/constants.js";
 import { UI, closeNavDropdowns, collapseTxpCard, navigateTo, openNavDropdown } from "./core/ui.js";
 import { setRenderTrigger, setTabActivateHandler } from "./core/appEvents.js";
-import { addEquityFund, addLiability, addLiquidFund, deleteSnapshot, setForecastField, setNetworthField } from "./store/actions.js";
+import { addEquityFund, addLiability, addLiquidFund, deleteSnapshot, saveSnapshot, setForecastField, setNetworthField } from "./store/actions.js";
 import { _hasLocalData, authUser, fbAuthReady, fbEnabled, flushCloudSave, handleSignInResult, initFirebase, loadBackupList, resetBackupPanel, saveManualBackup } from "./infra/firebase.js";
 import { _upcomingHead } from "./features/portfolio/upcoming.js";
 import { animateNumber } from "./core/animate.js";
@@ -381,8 +381,17 @@ el("nwSnapEditBtn").addEventListener("click", () => {
           });
 el("nwSnapDeleteBtn").addEventListener("click", () => {
             const key = snapshotKey();
-            UI.confirm("Delete snapshot for " + fmtMonth(key) + "?", "Delete snapshot", "Delete", () => {
-              deleteSnapshot(key);
+            const snap = state.networth.snapshots && state.networth.snapshots[key];
+            if (!snap) return;
+            deleteSnapshot(key);
+            saveState();
+            renderNetWorth();
+            renderNwHistory();
+            renderNwLineChart();
+            renderNwCompositionChart();
+            renderNwProjection();
+            UI.undoToast("Snapshot for " + fmtMonth(key) + " deleted", () => {
+              saveSnapshot(key, snap);
               saveState();
               renderNetWorth();
               renderNwHistory();

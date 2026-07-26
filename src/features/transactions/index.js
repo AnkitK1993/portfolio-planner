@@ -240,10 +240,15 @@ export function saveTxn() {
           }
 
 export function deleteTxn(id) {
-            UI.confirm("This cannot be undone.", "Delete transaction?", "Delete", () => {
-              const txn = (state.transactions || []).find(t => t.id === id);
-              state.transactions = (state.transactions || []).filter(t => t.id !== id);
-              if (txn) applyCurrentValueDelta(txn.fundId, isLiqFund(txn.fundId), -signedAfterExpense(txn));
+            const list = state.transactions || [];
+            const idx = list.findIndex(t => t.id === id);
+            if (idx === -1) return;
+            const [txn] = list.splice(idx, 1);
+            applyCurrentValueDelta(txn.fundId, isLiqFund(txn.fundId), -signedAfterExpense(txn));
+            applyTxnTotals(); saveState(); render(); renderTxns();
+            UI.undoToast(fundName(txn.fundId) + " transaction deleted", () => {
+              list.splice(idx, 0, txn);
+              applyCurrentValueDelta(txn.fundId, isLiqFund(txn.fundId), signedAfterExpense(txn));
               applyTxnTotals(); saveState(); render(); renderTxns();
             });
           }

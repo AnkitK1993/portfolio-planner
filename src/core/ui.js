@@ -98,6 +98,40 @@ export const UI = {
               if (duration > 0) setTimeout(dismiss, duration);
             },
 
+            /* Toast with an "Undo" action — for deletions that take effect
+               immediately (no confirm dialog) but stay reversible for a
+               short window. onUndo is called at most once, either from the
+               button or from a caller re-using the returned handle; the
+               toast self-dismisses (without calling onUndo) once duration
+               elapses, at which point the deletion is final. */
+            undoToast(msg, onUndo, duration = 6000) {
+              const wrap = document.getElementById("toastWrap");
+              if (!wrap) return;
+              const div = document.createElement("div");
+              div.className = "toast toast-info";
+              div.setAttribute("role", "status");
+              div.style.setProperty("--toast-dur", (duration / 1000) + "s");
+              div.innerHTML =
+                `<span class="toast-icon" aria-hidden="true">i</span>` +
+                `<span class="toast-msg">${msg}</span>` +
+                `<button class="toast-undo">Undo</button>` +
+                `<button class="toast-x" aria-label="Dismiss">✕</button>`;
+              let settled = false;
+              const dismiss = () => {
+                div.classList.add("toast-exit");
+                setTimeout(() => div.remove(), 240);
+              };
+              div.querySelector(".toast-x").addEventListener("click", dismiss);
+              div.querySelector(".toast-undo").addEventListener("click", () => {
+                if (settled) return;
+                settled = true;
+                onUndo();
+                dismiss();
+              });
+              wrap.appendChild(div);
+              setTimeout(dismiss, duration);
+            },
+
             /* Shimmer skeleton placeholder — drop into any grid while loading */
             skeleton(count = 2) {
               return Array.from({ length: count }, () =>
