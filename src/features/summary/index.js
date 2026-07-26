@@ -702,7 +702,7 @@ function renderFireProgress() {
             if (goalTarget <= 0 && !editMode) { card.style.display = "none"; return; }
             card.style.display = "";
 
-            const cur = nwTotal(state.networth, LIQ_FUNDS, EQ_FUNDS, state.liquid, state.equity, state.liabilities);
+            const cur = nwTotal(state.networth, LIQ_FUNDS, EQ_FUNDS, state.liquid, state.equity);
             const progressPct = goalTarget > 0 ? Math.min(100, (cur / goalTarget) * 100) : 0;
 
             const snaps = state.networth.snapshots || {};
@@ -970,31 +970,3 @@ export function renderXirrAndHeatmap() {
             }
           }
 
-export function copySummary() {
-            const lines = ["*MF Portfolio Plan*", ""];
-            lines.push("EQUITY FUNDS");
-            EQ_FUNDS.forEach((f) => {
-              const s = state.equity[f.id];
-              const name = s.name || f.defaultName;
-              const inv = el("einv-" + f.id).textContent;
-              lines.push("  " + name + ": invest " + inv);
-            });
-            lines.push("");
-            lines.push(
-              "Equity now " +
-                el("eqCur").textContent +
-                " → target " +
-                el("eqTgt").textContent,
-            );
-            lines.push("Equity to invest: " + el("eqInv").textContent);
-
-            navigator.clipboard
-              .writeText(lines.join("\n"))
-              .then(() => {
-                const b = el("copyBtn"),
-                  o = b.textContent;
-                b.textContent = "Copied ✓";
-                setTimeout(() => (b.textContent = o), 1600);
-              })
-              .catch(() => UI.showText("Portfolio Plan", lines.join("\n")));
-          }

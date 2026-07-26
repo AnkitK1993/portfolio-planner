@@ -238,7 +238,6 @@ export function applyCloudState(raw) {
               returnsLog: Array.isArray(raw.returnsLog) ? raw.returnsLog : [],
               calendarNotes: Array.isArray(raw.calendarNotes) ? raw.calendarNotes : [],
               rebalance: { sections: Array.isArray(raw.rebalance?.sections) ? raw.rebalance.sections : defaultRebSections() },
-              liabilities: Array.isArray(raw.liabilities) ? raw.liabilities : [],
               _meta: { ...def._meta, ...(raw._meta || {}), syncedAt: new Date().toISOString() },
             });
             localStorage.setItem(STORE_KEY, JSON.stringify(state));

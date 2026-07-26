@@ -6,7 +6,7 @@ import { EQ_FUNDS, LIQ_FUNDS, editMode, privacyMode, saveState, setEditMode, set
 import { NW_FIELDS } from "./core/constants.js";
 import { UI, closeNavDropdowns, collapseTxpCard, navigateTo, openNavDropdown } from "./core/ui.js";
 import { setRenderTrigger, setTabActivateHandler } from "./core/appEvents.js";
-import { addEquityFund, addLiability, addLiquidFund, deleteSnapshot, saveSnapshot, setForecastField, setNetworthField } from "./store/actions.js";
+import { addEquityFund, addLiquidFund, deleteSnapshot, saveSnapshot, setForecastField, setNetworthField } from "./store/actions.js";
 import { _hasLocalData, authUser, fbAuthReady, fbEnabled, flushCloudSave, handleSignInResult, initFirebase, loadBackupList, loadSyncHistory, resetBackupPanel, saveManualBackup } from "./infra/firebase.js";
 import { _upcomingHead } from "./features/portfolio/upcoming.js";
 import { animateNumber } from "./core/animate.js";
@@ -22,10 +22,6 @@ import { fmtMonth, num } from "./core/format.js";
 import { openManageSips, saveManageSips } from "./features/portfolio/sips.js";
 import { openFundCollapsible, rebuildFundCollapsibles } from "./features/portfolio/funds.js";
 import { render, scheduleRender } from "./features/portfolio/render.js";
-import { copySummary } from "./features/summary/index.js";
-import { initReminders, reminderBtnLabel, toggleReminders } from "./features/reminders.js";
-
-import "./features/admin/pin.js";
 
 el("buildVersion").textContent = "v" + __BUILD_VERSION__;
 
@@ -88,21 +84,6 @@ el("txnImportFile").addEventListener("change", e => {
                 if (id === "txp-sip") openManageSips();
               }
             });
-          });
-el("ddPinBtn").addEventListener("click", async () => {
-            closeNavDropdowns();
-            const hasPIN = !!localStorage.getItem("appPin");
-            const msg = hasPIN ? "Enter a new 4-digit PIN (or leave blank to clear PIN lock):" : "Enter a 4-digit PIN to lock the app:";
-            const raw = await UI.prompt("PIN Lock", msg, { placeholder: "4-digit PIN" });
-            if (raw === null) return; // cancelled
-            if (raw.trim() === "") { window.clearAppPin(); }
-            else { window.setAppPin(raw.trim()); }
-          });
-el("ddRemindersBtn").textContent = reminderBtnLabel();
-el("ddRemindersBtn").addEventListener("click", async () => {
-            closeNavDropdowns();
-            await toggleReminders();
-            el("ddRemindersBtn").textContent = reminderBtnLabel();
           });
 el("dataModalClose").addEventListener("click", () => dataModalCtl.close());
 el("dataModalCancelBtn").addEventListener("click", () => dataModalCtl.close());
@@ -347,7 +328,6 @@ el("addEqBtn").addEventListener("click", () => {
               }, 150);
             }, 50);
           });
-el("copyBtn").addEventListener("click", copySummary);
 initFirebase();
 /* Debounced cloud saves can be stranded if the tab closes before the
    timer fires — flush immediately on any hide/unload transition. */
@@ -358,13 +338,7 @@ window.addEventListener("pagehide", () => flushCloudSave());
 syncFundArrays();
 rebuildFundCollapsibles();
 buildNwGrid();
-initReminders(); // after syncFundArrays() — EQ_FUNDS must be populated first
 el("nwSnapshotBtn").addEventListener("click", takeSnapshot);
-el("nwLiabilityAddBtn").addEventListener("click", () => {
-            addLiability({ name: "", balance: 0 });
-            saveState();
-            renderNetWorth();
-          });
 el("nwSnapCancelBtn").addEventListener("click", () => {
             if (nwLiveSaved) {
               NW_FIELDS.forEach(f => setNetworthField(f.id, nwLiveSaved[f.id] || 0));
@@ -422,7 +396,6 @@ function refreshNwToggleAllBtn() {
             btn.textContent = nwCollapsibles.every(c => c.isOpen()) ? "Collapse All" : "Expand All";
           }
 [
-            ["nwLiabToggle", "nwLiabBody"],
             ["nwBreakdownToggle", "nwBreakdownBody"],
             ["nwHistToggle", "nwHistBody"],
             ["nwChartToggle", "nwChartBody"],

@@ -19,12 +19,9 @@ export function syncFundArrays() {
 
 export const othersOfSnap = (s) => OTHER_FIELDS.reduce((sum, f) => sum + (s[f.id] || 0), 0);
 
-// Liabilities aren't historized per-item (no per-loan balance history),
-// only a frozen total-at-save-time on the snapshot itself — same
-// treatment as bank/FD/PPF/etc, which also freeze rather than recompute.
 export const normalizeSnap = (key, v) => {
             const s = { key, ...v };
-            s.total = (s.mf || 0) + (s.mfProfit || 0) + othersOfSnap(s) - (s.liabilities || 0);
+            s.total = (s.mf || 0) + (s.mfProfit || 0) + othersOfSnap(s);
             return s;
           };
 
@@ -79,7 +76,6 @@ export function defaultState() {
               returnsLog: [],
               calendarNotes: [],
               rebalance: { sections: defaultRebSections() },
-              liabilities: [],
               _meta: { v: 0, savedAt: null, syncedAt: null },
             };
           }
@@ -145,7 +141,6 @@ export function loadState() {
                 returnsLog: Array.isArray(s.returnsLog) ? s.returnsLog : [],
                 calendarNotes: Array.isArray(s.calendarNotes) ? s.calendarNotes : [],
                 rebalance: { sections: Array.isArray(s.rebalance?.sections) ? s.rebalance.sections : defaultRebSections() },
-                liabilities: Array.isArray(s.liabilities) ? s.liabilities : [],
                 _meta: { ...def._meta, ...(s._meta || {}) },
               };
             } catch {

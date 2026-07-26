@@ -57,8 +57,6 @@
       <button class="nav-dd-item" id="ddDataBtn">Data</button>
       <button class="nav-dd-item" id="ddPrintBtn">Print Report</button>
       <button class="nav-dd-item" id="ddRebalanceBtn">Rebalance</button>
-      <button class="nav-dd-item" id="ddPinBtn">Set PIN Lock</button>
-      <button class="nav-dd-item" id="ddRemindersBtn">Enable Reminders</button>
       <div class="nav-dd-sep"></div>
       <div class="nav-dd-user" id="ddUserInfo" style="display:none">
         <img class="nav-dd-avatar" id="ddUserAvatar" src="" alt=""/>
@@ -162,9 +160,6 @@
             <span class="fund-div-total" id="eqDivTotal">—</span>
             <span class="fund-div-rtn" id="eqDivRtn"></span>
           </span>
-        </div>
-        <div style="display:flex;justify-content:flex-end;margin:-4px 0 8px;">
-          <button class="btn btn-ghost btn-sm" id="copyBtn" title="Copy this month's equity investment plan as shareable text">📋 Copy Plan</button>
         </div>
         <div id="eqFundsList"></div>
         <div class="add-fund-row">
@@ -386,26 +381,6 @@
           <div class="nw-stat-card">
             <div class="nw-stat-label">Avg Monthly Growth</div>
             <div class="nw-stat-val" id="nwAvgGrowth">—</div>
-          </div>
-        </div>
-
-        <!-- Liabilities — loans/EMI outstanding balances, subtracted from
-             the Net Worth total. Reuses the exp-row/-name-inp/-amt-inp/
-             -del-btn classes from the Expenses card's fixed-items list —
-             same name+amount+delete interaction, no new CSS needed. -->
-        <div class="card" id="nwLiabilitiesCard" style="margin-bottom:12px">
-          <button class="card-toggle-head" id="nwLiabToggle" aria-expanded="false">
-            <div class="card-toggle-head-text">
-              <div class="sec-head" style="margin-bottom:4px">Liabilities</div>
-              <div style="font-size:10px;color:var(--dim)">Loans &amp; EMI outstanding balances — subtracted from your Net Worth total</div>
-            </div>
-            <span class="card-toggle-chevron">▾</span>
-          </button>
-          <div class="card-toggle-body" id="nwLiabBody">
-            <div class="card-toggle-body-inner">
-              <div id="nwLiabilitiesList"></div>
-              <button class="btn btn-ghost exp-add-btn" id="nwLiabilityAddBtn" style="display:none;">+ Add Liability</button>
-            </div>
           </div>
         </div>
 
@@ -908,28 +883,6 @@
           <button class="btn btn-ghost" id="calNoteCancelBtn">Cancel</button>
           <button class="btn btn-primary" id="calNoteSaveBtn">Save</button>
         </div>
-      </div>
-    </div>
-
-
-    <!-- PIN lock overlay -->
-    <div id="pinOverlay" style="display:none;position:fixed;inset:0;background:var(--bg,#0f1117);z-index:9999;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
-      <div style="font-family:'Roboto',sans-serif;font-size:28px;font-weight:700;color:var(--mint)">Enter PIN</div>
-      <div id="pinDots" style="display:flex;gap:10px;margin:4px 0;"></div>
-      <div id="pinError" style="font-size:11px;color:var(--coral);min-height:16px;"></div>
-      <div style="display:grid;grid-template-columns:repeat(3,64px);gap:10px;">
-        <button class="pin-key" data-k="1">1</button>
-        <button class="pin-key" data-k="2">2</button>
-        <button class="pin-key" data-k="3">3</button>
-        <button class="pin-key" data-k="4">4</button>
-        <button class="pin-key" data-k="5">5</button>
-        <button class="pin-key" data-k="6">6</button>
-        <button class="pin-key" data-k="7">7</button>
-        <button class="pin-key" data-k="8">8</button>
-        <button class="pin-key" data-k="9">9</button>
-        <button class="pin-key" data-k="" style="visibility:hidden"></button>
-        <button class="pin-key" data-k="0">0</button>
-        <button class="pin-key" data-k="back">&#9003;</button>
       </div>
     </div>
 
