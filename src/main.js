@@ -23,6 +23,7 @@ import { openManageSips, saveManageSips } from "./features/portfolio/sips.js";
 import { openFundCollapsible, rebuildFundCollapsibles } from "./features/portfolio/funds.js";
 import { render, scheduleRender } from "./features/portfolio/render.js";
 import { copySummary } from "./features/summary/index.js";
+import { initReminders, reminderBtnLabel, toggleReminders } from "./features/reminders.js";
 
 import "./features/admin/pin.js";
 
@@ -96,6 +97,12 @@ el("ddPinBtn").addEventListener("click", async () => {
             if (raw === null) return; // cancelled
             if (raw.trim() === "") { window.clearAppPin(); }
             else { window.setAppPin(raw.trim()); }
+          });
+el("ddRemindersBtn").textContent = reminderBtnLabel();
+el("ddRemindersBtn").addEventListener("click", async () => {
+            closeNavDropdowns();
+            await toggleReminders();
+            el("ddRemindersBtn").textContent = reminderBtnLabel();
           });
 el("dataModalClose").addEventListener("click", () => dataModalCtl.close());
 el("dataModalCancelBtn").addEventListener("click", () => dataModalCtl.close());
@@ -351,6 +358,7 @@ window.addEventListener("pagehide", () => flushCloudSave());
 syncFundArrays();
 rebuildFundCollapsibles();
 buildNwGrid();
+initReminders(); // after syncFundArrays() — EQ_FUNDS must be populated first
 el("nwSnapshotBtn").addEventListener("click", takeSnapshot);
 el("nwLiabilityAddBtn").addEventListener("click", () => {
             addLiability({ name: "", balance: 0 });
