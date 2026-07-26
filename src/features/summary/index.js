@@ -7,8 +7,8 @@ import { cachedPortfolioXirr, fundXirr, rollingPortfolioXirr } from "../../domai
 import { el } from "../../core/dom.js";
 import { estimateCapitalGainsTax, LTCG_EXEMPTION } from "../../domain/tax.js";
 import { fmt, fmtCompact, fmtMonth, pct } from "../../core/format.js";
-import { averageExpenseBreakdown, EXPENSE_PERIODS, monthlyExpenseSeries, resolvePeriodKeys, totalMonthlyExpenses } from "../../domain/expenses.js";
-import { ALLOC_PALETTE, renderAllocBars, renderCompositionDonut } from "../portfolio/allocation.js";
+import { averageExpenseBreakdown, EXPENSE_PERIODS, EXPENSE_CATEGORIES, fixedExpensesByCategory, monthlyExpenseSeries, normalizeExpenseCategory, resolvePeriodKeys, totalMonthlyExpenses } from "../../domain/expenses.js";
+import { renderAllocBars, renderCompositionDonut } from "../portfolio/allocation.js";
 import { renderIdealAlloc } from "./rebalance.js";
 
 export function renderSummaryExtras(eqCur, liqCur, totCur, eqTgt, liqTgt, totTgt, nowEqPct, tgtEqPct) {
@@ -440,18 +440,36 @@ function renderExpenses() {
             // (fmt() gives "₹1,00,000") rather than a number input — native
             // <input type="number"> can't display comma grouping even when
             // readonly, so it was showing raw digits ("100000") next to
-            // properly formatted totals elsewhere on the card. A colored
-            // dot (cycling the same palette as the Composition donut) gives
-            // each line item a scannable identity at a glance.
-            const rows = items.map((item, i) => `
+            // properly formatted totals elsewhere on the card. The dot's
+            // color reflects the item's category (Rent/EMI/Utility/
+            // Insurance/Subscription/Other) rather than just cycling a
+            // palette by position, so it carries real meaning at a glance.
+            const rows = items.map((item) => {
+              const cat = normalizeExpenseCategory(item.category);
+              return `
               <div class="exp-row">
-                <span class="exp-dot" style="background:${ALLOC_PALETTE[i % ALLOC_PALETTE.length]}"></span>
-                <input class="exp-name-inp" data-id="${item.id}" value="${item.name || ""}" placeholder="Expense name" ${editMode ? "" : "readonly"}/>
+                <span class="exp-dot" style="background:${cat.color}" title="${cat.label}"></span>
+                <div class="exp-name-col">
+                  <input class="exp-name-inp" data-id="${item.id}" value="${item.name || ""}" placeholder="Expense name" ${editMode ? "" : "readonly"}/>
+                  ${editMode
+                    ? `<select class="exp-cat-sel" data-id="${item.id}">${EXPENSE_CATEGORIES.map(c => `<option value="${c.key}"${c.key === cat.key ? " selected" : ""}>${c.label}</option>`).join("")}</select>`
+                    : `<span class="exp-cat-tag" style="color:${cat.color}">${cat.label}</span>`}
+                </div>
                 ${editMode
                   ? `<input type="number" class="exp-amt-inp" data-id="${item.id}" min="0" step="100" value="${item.amount || ""}" placeholder="0"/>`
                   : `<span class="exp-amt-txt">${fmt(item.amount || 0)}</span>`}
                 <button class="exp-del-btn" data-id="${item.id}" style="visibility:${editMode ? "visible" : "hidden"}">✕</button>
-              </div>`).join("");
+              </div>`;
+            }).join("");
+
+            const catBreakdown = fixedExpensesByCategory(items);
+            const catBreakdownHtml = catBreakdown.length > 1
+              ? `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;">
+                  ${catBreakdown.map(c => `<span style="display:inline-flex;align-items:center;gap:4px;font-size:9.5px;color:var(--dim);">
+                    <span style="width:7px;height:7px;border-radius:50%;background:${c.color};display:inline-block;"></span>${c.label} ${fmt(c.total)}
+                  </span>`).join("")}
+                </div>`
+              : "";
 
             const emptyHtml = `<div class="exp-empty">
               ${editMode ? `No fixed expenses yet — use "+ Add Fixed Expense" below.` : `No fixed expenses added. Tap Edit to add rent, EMIs, subscriptions, etc.`}
@@ -576,6 +594,7 @@ function renderExpenses() {
                 <div class="exp-stat-card"><div class="lbl">Monthly SIP</div><div class="val">${fmt(sip)}</div></div>
                 <div class="exp-stat-card"><div class="lbl">Planned Outflow</div><div class="val">${fmt(planned)}</div></div>
               </div>
+              ${catBreakdownHtml}
               <div style="font-size:9px;color:var(--dim);opacity:0.8;">SIP total is set per-fund on the Portfolio tab</div>
               ${bankHtml}
               <div class="exp-hero">
@@ -615,6 +634,15 @@ function renderExpenses() {
                 if (!editMode) { renderExpenses(); return; }
                 const item = items.find(i => i.id === e.target.dataset.id);
                 if (item) { item.name = e.target.value; saveState(); }
+              });
+            });
+            wrap.querySelectorAll(".exp-cat-sel").forEach(sel => {
+              sel.addEventListener("change", e => {
+                const item = items.find(i => i.id === e.target.dataset.id);
+                if (!item) return;
+                item.category = e.target.value;
+                saveState();
+                renderExpenses();
               });
             });
             wrap.querySelectorAll(".exp-amt-inp").forEach(inp => {

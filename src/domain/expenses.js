@@ -1,8 +1,39 @@
 const pad2 = (n) => String(n).padStart(2, "0");
 const monthKeyOf = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
 
+// A fixed, small category set rather than free-form tags — keeps the
+// per-category breakdown meaningful without needing a tag-management UI.
+// "other" is the fallback for legacy items saved before this existed
+// (normalizeExpenseCategory below), not a dead/unreachable case.
+export const EXPENSE_CATEGORIES = [
+            { key: "rent", label: "Rent", color: "#4ade9c" },
+            { key: "emi", label: "EMI", color: "#60a5fa" },
+            { key: "utility", label: "Utility", color: "#fbbf24" },
+            { key: "insurance", label: "Insurance", color: "#f472b6" },
+            { key: "subscription", label: "Subscription", color: "#a78bfa" },
+            { key: "other", label: "Other", color: "#94a3b8" },
+          ];
+
+export function normalizeExpenseCategory(key) {
+            return EXPENSE_CATEGORIES.find(c => c.key === key) || EXPENSE_CATEGORIES[EXPENSE_CATEGORIES.length - 1];
+          }
+
 export function fixedExpensesTotal(fixedExpenses) {
             return (fixedExpenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+          }
+
+// Per-category totals for the Fixed items list — only categories that
+// actually have a nonzero item show up, in EXPENSE_CATEGORIES' own order
+// (not sorted by amount) so the breakdown reads the same way every time.
+export function fixedExpensesByCategory(fixedExpenses) {
+            const totals = {};
+            (fixedExpenses || []).forEach(e => {
+              const cat = normalizeExpenseCategory(e.category).key;
+              totals[cat] = (totals[cat] || 0) + (Number(e.amount) || 0);
+            });
+            return EXPENSE_CATEGORIES
+              .map(c => ({ ...c, total: totals[c.key] || 0 }))
+              .filter(c => c.total > 0);
           }
 
 // Total of every fund's monthly SIP amount (liquid + equity — the Manage
