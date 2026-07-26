@@ -372,6 +372,131 @@ export function exportTxnsCSV() {
             URL.revokeObjectURL(url);
           }
 
+// Full-text CSV parser (not line-by-line) — a quoted field can legally
+// contain a literal comma or newline (csvEscape() above produces exactly
+// that for a Notes field with either), so splitting on "\n" first would
+// corrupt any row containing one.
+function parseCsv(text) {
+            const rows = [];
+            let row = [], field = "", inQuotes = false;
+            for (let i = 0; i < text.length; i++) {
+              const c = text[i];
+              if (inQuotes) {
+                if (c === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else inQuotes = false; }
+                else field += c;
+              } else if (c === '"') { inQuotes = true; }
+              else if (c === ",") { row.push(field); field = ""; }
+              else if (c === "\r") { /* skip — \r\n handled via the \n branch */ }
+              else if (c === "\n") { row.push(field); rows.push(row); row = []; field = ""; }
+              else { field += c; }
+            }
+            if (field.length || row.length) { row.push(field); rows.push(row); }
+            return rows;
+          }
+
+const VALID_TXN_TYPES = new Set(["sip", "lump", "redemption", "dividend"]);
+
+// Shape-only regex (\d{4}-\d{2}-\d{2}) would accept "2026-13-40" — Date
+// rolls that over to a different real date silently, poisoning any code
+// that treats t.date as a real calendar day (XIRR cashflow ordering,
+// month-bucketing). Round-trip through Date's y/m/d to catch that.
+function isValidDateStr(s) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (!m) return false;
+  const y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]);
+  const dt = new Date(y, mo - 1, d);
+  return dt.getFullYear() === y && dt.getMonth() === mo - 1 && dt.getDate() === d;
+}
+
+// Bulk import — same column layout exportTxnsCSV() produces (Date, Fund,
+// Type, Invested, After Expense, Notes). "Fund" round-trips by NAME, not
+// id, so it's matched case-insensitively against this app's current
+// fund names; a row whose fund name doesn't match anything currently in
+// the app (renamed fund, typo, fund from a different portfolio) is
+// skipped rather than guessed at, and reported back to the user.
+export function importTxnsCSV(file) {
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+              try {
+                const rows = parseCsv(String(ev.target.result));
+                if (!rows.length) { UI.toast("error", "CSV file is empty", 3000); return; }
+                const header = rows[0].map(h => h.trim().toLowerCase());
+                const idx = {
+                  date: header.indexOf("date"),
+                  fund: header.indexOf("fund"),
+                  type: header.indexOf("type"),
+                  invested: header.indexOf("invested"),
+                  afterExpense: header.indexOf("after expense"),
+                  notes: header.indexOf("notes"),
+                };
+                if (idx.date === -1 || idx.fund === -1 || idx.invested === -1) {
+                  UI.toast("error", "CSV must have Date, Fund, and Invested columns", 4000);
+                  return;
+                }
+
+                const allFunds = [...LIQ_FUNDS, ...EQ_FUNDS];
+                const fundIdByName = new Map(allFunds.map(f => [fundName(f.id).trim().toLowerCase(), f.id]));
+
+                if (!state.transactions) state.transactions = [];
+                let added = 0;
+                const skipped = [];
+                for (let i = 1; i < rows.length; i++) {
+                  const r = rows[i];
+                  if (!r || r.every(c => c.trim() === "")) continue; // blank line
+                  const dateRaw = (r[idx.date] || "").trim();
+                  const fundRaw = (r[idx.fund] || "").trim();
+                  const typeRaw = (r[idx.type] || "").trim().toLowerCase() || "lump";
+                  const invested = Number((r[idx.invested] || "").replace(/,/g, "")) || 0;
+                  const afterExpense = idx.afterExpense !== -1
+                    ? (Number((r[idx.afterExpense] || "").replace(/,/g, "")) || invested)
+                    : invested;
+                  const notes = idx.notes !== -1 ? (r[idx.notes] || "") : "";
+
+                  const fundId = fundIdByName.get(fundRaw.toLowerCase());
+                  const validDate = isValidDateStr(dateRaw);
+                  const validType = VALID_TXN_TYPES.has(typeRaw);
+
+                  if (!fundId || !validDate || !validType || invested <= 0) {
+                    const reason = !fundId ? "unknown fund \"" + fundRaw + "\""
+                      : !validDate ? "invalid date \"" + dateRaw + "\""
+                      : !validType ? "invalid type \"" + typeRaw + "\""
+                      : "invalid amount";
+                    skipped.push("Row " + (i + 1) + ": " + reason);
+                    continue;
+                  }
+
+                  state.transactions.push({
+                    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5) + added,
+                    fundId, date: dateRaw, type: typeRaw, invested, afterExpense, notes,
+                  });
+                  added++;
+                }
+
+                if (added > 0) {
+                  applyTxnTotals();
+                  saveState();
+                  render();
+                  renderTxns();
+                }
+
+                if (skipped.length) {
+                  UI.showText(
+                    "Import: " + added + " added, " + skipped.length + " skipped",
+                    skipped.join("\n"),
+                  );
+                } else if (added > 0) {
+                  UI.toast("success", "Imported " + added + " transaction" + (added !== 1 ? "s" : ""), 3000);
+                } else {
+                  UI.toast("warn", "No valid rows found to import", 3000);
+                }
+              } catch (e) {
+                UI.toast("error", "Could not read CSV — " + e.message, 4000);
+              }
+            };
+            reader.readAsText(file);
+          }
+
 export function renderTxns() {
             const container = el("txnList");
             if (!container) return;
