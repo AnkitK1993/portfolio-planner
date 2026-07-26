@@ -389,38 +389,6 @@
           </div>
         </div>
 
-        <!-- Enter Values — collapsible, snapshot button inside -->
-        <button class="nw-enter-toggle" id="nwEnterToggle" aria-expanded="false">
-          <div>
-            <div class="nw-enter-title">Enter Values</div>
-            <div class="nw-enter-hint">Bank · FD · PPF · EPF · Cash · Bonds</div>
-          </div>
-          <span class="nw-enter-chevron" id="nwEnterChevron">▾</span>
-        </button>
-        <div class="nw-enter-body" id="nwEnterBody">
-          <div class="nw-enter-body-inner">
-            <div class="nw-auto-item">
-              <div class="nw-auto-label">
-                Mutual Funds
-                <span class="tag equity" style="font-size:7.5px;padding:2px 6px">AUTO</span>
-              </div>
-              <div class="nw-auto-val" id="nwMfVal">₹0</div>
-              <div class="nw-auto-sub">Liquid + equity synced from Portfolio tab</div>
-            </div>
-            <div class="nw-fields-grid" id="nwFieldsGrid"></div>
-            <div class="nw-snap-row">
-              <button class="btn primary" id="nwSnapshotBtn" style="flex:0 0 auto">Save snapshot</button>
-              <button class="btn btn-ghost" id="nwSnapCancelBtn" style="display:none;flex:0 0 auto;">Cancel</button>
-              <div id="nwSnapExisting" style="display:none;align-items:center;gap:8px;flex-wrap:wrap;">
-                <span id="nwSnapExistLabel" style="font-size:11px;font-weight:600;color:var(--mint);"></span>
-                <button class="btn btn-ghost" id="nwSnapEditBtn" style="font-size:11px;padding:4px 10px;">Edit</button>
-                <button class="btn btn-ghost" id="nwSnapDeleteBtn" style="font-size:11px;padding:4px 10px;color:var(--coral);">Delete</button>
-              </div>
-              <span id="nwSnapMsg" style="font-size:10.5px;color:var(--dim)"></span>
-            </div>
-          </div>
-        </div>
-
         <!-- Liabilities — loans/EMI outstanding balances, subtracted from
              the Net Worth total. Reuses the exp-row/-name-inp/-amt-inp/
              -del-btn classes from the Expenses card's fixed-items list —
@@ -797,6 +765,40 @@
               <div class="txp-foot">
                 <button class="btn btn-ghost" id="sipModalCancelBtn">Cancel</button>
                 <button class="btn btn-primary" id="sipModalSaveBtn">Save</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Enter Values Card — Bank/FD/PPF/EPF/Cash/Bonds + snapshot save
+             (moved here from the Net Worth tab; content stays kept in sync
+             by renderNetWorth()/buildNwGrid() regardless of which tab is
+             visible, same as before the move). -->
+        <div class="txp-card" id="txp-entervalues">
+          <div class="txp-card-head" id="txp-entervalues-head">
+            <span class="txp-card-title">Enter Values</span>
+            <span class="txp-card-chev">▾</span>
+          </div>
+          <div class="txp-card-body">
+            <div class="txp-inner">
+              <div class="nw-auto-item">
+                <div class="nw-auto-label">
+                  Mutual Funds
+                  <span class="tag equity" style="font-size:7.5px;padding:2px 6px">AUTO</span>
+                </div>
+                <div class="nw-auto-val" id="nwMfVal">₹0</div>
+                <div class="nw-auto-sub">Liquid + equity synced from Portfolio tab</div>
+              </div>
+              <div class="nw-fields-grid" id="nwFieldsGrid"></div>
+              <div class="nw-snap-row">
+                <button class="btn primary" id="nwSnapshotBtn" style="flex:0 0 auto">Save snapshot</button>
+                <button class="btn btn-ghost" id="nwSnapCancelBtn" style="display:none;flex:0 0 auto;">Cancel</button>
+                <div id="nwSnapExisting" style="display:none;align-items:center;gap:8px;flex-wrap:wrap;">
+                  <span id="nwSnapExistLabel" style="font-size:11px;font-weight:600;color:var(--mint);"></span>
+                  <button class="btn btn-ghost" id="nwSnapEditBtn" style="font-size:11px;padding:4px 10px;">Edit</button>
+                  <button class="btn btn-ghost" id="nwSnapDeleteBtn" style="font-size:11px;padding:4px 10px;color:var(--coral);">Delete</button>
+                </div>
+                <span id="nwSnapMsg" style="font-size:10.5px;color:var(--dim)"></span>
               </div>
             </div>
           </div>

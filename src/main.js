@@ -75,7 +75,7 @@ el("txnImportFile").addEventListener("change", e => {
             importTxnsCSV(e.target.files[0]);
             e.target.value = ""; // reset so the same file can be re-imported
           });
-["txp-addtxn", "txp-history", "txp-curval", "txp-sip"].forEach(id => {
+["txp-addtxn", "txp-history", "txp-curval", "txp-sip", "txp-entervalues"].forEach(id => {
             const head = el(id + "-head");
             if (!head) return;
             head.addEventListener("click", () => {
@@ -409,11 +409,12 @@ el("nwSnapDeleteBtn").addEventListener("click", () => {
               renderNwProjection();
             });
           });
-// Every collapsible card on the Net Worth tab (Enter Values + the 6 cards
-// below it) is grouped here so #nwToggleAllBtn can expand/collapse them
-// all together — the button's label always reflects the action the NEXT
-// click performs, refreshed whenever any card (individually or via the
-// master button) changes open state.
+// Every collapsible card on the Net Worth tab is grouped here so
+// #nwToggleAllBtn can expand/collapse them all together — the button's
+// label always reflects the action the NEXT click performs, refreshed
+// whenever any card (individually or via the master button) changes open
+// state. Enter Values moved to the Transactions tab (see the txp-card
+// wiring above) and is no longer part of this group.
 const nwCollapsibles = [];
 function refreshNwToggleAllBtn() {
             const btn = el("nwToggleAllBtn");
@@ -421,7 +422,6 @@ function refreshNwToggleAllBtn() {
             btn.textContent = nwCollapsibles.every(c => c.isOpen()) ? "Collapse All" : "Expand All";
           }
 [
-            ["nwEnterToggle", "nwEnterBody"],
             ["nwLiabToggle", "nwLiabBody"],
             ["nwBreakdownToggle", "nwBreakdownBody"],
             ["nwHistToggle", "nwHistBody"],
