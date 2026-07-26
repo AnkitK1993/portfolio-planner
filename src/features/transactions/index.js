@@ -541,29 +541,6 @@ export function renderTxns() {
             let runSum = 0;
             chronoAll.forEach(t => { runSum += Number(t.invested) || 0; runMap[t.id] = runSum; });
 
-            // Summary bar
-            const summaryEl = el("txnSummary");
-            if (summaryEl) {
-              if (txns.length) {
-                const total = txns.reduce((s, t) => s + (Number(t.invested) || 0), 0);
-                const byFund = {};
-                txns.forEach(t => { byFund[t.fundId] = (byFund[t.fundId] || 0) + (Number(t.invested) || 0); });
-                const chips = Object.entries(byFund).length > 1
-                  ? Object.entries(byFund).sort((a, b) => b[1] - a[1])
-                      .map(([fid, amt]) => `<div class="txn-fund-chip">
-                        <div class="txn-fund-chip-name">${fundName(fid)}</div>
-                        <div class="txn-fund-chip-amt">${fmt(amt)}</div>
-                      </div>`).join("")
-                  : "";
-                summaryEl.innerHTML = `<div class="txn-summary-bar">
-                  <div class="txn-summary-top">
-                    <span class="txn-summary-total">${fmt(total)}</span>
-                    <span class="txn-summary-meta">${txns.length} transaction${txns.length !== 1 ? "s" : ""}</span>
-                  </div>
-                  ${chips ? `<div class="txn-fund-totals">${chips}</div>` : ""}
-                </div>`;
-              } else { summaryEl.innerHTML = ""; }
-            }
 
             if (!txns.length) {
               container.innerHTML = `<div class="txn-empty">No transactions found for the selected filter.</div>`;
@@ -731,7 +708,11 @@ export function renderTxnCharts(txns) {
               }
             }
 
-            // ── Fund donut chart ──
+            // ── By Fund — merges the old standalone txnSummary total/count
+            // line into this card's collapsed preview, plus the donut
+            // (unchanged) and a new per-fund list: invested/count/avg/date
+            // range, expanding to that fund's own month-by-month count +
+            // amount breakdown. ──
             const byFund = {};
             txns.forEach(t => {
               byFund[t.fundId] = (byFund[t.fundId] || 0) + (Number(t.invested) || 0);
@@ -741,6 +722,9 @@ export function renderTxnCharts(txns) {
             const donutSvg = el("txnFundDonut");
             const legendEl = el("txnFundLegend");
             const DONUT_COLORS = ["var(--mint)", "var(--liq)", "var(--amber)", "var(--coral)", "#a78bfa", "#60a5fa", "#f472b6", "#34d399"];
+
+            const donutPreview = el("txnDonutPreview");
+            if (donutPreview) donutPreview.textContent = txns.length ? fmt(total) + " · " + txns.length + " txns" : "";
 
             if (donutSvg && entries.length) {
               const cx = 50, cy = 50, r = 36, stroke = 14;
@@ -767,6 +751,82 @@ export function renderTxnCharts(txns) {
                     <span style="color:var(--dim);font-family:'Roboto Mono',monospace;">${((v / total) * 100).toFixed(0)}%</span>
                   </div>`
                 ).join("");
+              }
+            }
+
+            const fundListEl = el("txnFundList");
+            if (fundListEl) {
+              if (!entries.length) {
+                fundListEl.innerHTML = "";
+              } else {
+                const detail = {};
+                txns.forEach(t => {
+                  const amt = Number(t.invested) || 0;
+                  const d = (detail[t.fundId] ??= { count: 0, dates: [], monthly: {}, types: {} });
+                  d.count++;
+                  if (t.date) d.dates.push(t.date);
+                  d.types[t.type || "sip"] = (d.types[t.type || "sip"] || 0) + 1;
+                  const mo = (t.date || "").slice(0, 7);
+                  if (mo) {
+                    const m = (d.monthly[mo] ??= { count: 0, amt: 0 });
+                    m.count++;
+                    m.amt += amt;
+                  }
+                });
+
+                fundListEl.innerHTML = `<div style="font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">By Fund — Detail</div>` +
+                  entries.map(([fid, amt]) => {
+                    const d = detail[fid];
+                    const isOpen = txnFundExpanded.has(fid);
+                    const avg = d.count ? amt / d.count : 0;
+                    const sortedDates = [...d.dates].sort();
+                    const firstDate = sortedDates[0], lastDate = sortedDates[sortedDates.length - 1];
+                    const fmtD = ds => ds ? new Date(ds + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—";
+                    const typeStr = Object.entries(d.types).sort((a, b) => b[1] - a[1])
+                      .map(([t, c]) => `${c} ${t}`).join(", ");
+
+                    let expandHtml = "";
+                    if (isOpen) {
+                      const monthRows = Object.entries(d.monthly).sort((a, b) => b[0].localeCompare(a[0]));
+                      expandHtml = `
+                        <div class="nw-hist-detail-row"><span>Transactions</span><span>${d.count}</span></div>
+                        <div class="nw-hist-detail-row"><span>Avg per transaction</span><span>${fmt(avg)}</span></div>
+                        <div class="nw-hist-detail-row"><span>First transaction</span><span>${fmtD(firstDate)}</span></div>
+                        <div class="nw-hist-detail-row"><span>Last transaction</span><span>${fmtD(lastDate)}</span></div>
+                        <div class="nw-hist-detail-row"><span>By type</span><span>${typeStr}</span></div>
+                        <div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px;margin:10px 0 6px;">Monthly</div>
+                        <div style="display:grid;grid-template-columns:1fr auto auto;gap:4px 10px;">
+                          <span style="font-size:9px;color:var(--dim);">Month</span>
+                          <span style="font-size:9px;color:var(--dim);text-align:right;">Txns</span>
+                          <span style="font-size:9px;color:var(--dim);text-align:right;">Amount</span>
+                          ${monthRows.map(([mo, m]) => `
+                            <span style="font-size:10.5px;">${new Date(mo + "-01T00:00:00").toLocaleDateString("en-IN", { month: "short", year: "2-digit" })}</span>
+                            <span style="font-size:10.5px;text-align:right;color:var(--dim);">${m.count}</span>
+                            <span style="font-size:10.5px;text-align:right;font-weight:600;">${fmtCompact(m.amt)}</span>
+                          `).join("")}
+                        </div>`;
+                    }
+
+                    return `<div class="nw-hist-item">
+                      <div class="nw-hist-main nw-snap-list-main" data-fid="${fid}">
+                        <span style="color:var(--dim)">${isOpen ? "▾" : "▸"} ${fundName(fid)}</span>
+                        <span>
+                          <span style="color:var(--mint);font-weight:600;">${fmt(amt)}</span>
+                          <span style="color:var(--dim);font-size:10px;"> · ${d.count} txn${d.count !== 1 ? "s" : ""}</span>
+                        </span>
+                      </div>
+                      ${isOpen ? `<div class="nw-hist-expand">${expandHtml}</div>` : ""}
+                    </div>`;
+                  }).join("");
+
+                fundListEl.querySelectorAll(".nw-snap-list-main").forEach(row => {
+                  row.addEventListener("click", () => {
+                    const fid = row.dataset.fid;
+                    if (txnFundExpanded.has(fid)) txnFundExpanded.delete(fid);
+                    else txnFundExpanded.add(fid);
+                    renderTxnCharts(txns);
+                  });
+                });
               }
             }
           }
@@ -885,3 +945,8 @@ export function renderReturns() {
           }
 
 export let txnFilter = { preset: "all", fundId: "", dateFrom: "", dateTo: "", sort: "newest" };
+
+// Which funds are expanded in the "By Fund" card's per-fund list
+// (renderTxnCharts()) — view-only UI state, not persisted, same
+// treatment as txnFilter/rtnMode elsewhere in this file.
+const txnFundExpanded = new Set();

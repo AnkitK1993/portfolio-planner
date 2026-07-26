@@ -436,7 +436,6 @@
           </div>
         </div>
 
-        <div id="txnSummary"></div>
         <div id="txnCharts" style="display:none">
           <div class="card" style="margin-bottom:12px">
             <button class="card-toggle-head" id="txnBarToggle" aria-expanded="false">
@@ -458,14 +457,16 @@
               <div class="card-toggle-head-text">
                 <div class="sec-head">By Fund</div>
               </div>
+              <span class="card-toggle-preview" id="txnDonutPreview"></span>
               <span class="card-toggle-chevron">▾</span>
             </button>
             <div class="card-toggle-body" id="txnDonutCollBody">
               <div class="card-toggle-body-inner">
-                <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+                <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:14px;">
                   <svg id="txnFundDonut" viewBox="0 0 100 100" style="width:80px;height:80px;flex-shrink:0;"></svg>
                   <div id="txnFundLegend" style="flex:1;min-width:0;font-size:11px;"></div>
                 </div>
+                <div id="txnFundList"></div>
               </div>
             </div>
           </div>
