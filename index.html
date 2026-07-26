@@ -190,9 +190,14 @@
 
       <!-- ═══════════════ SUMMARY ═══════════════ -->
       <section class="tab-section" id="tab-summary">
-        <div class="pg-head">
-          <h1>Portfolio <span class="accent">Summary</span></h1>
-          <p>Where your money is currently allocated across all funds.</p>
+        <div class="pg-head pg-head-with-action">
+          <div>
+            <h1>Portfolio <span class="accent">Summary</span></h1>
+            <p>Where your money is currently allocated across all funds.</p>
+          </div>
+          <button class="pg-head-toggle-all" id="sumToggleAllBtn" title="Expand all cards" aria-label="Expand all cards">
+            <span class="pg-head-toggle-all-icon">▾</span>
+          </button>
         </div>
 
         <!-- hidden compat stubs for render() references -->
@@ -241,82 +246,170 @@
 
         <!-- Financial Goals progress -->
         <div class="card" id="sumFireCard" style="display:none;margin-bottom:12px">
-          <div class="sec-head" style="margin-bottom:4px">Financial Goals</div>
-          <div style="font-size:10px;color:var(--dim);margin-bottom:12px">Progress toward your target corpus</div>
-          <div id="sumFireBody"></div>
+          <button class="card-toggle-head" id="sumFireToggle" aria-expanded="false">
+            <div class="card-toggle-head-text">
+              <div class="sec-head" style="margin-bottom:4px">Financial Goals</div>
+              <div style="font-size:10px;color:var(--dim)">Progress toward your target corpus</div>
+            </div>
+            <span class="card-toggle-chevron">▾</span>
+          </button>
+          <div class="card-toggle-body" id="sumFireCollBody">
+            <div class="card-toggle-body-inner">
+              <div id="sumFireBody"></div>
+            </div>
+          </div>
         </div>
 
         <!-- Portfolio XIRR -->
         <div class="card" id="sumXirrCard" style="display:none;margin-bottom:12px">
-          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-            <div>
+          <button class="card-toggle-head" id="sumXirrToggle" aria-expanded="false">
+            <div class="card-toggle-head-text">
               <div class="sec-head" style="margin-bottom:4px">Portfolio XIRR</div>
               <div style="font-size:10px;color:var(--dim)">Annualised return on all investments</div>
             </div>
-            <div id="sumXirr" style="font-family:'Roboto Mono',monospace;font-size:22px;font-weight:700;"></div>
-          </div>
-          <div id="sumXirrTrendWrap" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);">
-            <div style="font-size:9px;color:var(--dim);margin-bottom:4px;">XIRR trend — recomputed as of each monthly snapshot</div>
-            <svg id="sumXirrTrend" viewBox="0 0 300 44" preserveAspectRatio="none" style="width:100%;height:40px;display:block;"></svg>
+            <div id="sumXirr" class="card-toggle-preview" style="font-family:'Roboto Mono',monospace;font-size:22px;font-weight:700;"></div>
+            <span class="card-toggle-chevron">▾</span>
+          </button>
+          <div class="card-toggle-body" id="sumXirrCollBody">
+            <div class="card-toggle-body-inner">
+              <div id="sumXirrTrendWrap" style="display:none;padding-top:10px;border-top:1px solid var(--line);">
+                <div style="font-size:9px;color:var(--dim);margin-bottom:4px;">XIRR trend — recomputed as of each monthly snapshot</div>
+                <svg id="sumXirrTrend" viewBox="0 0 300 44" preserveAspectRatio="none" style="width:100%;height:40px;display:block;"></svg>
+              </div>
+            </div>
           </div>
         </div>
 
         <!-- Total Allocation bars -->
         <div class="card" style="margin-bottom:12px">
-          <div class="sec-head" style="margin-bottom:16px">Total Allocation</div>
-          <div id="sumAllocBarsMain"></div>
+          <button class="card-toggle-head" id="sumAllocToggle" aria-expanded="false">
+            <div class="card-toggle-head-text">
+              <div class="sec-head">Total Allocation</div>
+            </div>
+            <span class="card-toggle-chevron">▾</span>
+          </button>
+          <div class="card-toggle-body" id="sumAllocCollBody">
+            <div class="card-toggle-body-inner">
+              <div id="sumAllocBarsMain"></div>
+            </div>
+          </div>
         </div>
 
         <!-- Portfolio Composition donut (by category) -->
         <div class="card" id="sumCompositionCard" style="display:none;margin-bottom:12px">
-          <div class="sec-head" style="margin-bottom:12px">Portfolio Composition</div>
-          <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
-            <svg id="sumCompositionDonut" viewBox="0 0 100 100" style="width:100px;height:100px;flex-shrink:0;"></svg>
-            <div id="sumCompositionLegend" style="flex:1;min-width:160px;font-size:11px;"></div>
+          <button class="card-toggle-head" id="sumCompToggle" aria-expanded="false">
+            <div class="card-toggle-head-text">
+              <div class="sec-head">Portfolio Composition</div>
+            </div>
+            <span class="card-toggle-chevron">▾</span>
+          </button>
+          <div class="card-toggle-body" id="sumCompCollBody">
+            <div class="card-toggle-body-inner">
+              <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+                <svg id="sumCompositionDonut" viewBox="0 0 100 100" style="width:100px;height:100px;flex-shrink:0;"></svg>
+                <div id="sumCompositionLegend" style="flex:1;min-width:160px;font-size:11px;"></div>
+              </div>
+            </div>
           </div>
         </div>
 
         <!-- Investment streak -->
-        <div id="sumStreakWrap" style="display:none">
-          <div class="streak-banner">
-            <div>
-              <div class="streak-count">🔥 <span id="sumStreakCount">0</span></div>
+        <div class="card" id="sumStreakCard" style="display:none;margin-bottom:12px">
+          <button class="card-toggle-head" id="sumStreakToggle" aria-expanded="false">
+            <div class="card-toggle-head-text">
+              <div class="sec-head">Investment Streak</div>
             </div>
-            <div>
-              <div class="streak-label" id="sumStreakLabel">consecutive months investing</div>
-              <div class="streak-range" id="sumStreakRange"></div>
+            <span class="card-toggle-preview" id="sumStreakPreview"></span>
+            <span class="card-toggle-chevron">▾</span>
+          </button>
+          <div class="card-toggle-body" id="sumStreakCollBody">
+            <div class="card-toggle-body-inner">
+              <div class="streak-banner">
+                <div>
+                  <div class="streak-count">🔥 <span id="sumStreakCount">0</span></div>
+                </div>
+                <div>
+                  <div class="streak-label" id="sumStreakLabel">consecutive months investing</div>
+                  <div class="streak-range" id="sumStreakRange"></div>
+                </div>
+              </div>
+              <div id="sumStreakMonthly" style="margin-top:12px;"></div>
             </div>
           </div>
         </div>
 
         <!-- Fund Performance table -->
         <div class="card" style="margin-bottom:12px">
-          <div class="sec-head" style="margin-bottom:12px">Fund Performance</div>
-          <div id="sumFundTable"></div>
+          <button class="card-toggle-head" id="sumFundToggle" aria-expanded="false">
+            <div class="card-toggle-head-text">
+              <div class="sec-head">Fund Performance</div>
+            </div>
+            <span class="card-toggle-preview" id="sumFundPreview"></span>
+            <span class="card-toggle-chevron">▾</span>
+          </button>
+          <div class="card-toggle-body" id="sumFundCollBody">
+            <div class="card-toggle-body-inner">
+              <div id="sumFundTable"></div>
+            </div>
+          </div>
         </div>
 
         <!-- Tax estimate -->
         <div class="card" id="sumTaxCard" style="display:none;margin-bottom:12px">
-          <div class="sec-head" style="margin-bottom:4px">Tax Estimate — If Redeemed Today</div>
-          <div style="font-size:10px;color:var(--dim);margin-bottom:12px">Rough estimate only, not tax advice — rates as of FY 2024-25, verify with a CA before filing. Losses aren't netted against gains.</div>
-          <div id="sumTaxBody"></div>
+          <button class="card-toggle-head" id="sumTaxToggle" aria-expanded="false">
+            <div class="card-toggle-head-text">
+              <div class="sec-head" style="margin-bottom:4px">Tax Estimate — If Redeemed Today</div>
+              <div style="font-size:10px;color:var(--dim)">Rough estimate only, not tax advice — rates as of FY 2024-25, verify with a CA before filing. Losses aren't netted against gains.</div>
+            </div>
+            <span class="card-toggle-preview" id="sumTaxPreview"></span>
+            <span class="card-toggle-chevron">▾</span>
+          </button>
+          <div class="card-toggle-body" id="sumTaxCollBody">
+            <div class="card-toggle-body-inner">
+              <div id="sumTaxBody"></div>
+            </div>
+          </div>
         </div>
 
         <!-- Returns heatmap -->
         <div class="card" id="sumHeatmapCard" style="display:none;margin-bottom:12px">
-          <div class="sec-head" style="margin-bottom:10px">Monthly Net Worth Change</div>
-          <div id="sumHeatmap" style="overflow-x:auto;"></div>
+          <button class="card-toggle-head" id="sumHeatmapToggle" aria-expanded="false">
+            <div class="card-toggle-head-text">
+              <div class="sec-head">Monthly Net Worth Change</div>
+            </div>
+            <span class="card-toggle-chevron">▾</span>
+          </button>
+          <div class="card-toggle-body" id="sumHeatmapCollBody">
+            <div class="card-toggle-body-inner">
+              <div id="sumHeatmap" style="overflow-x:auto;"></div>
+            </div>
+          </div>
         </div>
 
         <!-- Ideal Allocation -->
         <div class="card" style="margin-bottom:12px">
-          <div class="sec-head" style="margin-bottom:14px">Ideal Allocation</div>
-          <div id="idealWeightsEditor"></div>
-          <div id="idealAllocBarSection"></div>
-          <div id="rebalMoveSection"></div>
-          <div id="afterRebalBarSection"></div>
+          <button class="card-toggle-head" id="sumIdealToggle" aria-expanded="false">
+            <div class="card-toggle-head-text">
+              <div class="sec-head">Ideal Allocation</div>
+            </div>
+            <span class="card-toggle-chevron">▾</span>
+          </button>
+          <div class="card-toggle-body" id="sumIdealCollBody">
+            <div class="card-toggle-body-inner">
+              <div id="idealWeightsEditor"></div>
+              <div id="idealAllocBarSection"></div>
+              <div id="rebalMoveSection"></div>
+              <div id="afterRebalBarSection"></div>
+            </div>
+          </div>
         </div>
 
+        <!-- Calendar — the nav arrows + current-month invested figure stay
+             visible even while collapsed (that's the "collapsed preview"
+             here); only the view toggle + day grid are in the expand-
+             able body. #calPrev/#calNext are real buttons, so the row
+             itself can't also be the toggle button (no nested <button>s)
+             — a small dedicated chevron button handles that instead. -->
         <div class="card cal-card">
           <div class="cal-head">
             <div class="cal-nav-group">
@@ -325,28 +418,55 @@
               <button class="cal-nav" id="calNext">&#8250;</button>
             </div>
             <span class="cal-month-invested" id="calMonthInvested"></span>
+            <button class="cal-toggle-btn" id="calToggle" aria-expanded="false" aria-label="Expand calendar" title="Expand calendar">
+              <span class="card-toggle-chevron">▾</span>
+            </button>
           </div>
-          <div style="display:flex;justify-content:flex-end;margin-bottom:6px;gap:4px;">
-            <button class="txn-preset active" id="calViewMonth">Month</button>
-            <button class="txn-preset" id="calViewWeek">Week</button>
+          <div class="card-toggle-body" id="calCollBody">
+            <div class="card-toggle-body-inner">
+              <div style="display:flex;justify-content:flex-end;margin-bottom:6px;gap:4px;">
+                <button class="txn-preset active" id="calViewMonth">Month</button>
+                <button class="txn-preset" id="calViewWeek">Week</button>
+              </div>
+              <div class="cal-weekdays" id="calWeekdays">
+                <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+              </div>
+              <div id="calGrid" class="cal-grid"></div>
+            </div>
           </div>
-          <div class="cal-weekdays" id="calWeekdays">
-            <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
-          </div>
-          <div id="calGrid" class="cal-grid"></div>
         </div>
 
         <div id="txnSummary"></div>
         <div id="txnCharts" style="display:none">
           <div class="card" style="margin-bottom:12px">
-            <div class="sec-head" style="margin-bottom:10px">Monthly Investment</div>
-            <svg id="txnBarChart" viewBox="0 0 600 120" preserveAspectRatio="none" style="width:100%;height:100px;display:block;overflow:visible;"></svg>
+            <button class="card-toggle-head" id="txnBarToggle" aria-expanded="false">
+              <div class="card-toggle-head-text">
+                <div class="sec-head">Monthly Investment</div>
+              </div>
+              <span class="card-toggle-preview" id="txnBarPreview"></span>
+              <span class="card-toggle-chevron">▾</span>
+            </button>
+            <div class="card-toggle-body" id="txnBarCollBody">
+              <div class="card-toggle-body-inner">
+                <svg id="txnBarChart" viewBox="0 0 600 120" preserveAspectRatio="none" style="width:100%;height:100px;display:block;overflow:visible;"></svg>
+                <div id="txnFundMonthTable" style="margin-top:14px;"></div>
+              </div>
+            </div>
           </div>
           <div class="card" style="margin-bottom:12px">
-            <div class="sec-head" style="margin-bottom:10px">By Fund</div>
-            <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
-              <svg id="txnFundDonut" viewBox="0 0 100 100" style="width:80px;height:80px;flex-shrink:0;"></svg>
-              <div id="txnFundLegend" style="flex:1;min-width:0;font-size:11px;"></div>
+            <button class="card-toggle-head" id="txnDonutToggle" aria-expanded="false">
+              <div class="card-toggle-head-text">
+                <div class="sec-head">By Fund</div>
+              </div>
+              <span class="card-toggle-chevron">▾</span>
+            </button>
+            <div class="card-toggle-body" id="txnDonutCollBody">
+              <div class="card-toggle-body-inner">
+                <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+                  <svg id="txnFundDonut" viewBox="0 0 100 100" style="width:80px;height:80px;flex-shrink:0;"></svg>
+                  <div id="txnFundLegend" style="flex:1;min-width:0;font-size:11px;"></div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

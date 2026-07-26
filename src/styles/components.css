@@ -434,6 +434,12 @@
       .cal-nav { background: none; border: 1px solid var(--line); color: var(--txt); border-radius: 8px; width: 30px; height: 30px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
       .cal-nav:hover { border-color: var(--mint); color: var(--mint); }
       .cal-month-invested { flex: 1; font-family: "Roboto Mono", monospace; font-size: 15px; font-weight: 700; color: #4ade80; text-align: center; white-space: nowrap; letter-spacing: 0.5px; }
+      /* Dedicated toggle button, separate from .cal-head itself, since
+         #calPrev/#calNext are already real <button>s — nesting the whole
+         header in one more button isn't valid HTML. */
+      .cal-toggle-btn { background: none; border: none; color: var(--dim); cursor: pointer; padding: 4px; display: flex; align-items: center; flex-shrink: 0; }
+      .cal-toggle-btn .card-toggle-chevron { font-size: 12px; transition: transform 0.25s; }
+      .cal-toggle-btn.open .card-toggle-chevron { transform: rotate(180deg); }
       .cal-weekdays { display: grid; grid-template-columns: repeat(7,1fr); margin-bottom: 4px; }
       .cal-weekdays span { text-align: center; font-family: "Roboto", sans-serif; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--dim); padding: 4px 0; }
       .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; }

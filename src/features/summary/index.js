@@ -47,6 +47,8 @@ function renderTaxEstimate() {
             });
             if (!t.hasAnyHolding) { card.style.display = "none"; return; }
             card.style.display = "";
+            const taxPreview = el("sumTaxPreview");
+            if (taxPreview) taxPreview.textContent = fmt(t.totalTax);
 
             const row = (label, gainTxt, taxTxt, sub) => `
               <div style="display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--line);">
@@ -154,6 +156,8 @@ export function renderFundTable() {
 
             if (!rows.length) {
               wrap.innerHTML = UI.emptyState("📊", "No fund data yet", "Add transactions and current values to see performance here.");
+              const previewElEmpty = el("sumFundPreview");
+              if (previewElEmpty) previewElEmpty.textContent = "";
               return;
             }
 
@@ -186,15 +190,20 @@ export function renderFundTable() {
               </div>`;
             }).join("");
 
-            // Portfolio total row — folds in the same XIRR shown on the
-            // Portfolio XIRR card above, so the two never disagree.
+            // Portfolio total — folds in the same XIRR shown on the
+            // Portfolio XIRR card above, so the two never disagree. Also
+            // doubles as the card's collapsed-state preview.
+            const totalInvested = rows.reduce((s, r) => s + r.invested, 0);
+            const totalAfterExp = rows.reduce((s, r) => s + (r.returns != null ? r.afterExp : 0), 0);
+            const totalReturns = rows.reduce((s, r) => s + (r.returns || 0), 0);
+            const totalReturnsPct = totalAfterExp > 0 ? pct(totalReturns, totalAfterExp) : null;
+            const portfolioXirr = portfolioXirrSummary();
+
+            const previewEl = el("sumFundPreview");
+            if (previewEl) previewEl.textContent = fmtCompact(totalInvested) + " · " + signedCompact(totalReturns);
+
             let totalRowHtml = "";
             if (rows.length > 1) {
-              const totalInvested = rows.reduce((s, r) => s + r.invested, 0);
-              const totalAfterExp = rows.reduce((s, r) => s + (r.returns != null ? r.afterExp : 0), 0);
-              const totalReturns = rows.reduce((s, r) => s + (r.returns || 0), 0);
-              const totalReturnsPct = totalAfterExp > 0 ? pct(totalReturns, totalAfterExp) : null;
-              const portfolioXirr = portfolioXirrSummary();
               const totRetClass = totalReturns >= 0 ? "mint" : "coral";
               const totXirrTxt = portfolioXirr == null ? "—" : (portfolioXirr * 100 >= 0 ? "+" : "") + (portfolioXirr * 100).toFixed(2) + "%";
               const totXirrClass = portfolioXirr == null ? "" : portfolioXirr >= 0 ? "mint" : "coral";
@@ -362,15 +371,7 @@ export function renderHealthScore() {
                       <div style="font-size:10.5px;color:var(--dim)">${d.note}</div>
                     </div>`).join("")}
                 </div>
-              </div>
-              ${bufMonths !== null ? `
-              <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:11px;color:var(--dim);">
-                Emergency fund: <b style="color:${bufMonths >= 6 ? "var(--mint)" : bufMonths >= 3 ? "var(--amber)" : "var(--coral)"};font-family:'Roboto Mono',monospace">${bufMonths.toFixed(1)} months</b> of expenses covered
-                (<span style="color:var(--txt)">${fmt(totalLiqFree)}</span> deployable liquid ÷ <span style="color:var(--txt)">${fmt(monthlyExp)}</span>/mo &mdash; see Expenses card below)
-              </div>` : `
-              <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:10.5px;color:var(--dim);">
-                Add fixed expenses in the Expenses card below to measure this.
-              </div>`}`;
+              </div>`;
 
             if (card) card.style.display = "";
 
@@ -430,6 +431,13 @@ function renderExpenses() {
               liquid: state.liquid, equity: state.equity, networth: state.networth,
               transactions: state.transactions,
             });
+
+            // Emergency fund buffer — moved here from the Health Score card
+            // (still feeds that card's own "Liq. Buffer" score dimension via
+            // the same totalMonthlyExpenses()/deployable-liquid inputs, just
+            // displayed once, next to the expense total it's measured against).
+            const totalLiqFree = LIQ_FUNDS.reduce((s, f) => s + Math.max(0, (state.liquid[f.id]?.value || 0) - (state.liquid[f.id]?.reserve || 0)), 0);
+            const bufMonths = total > 0 ? totalLiqFree / total : null;
 
             // Kept in sync regardless of collapsed/open state — this is
             // what's visible when the card is collapsed (the default).
@@ -604,6 +612,11 @@ function renderExpenses() {
                 </div>
                 <div class="exp-hero-sub">SIP excluded &mdash; it's an investment, not an expense</div>
               </div>
+              ${bufMonths !== null ? `
+              <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line);font-size:11px;color:var(--dim);">
+                Emergency fund: <b style="color:${bufMonths >= 6 ? "var(--mint)" : bufMonths >= 3 ? "var(--amber)" : "var(--coral)"};font-family:'Roboto Mono',monospace">${bufMonths.toFixed(1)} months</b> of expenses covered
+                (<span style="color:var(--txt)">${fmt(totalLiqFree)}</span> deployable liquid ÷ <span style="color:var(--txt)">${fmt(total)}</span>/mo)
+              </div>` : ""}
               <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--line);">
                 <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--dim);margin-bottom:10px;">Expense Trends</div>
                 <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px;">${periodChipsHtml}</div>
@@ -874,9 +887,11 @@ export function renderXirrAndHeatmap() {
             }
             renderXirrTrend();
 
-            // Investment streak
-            const streakWrap = el("sumStreakWrap");
-            if (streakWrap) {
+            // Investment streak — collapsed state just shows the title +
+            // 🔥 count (via #sumStreakPreview); expanded adds a month-by-
+            // month invested breakdown covering the streak's own range.
+            const streakCard = el("sumStreakCard");
+            if (streakCard) {
               const months = new Set((state.transactions || [])
                 .filter(t => t.type !== "redemption" && t.date)
                 .map(t => t.date.slice(0, 7)));
@@ -891,15 +906,36 @@ export function renderXirrAndHeatmap() {
               if (streak >= 2) {
                 el("sumStreakCount").textContent = streak;
                 el("sumStreakLabel").textContent = `consecutive month${streak !== 1 ? "s" : ""} investing`;
+                const streakPreview = el("sumStreakPreview");
+                if (streakPreview) streakPreview.textContent = "🔥 " + streak;
                 const rangeEl = el("sumStreakRange");
+                const fmtMo = d => d.toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
                 if (rangeEl) {
                   const startD = new Date(now.getFullYear(), now.getMonth() - (streak - 1), 1);
-                  const fmtMo = d => d.toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
                   rangeEl.textContent = `${fmtMo(startD)} – ${fmtMo(now)}`;
                 }
-                streakWrap.style.display = "";
+                const monthlyEl = el("sumStreakMonthly");
+                if (monthlyEl) {
+                  const rows = [];
+                  for (let i = streak - 1; i >= 0; i--) {
+                    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                    const key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+                    const amt = (state.transactions || [])
+                      .filter(t => t.type !== "redemption" && t.date && t.date.slice(0, 7) === key)
+                      .reduce((s, t) => s + (Number(t.afterExpense ?? t.invested) || 0), 0);
+                    rows.push({ label: fmtMo(d), amt });
+                  }
+                  monthlyEl.innerHTML = `
+                    <div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Monthly Breakdown</div>
+                    ${rows.map(r => `
+                      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);font-size:11px;">
+                        <span style="color:var(--dim)">${r.label}</span>
+                        <span style="font-family:'Roboto Mono',monospace;color:var(--txt);font-weight:600;">${fmt(r.amt)}</span>
+                      </div>`).join("")}`;
+                }
+                streakCard.style.display = "";
               } else {
-                streakWrap.style.display = "none";
+                streakCard.style.display = "none";
               }
             }
 

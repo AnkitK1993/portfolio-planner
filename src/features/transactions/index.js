@@ -3,7 +3,7 @@ import { UI, closeNavDropdowns, collapseTxpCard, expandTxpCard, navigateTo } fro
 import { cachedPortfolioXirr } from "../../domain/xirr.js";
 import { checkProfitMilestones } from "../portfolio/funds.js";
 import { el } from "../../core/dom.js";
-import { fmt, fmtNum, pct } from "../../core/format.js";
+import { fmt, fmtCompact, fmtNum, pct } from "../../core/format.js";
 import { render, scheduleRender } from "../portfolio/render.js";
 import { setFmtInner } from "../../core/animate.js";
 
@@ -684,6 +684,52 @@ export function renderTxnCharts(txns) {
               }).join("");
 
               barSvg.innerHTML = bars;
+            }
+
+            // Collapsed-state preview: average monthly invested across the
+            // months present in the current filter.
+            const barPreview = el("txnBarPreview");
+            if (barPreview) {
+              barPreview.textContent = months.length
+                ? "avg " + fmtCompact(months.reduce((s, [, v]) => s + v, 0) / months.length) + "/mo"
+                : "";
+            }
+
+            // ── Per-fund monthly breakdown (expanded-state detail) —
+            // capped to the last 6 months present in this filter so the
+            // table stays a fixed, reasonable width regardless of how far
+            // back the current filter reaches. ──
+            const monthTableEl = el("txnFundMonthTable");
+            if (monthTableEl) {
+              const monthKeys = months.map(([mo]) => mo).slice(-6);
+              const byFundMonth = {};
+              txns.forEach(t => {
+                const mo = (t.date || "").slice(0, 7);
+                if (!mo || !monthKeys.includes(mo)) return;
+                if (!byFundMonth[t.fundId]) byFundMonth[t.fundId] = {};
+                byFundMonth[t.fundId][mo] = (byFundMonth[t.fundId][mo] || 0) + (Number(t.invested) || 0);
+              });
+              const fundIds = Object.keys(byFundMonth).sort((a, b) =>
+                Object.values(byFundMonth[b]).reduce((s, v) => s + v, 0) -
+                Object.values(byFundMonth[a]).reduce((s, v) => s + v, 0)
+              );
+              if (!fundIds.length || monthKeys.length < 2) {
+                monthTableEl.innerHTML = "";
+              } else {
+                const monthLabels = monthKeys.map(mo => new Date(mo + "-01T00:00:00").toLocaleDateString("en-IN", { month: "short", year: "2-digit" }));
+                monthTableEl.innerHTML = `
+                  <div style="font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Invested by Fund, by Month</div>
+                  <div style="overflow-x:auto;">
+                    <div style="display:grid;grid-template-columns:1fr repeat(${monthKeys.length}, 70px);gap:6px;min-width:${140 + monthKeys.length * 70}px;align-items:center;">
+                      <span></span>
+                      ${monthLabels.map(l => `<span style="font-size:9px;color:var(--dim);text-align:right;">${l}</span>`).join("")}
+                      ${fundIds.map(fid => `
+                        <span style="font-size:11px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${fundName(fid)}</span>
+                        ${monthKeys.map(mo => `<span style="font-family:'Roboto Mono',monospace;font-size:10.5px;text-align:right;color:${byFundMonth[fid][mo] ? "var(--txt)" : "var(--dim)"};">${byFundMonth[fid][mo] ? fmtCompact(byFundMonth[fid][mo]) : "—"}</span>`).join("")}
+                      `).join("")}
+                    </div>
+                  </div>`;
+              }
             }
 
             // ── Fund donut chart ──

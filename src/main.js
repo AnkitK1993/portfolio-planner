@@ -430,14 +430,29 @@ const nwToggleAll = makeToggleAllGroup("nwToggleAllBtn");
           ].forEach(([headerId, bodyId, previewId]) => nwToggleAll.add(headerId, bodyId, previewId));
 nwToggleAll.refresh();
 createCollapsible({ header: el("holdingsToggle"), body: el("holdingsBody") });
-// Expenses card starts collapsed and shows the Total This Month figure in
-// its header while collapsed — renderExpenses() keeps #expCollapsedTotal
-// in sync regardless of open state. See core/collapsible.js.
-createCollapsible({
-            header: el("expCardToggle"),
-            body: el("expCardBody"),
-            collapsedSummary: el("expCollapsedTotal"),
-          });
+// Every collapsible card on the Summary tab after Portfolio Health Score
+// (which stays plain/always-expanded) is grouped behind #sumToggleAllBtn
+// the same way the Net Worth tab's cards are. Expenses keeps its existing
+// Total-This-Month collapsed preview; Streak/Fund Performance/Tax Estimate/
+// Monthly Investment get their own previews populated by their render
+// functions (see summary/index.js and transactions/index.js).
+const sumToggleAll = makeToggleAllGroup("sumToggleAllBtn");
+[
+            ["expCardToggle", "expCardBody", "expCollapsedTotal"],
+            ["sumFireToggle", "sumFireCollBody", null],
+            ["sumXirrToggle", "sumXirrCollBody", null],
+            ["sumAllocToggle", "sumAllocCollBody", null],
+            ["sumCompToggle", "sumCompCollBody", null],
+            ["sumStreakToggle", "sumStreakCollBody", "sumStreakPreview"],
+            ["sumFundToggle", "sumFundCollBody", "sumFundPreview"],
+            ["sumTaxToggle", "sumTaxCollBody", "sumTaxPreview"],
+            ["sumHeatmapToggle", "sumHeatmapCollBody", null],
+            ["sumIdealToggle", "sumIdealCollBody", null],
+            ["calToggle", "calCollBody", null],
+            ["txnBarToggle", "txnBarCollBody", "txnBarPreview"],
+            ["txnDonutToggle", "txnDonutCollBody", null],
+          ].forEach(([headerId, bodyId, previewId]) => sumToggleAll.add(headerId, bodyId, previewId));
+sumToggleAll.refresh();
 // Returns badges (Total bar + Liquid/Equity division rows) toggle between
 // absolute return% and XIRR on click — all badges switch together since
 // they're one shared display preference (see rtnMode in core/state.js).
