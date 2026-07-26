@@ -1,7 +1,6 @@
 import { EQ_FUNDS, LIQ_FUNDS, editMode } from "./state.js";
 import { el } from "./dom.js";
-import { renderTxns } from "../features/transactions/index.js";
-import { scheduleRender } from "../features/portfolio/render.js";
+import { onTabActivate, triggerRender } from "./appEvents.js";
 import { setAnimOnRender } from "./animate.js";
 import { confirm as modalConfirm } from "./modal.js";
 
@@ -67,18 +66,9 @@ export function navigateTo(tabId) {
             el("txnsBtn").classList.toggle("active", tabId === "transactions");
             el("adminBtn").classList.remove("active");
             setAnimOnRender(true); // trigger count-up animation on tab enter
-            if (tabId === "transactions") {
-              el("txnTabInvest").classList.add("active");
-              el("txnTabReturns").classList.remove("active");
-              el("txnList").style.display = "";
-              el("txnFilters").style.display = "";
-              el("returnsList").style.display = "none";
-              renderTxns();
-            } else if (tabId === "summary") {
-              renderTxns();
-            }
+            onTabActivate(tabId);
             closeNavDropdowns();
-            scheduleRender(); // re-render with _animOnRender = true so all animations fire
+            triggerRender(); // re-render with _animOnRender = true so all animations fire
           }
 
 export function openNavDropdown(ddId, triggerEl) {

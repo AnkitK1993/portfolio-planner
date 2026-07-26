@@ -5,6 +5,7 @@ import "./styles/components.css";
 import { EQ_FUNDS, LIQ_FUNDS, editMode, privacyMode, saveState, setEditMode, setPrivacyMode, snapshotKey, state, syncFundArrays, toggleEditMode, toggleRtnMode } from "./core/state.js";
 import { NW_FIELDS } from "./core/constants.js";
 import { UI, closeNavDropdowns, collapseTxpCard, navigateTo, openNavDropdown, toggleColl } from "./core/ui.js";
+import { setRenderTrigger, setTabActivateHandler } from "./core/appEvents.js";
 import { _hasLocalData, authUser, fbAuthReady, fbEnabled, flushCloudSave, handleSignInResult, initFirebase, loadBackupList, resetBackupPanel, saveManualBackup } from "./infra/firebase.js";
 import { _upcomingHead } from "./features/portfolio/upcoming.js";
 import { animateNumber } from "./core/animate.js";
@@ -18,11 +19,30 @@ import { fcInflEl, fcShowAllEl, fcStepUpEl, renderForecast } from "./features/fo
 import { fmtMonth, num } from "./core/format.js";
 import { openManageSips, saveManageSips } from "./features/portfolio/sips.js";
 import { rebuildFundCollapsibles } from "./features/portfolio/funds.js";
-import { render } from "./features/portfolio/render.js";
+import { render, scheduleRender } from "./features/portfolio/render.js";
 
 import "./features/admin/pin.js";
 
 el("buildVersion").textContent = "v" + __BUILD_VERSION__;
+
+// core/ui.js's navigateTo() needs to trigger a re-render and, for two
+// tabs, refresh the transactions list — but core/ isn't allowed to import
+// features/ directly (that's what caused most of the dependency cycle
+// this session's architecture audit found). Registering the real handlers
+// here, at the composition root, is what breaks that edge.
+setRenderTrigger(scheduleRender);
+setTabActivateHandler(tabId => {
+            if (tabId === "transactions") {
+              el("txnTabInvest").classList.add("active");
+              el("txnTabReturns").classList.remove("active");
+              el("txnList").style.display = "";
+              el("txnFilters").style.display = "";
+              el("returnsList").style.display = "none";
+              renderTxns();
+            } else if (tabId === "summary") {
+              renderTxns();
+            }
+          });
 
 el("homeBtn").addEventListener("click", () => navigateTo("portfolio"));
 el("summaryBtn").addEventListener("click", () => {
