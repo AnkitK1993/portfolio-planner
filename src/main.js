@@ -7,7 +7,7 @@ import { NW_FIELDS } from "./core/constants.js";
 import { UI, closeNavDropdowns, collapseTxpCard, navigateTo, openNavDropdown } from "./core/ui.js";
 import { setRenderTrigger, setTabActivateHandler } from "./core/appEvents.js";
 import { addEquityFund, addLiability, addLiquidFund, deleteSnapshot, saveSnapshot, setForecastField, setNetworthField } from "./store/actions.js";
-import { _hasLocalData, authUser, fbAuthReady, fbEnabled, flushCloudSave, handleSignInResult, initFirebase, loadBackupList, resetBackupPanel, saveManualBackup } from "./infra/firebase.js";
+import { _hasLocalData, authUser, fbAuthReady, fbEnabled, flushCloudSave, handleSignInResult, initFirebase, loadBackupList, loadSyncHistory, resetBackupPanel, saveManualBackup } from "./infra/firebase.js";
 import { _upcomingHead } from "./features/portfolio/upcoming.js";
 import { animateNumber } from "./core/animate.js";
 import { applyTxnTotals, closeCurValModal, closeTxnModal, exportTxnsCSV, importTxnsCSV, openCurValModal, openTxnModal, renderReturns, renderTxns, saveCurVal, saveTxn, setTxnType, txnFilter } from "./features/transactions/index.js";
@@ -105,6 +105,7 @@ el("dataImportBtn").addEventListener("click", () => el("dataImportFile").click()
 el("dataImportFile").addEventListener("change", importData);
 el("backupNowBtn").addEventListener("click", saveManualBackup);
 el("backupBrowseBtn").addEventListener("click", loadBackupList);
+el("syncHistBrowseBtn").addEventListener("click", loadSyncHistory);
 el("curValCancelBtn").addEventListener("click", closeCurValModal);
 el("curValSaveBtn").addEventListener("click", saveCurVal);
 el("txnTabInvest").addEventListener("click", () => {

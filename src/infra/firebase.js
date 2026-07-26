@@ -183,6 +183,7 @@ export async function loadBackupList() {
                         saveState();
                         UI.closeOverlay(el("dataModal"));
                         UI.toast("success", "Restored backup from " + doc.id, 3000);
+                        logSyncEvent("restore", "Restored backup from " + doc.id);
                       } catch (e) {
                         UI.toast("err", "Failed to restore — " + e.message, 4000);
                       }
@@ -271,6 +272,7 @@ export async function saveToCloud(retryNum = 0) {
               } else {
                 fbRetryDelay = 2000;
                 fbSyncUI("err", "Sync failed after retries — saved locally");
+                logSyncEvent("error", "Sync failed after " + MAX_FB_RETRY + " retries");
               }
             }
           }
@@ -287,6 +289,7 @@ export async function maybeDailyBackup() {
               });
               localStorage.setItem("lastDailyBackup", today);
               UI.toast("success", "Daily backup saved (" + today + ")", 3000);
+              logSyncEvent("backup", "Daily backup saved (" + today + ")");
             } catch (e) {
               console.warn("Daily backup failed:", e.message);
             }
@@ -320,6 +323,7 @@ export async function saveManualBackup() {
               });
               localStorage.setItem("lastDailyBackup", today);
               UI.toast("success", "Cloud backup saved (" + docId + ")", 3000);
+              logSyncEvent("backup", "Manual backup saved (" + docId + ")");
             } catch (e) {
               UI.toast("err", "Backup failed — " + e.message, 4000);
             } finally {
@@ -382,6 +386,7 @@ export async function maybeLoadFromCloud() {
               // Another device saved a newer version — apply it
               applyCloudState(raw);
               fbSyncUI("ok", "Synced from cloud ✓");
+              logSyncEvent("loaded", "Synced from cloud — newer version found (v" + cloudV + ")");
             } else if (cloudV < localV) {
               // Local is ahead (e.g., edited offline) — push to cloud
               fbDirty = true;
@@ -393,6 +398,7 @@ export async function maybeLoadFromCloud() {
               if (!hasLocalData && raw) {
                 applyCloudState(raw);
                 fbSyncUI("ok", "Synced from cloud ✓");
+                logSyncEvent("loaded", "Initial sync from cloud");
               } else {
                 state._meta.syncedAt = new Date().toISOString();
                 localStorage.setItem(STORE_KEY, JSON.stringify(state));
@@ -414,6 +420,7 @@ export function subscribeToCloud() {
                   if (cloudV > localV) {
                     applyCloudState(raw);
                     fbSyncUI("ok", "Updated from another device ✓");
+                    logSyncEvent("remote", "Updated from another device (v" + cloudV + ")");
                   }
                 } catch (e) {
                   console.warn("Firestore snapshot:", e.message);
@@ -454,6 +461,8 @@ export function syncInputsFromState() {
 export function resetBackupPanel() {
             el("backupListWrap").style.display = "none";
             el("backupBrowseBtn").textContent = "Browse";
+            el("syncHistWrap").style.display = "none";
+            el("syncHistBrowseBtn").textContent = "Browse";
           }
 
 export function updateAuthUI() {
@@ -486,6 +495,61 @@ export function updateAuthUI() {
               userInfo.style.display = "none";
               authBtn.innerHTML = `<svg viewBox="0 0 18 18" width="15" height="15" style="flex-shrink:0"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/><path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" fill="#EA4335"/></svg> Sign in with Google`;
             }
+          }
+
+const SYNC_HIST_KEY = "syncHistory";
+
+const SYNC_HIST_MAX = 20;
+
+const SYNC_EVENT_ICONS = { saved: "↑", loaded: "↓", remote: "⇄", backup: "⎘", restore: "⟲", error: "✕" };
+
+// Records only the sync events worth reviewing later — not every routine
+// autosave (those already surface live via the saveDot/toast), just the
+// ones that answer "what happened to my data across devices": cloud
+// pulls, another device's push arriving here, backups, restores, and
+// failures. Local-only (per device) by design — see the report's
+// "workflow improvement" framing, kept lightweight like the push
+// notifications feature.
+export function logSyncEvent(type, msg) {
+            try {
+              const hist = JSON.parse(localStorage.getItem(SYNC_HIST_KEY) || "[]");
+              hist.unshift({ at: new Date().toISOString(), type, msg });
+              localStorage.setItem(SYNC_HIST_KEY, JSON.stringify(hist.slice(0, SYNC_HIST_MAX)));
+            } catch (_) {}
+          }
+
+export function loadSyncHistory() {
+            const wrap = el("syncHistWrap");
+            const list = el("syncHistList");
+            const btn  = el("syncHistBrowseBtn");
+            const open = wrap.style.display === "none";
+            wrap.style.display = open ? "block" : "none";
+            btn.textContent    = open ? "Hide" : "Browse";
+            if (!open) return;
+            renderSyncHistory();
+          }
+
+export function renderSyncHistory() {
+            const list = el("syncHistList");
+            if (!list) return;
+            let hist = [];
+            try { hist = JSON.parse(localStorage.getItem(SYNC_HIST_KEY) || "[]"); } catch (_) {}
+            if (!hist.length) {
+              list.innerHTML = '<div class="backup-list-msg">No sync activity recorded yet on this device.</div>';
+              return;
+            }
+            list.innerHTML = hist.map(ev => {
+              const d = new Date(ev.at);
+              const dateStr = d.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+              const timeStr = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+              return `
+                <div class="backup-item">
+                  <div style="flex:1;min-width:0;">
+                    <div class="backup-item-date">${SYNC_EVENT_ICONS[ev.type] || "•"} ${ev.msg}</div>
+                    <div style="font-size:10px;color:var(--dim);margin-top:2px;">${dateStr} · ${timeStr}</div>
+                  </div>
+                </div>`;
+            }).join("");
           }
 
 export const _hasLocalData = !!localStorage.getItem(STORE_KEY);
