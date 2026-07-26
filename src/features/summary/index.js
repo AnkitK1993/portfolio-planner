@@ -2,7 +2,7 @@ import { EQ_CATEGORIES } from "../../core/constants.js";
 import { EQ_FUNDS, LIQ_FUNDS, editMode, fundName, normalizeSnap, saveState, state } from "../../core/state.js";
 import { UI } from "../../core/ui.js";
 import { _animOnRender, _animRaf, animateNumber, animateWidth } from "../../core/animate.js";
-import { avgMonthlyGrowthRate, nwTotal } from "../../domain/networth.js";
+import { avgMonthlyGrowthRate, extraIncome, nwTotal } from "../../domain/networth.js";
 import { cachedPortfolioXirr, fundXirr, rollingPortfolioXirr } from "../../domain/xirr.js";
 import { el } from "../../core/dom.js";
 import { estimateCapitalGainsTax, LTCG_EXEMPTION } from "../../domain/tax.js";
@@ -439,6 +439,16 @@ function renderExpenses() {
             const totalLiqFree = LIQ_FUNDS.reduce((s, f) => s + Math.max(0, (state.liquid[f.id]?.value || 0) - (state.liquid[f.id]?.reserve || 0)), 0);
             const bufMonths = total > 0 ? totalLiqFree / total : null;
 
+            // Income vs Expenses — same extraIncome() gate as the Net Worth
+            // total: only shown (and only "considered") when Income is set
+            // AND not already marked as included in Bank & Savings. When
+            // the flag is on, Income is presumed already reflected in the
+            // Bank balance this card's own bank-spend tracking already
+            // uses, so surfacing it again here would double-count it a
+            // second way.
+            const incomeExtra = extraIncome(state.networth);
+            const netCashFlow = incomeExtra > 0 ? incomeExtra - total : null;
+
             // Kept in sync regardless of collapsed/open state — this is
             // what's visible when the card is collapsed (the default).
             const collapsedTotalEl = el("expCollapsedTotal");
@@ -612,6 +622,14 @@ function renderExpenses() {
                 </div>
                 <div class="exp-hero-sub">SIP excluded &mdash; it's an investment, not an expense</div>
               </div>
+              ${netCashFlow !== null ? `
+              <div class="exp-hero" style="margin-top:12px;">
+                <div class="exp-hero-top">
+                  <span class="exp-hero-lbl">Income vs Expenses</span>
+                  <span class="exp-hero-val" style="color:${netCashFlow >= 0 ? "var(--mint)" : "var(--coral)"}">${netCashFlow >= 0 ? "+" : "−"}${fmt(Math.abs(netCashFlow))}</span>
+                </div>
+                <div class="exp-hero-sub">${fmt(incomeExtra)} income &minus; ${fmt(total)} expenses this month</div>
+              </div>` : ""}
               ${bufMonths !== null ? `
               <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line);font-size:11px;color:var(--dim);">
                 Emergency fund: <b style="color:${bufMonths >= 6 ? "var(--mint)" : bufMonths >= 3 ? "var(--amber)" : "var(--coral)"};font-family:'Roboto Mono',monospace">${bufMonths.toFixed(1)} months</b> of expenses covered
