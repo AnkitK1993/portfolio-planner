@@ -62,12 +62,6 @@
         gap: 2px;
         scrollbar-width: none;
       }
-      .nav-actions {
-        position: absolute;
-        right: 14px;
-        top: 50%;
-        transform: translateY(-50%);
-      }
       .tabs::-webkit-scrollbar {
         display: none;
       }
@@ -274,9 +268,6 @@
       }
       .num.liq:focus {
         border-color: var(--liq);
-      }
-      .num.amb:focus {
-        border-color: var(--amber);
       }
       .num::placeholder {
         color: #3a4540;
@@ -694,13 +685,6 @@
         color: #cffae3;
       }
 
-      /* ── NAV ACTIONS (save status + edit toggle) ── */
-      .nav-actions {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        padding: 0 4px;
-      }
       #saveTxt {
         font-size: 10px;
         color: var(--dim);
@@ -802,11 +786,6 @@
           overflow: hidden;
           gap: 1px;
         }
-        .nav-actions {
-          position: static;
-          transform: none;
-          margin-left: auto;
-        }
         .tabs button {
           flex: 1;
           min-width: 0;
@@ -822,13 +801,12 @@
         }
         /* Hide save indicator text on mobile — frees space for tab labels */
         .dot, #saveTxt { display: none; }
-        .nav-actions { gap: 0; padding: 0 3px; }
         .edit-toggle { font-size: 8px; padding: 3px 6px; letter-spacing: 0.3px; }
         .app {
           padding-bottom: calc(72px + env(safe-area-inset-bottom));
         }
         /* Prevent iOS zoom on input focus (requires font-size ≥ 16px) */
-        .num, .fundname, .cal-paid-input, .curval-inp, .form-inp {
+        .num, .fundname, .curval-inp {
           font-size: 16px;
         }
       }
@@ -1233,7 +1211,6 @@
         box-shadow: 0 0 0 3px color-mix(in srgb, var(--mint) 18%, transparent);
       }
       .num.liq:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--liq) 20%, transparent); }
-      .num.amb:focus-visible { box-shadow: 0 0 0 3px rgba(240, 184, 108, 0.18); }
       .edit-toggle:focus-visible,
       .btn:focus-visible {
         outline: 2px solid var(--mint);

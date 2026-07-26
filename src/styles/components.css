@@ -51,28 +51,6 @@
         border-top: 1px solid var(--line);
         justify-content: flex-end;
       }
-      .form-row { display: flex; flex-direction: column; gap: 6px; }
-      .form-lbl {
-        font-size: 9.5px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        color: var(--dim);
-        font-family: "Roboto Mono", monospace;
-      }
-      .form-inp, .form-sel {
-        background: var(--bg);
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        color: var(--txt);
-        font-family: "Roboto Mono", monospace;
-        font-size: 14px;
-        padding: 9px 12px;
-        width: 100%;
-        outline: none;
-        transition: border-color 0.15s;
-        -webkit-appearance: none;
-      }
-      .form-inp:focus, .form-sel:focus { border-color: var(--mint); }
       .btn-primary {
         background: var(--mint);
         color: #000;
@@ -202,16 +180,6 @@
         border-radius: 10px;
         margin-bottom: 6px;
       }
-      .txn-date-col {
-        font-family: "Roboto Mono", monospace;
-        font-size: 10px;
-        color: var(--dim);
-        white-space: nowrap;
-        min-width: 56px;
-        line-height: 1.4;
-        text-align: center;
-      }
-      .txn-date-day { font-size: 18px; font-weight: 700; color: var(--txt); display: block; }
       .txn-info { flex: 1; min-width: 0; }
       .txn-fund-name {
         font-size: 12px;
@@ -500,10 +468,6 @@
       .calday-btn:hover { border-color: var(--mint); color: var(--mint); }
       .calday-btn.danger { border-color: rgba(248,113,113,0.4); color: #f87171; }
       .calday-btn.danger:hover { background: rgba(248,113,113,0.1); }
-      /* Schedule note modal */
-      .cal-note-field { margin-top: 12px; }
-      .cal-note-select { width: 100%; background: var(--panel); border: 1px solid var(--line); color: var(--txt); border-radius: 8px; padding: 8px 10px; font-family: "Roboto", sans-serif; font-size: 13px; appearance: none; cursor: pointer; }
-      .cal-note-select:focus { outline: none; border-color: var(--mint); }
       /* ═══ CONFIRM DIALOG ═══ */
       .confirm-overlay {
         position: fixed; inset: 0; z-index: 10001;
