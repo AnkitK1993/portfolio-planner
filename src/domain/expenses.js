@@ -63,9 +63,10 @@ function investedInMonth(transactions, monthKey) {
           }
 
 // Bank spend this month = the most recent monthly snapshot's Bank balance
-// (the month's opening figure) minus the live Bank value on the Net Worth
-// tab's Enter Values section (today's balance) — reuses that field rather
-// than tracking a second, easily-drifting copy of "current bank balance".
+// (the month's opening figure) minus the live Bank value on the
+// Transactions tab's Update Assets card (today's balance) — reuses that
+// field rather than tracking a second, easily-drifting copy of "current
+// bank balance".
 // Clamped to 0 so a mid-month deposit (salary credit, etc.) never reads as
 // negative spending.
 export function bankSpentThisMonth(networth) {

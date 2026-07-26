@@ -424,8 +424,8 @@ function makeToggleAllGroup(btnId) {
             };
           }
 
-// Enter Values moved to the Transactions tab (see the txp-card wiring
-// above) and is no longer part of this group.
+// Update Assets (formerly "Enter Values") moved to the Transactions tab
+// (see the txp-card wiring above) and is no longer part of this group.
 const nwToggleAll = makeToggleAllGroup("nwToggleAllBtn");
 [
             ["nwBreakdownToggle", "nwBreakdownBody", "nwBreakdownPreview"],
