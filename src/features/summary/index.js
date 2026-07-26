@@ -471,17 +471,20 @@ function renderExpenses() {
               ? [
                   { label: "Fixed", value: fixed, color: "var(--mint)" },
                   { label: "SIP", value: sip, color: "var(--liq)" },
-                  { label: "Surplus", value: surplusInvestment, color: "#a78bfa" },
+                  // Compact (e.g. "1.5L") rather than exact rupees — this is
+                  // a one-off/variable top-up, not a precise budgeted figure
+                  // like the others, so a rounded-off amount reads better.
+                  { label: "Surplus", value: surplusInvestment, color: "#a78bfa", compact: true },
                   { label: "Extra", value: extra, color: "var(--amber)" },
                 ].filter(s => s.value > 0)
               : [];
             const segBarHtml = segs.length
               ? `<div class="alloc-seg-bar" style="display:flex;height:10px;border-radius:6px;overflow:hidden;gap:1px;margin-top:12px;">
-                  ${segs.map(s => `<div style="flex:${((s.value / bankSpend.amount) * 100).toFixed(2)};background:${s.color};min-width:2px;" title="${s.label}: ${fmt(s.value)}"></div>`).join("")}
+                  ${segs.map(s => `<div style="flex:${((s.value / bankSpend.amount) * 100).toFixed(2)};background:${s.color};min-width:2px;" title="${s.label}: ${s.compact ? fmtCompact(s.value) : fmt(s.value)}"></div>`).join("")}
                 </div>
                 <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:7px;">
                   ${segs.map(s => `<span style="display:inline-flex;align-items:center;gap:4px;font-size:9.5px;color:var(--dim);">
-                    <span style="width:7px;height:7px;border-radius:50%;background:${s.color};display:inline-block;"></span>${s.label} ${fmt(s.value)}
+                    <span style="width:7px;height:7px;border-radius:50%;background:${s.color};display:inline-block;"></span>${s.label} ${s.compact ? fmtCompact(s.value) : fmt(s.value)}
                   </span>`).join("")}
                 </div>`
               : "";
@@ -496,7 +499,7 @@ function renderExpenses() {
                   ${segBarHtml}
                   ${surplusInvestment > 0 ? `<div class="exp-extra-row">
                     <span style="font-size:11px;color:var(--txt)">Surplus investment this month</span>
-                    <span class="exp-extra-badge surplus">+${fmt(surplusInvestment)}</span>
+                    <span class="exp-extra-badge surplus">+${fmtCompact(surplusInvestment)}</span>
                   </div>` : ""}
                   <div class="exp-extra-row">
                     <span style="font-size:11px;color:var(--txt)">${extra >= 0 ? "Extra beyond planned" : "Under planned"}</span>
