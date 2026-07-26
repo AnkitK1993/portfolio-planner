@@ -273,6 +273,7 @@ export function renderHealthScore() {
             const monthlyExp = totalMonthlyExpenses({
               fixedExpenses: state.surplus?.fixedExpenses, liqFunds: LIQ_FUNDS, eqFunds: EQ_FUNDS,
               liquid: state.liquid, equity: state.equity, networth: state.networth,
+              transactions: state.transactions,
             }).total;
             let bScore = 15, bNote = "Enter expenses to measure", bufMonths = null;
             if (monthlyExp > 0) {
@@ -424,9 +425,10 @@ function renderExpenses() {
             card.style.display = "";
 
             const items = state.surplus?.fixedExpenses || [];
-            const { fixed, sip, planned, bankSpend, extra, total } = totalMonthlyExpenses({
+            const { fixed, sip, surplusInvestment, planned, bankSpend, extra, total } = totalMonthlyExpenses({
               fixedExpenses: items, liqFunds: LIQ_FUNDS, eqFunds: EQ_FUNDS,
               liquid: state.liquid, equity: state.equity, networth: state.networth,
+              transactions: state.transactions,
             });
 
             // Kept in sync regardless of collapsed/open state — this is
@@ -460,11 +462,16 @@ function renderExpenses() {
             // out "extra", whatever of that drop neither accounts for (can
             // go negative: less left the account than was planned, e.g. a
             // bill or SIP hasn't hit yet). SIP itself is excluded from
-            // Total This Month since it's an investment, not spend.
+            // Total This Month since it's an investment, not spend. A
+            // month that actually invested more than the configured SIP
+            // (Mutual Funds growing by more than planned) shows that
+            // excess as its own "Surplus" segment rather than folding it
+            // into "Extra" — it left the bank for investing, not spending.
             const segs = (bankSpend && extra >= 0)
               ? [
                   { label: "Fixed", value: fixed, color: "var(--mint)" },
                   { label: "SIP", value: sip, color: "var(--liq)" },
+                  { label: "Surplus", value: surplusInvestment, color: "#a78bfa" },
                   { label: "Extra", value: extra, color: "var(--amber)" },
                 ].filter(s => s.value > 0)
               : [];
@@ -487,6 +494,10 @@ function renderExpenses() {
                   </div>
                   <div class="exp-bank-sub">As of ${fmtMonth(bankSpend.asOfKey)} snapshot vs. now on the Net Worth tab &mdash; a drop of ${fmt(bankSpend.amount)}</div>
                   ${segBarHtml}
+                  ${surplusInvestment > 0 ? `<div class="exp-extra-row">
+                    <span style="font-size:11px;color:var(--txt)">Surplus investment this month</span>
+                    <span class="exp-extra-badge surplus">+${fmt(surplusInvestment)}</span>
+                  </div>` : ""}
                   <div class="exp-extra-row">
                     <span style="font-size:11px;color:var(--txt)">${extra >= 0 ? "Extra beyond planned" : "Under planned"}</span>
                     <span class="exp-extra-badge ${extra > 0 ? "over" : "under"}">${extra >= 0 ? "+" : "−"}${fmt(Math.abs(extra))}</span>
@@ -504,6 +515,7 @@ function renderExpenses() {
             const series = monthlyExpenseSeries(periodKeys, {
               fixedExpenses: items, liqFunds: LIQ_FUNDS, eqFunds: EQ_FUNDS,
               liquid: state.liquid, equity: state.equity, networth: state.networth,
+              transactions: state.transactions,
             });
             const brk = averageExpenseBreakdown(series);
             let avgTotal = 0;
@@ -650,6 +662,7 @@ function renderFireProgress() {
             const monthlyExp = totalMonthlyExpenses({
               fixedExpenses: state.surplus?.fixedExpenses, liqFunds: LIQ_FUNDS, eqFunds: EQ_FUNDS,
               liquid: state.liquid, equity: state.equity, networth: state.networth,
+              transactions: state.transactions,
             }).total;
             const suggestedTarget = monthlyExp * 12 * 25;
             const customGoal = state.surplus?.goalAmount || 0;

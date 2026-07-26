@@ -1,3 +1,6 @@
+const pad2 = (n) => String(n).padStart(2, "0");
+const monthKeyOf = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
+
 export function fixedExpensesTotal(fixedExpenses) {
             return (fixedExpenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0);
           }
@@ -11,6 +14,21 @@ export function totalMonthlySip(liqFunds, eqFunds, liquid, equity) {
             liqFunds.forEach(f => { total += liquid[f.id]?.sipAmt || 0; });
             eqFunds.forEach(f => { total += equity[f.id]?.sipAmt || 0; });
             return total;
+          }
+
+// Actual money that moved into (sip/lump) or out of (redemption) any fund
+// during a given "YYYY-MM" month, from real logged transactions — as
+// opposed to totalMonthlySip()'s static, configured `sipAmt`. A month can
+// genuinely invest more than that configured plan (a one-off top-up, an
+// extra lump purchase); this is how totalMonthlyExpenses()/
+// monthlyExpenseSeries() recognize that surplus as investment rather than
+// unplanned bank spending.
+function investedInMonth(transactions, monthKey) {
+            return (transactions || []).reduce((sum, t) => {
+              if (!t.date || t.date.slice(0, 7) !== monthKey) return sum;
+              const ae = Number(t.afterExpense ?? t.invested) || 0;
+              return sum + (t.type === "redemption" ? -ae : ae);
+            }, 0);
           }
 
 // Bank spend this month = the most recent monthly snapshot's Bank balance
@@ -46,27 +64,37 @@ export function bankSpentThisMonth(networth) {
 // Example: bank went 5L -> 2L (a 3L drop), 2L fixed + 50k SIP planned ->
 // 50k extra/unplanned -> total EXPENSE = 2L + 50k = 2.5L, not 3L (the SIP
 // portion doesn't count as spending).
-export function totalMonthlyExpenses({ fixedExpenses, liqFunds, eqFunds, liquid, equity, networth }) {
+//
+// A month can also invest MORE than that configured SIP plan — a manual
+// lump top-up, an extra purchase — visible as the Mutual Funds figure
+// growing by more than the planned SIP amount. That excess genuinely left
+// the bank for investing, not spending, so it's surfaced separately as
+// `surplusInvestment` and folded into `planned` (not `extra`) — otherwise
+// it would misreport as unplanned spend. Falls back to the configured
+// `sip` figure whenever actual logged investing this month is less than
+// that (e.g. no transactions logged yet, or the SIP hasn't auto-debited),
+// leaving existing behavior unchanged in that case.
+export function totalMonthlyExpenses({ fixedExpenses, liqFunds, eqFunds, liquid, equity, networth, transactions }) {
             const fixed = fixedExpensesTotal(fixedExpenses);
             const sip = totalMonthlySip(liqFunds, eqFunds, liquid, equity);
-            const planned = fixed + sip;
+            const investedThisMonth = investedInMonth(transactions, monthKeyOf(new Date()));
+            const investedForPlanning = Math.max(sip, investedThisMonth);
+            const surplusInvestment = investedForPlanning - sip;
+            const planned = fixed + investedForPlanning;
             const bankSpend = bankSpentThisMonth(networth);
             if (!bankSpend) {
               // No snapshot to diff against yet — the only real number we
               // have is the fixed budget; SIP stays excluded even here.
-              return { fixed, sip, planned, bankSpend: null, extra: null, total: fixed };
+              return { fixed, sip, surplusInvestment, planned, bankSpend: null, extra: null, total: fixed };
             }
             const extra = bankSpend.amount - planned;
             return {
-              fixed, sip, planned,
+              fixed, sip, surplusInvestment, planned,
               bankSpend,
               extra,
               total: fixed + extra,
             };
           }
-
-const pad2 = (n) => String(n).padStart(2, "0");
-const monthKeyOf = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
 
 function prevMonthKey(key) {
             const [y, m] = key.split("-").map(Number);
@@ -123,11 +151,15 @@ export function resolvePeriodKeys(periodKey) {
 // only the bank-driven "extra" figure reflects genuine month-to-month
 // variation. A month with no snapshot pair to diff comes back with
 // bankDrop/extra/total all null rather than a guessed value.
-export function monthlyExpenseSeries(periodKeys, { fixedExpenses, liqFunds, eqFunds, liquid, equity, networth }) {
+//
+// Like totalMonthlyExpenses(), each month's actual logged investing (from
+// transactions dated in that month) is recognized as investment rather
+// than unplanned spend whenever it exceeds today's configured SIP figure
+// — see investedInMonth() above.
+export function monthlyExpenseSeries(periodKeys, { fixedExpenses, liqFunds, eqFunds, liquid, equity, networth, transactions }) {
             const snaps = networth?.snapshots || {};
             const fixed = fixedExpensesTotal(fixedExpenses);
             const sip = totalMonthlySip(liqFunds, eqFunds, liquid, equity);
-            const planned = fixed + sip;
             const nowKey = monthKeyOf(new Date());
 
             return periodKeys.map(key => {
@@ -141,9 +173,12 @@ export function monthlyExpenseSeries(periodKeys, { fixedExpenses, liqFunds, eqFu
                   bankDrop = Math.max(0, (snaps[prevKey].bank || 0) - (snaps[key].bank || 0));
                 }
               }
-              if (bankDrop === null) return { key, fixed, sip, planned, bankDrop: null, extra: null, total: null };
+              const investedForPlanning = Math.max(sip, investedInMonth(transactions, key));
+              const surplusInvestment = investedForPlanning - sip;
+              const planned = fixed + investedForPlanning;
+              if (bankDrop === null) return { key, fixed, sip, surplusInvestment, planned, bankDrop: null, extra: null, total: null };
               const extra = bankDrop - planned;
-              return { key, fixed, sip, planned, bankDrop, extra, total: fixed + extra };
+              return { key, fixed, sip, surplusInvestment, planned, bankDrop, extra, total: fixed + extra };
             });
           }
 
@@ -160,5 +195,6 @@ export function averageExpenseBreakdown(series) {
               avgFixed: n ? valid.reduce((s, m) => s + m.fixed, 0) / n : 0,
               avgExtra: n ? valid.reduce((s, m) => s + m.extra, 0) / n : 0,
               avgSip: n ? valid.reduce((s, m) => s + m.sip, 0) / n : 0,
+              avgSurplus: n ? valid.reduce((s, m) => s + (m.surplusInvestment || 0), 0) / n : 0,
             };
           }
