@@ -991,6 +991,11 @@
       }
       .nw-hist-detail-row span:first-child { color: var(--dim); }
       .nw-hist-detail-row span:last-child { font-weight: 600; }
+      /* Transactions tab's Snapshots card — same .nw-hist-item/-main/
+         -expand mechanics as Monthly History, just a plain 2-column
+         Month/Total row instead of the 6-column MF/Returns/Others grid. */
+      .nw-snap-list-main { grid-template-columns: 1fr auto; font-size: 11.5px; }
+      .nw-snap-edit-row { display: flex; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
       .nw-hist-cmp-head, .nw-hist-cmp-row {
         display: grid;
         grid-template-columns: 1.3fr 1fr 1fr 1fr;

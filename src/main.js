@@ -2,23 +2,23 @@ import "./styles/base.css";
 import "./styles/themes.css";
 import "./styles/components.css";
 
-import { EQ_FUNDS, LIQ_FUNDS, editMode, privacyMode, saveState, setEditMode, setPrivacyMode, snapshotKey, state, syncFundArrays, toggleEditMode, toggleRtnMode } from "./core/state.js";
+import { EQ_FUNDS, LIQ_FUNDS, editMode, privacyMode, saveState, setEditMode, setPrivacyMode, state, syncFundArrays, toggleEditMode, toggleRtnMode } from "./core/state.js";
 import { NW_FIELDS } from "./core/constants.js";
 import { UI, closeNavDropdowns, collapseTxpCard, navigateTo, openNavDropdown } from "./core/ui.js";
 import { setRenderTrigger, setTabActivateHandler } from "./core/appEvents.js";
-import { addEquityFund, addLiquidFund, deleteSnapshot, saveSnapshot, setForecastField, setNetworthField } from "./store/actions.js";
+import { addEquityFund, addLiquidFund, setForecastField, setNetworthField } from "./store/actions.js";
 import { _hasLocalData, authUser, fbAuthReady, fbEnabled, flushCloudSave, handleSignInResult, initFirebase, loadBackupList, loadSyncHistory, resetBackupPanel, saveManualBackup } from "./infra/firebase.js";
 import { _upcomingHead } from "./features/portfolio/upcoming.js";
 import { animateNumber } from "./core/animate.js";
 import { applyTxnTotals, closeCurValModal, closeTxnModal, exportTxnsCSV, importTxnsCSV, openCurValModal, openTxnModal, renderReturns, renderTxns, saveCurVal, saveTxn, setTxnType, txnFilter } from "./features/transactions/index.js";
-import { buildNwGrid, nwLiveSaved, renderNetWorth, renderNwCompositionChart, renderNwHistory, renderNwLineChart, renderNwProjection, setNwEditingKey, setNwLiveSaved, takeSnapshot } from "./features/networth/index.js";
+import { buildNwGrid, nwLiveSaved, renderNetWorth, renderNwCompositionChart, renderNwHistory, renderNwLineChart, renderNwProjection, renderSnapshotsList, setNwEditingKey, setNwLiveSaved, takeSnapshot } from "./features/networth/index.js";
 import { hideThemeMatrix, loadSavedAccent, showThemeMatrix, themeMatrixOpen } from "./features/admin/themes.js";
 import { calDayDate, calMonth, calView, calWeekOffset, calYear, closeCalDayModal, closeCalNoteModal, openCalNoteModal, renderCalendar, saveCalNote, setCalMonth, setCalView, setCalWeekOffset, setCalYear } from "./features/portfolio/calendar.js";
 import { createCollapsible } from "./core/collapsible.js";
 import { el } from "./core/dom.js";
 import { exportData, importData } from "./features/admin/data.js";
 import { fcInflEl, fcShowAllEl, fcStepUpEl, renderForecast } from "./features/forecast/index.js";
-import { fmtMonth, num } from "./core/format.js";
+import { num } from "./core/format.js";
 import { openManageSips, saveManageSips } from "./features/portfolio/sips.js";
 import { openFundCollapsible, rebuildFundCollapsibles } from "./features/portfolio/funds.js";
 import { render, scheduleRender } from "./features/portfolio/render.js";
@@ -355,40 +355,11 @@ el("nwSnapCancelBtn").addEventListener("click", () => {
             renderNetWorth();
             const msg = el("nwSnapMsg"); if (msg) msg.textContent = "";
           });
-el("nwSnapEditBtn").addEventListener("click", () => {
-            const key = snapshotKey();
-            const snap = state.networth.snapshots && state.networth.snapshots[key];
-            if (!snap) return;
-            setNwLiveSaved({});
-            NW_FIELDS.forEach(f => { nwLiveSaved[f.id] = state.networth[f.id] || 0; });
-            NW_FIELDS.forEach(f => setNetworthField(f.id, snap[f.id] || 0));
-            setNwEditingKey(key);
-            buildNwGrid();
-            renderNetWorth();
-            const msg = el("nwSnapMsg");
-            if (msg) msg.textContent = "Editing " + fmtMonth(key) + " — adjust values and click Update";
-          });
-el("nwSnapDeleteBtn").addEventListener("click", () => {
-            const key = snapshotKey();
-            const snap = state.networth.snapshots && state.networth.snapshots[key];
-            if (!snap) return;
-            deleteSnapshot(key);
-            saveState();
-            renderNetWorth();
-            renderNwHistory();
-            renderNwLineChart();
-            renderNwCompositionChart();
-            renderNwProjection();
-            UI.undoToast("Snapshot for " + fmtMonth(key) + " deleted", () => {
-              saveSnapshot(key, snap);
-              saveState();
-              renderNetWorth();
-              renderNwHistory();
-              renderNwLineChart();
-              renderNwCompositionChart();
-              renderNwProjection();
-            });
-          });
+// Edit/Delete for individual snapshots now live inside the Snapshots
+// list itself (renderSnapshotsList()/editSnapshot(), features/networth/
+// index.js) and Monthly History's own list — both cover every saved
+// month, not just the current one, so the old current-month-only
+// #nwSnapExisting buttons are gone.
 // Groups a set of createCollapsible()-driven cards behind one icon
 // button that expands/collapses all of them together — used for both
 // the Net Worth and Summary tab card stacks. The button's aria-label/
@@ -466,6 +437,7 @@ el("holdingsRtn").addEventListener("click", e => { e.stopPropagation(); toggleRt
 el("liqDivRtn").addEventListener("click", e => { e.stopPropagation(); toggleRtnMode(); });
 el("eqDivRtn").addEventListener("click", e => { e.stopPropagation(); toggleRtnMode(); });
 renderNwHistory();
+renderSnapshotsList();
 renderNwLineChart();
 renderNwCompositionChart();
 renderNwProjection();

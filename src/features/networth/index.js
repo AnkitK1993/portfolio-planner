@@ -19,6 +19,19 @@ export let nwHistExpanded = new Set();
 
 export let nwHistCompare  = new Set();
 
+export let snapListExpanded = new Set();
+
+// Shared by renderNwHistory() (Net Worth tab) and renderSnapshotsList()
+// (Transactions tab) — both list the same underlying snapshots, just
+// with a different level of detail, so the field shape stays in sync.
+const SNAPSHOT_DETAIL_FIELDS = [
+            { key: "mf",       label: "MF Value" },
+            { key: "mfProfit", label: "Unrealized Gain" },
+            ...OTHER_FIELDS.map(f => ({ key: f.id, label: f.label })),
+            { key: "incomeExtra", label: "Income (not in Bank)" },
+            { key: "total",    label: "Total" },
+          ];
+
 export function buildNwGrid() {
             el("nwFieldsGrid").innerHTML = NW_FIELDS.map(
               (f) => `
@@ -92,25 +105,15 @@ export function renderNetWorth() {
             const _snapKey   = snapshotKey();
             const _hasSnap   = !!(state.networth.snapshots && state.networth.snapshots[_snapKey]);
             const _snapBtn   = el("nwSnapshotBtn");
-            const _snapExist = el("nwSnapExisting");
             const _cancelBtn = el("nwSnapCancelBtn");
             if (nwEditingKey) {
               _snapBtn.textContent = "Update — " + fmtMonth(nwEditingKey);
               _snapBtn.style.display = "";
               if (_cancelBtn) _cancelBtn.style.display = "";
-              if (_snapExist) _snapExist.style.display = "none";
             } else {
               _snapBtn.textContent = "Save snapshot — " + fmtMonth(_snapKey);
               _snapBtn.style.display = _hasSnap ? "none" : "";
               if (_cancelBtn) _cancelBtn.style.display = "none";
-              if (_snapExist) {
-                _snapExist.style.display = _hasSnap ? "flex" : "none";
-                const lbl = el("nwSnapExistLabel");
-                if (_hasSnap && lbl) lbl.textContent = fmtMonth(_snapKey) + " ✓";
-                const editBtn = el("nwSnapEditBtn"), delBtn = el("nwSnapDeleteBtn");
-                if (editBtn) editBtn.style.display = editMode ? "" : "none";
-                if (delBtn)  delBtn.style.display  = editMode ? "" : "none";
-              }
             }
 
             // Delta chips, stats row, sparkline — driven by snapshots
@@ -235,6 +238,7 @@ export function takeSnapshot() {
               saveState();
               renderNetWorth();
               renderNwHistory();
+              renderSnapshotsList();
               renderNwLineChart();
               renderNwCompositionChart();
               renderNwProjection();
@@ -278,13 +282,7 @@ export function renderNwHistory() {
               return;
             }
 
-            const DETAIL_FIELDS = [
-              { key: "mf",       label: "MF Value" },
-              { key: "mfProfit", label: "Unrealized Gain" },
-              ...OTHER_FIELDS.map(f => ({ key: f.id, label: f.label })),
-              { key: "incomeExtra", label: "Income (not in Bank)" },
-              { key: "total",    label: "Total" },
-            ];
+            const DETAIL_FIELDS = SNAPSHOT_DETAIL_FIELDS;
 
             const colTpl = editMode
               ? "1.5fr 1fr 1fr 1fr 1.2fr 1fr 20px"
@@ -363,30 +361,111 @@ export function renderNwHistory() {
             });
 
             el("nwHistory").querySelectorAll(".nw-hist-del").forEach(btn => {
-              btn.addEventListener("click", (e) => {
-                e.stopPropagation();
-                const key = btn.dataset.key;
-                const snap = state.networth.snapshots && state.networth.snapshots[key];
-                if (!snap) return;
-                deleteSnapshot(key);
-                nwHistExpanded.delete(key);
-                nwHistCompare.delete(key);
-                saveState();
-                renderNetWorth();
-                renderNwHistory();
-                renderNwLineChart();
-                renderNwCompositionChart();
-                renderNwProjection();
-                UI.undoToast("Snapshot for " + fmtMonth(key) + " deleted", () => {
-                  saveSnapshot(key, snap);
-                  saveState();
-                  renderNetWorth();
-                  renderNwHistory();
-                  renderNwLineChart();
-                  renderNwCompositionChart();
-                  renderNwProjection();
-                });
+              btn.addEventListener("click", (e) => { e.stopPropagation(); deleteSnapshotWithUndo(btn.dataset.key); });
+            });
+          }
+
+// Shared by every place a snapshot can be deleted (Net Worth tab's
+// Monthly History list and the Transactions tab's Snapshots list) so
+// there's one undo-toast implementation instead of two copies that could
+// drift — deleting from either list refreshes both.
+function refreshAllSnapshotViews() {
+            renderNetWorth();
+            renderNwHistory();
+            renderSnapshotsList();
+            renderNwLineChart();
+            renderNwCompositionChart();
+            renderNwProjection();
+          }
+
+function deleteSnapshotWithUndo(key) {
+            const snap = state.networth.snapshots && state.networth.snapshots[key];
+            if (!snap) return;
+            deleteSnapshot(key);
+            nwHistExpanded.delete(key);
+            nwHistCompare.delete(key);
+            snapListExpanded.delete(key);
+            saveState();
+            refreshAllSnapshotViews();
+            UI.undoToast("Snapshot for " + fmtMonth(key) + " deleted", () => {
+              saveSnapshot(key, snap);
+              saveState();
+              refreshAllSnapshotViews();
+            });
+          }
+
+// Starts editing an arbitrary month's snapshot (not just the current
+// one) — stashes today's live NW_FIELDS values, swaps in the snapshot's
+// frozen values so Update Assets shows what was true then, and marks
+// nwEditingKey so takeSnapshot()'s existing "update in place" path picks
+// up the right month. Income/incomeInBank aren't historized per-snapshot
+// (only the computed incomeExtra is, same "frozen" treatment as every
+// other field), so editing a past month doesn't touch those — they stay
+// live/current, same as they already are outside of any edit.
+export function editSnapshot(key) {
+            const snap = state.networth.snapshots && state.networth.snapshots[key];
+            if (!snap) return;
+            setNwLiveSaved({});
+            NW_FIELDS.forEach(f => { nwLiveSaved[f.id] = state.networth[f.id] || 0; });
+            NW_FIELDS.forEach(f => setNetworthField(f.id, snap[f.id] || 0));
+            setNwEditingKey(key);
+            buildNwGrid();
+            renderNetWorth();
+            const msg = el("nwSnapMsg");
+            if (msg) msg.textContent = "Editing " + fmtMonth(key) + " — adjust values in Update Assets and click Update";
+          }
+
+// Transactions tab's Snapshots card — a lighter-weight list than Monthly
+// History (Month + Total only, no MF/Returns/Others columns or compare
+// mode), expanding to a plain field breakdown with Edit/Delete at the
+// end. Shows the same snapshots as renderNwHistory(), just presented
+// for a "manage my snapshots" flow rather than "browse my history".
+export function renderSnapshotsList() {
+            const listEl = el("nwSnapshotsList");
+            if (!listEl) return;
+            const snaps = state.networth.snapshots || {};
+            const sorted = Object.entries(snaps)
+              .map(([k, v]) => normalizeSnap(k, v))
+              .sort((a, b) => b.key.localeCompare(a.key));
+
+            if (!sorted.length) {
+              listEl.innerHTML = `<div class="exp-empty">No snapshots saved yet.</div>`;
+              return;
+            }
+
+            listEl.innerHTML = sorted.map(s => {
+              const isOpen = snapListExpanded.has(s.key);
+              const detailHtml = isOpen
+                ? SNAPSHOT_DETAIL_FIELDS.map(f =>
+                    `<div class="nw-hist-detail-row"><span>${f.label}</span><span>${fmtCompact(s[f.key] || 0)}</span></div>`
+                  ).join("") +
+                  `<div class="nw-snap-edit-row">
+                    <button class="btn btn-ghost btn-sm nw-snap-list-edit" data-key="${s.key}">Edit</button>
+                    ${editMode ? `<button class="btn btn-ghost btn-sm nw-snap-list-del" data-key="${s.key}" style="color:var(--coral)">Delete</button>` : ""}
+                  </div>`
+                : "";
+              return `<div class="nw-hist-item">
+                <div class="nw-hist-main nw-snap-list-main" data-key="${s.key}">
+                  <span style="color:var(--dim)">${isOpen ? "▾" : "▸"} ${fmtMonth(s.key)}</span>
+                  <span style="color:var(--mint);font-weight:600;">${fmt(s.total)}</span>
+                </div>
+                ${isOpen ? `<div class="nw-hist-expand">${detailHtml}</div>` : ""}
+              </div>`;
+            }).join("");
+
+            listEl.querySelectorAll(".nw-snap-list-main").forEach(row => {
+              row.addEventListener("click", () => {
+                const key = row.dataset.key;
+                if (snapListExpanded.has(key)) snapListExpanded.delete(key);
+                else snapListExpanded.add(key);
+                renderSnapshotsList();
               });
+            });
+            listEl.querySelectorAll(".nw-snap-list-edit").forEach(btn => {
+              btn.addEventListener("click", e => { e.stopPropagation(); editSnapshot(btn.dataset.key); });
+            });
+            listEl.querySelectorAll(".nw-snap-list-del").forEach(btn => {
+              btn.addEventListener("click", e => { e.stopPropagation(); deleteSnapshotWithUndo(btn.dataset.key); });
             });
           }
 
