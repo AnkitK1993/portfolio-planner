@@ -413,6 +413,15 @@ export function editSnapshot(key) {
             renderNetWorth();
             const msg = el("nwSnapMsg");
             if (msg) msg.textContent = "Editing " + fmtMonth(key) + " — adjust values in Update Assets and click Update";
+            // The fields to edit live in the separate Update Assets card —
+            // without opening (and scrolling to) it, the only visible
+            // change from clicking Edit is a small message + button label
+            // here in Snapshots, which reads as "nothing happened".
+            const entervalues = el("txp-entervalues");
+            if (entervalues) {
+              entervalues.classList.add("open");
+              entervalues.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
           }
 
 // Transactions tab's Snapshots card — a lighter-weight list than Monthly
