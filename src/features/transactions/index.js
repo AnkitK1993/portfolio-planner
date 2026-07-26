@@ -808,7 +808,7 @@ export function renderTxnCharts(txns) {
                     }
 
                     return `<div class="nw-hist-item">
-                      <div class="nw-hist-main nw-snap-list-main" data-fid="${fid}">
+                      <div class="nw-hist-main txn-fund-list-main" data-fid="${fid}">
                         <span style="color:var(--dim)">${isOpen ? "▾" : "▸"} ${fundName(fid)}</span>
                         <span>
                           <span style="color:var(--mint);font-weight:600;">${fmt(amt)}</span>
@@ -819,7 +819,7 @@ export function renderTxnCharts(txns) {
                     </div>`;
                   }).join("");
 
-                fundListEl.querySelectorAll(".nw-snap-list-main").forEach(row => {
+                fundListEl.querySelectorAll(".txn-fund-list-main").forEach(row => {
                   row.addEventListener("click", () => {
                     const fid = row.dataset.fid;
                     if (txnFundExpanded.has(fid)) txnFundExpanded.delete(fid);

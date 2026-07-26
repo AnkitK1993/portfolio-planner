@@ -601,6 +601,32 @@
         .acc-body { transition: none; }
       }
 
+      /* ── Card reordering (edit mode only) — see core/cardOrder.js ──
+         Prepended as the first child of every reorderable card, shown/
+         hidden via inline style rather than a CSS editMode selector since
+         there's no body-level class to hook (unlike .edit-mode further
+         below, which only affects a few specific inline-edit fields). */
+      .card-reorder-bar {
+        display: none;
+        align-items: center;
+        justify-content: space-between;
+        background: rgba(255,255,255,0.03);
+        border: 1px dashed rgba(255,255,255,0.15);
+        border-radius: 8px;
+        padding: 5px 8px 5px 10px;
+        margin-bottom: 10px;
+        font-size: 10px;
+        color: var(--dim);
+      }
+      .card-reorder-bar button {
+        background: none; border: 1px solid var(--line); border-radius: 6px;
+        color: var(--txt); width: 26px; height: 22px; font-size: 9px; cursor: pointer;
+        margin-left: 5px; display: inline-flex; align-items: center; justify-content: center;
+        transition: border-color 0.15s, color 0.15s;
+      }
+      .card-reorder-bar button:hover:not(:disabled) { border-color: var(--mint); color: var(--mint); }
+      .card-reorder-bar button:disabled { opacity: 0.25; cursor: default; }
+
       /* ── Generic collapsible card header (Expenses, Net Worth cards) ──
          Shared by any .card that wraps its body in createCollapsible() —
          layout only; the open/closed *behavior* comes from .acc-header/

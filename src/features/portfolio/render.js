@@ -1,4 +1,5 @@
 import { EQ_FUNDS, LIQ_FUNDS, rtnMode, state } from "../../core/state.js";
+import { applyAllCardOrders } from "../../core/cardOrder.js";
 import { clamp, fmt, pct, roundUpInvest } from "../../core/format.js";
 import { el } from "../../core/dom.js";
 import { cachedPortfolioXirr, fundXirr } from "../../domain/xirr.js";
@@ -359,5 +360,6 @@ export function render() {
             const _activeTab = document.querySelector(".tab-section.active")?.id;
             if (_activeTab === "tab-forecast") renderForecast();
             if (_activeTab === "tab-rebalance") renderRebalance();
+            applyAllCardOrders();
             setAnimOnRender(false); // reset after first render; re-set by navigateTo()
           }

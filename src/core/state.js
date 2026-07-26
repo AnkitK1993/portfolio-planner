@@ -82,6 +82,7 @@ export function defaultState() {
               returnsLog: [],
               calendarNotes: [],
               rebalance: { sections: defaultRebSections() },
+              cardOrder: {},
               _meta: { v: 0, savedAt: null, syncedAt: null },
             };
           }
@@ -149,6 +150,7 @@ export function loadState() {
                 returnsLog: Array.isArray(s.returnsLog) ? s.returnsLog : [],
                 calendarNotes: Array.isArray(s.calendarNotes) ? s.calendarNotes : [],
                 rebalance: { sections: Array.isArray(s.rebalance?.sections) ? s.rebalance.sections : defaultRebSections() },
+                cardOrder: (s.cardOrder && typeof s.cardOrder === "object") ? s.cardOrder : {},
                 _meta: { ...def._meta, ...(s._meta || {}) },
               };
             } catch {

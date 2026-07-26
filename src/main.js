@@ -4,6 +4,7 @@ import "./styles/components.css";
 
 import { EQ_FUNDS, LIQ_FUNDS, editMode, privacyMode, saveState, setEditMode, setPrivacyMode, state, syncFundArrays, toggleEditMode, toggleRtnMode } from "./core/state.js";
 import { NW_FIELDS } from "./core/constants.js";
+import { registerCardOrder } from "./core/cardOrder.js";
 import { UI, closeNavDropdowns, collapseTxpCard, navigateTo, openNavDropdown } from "./core/ui.js";
 import { setRenderTrigger, setTabActivateHandler } from "./core/appEvents.js";
 import { addEquityFund, addLiquidFund, setForecastField, setNetworthField } from "./store/actions.js";
@@ -430,6 +431,17 @@ const sumToggleAll = makeToggleAllGroup("sumToggleAllBtn");
             ["txnDonutToggle", "txnDonutCollBody", null],
           ].forEach(([headerId, bodyId, previewId]) => sumToggleAll.add(headerId, bodyId, previewId));
 sumToggleAll.refresh();
+// Card reordering (Edit mode only) — up/down arrows, not drag-and-drop,
+// so it needs no extra library and works the same on touch and mouse.
+// Health Score stays pinned first (excluded), same as it's excluded
+// from the collapsible/expand-all group above.
+registerCardOrder("summary", [
+            "sumExpensesCard", "sumFireCard", "sumXirrCard", "sumAllocCard",
+            "sumCompositionCard", "sumStreakCard", "sumFundCard", "sumTaxCard",
+            "sumHeatmapCard", "sumIdealCard", "sumCalCard", "txnCharts",
+          ]);
+registerCardOrder("transactions", ["txp-history", "txp-curval", "txp-sip", "txp-entervalues", "txp-snapshot"]);
+registerCardOrder("networth", ["nwBreakdownCard", "nwHistCard", "nwChartCard", "nwCompChartCard", "nwProjCard"]);
 // Returns badges (Total bar + Liquid/Equity division rows) toggle between
 // absolute return% and XIRR on click — all badges switch together since
 // they're one shared display preference (see rtnMode in core/state.js).
