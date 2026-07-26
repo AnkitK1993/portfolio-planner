@@ -253,6 +253,7 @@ el("fcRate").addEventListener("input", (e) => {
             saveState();
           });
 el("fcSlider").addEventListener("input", () => renderForecast());
+el("fcCompareExtra").addEventListener("input", () => renderForecast());
 if (fcStepUpEl) fcStepUpEl.addEventListener("input", (e) => {
             setForecastField("stepUp", parseFloat(e.target.value) || 0);
             renderForecast(); saveState();

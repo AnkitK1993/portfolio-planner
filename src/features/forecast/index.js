@@ -2,7 +2,7 @@ import { _animOnRender, animateNumber } from "../../core/animate.js";
 import { editMode, state } from "../../core/state.js";
 import { el } from "../../core/dom.js";
 import { fcGoalMonthly, fcProjectedAdv, fcTotalInvested } from "../../domain/forecastMath.js";
-import { fmt } from "../../core/format.js";
+import { fmt, num } from "../../core/format.js";
 
 export function renderForecast() {
             const fc = state.forecast || {};
@@ -15,6 +15,7 @@ export function renderForecast() {
             const dispEl     = el("fcDisplay");
             const chartWrap  = document.querySelector(".fc-chart-wrap");
             const sliderWrap = document.querySelector(".fc-slider-wrap");
+            const compareWrap = el("fcCompareWrap");
 
             if (projInputs) projInputs.style.display = mode === "project" ? "" : "none";
             if (goalInputs) goalInputs.style.display  = mode === "goal"    ? "" : "none";
@@ -22,6 +23,7 @@ export function renderForecast() {
             if (dispEl)     dispEl.style.display       = mode === "project" ? "" : "none";
             if (chartWrap)  chartWrap.style.display    = mode === "project" ? "" : "none";
             if (sliderWrap) sliderWrap.style.display   = mode === "project" ? "" : "none";
+            if (compareWrap) compareWrap.style.display = mode === "project" ? "" : "none";
 
             if (mode === "goal") { renderGoalMode(); return; }
 
@@ -89,6 +91,23 @@ export function renderForecast() {
 
             drawForecastChart(invest, monthly, rate, activeRate, step, stepUp, inflation, useInflation, showAll, scenario);
             updateFcSliderFill(step);
+
+            // What-if: extra monthly contribution, at the same rate/step-
+            // up/time horizon the slider + scenario picker above already
+            // use — reuses fcProjectedAdv() rather than a second model, so
+            // this always agrees with whatever the main projection shows.
+            const compareResultEl = el("fcCompareResult");
+            if (compareResultEl) {
+              const extra = num(el("fcCompareExtra")?.value);
+              if (extra > 0 && step > 0) {
+                let withExtra = fcProjectedAdv(0, invest, monthly + extra, activeRate, T, stepUp);
+                if (useInflation && T > 0) withExtra /= Math.pow(1 + inflation / 100, T);
+                const diff = withExtra - projected;
+                compareResultEl.innerHTML = `At ${timeLabel}, that's <b style="color:var(--mint)">${fmt(Math.round(withExtra))}</b> instead of ${fmt(Math.round(projected))} — <b style="color:var(--mint)">+${fmt(Math.round(diff))} more</b>.`;
+              } else {
+                compareResultEl.innerHTML = "";
+              }
+            }
 
             // Sync inputs
             const safe = (id, v) => { const e = el(id); if (e && document.activeElement !== e) e.value = v || ""; };
