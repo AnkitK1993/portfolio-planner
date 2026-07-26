@@ -409,7 +409,34 @@ el("nwSnapDeleteBtn").addEventListener("click", () => {
               renderNwProjection();
             });
           });
-createCollapsible({ header: el("nwEnterToggle"), body: el("nwEnterBody") });
+// Every collapsible card on the Net Worth tab (Enter Values + the 6 cards
+// below it) is grouped here so #nwToggleAllBtn can expand/collapse them
+// all together — the button's label always reflects the action the NEXT
+// click performs, refreshed whenever any card (individually or via the
+// master button) changes open state.
+const nwCollapsibles = [];
+function refreshNwToggleAllBtn() {
+            const btn = el("nwToggleAllBtn");
+            if (!btn || !nwCollapsibles.length) return;
+            btn.textContent = nwCollapsibles.every(c => c.isOpen()) ? "Collapse All" : "Expand All";
+          }
+[
+            ["nwEnterToggle", "nwEnterBody"],
+            ["nwLiabToggle", "nwLiabBody"],
+            ["nwBreakdownToggle", "nwBreakdownBody"],
+            ["nwHistToggle", "nwHistBody"],
+            ["nwChartToggle", "nwChartBody"],
+            ["nwCompChartToggle", "nwCompChartBody"],
+            ["nwProjToggle", "nwProjBody"],
+          ].forEach(([headerId, bodyId]) => {
+            nwCollapsibles.push(createCollapsible({ header: el(headerId), body: el(bodyId), onToggle: refreshNwToggleAllBtn }));
+          });
+el("nwToggleAllBtn").addEventListener("click", () => {
+            const allOpen = nwCollapsibles.every(c => c.isOpen());
+            nwCollapsibles.forEach(c => (allOpen ? c.close() : c.open()));
+            refreshNwToggleAllBtn();
+          });
+refreshNwToggleAllBtn();
 createCollapsible({ header: el("holdingsToggle"), body: el("holdingsBody") });
 // Expenses card starts collapsed and shows the Total This Month figure in
 // its header while collapsed — renderExpenses() keeps #expCollapsedTotal

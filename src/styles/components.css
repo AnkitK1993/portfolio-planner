@@ -610,20 +610,26 @@
         .acc-body { transition: none; }
       }
 
-      /* ── Expenses card ── */
-      .exp-card-head {
+      /* ── Generic collapsible card header (Expenses, Net Worth cards) ──
+         Shared by any .card that wraps its body in createCollapsible() —
+         layout only; the open/closed *behavior* comes from .acc-header/
+         .acc-body above. */
+      .card-toggle-head {
         width: 100%; display: flex; align-items: center; gap: 10px;
         background: none; border: none; padding: 0; margin: 0;
         cursor: pointer; text-align: left; font-family: inherit; color: inherit;
       }
-      .exp-card-head-text { flex: 1; min-width: 0; }
+      .card-toggle-head-text { flex: 1; min-width: 0; }
+      .card-toggle-chevron { font-size: 11px; color: var(--dim); transition: transform 0.25s; flex-shrink: 0; }
+      .card-toggle-head.open .card-toggle-chevron { transform: rotate(180deg); }
+      .card-toggle-body-inner { margin-top: 12px; }
+
+      /* ── Expenses card — collapsed-total preview is expense-specific ── */
       .exp-card-collapsed-total {
         font-family: "Roboto Mono", monospace; font-size: 15px; font-weight: 700;
         color: var(--mint); white-space: nowrap; flex-shrink: 0;
       }
-      .exp-card-head.open .exp-card-collapsed-total { display: none; }
-      .exp-card-chevron { font-size: 11px; color: var(--dim); transition: transform 0.25s; flex-shrink: 0; }
-      .exp-card-head.open .exp-card-chevron { transform: rotate(180deg); }
+      .card-toggle-head.open .exp-card-collapsed-total { display: none; }
       /* Spacing lives on the inner content wrapper (#sumExpensesBody), not
          on .exp-card-body itself — the same reason .coll-body-inner exists
          separately from .coll-body: a margin/padding on the element whose

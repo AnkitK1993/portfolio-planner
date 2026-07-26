@@ -146,6 +146,29 @@
         line-height: 1.55;
         max-width: 640px;
       }
+      /* Opt-in modifier — only the Net Worth tab uses this so every other
+         tab's plain block-stacked h1/p layout stays untouched. */
+      .pg-head-with-action {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .pg-head-toggle-all {
+        flex-shrink: 0;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        color: var(--txt);
+        font-family: "Roboto", sans-serif;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 7px 14px;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s;
+      }
+      .pg-head-toggle-all:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.2); }
 
       /* ── SECTION HEADER ── */
       .sec-head {

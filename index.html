@@ -231,13 +231,13 @@
 
         <!-- Expenses (collapsed by default; shows Total This Month while collapsed) -->
         <div class="card" id="sumExpensesCard" style="display:none;margin-bottom:12px">
-          <button class="exp-card-head" id="expCardToggle" aria-expanded="false">
-            <div class="exp-card-head-text">
+          <button class="card-toggle-head" id="expCardToggle" aria-expanded="false">
+            <div class="card-toggle-head-text">
               <div class="sec-head" style="margin-bottom:4px">Expenses</div>
               <div style="font-size:10px;color:var(--dim)">Fixed monthly costs, plus this month's Bank spending (auto-tracked from the Net Worth tab)</div>
             </div>
             <span class="exp-card-collapsed-total" id="expCollapsedTotal"></span>
-            <span class="exp-card-chevron">▾</span>
+            <span class="card-toggle-chevron">▾</span>
           </button>
           <div class="exp-card-body" id="expCardBody">
             <div id="sumExpensesBody"></div>
@@ -359,9 +359,12 @@
 
       <!-- ═══════════════ NET WORTH ═══════════════ -->
       <section class="tab-section" id="tab-networth">
-        <div class="pg-head">
-          <h1>Net <span class="accent">Worth</span></h1>
-          <p>Monthly snapshot tracker. Save each month to build your growth history.</p>
+        <div class="pg-head pg-head-with-action">
+          <div>
+            <h1>Net <span class="accent">Worth</span></h1>
+            <p>Monthly snapshot tracker. Save each month to build your growth history.</p>
+          </div>
+          <button class="pg-head-toggle-all" id="nwToggleAllBtn" title="Expand or collapse all cards below">Expand All</button>
         </div>
 
         <!-- Hero with inline sparkline -->
@@ -423,45 +426,99 @@
              -del-btn classes from the Expenses card's fixed-items list —
              same name+amount+delete interaction, no new CSS needed. -->
         <div class="card" id="nwLiabilitiesCard" style="margin-bottom:12px">
-          <div class="sec-head" style="margin-bottom:4px">Liabilities</div>
-          <div style="font-size:10px;color:var(--dim);margin-bottom:12px">Loans &amp; EMI outstanding balances — subtracted from your Net Worth total</div>
-          <div id="nwLiabilitiesList"></div>
-          <button class="btn btn-ghost exp-add-btn" id="nwLiabilityAddBtn" style="display:none;">+ Add Liability</button>
+          <button class="card-toggle-head" id="nwLiabToggle" aria-expanded="false">
+            <div class="card-toggle-head-text">
+              <div class="sec-head" style="margin-bottom:4px">Liabilities</div>
+              <div style="font-size:10px;color:var(--dim)">Loans &amp; EMI outstanding balances — subtracted from your Net Worth total</div>
+            </div>
+            <span class="card-toggle-chevron">▾</span>
+          </button>
+          <div class="card-toggle-body" id="nwLiabBody">
+            <div class="card-toggle-body-inner">
+              <div id="nwLiabilitiesList"></div>
+              <button class="btn btn-ghost exp-add-btn" id="nwLiabilityAddBtn" style="display:none;">+ Add Liability</button>
+            </div>
+          </div>
         </div>
 
         <!-- Asset Breakdown — own card -->
         <div class="card" style="margin-bottom:12px">
-          <div class="sec-head" style="margin-bottom:12px">Asset Breakdown</div>
-          <div id="nwBreakdown"></div>
+          <button class="card-toggle-head" id="nwBreakdownToggle" aria-expanded="false">
+            <div class="card-toggle-head-text">
+              <div class="sec-head">Asset Breakdown</div>
+            </div>
+            <span class="card-toggle-chevron">▾</span>
+          </button>
+          <div class="card-toggle-body" id="nwBreakdownBody">
+            <div class="card-toggle-body-inner">
+              <div id="nwBreakdown"></div>
+            </div>
+          </div>
         </div>
 
         <!-- Monthly History -->
         <div class="card" style="margin-bottom:12px">
-          <div class="sec-head" style="margin-bottom:12px">Monthly History</div>
-          <div id="nwHistory"></div>
+          <button class="card-toggle-head" id="nwHistToggle" aria-expanded="false">
+            <div class="card-toggle-head-text">
+              <div class="sec-head">Monthly History</div>
+            </div>
+            <span class="card-toggle-chevron">▾</span>
+          </button>
+          <div class="card-toggle-body" id="nwHistBody">
+            <div class="card-toggle-body-inner">
+              <div id="nwHistory"></div>
+            </div>
+          </div>
         </div>
 
         <!-- Net Worth Over Time -->
         <div class="card" id="nwChartCard" style="display:none;margin-bottom:12px">
-          <div class="sec-head" style="margin-bottom:10px">Net Worth Over Time</div>
-          <svg id="nwLineChart" viewBox="0 0 600 150" preserveAspectRatio="none" style="width:100%;height:140px;display:block;"></svg>
-          <div id="nwChartStats" style="margin-top:8px;padding-top:10px;border-top:1px solid var(--line);display:flex;gap:16px;flex-wrap:wrap;"></div>
-          <div id="nwChartLegend" style="display:flex;gap:16px;margin-top:8px;"></div>
+          <button class="card-toggle-head" id="nwChartToggle" aria-expanded="false">
+            <div class="card-toggle-head-text">
+              <div class="sec-head">Net Worth Over Time</div>
+            </div>
+            <span class="card-toggle-chevron">▾</span>
+          </button>
+          <div class="card-toggle-body" id="nwChartBody">
+            <div class="card-toggle-body-inner">
+              <svg id="nwLineChart" viewBox="0 0 600 150" preserveAspectRatio="none" style="width:100%;height:140px;display:block;"></svg>
+              <div id="nwChartStats" style="margin-top:8px;padding-top:10px;border-top:1px solid var(--line);display:flex;gap:16px;flex-wrap:wrap;"></div>
+              <div id="nwChartLegend" style="display:flex;gap:16px;margin-top:8px;"></div>
+            </div>
+          </div>
         </div>
 
         <!-- Net Worth Composition Over Time -->
         <div class="card" id="nwCompChartCard" style="display:none;margin-bottom:12px">
-          <div class="sec-head" style="margin-bottom:4px">Composition Over Time</div>
-          <div style="font-size:10px;color:var(--dim);margin-bottom:10px">How your net worth is split across asset types each month</div>
-          <svg id="nwCompChart" viewBox="0 0 600 150" preserveAspectRatio="none" style="width:100%;height:140px;display:block;"></svg>
-          <div id="nwCompChartLegend" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);"></div>
+          <button class="card-toggle-head" id="nwCompChartToggle" aria-expanded="false">
+            <div class="card-toggle-head-text">
+              <div class="sec-head" style="margin-bottom:4px">Composition Over Time</div>
+              <div style="font-size:10px;color:var(--dim)">How your net worth is split across asset types each month</div>
+            </div>
+            <span class="card-toggle-chevron">▾</span>
+          </button>
+          <div class="card-toggle-body" id="nwCompChartBody">
+            <div class="card-toggle-body-inner">
+              <svg id="nwCompChart" viewBox="0 0 600 150" preserveAspectRatio="none" style="width:100%;height:140px;display:block;"></svg>
+              <div id="nwCompChartLegend" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);"></div>
+            </div>
+          </div>
         </div>
 
         <!-- Projections -->
         <div class="card">
-          <div class="sec-head" style="margin-bottom:12px">Projections</div>
-          <div id="nwMilestone"></div>
-          <div id="nwProjection"></div>
+          <button class="card-toggle-head" id="nwProjToggle" aria-expanded="false">
+            <div class="card-toggle-head-text">
+              <div class="sec-head">Projections</div>
+            </div>
+            <span class="card-toggle-chevron">▾</span>
+          </button>
+          <div class="card-toggle-body" id="nwProjBody">
+            <div class="card-toggle-body-inner">
+              <div id="nwMilestone"></div>
+              <div id="nwProjection"></div>
+            </div>
+          </div>
         </div>
 
         <p class="foot">
