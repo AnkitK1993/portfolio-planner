@@ -10,7 +10,7 @@
 // expressed and where it lives. (See the architecture-audit notes from
 // this session for the exact call sites each of these replaces.)
 
-import { EQ_FUNDS, LIQ_FUNDS, state } from "../core/state.js";
+import { EQ_FUNDS, LIQ_FUNDS, othersOfSnap, state } from "../core/state.js";
 
 function fundBucket(fundId) {
             return LIQ_FUNDS.some(f => f.id === fundId) ? state.liquid : state.equity;
@@ -123,4 +123,48 @@ export function addRebalanceSection(section) {
 export function setIdealWeight(category, weight) {
             if (!state.idealWeights) state.idealWeights = {};
             state.idealWeights[category] = weight;
+          }
+
+// ── Net worth — replaces direct state.networth[f.id] = ... reach-throughs
+// in networth/index.js's buildNwGrid() and main.js's snapshot-edit/cancel
+// handlers ──
+export function setNetworthField(fieldId, value) {
+            state.networth[fieldId] = value;
+          }
+
+export function saveSnapshot(key, snap) {
+            if (!state.networth.snapshots) state.networth.snapshots = {};
+            state.networth.snapshots[key] = snap;
+          }
+
+export function deleteSnapshot(key) {
+            if (state.networth.snapshots) delete state.networth.snapshots[key];
+          }
+
+// Recomputes a snapshot's MF Value (and the total that depends on it) in
+// place — replaces renderNwHistory()'s self-healing block, which corrects
+// any snapshot whose saved MF figure has drifted from what the
+// transaction history as-of that month actually says.
+export function healSnapshotMf(key, correctMf) {
+            const snap = state.networth.snapshots?.[key];
+            if (!snap) return;
+            snap.mf = correctMf;
+            snap.total = correctMf + (snap.mfProfit || 0) + othersOfSnap(snap);
+          }
+
+// ── Forecast — replaces main.js's 11 direct state.forecast.xxx = ... sites ──
+export function setForecastField(field, value) {
+            state.forecast[field] = value;
+          }
+
+// ── Adding a fund — replaces main.js's addLiqBtn/addEqBtn handlers,
+// which built the fund object and pushed to the order array inline ──
+export function addLiquidFund(id, fund) {
+            state.liquid[id] = fund;
+            state.liquidOrder = [...(state.liquidOrder || []), id];
+          }
+
+export function addEquityFund(id, fund) {
+            state.equity[id] = fund;
+            state.equityOrder = [...(state.equityOrder || []), id];
           }

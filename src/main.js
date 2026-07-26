@@ -6,6 +6,7 @@ import { EQ_FUNDS, LIQ_FUNDS, editMode, privacyMode, saveState, setEditMode, set
 import { NW_FIELDS } from "./core/constants.js";
 import { UI, closeNavDropdowns, collapseTxpCard, navigateTo, openNavDropdown, toggleColl } from "./core/ui.js";
 import { setRenderTrigger, setTabActivateHandler } from "./core/appEvents.js";
+import { addEquityFund, addLiquidFund, deleteSnapshot, setForecastField, setNetworthField } from "./store/actions.js";
 import { _hasLocalData, authUser, fbAuthReady, fbEnabled, flushCloudSave, handleSignInResult, initFirebase, loadBackupList, resetBackupPanel, saveManualBackup } from "./infra/firebase.js";
 import { _upcomingHead } from "./features/portfolio/upcoming.js";
 import { animateNumber } from "./core/animate.js";
@@ -239,34 +240,34 @@ animateNumber._ctr = 0;
             if (el("fcShowAll")) el("fcShowAll").checked = !!fc.fcShowAll;
           })();
 el("fcInvest").addEventListener("input", (e) => {
-            state.forecast.investments = num(e.target.value);
+            setForecastField("investments", num(e.target.value));
             renderForecast();
             saveState();
           });
 el("fcMonthly").addEventListener("input", (e) => {
-            state.forecast.monthlyInvest = num(e.target.value);
+            setForecastField("monthlyInvest", num(e.target.value));
             renderForecast();
             saveState();
           });
 el("fcRate").addEventListener("input", (e) => {
-            state.forecast.annualRate = parseFloat(e.target.value) || 0;
+            setForecastField("annualRate", parseFloat(e.target.value) || 0);
             renderForecast();
             saveState();
           });
 el("fcSlider").addEventListener("input", () => renderForecast());
 if (fcStepUpEl) fcStepUpEl.addEventListener("input", (e) => {
-            state.forecast.stepUp = parseFloat(e.target.value) || 0;
+            setForecastField("stepUp", parseFloat(e.target.value) || 0);
             renderForecast(); saveState();
           });
 if (fcInflEl) fcInflEl.addEventListener("change", (e) => {
-            state.forecast.useInflation = e.target.checked;
+            setForecastField("useInflation", e.target.checked);
             renderForecast(); saveState();
           });
 document.querySelectorAll(".fc-mode-btn").forEach(btn => {
             btn.addEventListener("click", () => {
               const mode = btn.dataset.mode;
               if (!mode) return;
-              state.forecast.mode = mode;
+              setForecastField("mode", mode);
               document.querySelectorAll(".fc-mode-btn").forEach(b => b.classList.toggle("active", b.dataset.mode === mode));
               renderForecast(); saveState();
             });
@@ -275,22 +276,22 @@ document.querySelectorAll(".fc-scenario-btn").forEach(btn => {
             btn.addEventListener("click", () => {
               const sc = btn.dataset.sc;
               if (!sc) return;
-              state.forecast.fcScenario = sc;
+              setForecastField("fcScenario", sc);
               document.querySelectorAll(".fc-scenario-btn").forEach(b => b.classList.toggle("active", b.dataset.sc === sc));
               renderForecast(); saveState();
             });
           });
 if (fcShowAllEl) fcShowAllEl.addEventListener("change", (e) => {
-            state.forecast.fcShowAll = e.target.checked;
+            setForecastField("fcShowAll", e.target.checked);
             renderForecast(); saveState();
           });
 ["fcGoalBank","fcGoalTarget","fcGoalYears","fcGoalRate"].forEach(id => {
             const e = el(id); if (!e) return;
             e.addEventListener("input", () => {
-              state.forecast.goalBank   = num(el("fcGoalBank")?.value);
-              state.forecast.goalTarget = num(el("fcGoalTarget")?.value);
-              state.forecast.goalYears  = parseFloat(el("fcGoalYears")?.value) || 10;
-              state.forecast.goalRate   = parseFloat(el("fcGoalRate")?.value)  || 12;
+              setForecastField("goalBank",   num(el("fcGoalBank")?.value));
+              setForecastField("goalTarget", num(el("fcGoalTarget")?.value));
+              setForecastField("goalYears",  parseFloat(el("fcGoalYears")?.value) || 10);
+              setForecastField("goalRate",   parseFloat(el("fcGoalRate")?.value)  || 12);
               renderForecast(); saveState();
             });
           });
@@ -306,8 +307,7 @@ el("addLiqBtn").addEventListener("click", () => {
             while (order.includes("liq" + n)) n++;
             const newId = "liq" + n;
             const defaultName = "Liquid Fund " + n;
-            state.liquid[newId] = { name: defaultName, label: defaultName, paid: 0, value: 0, reserve: 0, target: 0 };
-            state.liquidOrder = [...order, newId];
+            addLiquidFund(newId, { name: defaultName, label: defaultName, paid: 0, value: 0, reserve: 0, target: 0 });
             syncFundArrays();
             rebuildFundCollapsibles();
             render();
@@ -319,8 +319,7 @@ el("addEqBtn").addEventListener("click", () => {
             while (order.includes("eq" + n)) n++;
             const newId = "eq" + n;
             const defaultName = "Equity Fund " + n;
-            state.equity[newId] = { name: defaultName, label: defaultName, paid: 0, shown: 0, target: 0, sipAmt: 0, sipDate: 5, sipPaidAmounts: {} };
-            state.equityOrder = [...order, newId];
+            addEquityFund(newId, { name: defaultName, label: defaultName, paid: 0, shown: 0, target: 0, sipAmt: 0, sipDate: 5, sipPaidAmounts: {} });
             syncFundArrays();
             rebuildFundCollapsibles();
             render();
@@ -349,7 +348,7 @@ buildNwGrid();
 el("nwSnapshotBtn").addEventListener("click", takeSnapshot);
 el("nwSnapCancelBtn").addEventListener("click", () => {
             if (nwLiveSaved) {
-              NW_FIELDS.forEach(f => { state.networth[f.id] = nwLiveSaved[f.id] || 0; });
+              NW_FIELDS.forEach(f => setNetworthField(f.id, nwLiveSaved[f.id] || 0));
               setNwLiveSaved(null);
             }
             setNwEditingKey(null);
@@ -363,7 +362,7 @@ el("nwSnapEditBtn").addEventListener("click", () => {
             if (!snap) return;
             setNwLiveSaved({});
             NW_FIELDS.forEach(f => { nwLiveSaved[f.id] = state.networth[f.id] || 0; });
-            NW_FIELDS.forEach(f => { state.networth[f.id] = snap[f.id] || 0; });
+            NW_FIELDS.forEach(f => setNetworthField(f.id, snap[f.id] || 0));
             setNwEditingKey(key);
             buildNwGrid();
             renderNetWorth();
@@ -373,7 +372,7 @@ el("nwSnapEditBtn").addEventListener("click", () => {
 el("nwSnapDeleteBtn").addEventListener("click", () => {
             const key = snapshotKey();
             UI.confirm("Delete snapshot for " + fmtMonth(key) + "?", "Delete snapshot", "Delete", () => {
-              if (state.networth.snapshots) delete state.networth.snapshots[key];
+              deleteSnapshot(key);
               saveState();
               renderNetWorth();
               renderNwHistory();

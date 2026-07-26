@@ -5,6 +5,7 @@ import { avgMonthlyGrowthRate, buildCurrentSnapshot, mfTotalValue, mfUnrealizedG
 import { editMode, normalizeSnap, othersOfSnap, saveState, snapshotKey, state } from "../../core/state.js";
 import { el } from "../../core/dom.js";
 import { fmt, fmtCompact, fmtMonth, fmtNum, num } from "../../core/format.js";
+import { deleteSnapshot, healSnapshotMf, saveSnapshot, setNetworthField } from "../../store/actions.js";
 
 export let nwEditingKey  = null;
 
@@ -36,7 +37,7 @@ export function buildNwGrid() {
               const inp = el("nw-" + f.id);
               if (!inp) return;
               inp.addEventListener("input", (e) => {
-                state.networth[f.id] = num(e.target.value);
+                setNetworthField(f.id, num(e.target.value));
                 renderNetWorth();
               });
               inp.addEventListener("focus", () => { const v = num(inp.value); inp.value = v > 0 ? v : ""; });
@@ -49,7 +50,7 @@ export function renderNetWorth() {
             const profit = mfUnrealizedGain();
             // While editing a historical snapshot, keep its frozen unrealized
             // gain instead of overwriting it with today's live figure.
-            if (!nwEditingKey) state.networth.mfProfit = profit;
+            if (!nwEditingKey) setNetworthField("mfProfit", profit);
             const displayedProfit = nwEditingKey ? (state.networth.mfProfit || 0) : profit;
             const inp = el("nw-mfProfit");
             if (inp) inp.value = displayedProfit !== 0 ? Math.round(displayedProfit).toLocaleString("en-IN") : "";
@@ -186,15 +187,14 @@ export function takeSnapshot() {
             // state.networth.mfProfit already holds the correct figure here —
             // live if creating a new snapshot, frozen historical if editing one.
             const total = mfVal + (state.networth.mfProfit || 0) + other;
-            if (!state.networth.snapshots) state.networth.snapshots = {};
             const doSave = () => {
               const snap = { mf: mfVal, total, savedAt: new Date().toISOString() };
               NW_FIELDS.forEach((f) => { snap[f.id] = state.networth[f.id] || 0; });
-              state.networth.snapshots[key] = snap;
+              saveSnapshot(key, snap);
               if (nwEditingKey) {
                 // restore live values and exit edit mode
                 if (nwLiveSaved) {
-                  NW_FIELDS.forEach(f => { state.networth[f.id] = nwLiveSaved[f.id] || 0; });
+                  NW_FIELDS.forEach(f => setNetworthField(f.id, nwLiveSaved[f.id] || 0));
                   nwLiveSaved = null;
                 }
                 nwEditingKey = null;
@@ -228,8 +228,7 @@ export function renderNwHistory() {
             Object.keys(snaps).forEach((k) => {
               const correctMf = mfValueAsOf(k);
               if ((snaps[k].mf || 0) !== correctMf) {
-                snaps[k].mf = correctMf;
-                snaps[k].total = correctMf + (snaps[k].mfProfit || 0) + othersOfSnap(snaps[k]);
+                healSnapshotMf(k, correctMf);
                 healed = true;
               }
             });
@@ -332,7 +331,7 @@ export function renderNwHistory() {
                 e.stopPropagation();
                 const key = btn.dataset.key;
                 UI.confirm("Delete snapshot for " + fmtMonth(key) + "?", "Delete snapshot", "Delete", () => {
-                  if (state.networth.snapshots) delete state.networth.snapshots[key];
+                  deleteSnapshot(key);
                   nwHistExpanded.delete(key);
                   nwHistCompare.delete(key);
                   saveState();
