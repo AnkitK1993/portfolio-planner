@@ -36,7 +36,7 @@ export function openManageSips() {
                 </div>`;
               });
             });
-            const sipTotal = totalMonthlySip();
+            const sipTotal = totalMonthlySip(LIQ_FUNDS, EQ_FUNDS, state.liquid, state.equity);
             html += `<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;">
               <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--dim);">Total Monthly SIP</span>
               <span style="font-family:'Roboto Mono',monospace;font-size:15px;font-weight:700;color:var(--mint);">${fmt(sipTotal)}</span>

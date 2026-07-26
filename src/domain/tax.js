@@ -1,5 +1,3 @@
-import { EQ_FUNDS, LIQ_FUNDS, state } from "../core/state.js";
-
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const LT_HOLDING_DAYS = 365; // ">12 months" approximated in days
 
@@ -21,8 +19,8 @@ export const STCG_RATE = 0.20;
 // the two without needing an independent, possibly-drifted basis figure.
 const _fifoCache = new Map();
 
-function fifoLtStFractions(fundId) {
-            const txns = (state.transactions || [])
+function fifoLtStFractions(fundId, transactions) {
+            const txns = (transactions || [])
               .filter(t => t.fundId === fundId && t.date)
               .sort((a, b) => a.date.localeCompare(b.date));
 
@@ -83,14 +81,14 @@ function fifoLtStFractions(fundId) {
 //  - Debt/liquid + International-equity gains use a single user-supplied
 //    slab rate rather than real progressive-slab computation.
 // Meant as a directional number, not a filing figure.
-export function estimateCapitalGainsTax() {
-            const taxSlabPct = state.surplus?.taxSlabPct ?? 30;
+export function estimateCapitalGainsTax({ taxSlabPct: taxSlabPctIn, eqFunds, liqFunds, equity, liquid, transactions }) {
+            const taxSlabPct = taxSlabPctIn ?? 30;
             let ltGain = 0, stGain = 0, debtGain = 0, grossValue = 0;
             let excludedGain = 0, excludedFunds = 0;
             let hasAnyHolding = false;
 
-            EQ_FUNDS.forEach(f => {
-              const s = state.equity[f.id];
+            eqFunds.forEach(f => {
+              const s = equity[f.id];
               if (!s) return;
               const basis = s.shown || 0;
               if (basis <= 0) return;
@@ -100,14 +98,14 @@ export function estimateCapitalGainsTax() {
               const gain = cv - basis;
               if (gain <= 0) return;
               if (DEBT_TAXED_EQ_CATEGORIES.has(s.category)) { debtGain += gain; return; }
-              const fracs = fifoLtStFractions(f.id);
+              const fracs = fifoLtStFractions(f.id, transactions);
               if (!fracs) { excludedGain += gain; excludedFunds++; return; }
               ltGain += gain * fracs.ltFrac;
               stGain += gain * fracs.stFrac;
             });
 
-            LIQ_FUNDS.forEach(f => {
-              const s = state.liquid[f.id];
+            liqFunds.forEach(f => {
+              const s = liquid[f.id];
               if (!s) return;
               const basis = s.value || 0;
               if (basis <= 0) return;

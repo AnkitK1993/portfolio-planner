@@ -1,5 +1,3 @@
-import { state } from "../core/state.js";
-
 export function xirrCalc(cashflows) {
             if (!cashflows || cashflows.length < 2) return null;
             let hasPos = false, hasNeg = false, t0 = Infinity;
@@ -35,13 +33,13 @@ export function xirrCalc(cashflows) {
 
 export const _fundXirrCache = new Map();
 
-export function fundXirr(fid, isLiq) {
-            const s = isLiq ? state.liquid[fid] : state.equity[fid];
+export function fundXirr(fid, isLiq, fundState, transactions) {
+            const s = fundState;
             const curVal = isLiq
               ? (s.currentValue || s.value || 0)
               : (s.currentValue || s.shown || 0);
             if (!curVal) return null;
-            const txns = (state.transactions || []).filter(t => t.fundId === fid && t.date && Number(t.afterExpense ?? t.invested) > 0);
+            const txns = (transactions || []).filter(t => t.fundId === fid && t.date && Number(t.afterExpense ?? t.invested) > 0);
             if (!txns.length) return null;
 
             // Key on every transaction's own date+amount (not just count/sum/
@@ -74,12 +72,12 @@ export function fundXirr(fid, isLiq) {
    pass, and reusing that slot here would just repeatedly evict the
    "real" cached headline XIRR other call sites (Summary card, Fund
    Performance total row) rely on. */
-export function rollingPortfolioXirr(sortedSnaps) {
+export function rollingPortfolioXirr(sortedSnaps, transactions) {
             return sortedSnaps.map(s => {
               const [y, m] = s.key.split("-").map(Number);
               const cutoff = new Date(y, m, 1).toISOString().slice(0, 10);
               const asOfMs = new Date(y, m, 0).getTime();
-              const txns = (state.transactions || []).filter(t => t.date && t.date < cutoff && Number(t.afterExpense ?? t.invested) > 0);
+              const txns = (transactions || []).filter(t => t.date && t.date < cutoff && Number(t.afterExpense ?? t.invested) > 0);
               const terminalVal = (s.mf || 0) + (s.mfProfit || 0);
               if (!txns.length || terminalVal <= 0) return { key: s.key, xirr: null };
               const cfs = txns.map(t => {

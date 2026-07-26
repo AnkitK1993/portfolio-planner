@@ -2,7 +2,7 @@ import { NW_FIELDS, OTHER_FIELDS } from "../../core/constants.js";
 import { UI } from "../../core/ui.js";
 import { _animOnRender, animateNumber, animateWidth } from "../../core/animate.js";
 import { avgMonthlyGrowthRate, buildCurrentSnapshot, mfTotalValue, mfUnrealizedGain, mfValueAsOf, nwTotal } from "../../domain/networth.js";
-import { editMode, normalizeSnap, othersOfSnap, saveState, snapshotKey, state } from "../../core/state.js";
+import { editMode, EQ_FUNDS, LIQ_FUNDS, normalizeSnap, othersOfSnap, saveState, snapshotKey, state } from "../../core/state.js";
 import { el } from "../../core/dom.js";
 import { fmt, fmtCompact, fmtMonth, fmtNum, num } from "../../core/format.js";
 import { deleteSnapshot, healSnapshotMf, saveSnapshot, setNetworthField } from "../../store/actions.js";
@@ -46,8 +46,8 @@ export function buildNwGrid() {
           }
 
 export function renderNetWorth() {
-            const mfVal = mfTotalValue();
-            const profit = mfUnrealizedGain();
+            const mfVal = mfTotalValue(LIQ_FUNDS, EQ_FUNDS, state.liquid, state.equity);
+            const profit = mfUnrealizedGain(LIQ_FUNDS, EQ_FUNDS, state.liquid, state.equity);
             // While editing a historical snapshot, keep its frozen unrealized
             // gain instead of overwriting it with today's live figure.
             if (!nwEditingKey) setNetworthField("mfProfit", profit);
@@ -180,7 +180,7 @@ export function takeSnapshot() {
             // MF Value is always derived from transactions dated on or
             // before this snapshot's month — not today's live fund total —
             // so editing a past month's other fields never disturbs it.
-            const mfVal = mfValueAsOf(key);
+            const mfVal = mfValueAsOf(key, LIQ_FUNDS, EQ_FUNDS, state.transactions);
             const other = NW_FIELDS.filter((f) => f.id !== "mfProfit").reduce(
               (s, f) => s + (state.networth[f.id] || 0), 0
             );
@@ -226,7 +226,7 @@ export function renderNwHistory() {
             // previously saved wrong (e.g. overwritten with a live total).
             let healed = false;
             Object.keys(snaps).forEach((k) => {
-              const correctMf = mfValueAsOf(k);
+              const correctMf = mfValueAsOf(k, LIQ_FUNDS, EQ_FUNDS, state.transactions);
               if ((snaps[k].mf || 0) !== correctMf) {
                 healSnapshotMf(k, correctMf);
                 healed = true;
@@ -265,7 +265,7 @@ export function renderNwHistory() {
               let expandHtml = "";
               if (isOpen) {
                 const showCompare = nwHistCompare.has(s.key);
-                const cur = showCompare ? buildCurrentSnapshot() : null;
+                const cur = showCompare ? buildCurrentSnapshot(state.networth, LIQ_FUNDS, EQ_FUNDS, state.liquid, state.equity) : null;
                 expandHtml = (showCompare
                   ? `<div class="nw-hist-cmp-head"><span>Field</span><span>${fmtMonth(s.key)}</span><span>Current</span><span>&Delta;</span></div>` +
                     DETAIL_FIELDS.map(f => {
@@ -578,7 +578,7 @@ export function renderNwProjection() {
 
             const r = avgMonthlyGrowthRate(sorted);
             const ann = (Math.pow(1 + r, 12) - 1) * 100;
-            const cur = nwTotal();
+            const cur = nwTotal(state.networth, LIQ_FUNDS, EQ_FUNDS, state.liquid, state.equity);
 
             const cards = [
               { label: "3 months", months: 3 },

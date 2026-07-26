@@ -1,17 +1,15 @@
-import { EQ_FUNDS, LIQ_FUNDS, state } from "../core/state.js";
-
-export function fixedExpensesTotal() {
-            return (state.surplus?.fixedExpenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+export function fixedExpensesTotal(fixedExpenses) {
+            return (fixedExpenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0);
           }
 
 // Total of every fund's monthly SIP amount (liquid + equity — the Manage
 // SIPs modal allows both). SIPs auto-debit from the same bank account
 // bankSpentThisMonth() diffs, so like fixed expenses they're a planned
 // chunk of that drop, not a separate outflow layered on top of it.
-export function totalMonthlySip() {
+export function totalMonthlySip(liqFunds, eqFunds, liquid, equity) {
             let total = 0;
-            LIQ_FUNDS.forEach(f => { total += state.liquid[f.id]?.sipAmt || 0; });
-            EQ_FUNDS.forEach(f => { total += state.equity[f.id]?.sipAmt || 0; });
+            liqFunds.forEach(f => { total += liquid[f.id]?.sipAmt || 0; });
+            eqFunds.forEach(f => { total += equity[f.id]?.sipAmt || 0; });
             return total;
           }
 
@@ -21,13 +19,13 @@ export function totalMonthlySip() {
 // than tracking a second, easily-drifting copy of "current bank balance".
 // Clamped to 0 so a mid-month deposit (salary credit, etc.) never reads as
 // negative spending.
-export function bankSpentThisMonth() {
-            const snaps = state.networth?.snapshots || {};
+export function bankSpentThisMonth(networth) {
+            const snaps = networth?.snapshots || {};
             const keys = Object.keys(snaps).sort();
             if (!keys.length) return null;
             const lastKey = keys[keys.length - 1];
             const openingBank = snaps[lastKey]?.bank || 0;
-            const currentBank = state.networth?.bank || 0;
+            const currentBank = networth?.bank || 0;
             return {
               amount: Math.max(0, openingBank - currentBank),
               openingBank,
@@ -48,11 +46,11 @@ export function bankSpentThisMonth() {
 // Example: bank went 5L -> 2L (a 3L drop), 2L fixed + 50k SIP planned ->
 // 50k extra/unplanned -> total EXPENSE = 2L + 50k = 2.5L, not 3L (the SIP
 // portion doesn't count as spending).
-export function totalMonthlyExpenses() {
-            const fixed = fixedExpensesTotal();
-            const sip = totalMonthlySip();
+export function totalMonthlyExpenses({ fixedExpenses, liqFunds, eqFunds, liquid, equity, networth }) {
+            const fixed = fixedExpensesTotal(fixedExpenses);
+            const sip = totalMonthlySip(liqFunds, eqFunds, liquid, equity);
             const planned = fixed + sip;
-            const bankSpend = bankSpentThisMonth();
+            const bankSpend = bankSpentThisMonth(networth);
             if (!bankSpend) {
               // No snapshot to diff against yet — the only real number we
               // have is the fixed budget; SIP stays excluded even here.
@@ -125,17 +123,17 @@ export function resolvePeriodKeys(periodKey) {
 // only the bank-driven "extra" figure reflects genuine month-to-month
 // variation. A month with no snapshot pair to diff comes back with
 // bankDrop/extra/total all null rather than a guessed value.
-export function monthlyExpenseSeries(periodKeys) {
-            const snaps = state.networth?.snapshots || {};
-            const fixed = fixedExpensesTotal();
-            const sip = totalMonthlySip();
+export function monthlyExpenseSeries(periodKeys, { fixedExpenses, liqFunds, eqFunds, liquid, equity, networth }) {
+            const snaps = networth?.snapshots || {};
+            const fixed = fixedExpensesTotal(fixedExpenses);
+            const sip = totalMonthlySip(liqFunds, eqFunds, liquid, equity);
             const planned = fixed + sip;
             const nowKey = monthKeyOf(new Date());
 
             return periodKeys.map(key => {
               let bankDrop = null;
               if (key === nowKey) {
-                const bs = bankSpentThisMonth();
+                const bs = bankSpentThisMonth(networth);
                 if (bs) bankDrop = bs.amount;
               } else {
                 const prevKey = prevMonthKey(key);

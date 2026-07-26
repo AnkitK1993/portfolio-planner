@@ -1,13 +1,12 @@
-import { EQ_FUNDS, LIQ_FUNDS, state } from "../core/state.js";
 import { NW_FIELDS } from "../core/constants.js";
 
-export function mfTotalValue() {
-            const liq = LIQ_FUNDS.reduce(
-              (s, f) => s + (state.liquid[f.id].value || 0),
+export function mfTotalValue(liqFunds, eqFunds, liquid, equity) {
+            const liq = liqFunds.reduce(
+              (s, f) => s + (liquid[f.id].value || 0),
               0,
             );
-            const eq = EQ_FUNDS.reduce(
-              (s, f) => s + (state.equity[f.id].shown || 0),
+            const eq = eqFunds.reduce(
+              (s, f) => s + (equity[f.id].shown || 0),
               0,
             );
             return liq + eq;
@@ -18,42 +17,42 @@ export function mfTotalValue() {
 // transactions dated on or before the end of that month. This is what a
 // Monthly History snapshot's MF Value should always reflect, whether the
 // snapshot is being created for the first time or edited later.
-export function mfValueAsOf(monthKey) {
+export function mfValueAsOf(monthKey, liqFunds, eqFunds, transactions) {
             const [y, m] = monthKey.split("-").map(Number);
             const cutoff = new Date(y, m, 1).toISOString().slice(0, 10);
             const netAE = {};
-            (state.transactions || []).forEach(t => {
+            (transactions || []).forEach(t => {
               if (!t.date || t.date >= cutoff) return;
               const ae = Number(t.afterExpense ?? t.invested) || 0;
               const signed = t.type === "redemption" ? -ae : ae;
               netAE[t.fundId] = (netAE[t.fundId] || 0) + signed;
             });
-            return [...LIQ_FUNDS, ...EQ_FUNDS].reduce(
+            return [...liqFunds, ...eqFunds].reduce(
               (sum, f) => sum + Math.max(0, netAE[f.id] || 0), 0,
             );
           }
 
-export function mfUnrealizedGain() {
+export function mfUnrealizedGain(liqFunds, eqFunds, liquid, equity) {
             let total = 0;
-            LIQ_FUNDS.forEach(f => {
-              const s = state.liquid[f.id]; if (!s) return;
+            liqFunds.forEach(f => {
+              const s = liquid[f.id]; if (!s) return;
               const cv = s.currentValue || 0;
               if (cv > 0) total += cv - (s.value || 0);
             });
-            EQ_FUNDS.forEach(f => {
-              const s = state.equity[f.id]; if (!s) return;
+            eqFunds.forEach(f => {
+              const s = equity[f.id]; if (!s) return;
               const cv = s.currentValue || 0;
               if (cv > 0) total += cv - (s.shown || 0);
             });
             return total;
           }
 
-export function nwTotal() {
+export function nwTotal(networth, liqFunds, eqFunds, liquid, equity) {
             const other = NW_FIELDS.filter((f) => f.id !== "mfProfit").reduce(
-              (s, f) => s + (state.networth[f.id] || 0),
+              (s, f) => s + (networth[f.id] || 0),
               0,
             );
-            return mfTotalValue() + mfUnrealizedGain() + other;
+            return mfTotalValue(liqFunds, eqFunds, liquid, equity) + mfUnrealizedGain(liqFunds, eqFunds, liquid, equity) + other;
           }
 
 // Average monthly compounding rate across consecutive snapshot pairs —
@@ -76,9 +75,9 @@ export function avgMonthlyGrowthRate(sortedSnaps) {
             return count > 0 ? totalRate / count : 0;
           }
 
-export function buildCurrentSnapshot() {
-            const cur = { mf: mfTotalValue(), total: nwTotal() };
-            NW_FIELDS.forEach((f) => { cur[f.id] = state.networth[f.id] || 0; });
-            cur.mfProfit = mfUnrealizedGain();
+export function buildCurrentSnapshot(networth, liqFunds, eqFunds, liquid, equity) {
+            const cur = { mf: mfTotalValue(liqFunds, eqFunds, liquid, equity), total: nwTotal(networth, liqFunds, eqFunds, liquid, equity) };
+            NW_FIELDS.forEach((f) => { cur[f.id] = networth[f.id] || 0; });
+            cur.mfProfit = mfUnrealizedGain(liqFunds, eqFunds, liquid, equity);
             return cur;
           }

@@ -94,7 +94,7 @@ export function render() {
               const lcollRtn = el("coll-rtn-" + f.id);
               if (lcollRtn) {
                 if (rtnMode === "xirr") {
-                  const b = xirrBadge(fundXirr(f.id, true));
+                  const b = xirrBadge(fundXirr(f.id, true, state.liquid[f.id], state.transactions));
                   lcollRtn.textContent = b.text;
                   lcollRtn.className = "coll-rtn" + (b.cls ? " " + b.cls : "");
                 } else if (lcv > 0 && val > 0) {
@@ -107,7 +107,7 @@ export function render() {
               /* XIRR badge */
               const lxirrBadge = el("coll-xirr-" + f.id);
               if (lxirrBadge) {
-                const x = fundXirr(f.id, true);
+                const x = fundXirr(f.id, true, state.liquid[f.id], state.transactions);
                 if (x !== null) {
                   const p = (x * 100).toFixed(1);
                   const up = x >= 0;
@@ -240,7 +240,7 @@ export function render() {
               const ecollRtn = el("coll-rtn-" + f.id);
               if (ecollRtn) {
                 if (rtnMode === "xirr") {
-                  const b = xirrBadge(fundXirr(f.id, false));
+                  const b = xirrBadge(fundXirr(f.id, false, s, state.transactions));
                   ecollRtn.textContent = b.text;
                   ecollRtn.className = "coll-rtn" + (b.cls ? " " + b.cls : "");
                 } else if (ecv > 0 && shown > 0) {
@@ -253,7 +253,7 @@ export function render() {
               /* XIRR badge */
               const exirrBadge = el("coll-xirr-" + f.id);
               if (exirrBadge) {
-                const x = fundXirr(f.id, false);
+                const x = fundXirr(f.id, false, s, state.transactions);
                 if (x !== null) {
                   const p = (x * 100).toFixed(1);
                   const up = x >= 0;

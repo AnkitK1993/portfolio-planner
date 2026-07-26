@@ -41,7 +41,10 @@ function renderTaxEstimate() {
             const body = el("sumTaxBody");
             if (!card || !body) return;
 
-            const t = estimateCapitalGainsTax();
+            const t = estimateCapitalGainsTax({
+              taxSlabPct: state.surplus?.taxSlabPct, eqFunds: EQ_FUNDS, liqFunds: LIQ_FUNDS,
+              equity: state.equity, liquid: state.liquid, transactions: state.transactions,
+            });
             if (!t.hasAnyHolding) { card.style.display = "none"; return; }
             card.style.display = "";
 
@@ -144,7 +147,7 @@ export function renderFundTable() {
                   current,
                   returns,
                   returnsPct: afterExp > 0 ? pct(returns, afterExp) : null,
-                  xirr: fundXirr(f.id, isLiq),
+                  xirr: fundXirr(f.id, isLiq, s, state.transactions),
                 };
               })
               .filter(r => r.invested > 0 || r.current > 0);
@@ -267,7 +270,10 @@ export function renderHealthScore() {
 
             // ── Dimension 3: Liquidity buffer (vs 6-month expenses) ──
             const totalLiqFree = LIQ_FUNDS.reduce((s, f) => s + Math.max(0, (state.liquid[f.id]?.value || 0) - (state.liquid[f.id]?.reserve || 0)), 0);
-            const monthlyExp = totalMonthlyExpenses().total;
+            const monthlyExp = totalMonthlyExpenses({
+              fixedExpenses: state.surplus?.fixedExpenses, liqFunds: LIQ_FUNDS, eqFunds: EQ_FUNDS,
+              liquid: state.liquid, equity: state.equity, networth: state.networth,
+            }).total;
             let bScore = 15, bNote = "Enter expenses to measure", bufMonths = null;
             if (monthlyExp > 0) {
               bufMonths = totalLiqFree / monthlyExp;
@@ -418,7 +424,10 @@ function renderExpenses() {
             card.style.display = "";
 
             const items = state.surplus?.fixedExpenses || [];
-            const { fixed, sip, planned, bankSpend, extra, total } = totalMonthlyExpenses();
+            const { fixed, sip, planned, bankSpend, extra, total } = totalMonthlyExpenses({
+              fixedExpenses: items, liqFunds: LIQ_FUNDS, eqFunds: EQ_FUNDS,
+              liquid: state.liquid, equity: state.equity, networth: state.networth,
+            });
 
             // Kept in sync regardless of collapsed/open state — this is
             // what's visible when the card is collapsed (the default).
@@ -492,7 +501,10 @@ function renderExpenses() {
             // individually toggleable so the average only counts what the
             // user actually wants counted (SIP defaults off — see above). ──
             const periodKeys = resolvePeriodKeys(expPeriod);
-            const series = monthlyExpenseSeries(periodKeys);
+            const series = monthlyExpenseSeries(periodKeys, {
+              fixedExpenses: items, liqFunds: LIQ_FUNDS, eqFunds: EQ_FUNDS,
+              liquid: state.liquid, equity: state.equity, networth: state.networth,
+            });
             const brk = averageExpenseBreakdown(series);
             let avgTotal = 0;
             if (expIncludeFixed) avgTotal += brk.avgFixed;
@@ -635,7 +647,10 @@ function renderFireProgress() {
             const wrap = el("sumFireBody");
             if (!card || !wrap) return;
 
-            const monthlyExp = totalMonthlyExpenses().total;
+            const monthlyExp = totalMonthlyExpenses({
+              fixedExpenses: state.surplus?.fixedExpenses, liqFunds: LIQ_FUNDS, eqFunds: EQ_FUNDS,
+              liquid: state.liquid, equity: state.equity, networth: state.networth,
+            }).total;
             const suggestedTarget = monthlyExp * 12 * 25;
             const customGoal = state.surplus?.goalAmount || 0;
             const goalTarget = customGoal > 0 ? customGoal : suggestedTarget;
@@ -643,7 +658,7 @@ function renderFireProgress() {
             if (goalTarget <= 0 && !editMode) { card.style.display = "none"; return; }
             card.style.display = "";
 
-            const cur = nwTotal();
+            const cur = nwTotal(state.networth, LIQ_FUNDS, EQ_FUNDS, state.liquid, state.equity);
             const progressPct = goalTarget > 0 ? Math.min(100, (cur / goalTarget) * 100) : 0;
 
             const snaps = state.networth.snapshots || {};
@@ -770,7 +785,7 @@ function renderXirrTrend() {
 
             const snaps = state.networth.snapshots || {};
             const sorted = Object.entries(snaps).map(([k, v]) => normalizeSnap(k, v)).sort((a, b) => a.key.localeCompare(b.key));
-            const points = rollingPortfolioXirr(sorted).filter(p => p.xirr !== null);
+            const points = rollingPortfolioXirr(sorted, state.transactions).filter(p => p.xirr !== null);
 
             if (points.length < 3) { wrap.style.display = "none"; return; }
             wrap.style.display = "";
