@@ -25,6 +25,25 @@ export function setCalWeekOffset(v) { calWeekOffset = v; }
 
 export let calDayDate = null;
 
+// Lazily created on first actual use, NOT at module top level: this
+// module sits in a real import cycle (calendar.js -> core/ui.js ->
+// core/state.js -> features/portfolio/render.js -> calendar.js), so
+// calling UI.registerOverlay() eagerly at module-eval time can run
+// before core/ui.js has finished initializing its own `UI` export,
+// depending on which module the cycle happens to reach first — that's
+// exactly what broke app boot ("Cannot access 'UI' before
+// initialization") the first time this was tried. Every call site here
+// only ever runs from a later user interaction, by which point the
+// whole module graph has long finished loading, so deferring the actual
+// registerOverlay() call to first use sidesteps the ordering hazard
+// entirely.
+let _calDayModalCtl = null;
+function calDayModalCtl()  { return _calDayModalCtl  ??= UI.registerOverlay(el("calDayModal")); }
+let _calNoteModalCtl = null;
+function calNoteModalCtl() { return _calNoteModalCtl ??= UI.registerOverlay(el("calNoteModal")); }
+
+export function closeCalDayModal() { calDayModalCtl().close(); }
+
 export function noteStatus(dateStr) {
             const today = new Date().toISOString().split("T")[0];
             if (dateStr > today) return "future";
@@ -150,7 +169,7 @@ export function openCalDay(dateStr) {
             const d = new Date(dateStr + "T00:00:00");
             el("calDayTitle").textContent = d.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
             refreshCalDayBody(dateStr);
-            el("calDayModal").style.display = "flex";
+            calDayModalCtl().open();
           }
 
 export function refreshCalDayBody(dateStr) {
@@ -246,12 +265,12 @@ export function openCalNoteModal(dateStr, noteId) {
             el("calNoteFundList").innerHTML = allFunds
               .map(f => fundRowHTML(f.id, f.name, prefill[f.id] ? Math.round(prefill[f.id]) : ""))
               .join("");
-            el("calDayModal").style.display = "none";
-            el("calNoteModal").style.display = "flex";
+            calDayModalCtl().close();
+            calNoteModalCtl().open();
           }
 
 export function closeCalNoteModal() {
-            el("calNoteModal").style.display = "none";
+            calNoteModalCtl().close();
           }
 
 export function saveCalNote() {

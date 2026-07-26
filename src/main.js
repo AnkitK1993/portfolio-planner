@@ -13,7 +13,7 @@ import { animateNumber } from "./core/animate.js";
 import { applyTxnTotals, closeCurValModal, closeTxnModal, exportTxnsCSV, openCurValModal, openTxnModal, renderReturns, renderTxns, saveCurVal, saveTxn, setTxnType, txnFilter } from "./features/transactions/index.js";
 import { buildNwGrid, nwLiveSaved, renderNetWorth, renderNwCompositionChart, renderNwHistory, renderNwLineChart, renderNwProjection, setNwEditingKey, setNwLiveSaved, takeSnapshot } from "./features/networth/index.js";
 import { hideThemeMatrix, loadSavedAccent, showThemeMatrix, themeMatrixOpen } from "./features/admin/themes.js";
-import { calDayDate, calMonth, calView, calWeekOffset, calYear, closeCalNoteModal, openCalNoteModal, renderCalendar, saveCalNote, setCalMonth, setCalView, setCalWeekOffset, setCalYear } from "./features/portfolio/calendar.js";
+import { calDayDate, calMonth, calView, calWeekOffset, calYear, closeCalDayModal, closeCalNoteModal, openCalNoteModal, renderCalendar, saveCalNote, setCalMonth, setCalView, setCalWeekOffset, setCalYear } from "./features/portfolio/calendar.js";
 import { createCollapsible } from "./core/collapsible.js";
 import { el } from "./core/dom.js";
 import { exportData, importData } from "./features/admin/data.js";
@@ -64,7 +64,8 @@ document.addEventListener("click", e => {
             if (!e.target.closest("#adminDropdown")) closeNavDropdowns();
           });
 el("txnsBtn").addEventListener("click", () => { navigateTo("transactions"); });
-el("ddDataBtn").addEventListener("click", () => { closeNavDropdowns(); el("dataModal").style.display = "flex"; });
+const dataModalCtl = UI.registerOverlay(el("dataModal"), { onClose: resetBackupPanel });
+el("ddDataBtn").addEventListener("click", () => { closeNavDropdowns(); dataModalCtl.open(); });
 el("ddPrintBtn").addEventListener("click", () => { closeNavDropdowns(); window.print(); });
 el("txnExportBtn").addEventListener("click", e => { e.stopPropagation(); exportTxnsCSV(); });
 ["txp-addtxn", "txp-history", "txp-curval", "txp-sip"].forEach(id => {
@@ -90,17 +91,14 @@ el("ddPinBtn").addEventListener("click", async () => {
             if (raw.trim() === "") { window.clearAppPin(); }
             else { window.setAppPin(raw.trim()); }
           });
-el("dataModalClose").addEventListener("click", () => { el("dataModal").style.display = "none"; });
-el("dataModalCancelBtn").addEventListener("click", () => { el("dataModal").style.display = "none"; });
-el("dataModal").addEventListener("click", e => { if (e.target === el("dataModal")) el("dataModal").style.display = "none"; });
+el("dataModalClose").addEventListener("click", () => dataModalCtl.close());
+el("dataModalCancelBtn").addEventListener("click", () => dataModalCtl.close());
 el("ddRebalanceBtn").addEventListener("click", () => { closeNavDropdowns(); navigateTo("rebalance"); });
 el("dataExportBtn").addEventListener("click", exportData);
 el("dataImportBtn").addEventListener("click", () => el("dataImportFile").click());
 el("dataImportFile").addEventListener("change", importData);
 el("backupNowBtn").addEventListener("click", saveManualBackup);
 el("backupBrowseBtn").addEventListener("click", loadBackupList);
-el("dataModalClose").addEventListener("click", resetBackupPanel);
-el("dataModalCancelBtn").addEventListener("click", resetBackupPanel);
 el("curValCancelBtn").addEventListener("click", closeCurValModal);
 el("curValSaveBtn").addEventListener("click", saveCurVal);
 el("txnTabInvest").addEventListener("click", () => {
@@ -176,14 +174,12 @@ el("calViewWeek").addEventListener("click", () => {
             el("calViewWeek").classList.add("active"); el("calViewMonth").classList.remove("active");
             renderCalendar();
           });
-el("calDayClose").addEventListener("click", () => { el("calDayModal").style.display = "none"; });
-el("calDayCloseBtn").addEventListener("click", () => { el("calDayModal").style.display = "none"; });
+el("calDayClose").addEventListener("click", closeCalDayModal);
+el("calDayCloseBtn").addEventListener("click", closeCalDayModal);
 el("calDayAddBtn").addEventListener("click", () => openCalNoteModal(calDayDate, null));
-el("calDayModal").addEventListener("click", e => { if (e.target === el("calDayModal")) el("calDayModal").style.display = "none"; });
 el("calNoteClose").addEventListener("click", closeCalNoteModal);
 el("calNoteCancelBtn").addEventListener("click", closeCalNoteModal);
 el("calNoteSaveBtn").addEventListener("click", saveCalNote);
-el("calNoteModal").addEventListener("click", e => { if (e.target === el("calNoteModal")) closeCalNoteModal(); });
 el("sipModalCancelBtn").addEventListener("click", () => collapseTxpCard("txp-sip"));
 el("sipModalSaveBtn").addEventListener("click", saveManageSips);
 el("ddAuthBtn").addEventListener("click", async () => {

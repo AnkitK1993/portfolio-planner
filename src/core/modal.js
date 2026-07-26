@@ -350,4 +350,58 @@ export function alert(msg, title, okLabel = "OK") {
   return confirm(msg, title, okLabel, undefined, false, { showCancel: false }).then(() => undefined);
 }
 
-export const Modal = { open, confirm, alert };
+/**
+ * Wires an existing always-in-DOM modal overlay (built as static markup —
+ * the Data modal, the two calendar modals) into this same ESC/Tab-trap/
+ * scroll-lock stack, without touching its content or business logic.
+ * Those three predate open()/confirm() and build their own content
+ * in-place rather than through a body callback; registerOverlay() closes
+ * only the real, verified gap that split them from the dynamic system —
+ * Escape did nothing for them, and they didn't participate in the shared
+ * stacking discipline that keeps ESC/Tab correct when dialogs nest.
+ *
+ * @param {HTMLElement} overlayEl the `.modal-overlay`/`.modal-card` root,
+ *   already present in the DOM with `style.display = "none"`.
+ * @param {{dismissible?: boolean, onClose?: () => void}} [opts]
+ * @returns {{open(): void, close(): void, isOpen(): boolean}}
+ */
+export function registerOverlay(overlayEl, { dismissible = true, onClose } = {}) {
+  const entry = { card: overlayEl, dismissible, close: () => doClose() };
+  let isOpen = false;
+
+  if (dismissible) {
+    overlayEl.addEventListener("click", (e) => { if (isOpen && e.target === overlayEl) doClose(); });
+  }
+
+  function doOpen() {
+    if (isOpen) return;
+    isOpen = true;
+    stack.push(entry);
+    lockScroll();
+    overlayEl.style.display = "flex";
+    requestAnimationFrame(() => {
+      const target = focusableIn(overlayEl)[0];
+      if (target) target.focus();
+    });
+  }
+
+  function doClose() {
+    if (!isOpen) return;
+    isOpen = false;
+    const idx = stack.indexOf(entry);
+    if (idx !== -1) stack.splice(idx, 1);
+    unlockScroll();
+    overlayEl.style.display = "none";
+    if (onClose) onClose();
+  }
+
+  // Stashed on the element itself so any other module holding the same
+  // element reference (main.js wires this up, but firebase.js/data.js
+  // need to close it too, from deep inside an async success callback)
+  // can close it without every caller needing to thread the controller
+  // through as an argument.
+  overlayEl._modalCtl = { open: doOpen, close: doClose, isOpen: () => isOpen };
+  return overlayEl._modalCtl;
+}
+
+export const Modal = { open, confirm, alert, registerOverlay };

@@ -2,12 +2,27 @@ import { EQ_FUNDS, LIQ_FUNDS, editMode } from "./state.js";
 import { el } from "./dom.js";
 import { onTabActivate, triggerRender } from "./appEvents.js";
 import { setAnimOnRender } from "./animate.js";
-import { confirm as modalConfirm, open as modalOpen } from "./modal.js";
+import { confirm as modalConfirm, open as modalOpen, registerOverlay } from "./modal.js";
 
 export const UI = {
             /* Custom confirmation dialog — see core/modal.js for the implementation */
             confirm(msg, title, okLabel, cb, danger = true) {
               return modalConfirm(msg, title, okLabel, cb, danger);
+            },
+
+            /* Wire a static always-in-DOM modal into the shared ESC/Tab-
+               trap/scroll-lock stack — see core/modal.js's registerOverlay */
+            registerOverlay(overlayEl, opts) {
+              return registerOverlay(overlayEl, opts);
+            },
+
+            /* Closes a registerOverlay()'d modal from anywhere holding the
+               same element reference, without needing the controller
+               object threaded through as an argument — e.g. an async
+               success callback in a completely different module. No-op if
+               that element was never registered. */
+            closeOverlay(overlayEl) {
+              overlayEl?._modalCtl?.close();
             },
 
             /* Single-line text input dialog — a styled replacement for the

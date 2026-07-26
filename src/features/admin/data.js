@@ -34,7 +34,7 @@ export function importData(e) {
                   saveState();
                   renderTxns();
                   renderReturns();
-                  el("dataModal").style.display = "none";
+                  UI.closeOverlay(el("dataModal"));
                   UI.toast("success", "Data restored from backup", 3000);
                 }, false);
               } catch {

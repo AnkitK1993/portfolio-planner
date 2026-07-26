@@ -181,7 +181,7 @@ export async function loadBackupList() {
                         if (!raw.liquid || !raw.equity) { UI.toast("err", "Snapshot data is invalid", 3000); return; }
                         applyCloudState(raw);
                         saveState();
-                        el("dataModal").style.display = "none";
+                        UI.closeOverlay(el("dataModal"));
                         UI.toast("success", "Restored backup from " + doc.id, 3000);
                       } catch (e) {
                         UI.toast("err", "Failed to restore — " + e.message, 4000);
