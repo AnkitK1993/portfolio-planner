@@ -167,13 +167,6 @@
         margin-top: 26px;
       }
 
-      /* ── FUND GRID ── */
-      .fund-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 12px;
-      }
-
       /* ── CARD ── */
       .card {
         background: rgba(14, 14, 30, 0.65);
@@ -670,168 +663,6 @@
         white-space: nowrap;
       }
 
-      /* ── SUMMARY ── */
-      .sum-hero-label {
-        font-size: 9.5px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        color: var(--mint);
-      }
-      .sum-hero {
-        font-family: "Roboto Mono", monospace;
-        font-size: 38px;
-        font-weight: 700;
-        color: var(--mint);
-        margin: 4px 0 2px;
-        line-height: 1;
-        word-break: break-all;
-        letter-spacing: -1px;
-        text-shadow: 0 0 40px rgba(0,245,160,0.3);
-      }
-      .sum-hero-sub {
-        color: var(--dim);
-        font-size: 11px;
-        margin-bottom: 20px;
-      }
-      .sum-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 12px;
-        margin-bottom: 16px;
-      }
-      .sum-table th {
-        font-size: 9px;
-        text-transform: uppercase;
-        letter-spacing: 0.6px;
-        color: var(--dim);
-        font-weight: 400;
-        text-align: right;
-        padding: 0 0 8px;
-      }
-      .sum-table th:first-child {
-        text-align: left;
-      }
-      .sum-table td {
-        text-align: right;
-        padding: 7px 0;
-        border-top: 1px solid var(--line);
-      }
-      .sum-table td:first-child {
-        text-align: left;
-        color: var(--dim);
-      }
-      .sum-table .row-eq td:first-child {
-        color: var(--mint);
-      }
-      .sum-table .row-liq td:first-child {
-        color: var(--liq);
-      }
-      .sum-table .row-tot td {
-        font-weight: 600;
-        border-top: 1px solid var(--mint-dim);
-      }
-      .inv-cell {
-        color: var(--mint);
-        font-weight: 600;
-      }
-
-      /* ── SIP SUMMARY TABLE ── */
-      .sip-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 12px;
-        margin-bottom: 4px;
-      }
-      .sip-table td {
-        padding: 6px 0;
-        border-top: 1px solid var(--line);
-      }
-      .sip-table td:first-child {
-        color: var(--dim);
-      }
-      .sip-table td:last-child {
-        text-align: right;
-      }
-      .sip-table tr:first-child td {
-        border-top: none;
-      }
-
-      /* ── ALLOC BAR ── */
-      .alloc-block {
-        margin-bottom: 16px;
-      }
-      .alloc-line {
-        margin-bottom: 10px;
-      }
-      .alloc-cap {
-        display: flex;
-        justify-content: space-between;
-        font-size: 10px;
-        color: var(--dim);
-        margin-bottom: 4px;
-      }
-      .alloc-bar {
-        display: flex;
-        height: 14px;
-        border-radius: 5px;
-        overflow: hidden;
-        background: var(--panel-2);
-      }
-      .alloc-bar .eq-seg {
-        background: var(--mint);
-      }
-      .alloc-bar .liq-seg {
-        background: var(--liq);
-      }
-      .alloc-bar span {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 8px;
-        color: #0c0f0e;
-        font-weight: 700;
-        min-width: 0;
-        overflow: hidden;
-      }
-
-      /* ── STATS ROW ── */
-      .stats {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 8px;
-        margin-bottom: 16px;
-      }
-      .stat {
-        background: var(--panel-2);
-        border-radius: 10px;
-        padding: 12px;
-      }
-      .stat .sk {
-        font-size: 9px;
-        text-transform: uppercase;
-        letter-spacing: 0.6px;
-        color: var(--dim);
-      }
-      .stat .sv {
-        font-family: "Roboto Mono", monospace;
-        font-size: 16px;
-        font-weight: 700;
-        margin-top: 3px;
-        letter-spacing: -0.5px;
-      }
-      .stat .sp {
-        height: 4px;
-        background: var(--panel);
-        border-radius: 3px;
-        margin-top: 7px;
-        overflow: hidden;
-      }
-      .stat .sp i {
-        display: block;
-        height: 100%;
-        background: var(--mint);
-      }
-
       /* ── ACTIONS ── */
       .actions {
         display: flex;
@@ -959,18 +790,7 @@
       }
 
       /* ── RESPONSIVE ── */
-      @media (max-width: 760px) {
-        .stats {
-          grid-template-columns: 1fr 1fr;
-        }
-      }
       @media (max-width: 520px) {
-        .fund-grid {
-          grid-template-columns: 1fr;
-        }
-        .stats {
-          grid-template-columns: 1fr;
-        }
         .actions {
           flex-direction: column;
         }
@@ -1036,19 +856,6 @@
         line-height: 1;
         margin-bottom: 12px;
         word-break: break-all;
-      }
-      .nw-hero-meta {
-        display: flex;
-        gap: 16px;
-        flex-wrap: wrap;
-      }
-      .nwpm {
-        font-size: 11px;
-        color: var(--dim);
-      }
-      .nwpm b {
-        color: var(--txt);
-        margin-left: 6px;
       }
       .nw-auto-item {
         background: var(--panel-2);
@@ -1129,10 +936,6 @@
         color: var(--dim);
         font-size: 9.5px;
         margin-left: 4px;
-      }
-      .nw-hist-wrap {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
       }
       .nw-hist-list { width: 100%; font-size: 9.5px; }
       .nw-hist-hdr {
@@ -1443,29 +1246,7 @@
         .tabs button { padding: 7px 20px; font-size: 11px; letter-spacing: 0.9px; }
         .pg-head h1 { font-size: clamp(28px, 3vw, 44px); }
         .pg-head p { font-size: 12.5px; max-width: 720px; }
-        .fund-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
         .nw-proj-cards { grid-template-columns: repeat(6, 1fr); }
-      }
-
-      /* ── PORTFOLIO DESKTOP TWO-COLUMN ── */
-      .portfolio-layout {
-        display: flex;
-        flex-direction: column;
-        gap: 0;
-      }
-      @media (min-width: 1100px) {
-        .portfolio-layout {
-          display: grid;
-          grid-template-columns: 360px 1fr;
-          gap: 28px;
-          align-items: start;
-        }
-        .portfolio-left .sec-head { margin-top: 14px; }
-        .portfolio-right .sec-head { margin-top: 0; }
-        .portfolio-right .sec-head.mt { margin-top: 0; }
-        .portfolio-right #eqGrid {
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        }
       }
 
       /* ════ THEME MATRIX ════ */
@@ -1647,14 +1428,6 @@
       }
       .portfolio-hero h1:hover .accent {
         filter: drop-shadow(0 0 30px color-mix(in srgb, var(--mint) 76%, transparent));
-      }
-      .portfolio-hero-sub {
-        color: var(--dim);
-        font-size: 10.5px;
-        margin-top: 12px;
-        line-height: 1.6;
-        max-width: 360px;
-        border-bottom: 1.5px dotted rgba(255,255,255,0.15);
       }
 
       /* ══════════════════════════════════════
@@ -1989,30 +1762,6 @@
       body.privacy-mode #tab-portfolio .fund-div-rtn,
       body.privacy-mode #tab-portfolio .coll-rtn { opacity: 0 !important; }
       /* ── PRIVACY MODE + THEME BUTTON ── */
-      .hero-actions {
-        display: flex;
-        flex-direction: row;
-        gap: 8px;
-        justify-content: flex-end;
-        margin-top: 20px;
-        position: relative;
-        z-index: 2;
-      }
-      .hero-theme-btn {
-        background: none;
-        border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 8px;
-        color: var(--dim);
-        cursor: pointer;
-        padding: 6px 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: color 0.15s, border-color 0.15s;
-        flex-shrink: 0;
-      }
-      .hero-theme-btn:hover { color: var(--txt); border-color: rgba(255,255,255,0.2); }
-      .hero-theme-btn svg { width: 18px; height: 18px; display: block; }
       .logo-btn {
         background: linear-gradient(145deg, color-mix(in srgb, var(--mint) 10%, rgba(0,0,0,0.5)) 0%, rgba(4,4,12,0.85) 100%);
         border: 1px solid color-mix(in srgb, var(--mint) 32%, transparent);

@@ -174,9 +174,21 @@ window.addEventListener("afterprint", () => {
             _preprintVars = null;
           });
 
+// Builds the swatch grid the first time the picker is opened rather than
+// unconditionally at boot — it's 10 DOM nodes + click listeners that most
+// sessions never need, since the picker itself lives behind an Admin
+// dropdown most visits never open. applyAccent() reads the always-safe
+// (possibly-empty) `.theme-swatch` NodeList directly, so calling it before
+// this has ever run is a harmless no-op — the correct swatch still ends up
+// marked "active" whenever the grid is eventually built, from
+// currentAccentIdx.
+let _themeMatrixBuilt = false;
+
 export function buildThemeMatrix() {
+            if (_themeMatrixBuilt) return;
             const grid = document.getElementById("themeMatrixGrid");
             if (!grid) return;
+            _themeMatrixBuilt = true;
             ACCENT_THEMES.forEach((t, i) => {
               const btn = document.createElement("button");
               btn.className = "theme-swatch" + (i === currentAccentIdx ? " active" : "");
@@ -197,6 +209,7 @@ export function buildThemeMatrix() {
 export function showThemeMatrix(anchorEl) {
             const matrix = document.getElementById("themeMatrix");
             if (!matrix) return;
+            buildThemeMatrix();
             themeMatrixOpen = true;
 
             const rect = anchorEl.getBoundingClientRect();

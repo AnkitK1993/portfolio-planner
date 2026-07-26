@@ -226,13 +226,6 @@ export function snapshotKey() {
             return prev.getFullYear() + "-" + String(prev.getMonth() + 1).padStart(2, "0");
           }
 
-export function getFundName(fundId) {
-            const liq = LIQ_FUNDS.find(f => f.id === fundId);
-            if (liq) return state.liquid[fundId]?.name || liq.defaultName;
-            const eq = EQ_FUNDS.find(f => f.id === fundId);
-            if (eq) return state.equity[fundId]?.name || eq.defaultName;
-            return fundId;
-          }
 
 export let privacyMode = true;
 

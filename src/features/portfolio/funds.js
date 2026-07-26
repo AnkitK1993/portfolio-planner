@@ -18,18 +18,6 @@ export function openFundCollapsible(fundId) {
             _fundCollapsibles.find(c => c.id === fundId)?.controller.open();
           }
 
-export function setStatReturn(elId, curVal, invested) {
-            const statEl = el(elId);
-            if (!statEl) return;
-            if (!curVal || curVal <= 0) { statEl.textContent = "—"; statEl.className = "card-stat-val"; return; }
-            const profit = curVal - invested;
-            const profitPct = invested > 0 ? (profit / invested) * 100 : 0;
-            const sign = profit >= 0 ? "+" : "";
-            const cls  = profit >= 0 ? "profit" : "loss";
-            statEl.className = `card-stat-val ${cls}`;
-            statEl.innerHTML = `${sign}${fmt(Math.abs(profit))}<span class="card-stat-pct">(${sign}${profitPct.toFixed(1)}%)</span>`;
-          }
-
 export function liqCardHTML(f) {
             const s = state.liquid[f.id];
             return `

@@ -1,4 +1,4 @@
-import { EQ_FUNDS, LIQ_FUNDS, getFundName, saveState, state } from "../../core/state.js";
+import { EQ_FUNDS, LIQ_FUNDS, fundName, saveState, state } from "../../core/state.js";
 import { UI } from "../../core/ui.js";
 import { el } from "../../core/dom.js";
 import { fundRowHTML } from "./funds.js";
@@ -171,7 +171,7 @@ export function refreshCalDayBody(dateStr) {
             txns.forEach(t => {
               html += `<div class="calday-row">
                 <div class="calday-info">
-                  <span class="calday-fund">${getFundName(t.fundId)}</span>
+                  <span class="calday-fund">${fundName(t.fundId)}</span>
                   <span class="calday-amt calday-green">&#8377;${Math.round(t.invested).toLocaleString("en-IN")}</span>
                 </div>
                 <span class="calday-badge green-b">Invested</span>
@@ -180,7 +180,7 @@ export function refreshCalDayBody(dateStr) {
             sipEvts.forEach(s => {
               html += `<div class="calday-row">
                 <div class="calday-info">
-                  <span class="calday-fund">${getFundName(s.fundId)}</span>
+                  <span class="calday-fund">${fundName(s.fundId)}</span>
                   <span class="calday-amt calday-cyan">&#8377;${Math.round(s.amount).toLocaleString("en-IN")}</span>
                   <span class="calday-note-text">Monthly SIP</span>
                 </div>
@@ -203,7 +203,7 @@ export function refreshCalDayBody(dateStr) {
               noteFunds.forEach(({ fundId, amount }, i) => {
                 html += `<div class="calday-row">
                   <div class="calday-info">
-                    <span class="calday-fund">${getFundName(fundId)}</span>
+                    <span class="calday-fund">${fundName(fundId)}</span>
                     <span class="calday-amt ${amtCls}">&#8377;${Math.round(amount || 0).toLocaleString("en-IN")}</span>
                     ${i === 0 && n.note ? `<span class="calday-note-text">${n.note}</span>` : ""}
                   </div>

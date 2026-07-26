@@ -10,7 +10,7 @@
 // expressed and where it lives. (See the architecture-audit notes from
 // this session for the exact call sites each of these replaces.)
 
-import { EQ_FUNDS, LIQ_FUNDS, othersOfSnap, state } from "../core/state.js";
+import { LIQ_FUNDS, othersOfSnap, state } from "../core/state.js";
 
 function fundBucket(fundId) {
             return LIQ_FUNDS.some(f => f.id === fundId) ? state.liquid : state.equity;

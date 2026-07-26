@@ -12,7 +12,7 @@ import { _upcomingHead } from "./features/portfolio/upcoming.js";
 import { animateNumber } from "./core/animate.js";
 import { applyTxnTotals, closeCurValModal, closeTxnModal, exportTxnsCSV, openCurValModal, openTxnModal, renderReturns, renderTxns, saveCurVal, saveTxn, setTxnType, txnFilter } from "./features/transactions/index.js";
 import { buildNwGrid, nwLiveSaved, renderNetWorth, renderNwCompositionChart, renderNwHistory, renderNwLineChart, renderNwProjection, setNwEditingKey, setNwLiveSaved, takeSnapshot } from "./features/networth/index.js";
-import { buildThemeMatrix, hideThemeMatrix, loadSavedAccent, showThemeMatrix, themeMatrixOpen } from "./features/admin/themes.js";
+import { hideThemeMatrix, loadSavedAccent, showThemeMatrix, themeMatrixOpen } from "./features/admin/themes.js";
 import { calDayDate, calMonth, calView, calWeekOffset, calYear, closeCalNoteModal, openCalNoteModal, renderCalendar, saveCalNote, setCalMonth, setCalView, setCalWeekOffset, setCalYear } from "./features/portfolio/calendar.js";
 import { createCollapsible } from "./core/collapsible.js";
 import { el } from "./core/dom.js";
@@ -432,5 +432,4 @@ document.addEventListener("click", (e) => {
             const matrix = document.getElementById("themeMatrix");
             if (matrix && !matrix.contains(e.target)) hideThemeMatrix();
           });
-buildThemeMatrix();
 loadSavedAccent();

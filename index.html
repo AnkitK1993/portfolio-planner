@@ -10,10 +10,25 @@
     <link rel="icon" id="faviconEl" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230c0f0e'/%3E%3Cpolyline points='4,24 10,15 15,19 21,9 28,13' fill='none' stroke='%234ade9c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='4' cy='24' r='1.8' fill='%234ade9c'/%3E%3Ccircle cx='28' cy='13' r='1.8' fill='%234ade9c'/%3E%3C/svg%3E" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Loaded non-render-blocking: preload the stylesheet, then swap its
+         rel to "stylesheet" once fetched instead of using a plain
+         <link rel="stylesheet"> (which halts rendering until this
+         external, third-party request completes). font-display=swap
+         (already in the URL) means text renders immediately in a
+         fallback font and swaps to the web font when it arrives, so
+         nothing is lost by not blocking on it. -->
     <link
+      rel="preload"
+      as="style"
       href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700;800&family=Roboto+Mono:wght@400;500;700&display=swap"
-      rel="stylesheet"
+      onload="this.onload=null;this.rel='stylesheet'"
     />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700;800&family=Roboto+Mono:wght@400;500;700&display=swap"
+      />
+    </noscript>
   </head>
   <body>
     <nav class="tabs" id="tabs">

@@ -88,58 +88,6 @@
         transition: opacity 0.15s;
       }
       .btn-primary:hover { opacity: 0.82; }
-      /* ── FUND PICKER (custom select) ── */
-      .fund-picker { position: relative; }
-      .fund-picker-btn {
-        background: var(--bg);
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        color: var(--txt);
-        font-family: "Roboto Mono", monospace;
-        font-size: 13px;
-        padding: 9px 12px;
-        width: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-        cursor: pointer;
-        text-align: left;
-        transition: border-color 0.15s;
-      }
-      .fund-picker-btn.open, .fund-picker-btn:focus { border-color: var(--mint); outline: none; }
-      .fund-picker-chevron { width: 10px; height: 10px; flex-shrink: 0; transition: transform 0.15s; color: var(--dim); }
-      .fund-picker-btn.open .fund-picker-chevron { transform: rotate(180deg); }
-      .fund-picker-label { flex: 1; display: flex; align-items: center; gap: 8px; overflow: hidden; min-width: 0; }
-      .fund-picker-label-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .fund-picker-list {
-        position: absolute;
-        top: calc(100% + 4px);
-        left: 0; right: 0;
-        background: var(--panel);
-        border: 1px solid var(--line);
-        border-radius: 10px;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-        overflow: hidden;
-        z-index: 1100;
-        animation: matrixIn 0.12s cubic-bezier(0.34,1.2,0.64,1) both;
-      }
-      .fund-picker-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 10px 14px;
-        cursor: pointer;
-        color: var(--txt);
-        font-family: "Roboto Mono", monospace;
-        font-size: 12px;
-        border-bottom: 1px solid var(--line);
-        transition: background 0.1s;
-      }
-      .fund-picker-item:last-child { border-bottom: none; }
-      .fund-picker-item:hover { background: var(--panel-2); }
-      .fund-picker-item.selected { color: var(--mint); }
-      .fund-picker-item-name { flex: 1; }
       .fp-tag {
         font-size: 8px;
         font-weight: 700;
@@ -383,14 +331,6 @@
       .txn-amt-field { display: flex; flex-direction: column; gap: 3px; }
       .txn-amt-label { font-size: 9px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.4px; }
       .txn-fund-row-dual .curval-inp { width: 76px; }
-      /* ── FUND CARD STAT ROW ── */
-      .card-stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-      .card-stat { background: var(--panel-2); border-radius: 8px; padding: 8px 10px; }
-      .card-stat-lbl { font-size: 10px; color: var(--dim); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
-      .card-stat-val { font-family: "Roboto", sans-serif; font-size: 14px; font-weight: 600; color: var(--txt); }
-      .card-stat-val.profit { color: #4ade80; }
-      .card-stat-val.loss   { color: #f87171; }
-      .card-stat-pct { font-size: 10px; margin-left: 4px; opacity: 0.7; }
       /* ── RETURNS LOG ── */
       .ret-month-head { font-size: 11px; font-weight: 700; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; padding: 14px 14px 6px; }
       .ret-row {
@@ -806,12 +746,6 @@
         text-transform: uppercase; letter-spacing: 1px; color: var(--dim); text-align: right;
       }
       .reb-ch:first-child { text-align: left; }
-      .reb-section-hdr {
-        display: flex; align-items: center; gap: 8px;
-        padding: 9px 14px 7px;
-        background: rgba(0,245,160,0.04);
-        border-bottom: 1px solid rgba(255,255,255,0.05);
-      }
       .reb-section-name {
         font-family: "Roboto", sans-serif; font-size: 12px; font-weight: 700;
         text-transform: uppercase; letter-spacing: 1.2px; color: var(--mint); flex: 1;
