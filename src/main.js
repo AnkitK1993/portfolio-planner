@@ -71,7 +71,7 @@ el("txnImportFile").addEventListener("change", e => {
             importTxnsCSV(e.target.files[0]);
             e.target.value = ""; // reset so the same file can be re-imported
           });
-["txp-addtxn", "txp-history", "txp-curval", "txp-sip", "txp-entervalues"].forEach(id => {
+["txp-addtxn", "txp-history", "txp-curval", "txp-sip", "txp-entervalues", "txp-snapshot"].forEach(id => {
             const head = el(id + "-head");
             if (!head) return;
             head.addEventListener("click", () => {

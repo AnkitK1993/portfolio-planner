@@ -19,9 +19,13 @@ export function syncFundArrays() {
 
 export const othersOfSnap = (s) => OTHER_FIELDS.reduce((sum, f) => sum + (s[f.id] || 0), 0);
 
+// incomeExtra is frozen at whatever it was worth when the snapshot was
+// saved (same "freeze, don't recompute" treatment as bank/FD/PPF/etc via
+// othersOfSnap) — so flipping the "already in Bank" flag later doesn't
+// retroactively change past months' totals.
 export const normalizeSnap = (key, v) => {
             const s = { key, ...v };
-            s.total = (s.mf || 0) + (s.mfProfit || 0) + othersOfSnap(s);
+            s.total = (s.mf || 0) + (s.mfProfit || 0) + othersOfSnap(s) + (s.incomeExtra || 0);
             return s;
           };
 
@@ -67,6 +71,8 @@ export function defaultState() {
               equityOrder: ['eq1', 'eq2', 'eq3'],
               networth: {
                 ...Object.fromEntries(NW_FIELDS.map((f) => [f.id, 0])),
+                income: 0,
+                incomeInBank: false,
                 snapshots: {},
               },
               forecast: { investments: 0, monthlyInvest: 0, annualRate: 12, stepUp: 0, inflationRate: 6, mode: "project", goalBank: 0, goalTarget: 0, goalYears: 10, goalRate: 12, fcScenario: "base", fcShowAll: false },
@@ -132,6 +138,8 @@ export function loadState() {
                 equityOrder: eqOrder,
                 networth: {
                   ...Object.fromEntries(NW_FIELDS.map((f) => [f.id, s.networth?.[f.id] ?? 0])),
+                  income: s.networth?.income ?? 0,
+                  incomeInBank: !!s.networth?.incomeInBank,
                   snapshots: { ...(s.networth?.snapshots || {}) },
                 },
                 forecast: { ...def.forecast, ...(s.forecast || {}) },

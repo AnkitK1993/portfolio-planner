@@ -47,12 +47,22 @@ export function mfUnrealizedGain(liqFunds, eqFunds, liquid, equity) {
             return total;
           }
 
+// Income is a separately-tracked figure, not part of NW_FIELDS, because
+// it needs conditional inclusion rather than a flat sum: incomeInBank
+// checked means the salary/income has already landed in the Bank &
+// Savings figure, so adding it again here would double-count it. Left
+// unchecked, it's money not yet reflected in Bank — a genuine, separate
+// contribution to net worth.
+export function extraIncome(networth) {
+            return networth.incomeInBank ? 0 : (networth.income || 0);
+          }
+
 export function nwTotal(networth, liqFunds, eqFunds, liquid, equity) {
             const other = NW_FIELDS.filter((f) => f.id !== "mfProfit").reduce(
               (s, f) => s + (networth[f.id] || 0),
               0,
             );
-            return mfTotalValue(liqFunds, eqFunds, liquid, equity) + mfUnrealizedGain(liqFunds, eqFunds, liquid, equity) + other;
+            return mfTotalValue(liqFunds, eqFunds, liquid, equity) + mfUnrealizedGain(liqFunds, eqFunds, liquid, equity) + other + extraIncome(networth);
           }
 
 // Average monthly compounding rate across consecutive snapshot pairs —
@@ -79,5 +89,6 @@ export function buildCurrentSnapshot(networth, liqFunds, eqFunds, liquid, equity
             const cur = { mf: mfTotalValue(liqFunds, eqFunds, liquid, equity), total: nwTotal(networth, liqFunds, eqFunds, liquid, equity) };
             NW_FIELDS.forEach((f) => { cur[f.id] = networth[f.id] || 0; });
             cur.mfProfit = mfUnrealizedGain(liqFunds, eqFunds, liquid, equity);
+            cur.incomeExtra = extraIncome(networth);
             return cur;
           }

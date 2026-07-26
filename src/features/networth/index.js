@@ -1,7 +1,7 @@
 import { NW_FIELDS, OTHER_FIELDS } from "../../core/constants.js";
 import { UI } from "../../core/ui.js";
 import { _animOnRender, animateNumber, animateWidth } from "../../core/animate.js";
-import { avgMonthlyGrowthRate, buildCurrentSnapshot, mfTotalValue, mfUnrealizedGain, mfValueAsOf, nwTotal } from "../../domain/networth.js";
+import { avgMonthlyGrowthRate, buildCurrentSnapshot, extraIncome, mfTotalValue, mfUnrealizedGain, mfValueAsOf, nwTotal } from "../../domain/networth.js";
 import { editMode, EQ_FUNDS, LIQ_FUNDS, normalizeSnap, othersOfSnap, saveState, snapshotKey, state } from "../../core/state.js";
 import { el } from "../../core/dom.js";
 import { fmt, fmtCompact, fmtMonth, fmtNum, num } from "../../core/format.js";
@@ -43,6 +43,31 @@ export function buildNwGrid() {
               inp.addEventListener("focus", () => { const v = num(inp.value); inp.value = v > 0 ? v : ""; });
               inp.addEventListener("blur",  () => { inp.value = fmtNum(num(inp.value)); });
             });
+
+            // Income — not part of NW_FIELDS (see extraIncome() in
+            // domain/networth.js for why: it needs the "already in Bank"
+            // flag's conditional logic, not a flat unconditional sum).
+            // Not auto-reset month to month, same as every other field
+            // here — whatever was last entered IS the default for the next
+            // month, until the user changes it.
+            const incomeInp = el("nw-income");
+            if (incomeInp) {
+              incomeInp.value = fmtNum(state.networth.income);
+              incomeInp.addEventListener("input", (e) => {
+                setNetworthField("income", num(e.target.value));
+                renderNetWorth();
+              });
+              incomeInp.addEventListener("focus", () => { const v = num(incomeInp.value); incomeInp.value = v > 0 ? v : ""; });
+              incomeInp.addEventListener("blur",  () => { incomeInp.value = fmtNum(num(incomeInp.value)); });
+            }
+            const incomeFlag = el("nw-income-in-bank");
+            if (incomeFlag) {
+              incomeFlag.checked = !!state.networth.incomeInBank;
+              incomeFlag.addEventListener("change", (e) => {
+                setNetworthField("incomeInBank", e.target.checked);
+                renderNetWorth();
+              });
+            }
           }
 
 export function renderNetWorth() {
@@ -57,7 +82,8 @@ export function renderNetWorth() {
             const other = NW_FIELDS.filter((f) => f.id !== "mfProfit").reduce(
               (s, f) => s + (state.networth[f.id] || 0), 0,
             );
-            const total = mfVal + displayedProfit + other;
+            const incomeExtra = extraIncome(state.networth);
+            const total = mfVal + displayedProfit + other + incomeExtra;
             const breakdownPreview = el("nwBreakdownPreview");
             if (breakdownPreview) breakdownPreview.textContent = fmt(total);
 
@@ -154,6 +180,9 @@ export function renderNetWorth() {
               { label: "PPF", value: state.networth.ppf || 0, color: "#8be8ff" },
               { label: "EPF", value: state.networth.epf || 0, color: "#2dd4bf" },
               { label: "Bonds", value: state.networth.bonds || 0, color: "#c084fc" },
+              // Only shows up when it's actually adding to the total (i.e.
+              // not already folded into Bank & Savings) — see extraIncome().
+              { label: "Income (not in Bank)", value: incomeExtra, color: "#fbbf24" },
             ].filter((c) => c.value > 0);
 
             if (!cats.length) {
@@ -188,9 +217,10 @@ export function takeSnapshot() {
             );
             // state.networth.mfProfit already holds the correct figure here —
             // live if creating a new snapshot, frozen historical if editing one.
-            const total = mfVal + (state.networth.mfProfit || 0) + other;
+            const incomeExtra = extraIncome(state.networth);
+            const total = mfVal + (state.networth.mfProfit || 0) + other + incomeExtra;
             const doSave = () => {
-              const snap = { mf: mfVal, total, savedAt: new Date().toISOString() };
+              const snap = { mf: mfVal, total, incomeExtra, savedAt: new Date().toISOString() };
               NW_FIELDS.forEach((f) => { snap[f.id] = state.networth[f.id] || 0; });
               saveSnapshot(key, snap);
               if (nwEditingKey) {
@@ -252,6 +282,7 @@ export function renderNwHistory() {
               { key: "mf",       label: "MF Value" },
               { key: "mfProfit", label: "Unrealized Gain" },
               ...OTHER_FIELDS.map(f => ({ key: f.id, label: f.label })),
+              { key: "incomeExtra", label: "Income (not in Bank)" },
               { key: "total",    label: "Total" },
             ];
 

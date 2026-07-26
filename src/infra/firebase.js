@@ -229,6 +229,8 @@ export function applyCloudState(raw) {
               equityOrder: eqOrder,
               networth: {
                 ...Object.fromEntries(NW_FIELDS.map((f) => [f.id, raw.networth?.[f.id] ?? 0])),
+                income: raw.networth?.income ?? 0,
+                incomeInBank: !!raw.networth?.incomeInBank,
                 snapshots: { ...(raw.networth?.snapshots || {}) },
               },
               forecast: { ...def.forecast, ...(raw.forecast || {}) },

@@ -871,10 +871,11 @@
           </div>
         </div>
 
-        <!-- Enter Values Card — Bank/FD/PPF/EPF/Cash/Bonds + snapshot save
-             (moved here from the Net Worth tab; content stays kept in sync
-             by renderNetWorth()/buildNwGrid() regardless of which tab is
-             visible, same as before the move). -->
+        <!-- Enter Values Card — Bank/FD/PPF/EPF/Cash/Bonds + Income (moved
+             here from the Net Worth tab; content stays kept in sync by
+             renderNetWorth()/buildNwGrid() regardless of which tab is
+             visible, same as before the move). Snapshot save now lives in
+             its own card below. -->
         <div class="txp-card" id="txp-entervalues">
           <div class="txp-card-head" id="txp-entervalues-head">
             <span class="txp-card-title">Enter Values</span>
@@ -891,6 +892,32 @@
                 <div class="nw-auto-sub">Liquid + equity synced from Portfolio tab</div>
               </div>
               <div class="nw-fields-grid" id="nwFieldsGrid"></div>
+              <div class="nw-income-block" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line);">
+                <div class="field" style="margin-bottom:0;">
+                  <label class="flabel" for="nw-income">Income</label>
+                  <div class="ibox"><span class="pfx">&#8377;</span>
+                    <input class="num" id="nw-income" type="text" placeholder="0" inputmode="numeric" />
+                  </div>
+                </div>
+                <label style="display:flex;align-items:center;gap:8px;font-size:10.5px;color:var(--dim);margin-top:8px;cursor:pointer;">
+                  <input type="checkbox" id="nw-income-in-bank" />
+                  Already included in Bank &amp; Savings (don't add separately to Net Worth)
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Save Snapshot Card — extracted from Enter Values so the
+             monthly-snapshot action reads as its own step, separate from
+             live value entry. -->
+        <div class="txp-card" id="txp-snapshot">
+          <div class="txp-card-head" id="txp-snapshot-head">
+            <span class="txp-card-title">Save Snapshot</span>
+            <span class="txp-card-chev">▾</span>
+          </div>
+          <div class="txp-card-body">
+            <div class="txp-inner">
               <div class="nw-snap-row">
                 <button class="btn primary" id="nwSnapshotBtn" style="flex:0 0 auto">Save snapshot</button>
                 <button class="btn btn-ghost" id="nwSnapCancelBtn" style="display:none;flex:0 0 auto;">Cancel</button>
