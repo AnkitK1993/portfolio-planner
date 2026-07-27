@@ -18,19 +18,31 @@ export function normalizeExpenseCategory(key) {
             return EXPENSE_CATEGORIES.find(c => c.key === key) || EXPENSE_CATEGORIES[EXPENSE_CATEGORIES.length - 1];
           }
 
-export function fixedExpensesTotal(fixedExpenses) {
-            return (fixedExpenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+// An expense with no startDate has always been active (legacy items, and
+// the default for new ones). One with a startDate only counts from that
+// month onward — lets a newly-added expense (e.g. a new EMI) skip being
+// misapplied to months before it actually existed.
+function expenseActiveInMonth(expense, monthKey) {
+            return !expense.startDate || expense.startDate.slice(0, 7) <= monthKey;
+          }
+
+export function fixedExpensesTotal(fixedExpenses, monthKey = monthKeyOf(new Date())) {
+            return (fixedExpenses || [])
+              .filter(e => expenseActiveInMonth(e, monthKey))
+              .reduce((s, e) => s + (Number(e.amount) || 0), 0);
           }
 
 // Per-category totals for the Fixed items list — only categories that
 // actually have a nonzero item show up, in EXPENSE_CATEGORIES' own order
 // (not sorted by amount) so the breakdown reads the same way every time.
-export function fixedExpensesByCategory(fixedExpenses) {
+export function fixedExpensesByCategory(fixedExpenses, monthKey = monthKeyOf(new Date())) {
             const totals = {};
-            (fixedExpenses || []).forEach(e => {
-              const cat = normalizeExpenseCategory(e.category).key;
-              totals[cat] = (totals[cat] || 0) + (Number(e.amount) || 0);
-            });
+            (fixedExpenses || [])
+              .filter(e => expenseActiveInMonth(e, monthKey))
+              .forEach(e => {
+                const cat = normalizeExpenseCategory(e.category).key;
+                totals[cat] = (totals[cat] || 0) + (Number(e.amount) || 0);
+              });
             return EXPENSE_CATEGORIES
               .map(c => ({ ...c, total: totals[c.key] || 0 }))
               .filter(c => c.total > 0);
@@ -177,12 +189,14 @@ export function resolvePeriodKeys(periodKey) {
 // Per-month expense breakdown across a range of "YYYY-MM" keys. The
 // in-progress current month reuses bankSpentThisMonth()'s live-bank-vs-
 // last-snapshot logic; completed months instead diff two saved snapshots
-// (the month's own snapshot vs the one before it). Fixed and SIP totals
-// aren't historized anywhere in the app, so today's amounts are applied
-// retroactively to every month — a deliberate simplification, not a bug:
-// only the bank-driven "extra" figure reflects genuine month-to-month
-// variation. A month with no snapshot pair to diff comes back with
-// bankDrop/extra/total all null rather than a guessed value.
+// (the month's own snapshot vs the one before it). Fixed item *amounts*
+// aren't historized anywhere in the app, so today's amount is still what
+// applies to every past month an item was active for — but which items
+// count in a given month now respects each one's own startDate (see
+// expenseActiveInMonth), so an expense added this month no longer bleeds
+// into earlier months it didn't exist in. SIP has no such concept and
+// stays fully retroactive. A month with no snapshot pair to diff comes
+// back with bankDrop/extra/total all null rather than a guessed value.
 //
 // Like totalMonthlyExpenses(), each month's actual logged investing (from
 // transactions dated in that month) is recognized as investment rather
@@ -190,11 +204,11 @@ export function resolvePeriodKeys(periodKey) {
 // — see investedInMonth() above.
 export function monthlyExpenseSeries(periodKeys, { fixedExpenses, liqFunds, eqFunds, liquid, equity, networth, transactions }) {
             const snaps = networth?.snapshots || {};
-            const fixed = fixedExpensesTotal(fixedExpenses);
             const sip = totalMonthlySip(liqFunds, eqFunds, liquid, equity);
             const nowKey = monthKeyOf(new Date());
 
             return periodKeys.map(key => {
+              const fixed = fixedExpensesTotal(fixedExpenses, key);
               let bankDrop = null;
               if (key === nowKey) {
                 const bs = bankSpentThisMonth(networth);

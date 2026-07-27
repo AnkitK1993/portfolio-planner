@@ -462,14 +462,19 @@ function renderExpenses() {
             // palette by position, so it carries real meaning at a glance.
             const rows = items.map((item) => {
               const cat = normalizeExpenseCategory(item.category);
+              const startLabel = item.startDate ? fmtMonth(item.startDate.slice(0, 7)) : "";
               return `
               <div class="exp-row">
                 <span class="exp-dot" style="background:${cat.color}" title="${cat.label}"></span>
                 <div class="exp-name-col">
                   <input class="exp-name-inp" data-id="${item.id}" value="${item.name || ""}" placeholder="Expense name" ${editMode ? "" : "readonly"}/>
-                  ${editMode
-                    ? `<select class="exp-cat-sel" data-id="${item.id}">${EXPENSE_CATEGORIES.map(c => `<option value="${c.key}"${c.key === cat.key ? " selected" : ""}>${c.label}</option>`).join("")}</select>`
-                    : `<span class="exp-cat-tag" style="color:${cat.color}">${cat.label}</span>`}
+                  <div class="exp-meta-row">
+                    ${editMode
+                      ? `<select class="exp-cat-sel" data-id="${item.id}">${EXPENSE_CATEGORIES.map(c => `<option value="${c.key}"${c.key === cat.key ? " selected" : ""}>${c.label}</option>`).join("")}</select>
+                         <input type="date" class="exp-date-inp" data-id="${item.id}" value="${item.startDate || ""}" title="Start date — this expense won't count toward months before this"/>`
+                      : `<span class="exp-cat-tag" style="color:${cat.color}">${cat.label}</span>
+                         ${startLabel ? `<span class="exp-date-tag" title="Doesn't count before ${startLabel}">from ${startLabel}</span>` : ""}`}
+                  </div>
                 </div>
                 ${editMode
                   ? `<input type="number" class="exp-amt-inp" data-id="${item.id}" min="0" step="100" value="${item.amount || ""}" placeholder="0"/>`
@@ -644,7 +649,7 @@ function renderExpenses() {
                     <span class="exp-hero-lbl">Average Expenses / Month</span>
                     <span class="exp-hero-val">${fmtAvg(avgTotal)}</span>
                   </div>
-                  <div class="exp-hero-sub">Based on ${brk.monthsWithData} of ${brk.totalMonths} month${brk.totalMonths !== 1 ? "s" : ""} with Net Worth snapshot data${brk.monthsWithData < brk.totalMonths ? " — save more snapshots for a fuller picture" : ""}. Fixed &amp; SIP use today's amounts applied to each month.</div>
+                  <div class="exp-hero-sub">Based on ${brk.monthsWithData} of ${brk.totalMonths} month${brk.totalMonths !== 1 ? "s" : ""} with Net Worth snapshot data${brk.monthsWithData < brk.totalMonths ? " — save more snapshots for a fuller picture" : ""}. Fixed &amp; SIP use today's amounts, applied to each month an expense was active in.</div>
                 </div>
                 <div style="margin-top:14px;">
                   <div style="font-size:10px;color:var(--dim);margin-bottom:8px;">Projected Expenses</div>
@@ -727,6 +732,17 @@ function renderExpenses() {
                 item.category = e.target.value;
                 saveState();
                 renderExpenses();
+              });
+            });
+            wrap.querySelectorAll(".exp-date-inp").forEach(inp => {
+              inp.addEventListener("change", e => {
+                const item = items.find(i => i.id === e.target.dataset.id);
+                if (!item) return;
+                item.startDate = e.target.value || "";
+                saveState();
+                renderExpenses();
+                renderHealthScore();
+                renderFireProgress();
               });
             });
             wrap.querySelectorAll(".exp-amt-inp").forEach(inp => {

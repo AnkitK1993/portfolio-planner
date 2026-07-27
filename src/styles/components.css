@@ -684,12 +684,19 @@
         color: var(--txt); font-size: 12.5px; font-weight: 600;
         padding: 5px 7px; width: 100%; font-family: inherit;
       }
-      .exp-cat-tag { font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.4px; opacity: 0.85; padding: 0 7px; }
+      .exp-cat-tag { font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.4px; opacity: 0.85; }
+      .exp-meta-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-left: 7px; }
       .exp-cat-sel {
         background: var(--bg); border: 1px solid var(--line); border-radius: 5px;
-        color: var(--dim); font-size: 9px; padding: 2px 5px; margin-left: 7px;
+        color: var(--dim); font-size: 9px; padding: 2px 5px;
         width: fit-content; font-family: inherit; cursor: pointer;
       }
+      .exp-date-inp {
+        background: var(--bg); border: 1px solid var(--line); border-radius: 5px;
+        color: var(--dim); font-size: 9px; padding: 2px 5px;
+        font-family: inherit; cursor: pointer; color-scheme: light dark;
+      }
+      .exp-date-tag { font-size: 8.5px; color: var(--dim); opacity: 0.75; white-space: nowrap; }
       .exp-amt-txt { font-family: "Roboto Mono", monospace; font-size: 12.5px; color: var(--txt); text-align: right; white-space: nowrap; }
       .exp-amt-inp {
         background: none; border: 1px solid transparent; border-radius: 6px;
