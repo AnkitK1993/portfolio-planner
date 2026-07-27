@@ -35,6 +35,16 @@ function fmtIncomeCell(s) {
             return s.incomeInBank ? `${val} <span style="color:var(--dim)">(in Bank)</span>` : val;
           }
 
+// Same figure, dimmed instead of annotated with text — Monthly History's
+// denser table has no room for an inline note, but a plain unstyled value
+// that silently doesn't add into the Total (because it's folded into
+// Bank & Savings that month) reads as a math error. Dimming signals
+// "this row didn't count" without adding words.
+function fmtIncomeDim(s) {
+            const val = fmtCompact(s.income || 0);
+            return s.incomeInBank ? `<span style="color:var(--dim)">${val}</span>` : val;
+          }
+
 export function buildNwGrid() {
             // Mutual Funds isn't a NW_FIELDS/state.networth entry (it's
             // synced live from the Portfolio tab's fund holdings, same as
@@ -298,15 +308,17 @@ export function renderNwHistory() {
                     DETAIL_FIELDS.map(f => {
                       const snapV = s[f.key] || 0, curV = cur[f.key] || 0, d = curV - snapV;
                       const dColor = d > 0 ? "var(--mint)" : d < 0 ? "var(--coral)" : "var(--dim)";
+                      const snapCell = f.key === "income" ? fmtIncomeDim(s) : fmtCompact(snapV);
+                      const curCell = f.key === "income" ? fmtIncomeDim(cur) : fmtCompact(curV);
                       return `<div class="nw-hist-cmp-row">
                         <span class="nw-hist-cmp-label">${f.label}</span>
-                        <span class="nw-hist-cmp-val">${fmtCompact(snapV)}</span>
-                        <span class="nw-hist-cmp-val">${fmtCompact(curV)}</span>
+                        <span class="nw-hist-cmp-val">${snapCell}</span>
+                        <span class="nw-hist-cmp-val">${curCell}</span>
                         <span class="nw-hist-cmp-delta" style="color:${dColor}">${d === 0 ? "—" : (d > 0 ? "+" : "") + fmtCompact(d)}</span>
                       </div>`;
                     }).join("")
                   : DETAIL_FIELDS.map(f =>
-                      `<div class="nw-hist-detail-row"><span>${f.label}</span><span>${fmtCompact(s[f.key] || 0)}</span></div>`
+                      `<div class="nw-hist-detail-row"><span>${f.label}</span><span>${f.key === "income" ? fmtIncomeDim(s) : fmtCompact(s[f.key] || 0)}</span></div>`
                     ).join("")
                 ) + `<button class="nw-hist-cmp-btn" data-key="${s.key}">${showCompare ? "Hide comparison" : "Compare with Current"}</button>`;
               }
