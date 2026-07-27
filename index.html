@@ -460,27 +460,6 @@
           </div>
         </div>
 
-        <!-- Rebalance — entry point to the manual, named-account ledger
-             (Cash/Bank/Mutual Funds/Bonds/PPF/Cards), formerly buried in
-             the Admin dropdown. Not collapsible — there's nothing to
-             expand in place, it's purely a link out to its own page. -->
-        <!-- Rebalance — manual, named-account ledger (Cash/Bank/Mutual
-             Funds/Bonds/PPF/Cards). Expands in place, same as every other
-             Budget card, instead of linking out to a separate page. -->
-        <div class="card" id="budgetRebalanceCard" style="margin-bottom:12px">
-          <button class="card-toggle-head" id="budgetRebalanceToggle" aria-expanded="false">
-            <div class="card-toggle-head-text">
-              <div class="sec-head" style="margin-bottom:4px">Rebalance</div>
-              <div style="font-size:10px;color:var(--dim)">Manual account-level ledger — Cash, Bank, Mutual Funds, Bonds, PPF, Cards</div>
-            </div>
-            <span class="card-toggle-chevron">▾</span>
-          </button>
-          <div class="card-toggle-body" id="budgetRebalanceCollBody">
-            <div class="card-toggle-body-inner">
-              <div id="budgetRebalanceBody"></div>
-            </div>
-          </div>
-        </div>
       </section>
 
       <!-- ═══════════════ NET WORTH ═══════════════ -->
@@ -628,10 +607,29 @@
 
       <!-- ═══════════════ FORECAST ═══════════════ -->
       <section class="tab-section" id="tab-forecast">
-        <div class="pg-head">
-          <h1>Financial <span class="accent">Planning</span></h1>
-          <p>30-year projection with scenarios, step-up SIP, and goal planning.</p>
+        <div class="pg-head pg-head-with-action">
+          <div>
+            <h1>Financial <span class="accent">Planning</span></h1>
+            <p>Long-range projections and manual account rebalancing.</p>
+          </div>
+          <button class="pg-head-toggle-all" id="planningToggleAllBtn" title="Expand all cards" aria-label="Expand all cards">
+            <span class="pg-head-toggle-all-icon">▾</span>
+          </button>
         </div>
+
+        <!-- Projections — the 30-year forecast tool, collapsed by default
+             same as every other card on this tab (was previously the only
+             always-open content on the page). -->
+        <div class="card" id="fcCard" style="margin-bottom:12px">
+          <button class="card-toggle-head" id="fcCardToggle" aria-expanded="false">
+            <div class="card-toggle-head-text">
+              <div class="sec-head" style="margin-bottom:4px">Projections</div>
+              <div style="font-size:10px;color:var(--dim)">30-year projection with scenarios, step-up SIP, and goal planning</div>
+            </div>
+            <span class="card-toggle-chevron">▾</span>
+          </button>
+          <div class="card-toggle-body" id="fcCardCollBody">
+            <div class="card-toggle-body-inner">
 
         <!-- Mode toggle -->
         <div class="fc-mode-row">
@@ -774,6 +772,29 @@
             <input class="num" id="fcCompareExtra" type="number" min="0" placeholder="0" inputmode="numeric" />
           </div>
           <div id="fcCompareResult"></div>
+        </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- Rebalance — manual, named-account ledger (Cash/Bank/Mutual
+             Funds/Bonds/PPF/Cards). Moved here from Budget so long-range
+             planning tools live together. Expands in place, same as every
+             other card on this tab. -->
+        <div class="card" id="planningRebalanceCard" style="margin-bottom:12px">
+          <button class="card-toggle-head" id="planningRebalanceToggle" aria-expanded="false">
+            <div class="card-toggle-head-text">
+              <div class="sec-head" style="margin-bottom:4px">Rebalance</div>
+              <div style="font-size:10px;color:var(--dim)">Manual account-level ledger — Cash, Bank, Mutual Funds, Bonds, PPF, Cards</div>
+            </div>
+            <span class="card-toggle-chevron">▾</span>
+          </button>
+          <div class="card-toggle-body" id="planningRebalanceCollBody">
+            <div class="card-toggle-body-inner">
+              <div id="planningRebalanceBody"></div>
+            </div>
+          </div>
         </div>
       </section>
 

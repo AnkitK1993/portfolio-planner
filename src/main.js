@@ -425,9 +425,17 @@ const budgetToggleAll = makeToggleAllGroup("budgetToggleAllBtn");
 [
             ["expCardToggle", "expCardBody", "expCollapsedTotal"],
             ["sumFireToggle", "sumFireCollBody", null],
-            ["budgetRebalanceToggle", "budgetRebalanceCollBody", null],
           ].forEach(([headerId, bodyId, previewId]) => budgetToggleAll.add(headerId, bodyId, previewId));
 budgetToggleAll.refresh();
+// Planning tab's own expand-all group — Projections (the forecast tool,
+// previously the only always-open content on this tab) and Rebalance
+// (moved here from Budget).
+const planningToggleAll = makeToggleAllGroup("planningToggleAllBtn");
+[
+            ["fcCardToggle", "fcCardCollBody", null],
+            ["planningRebalanceToggle", "planningRebalanceCollBody", null],
+          ].forEach(([headerId, bodyId, previewId]) => planningToggleAll.add(headerId, bodyId, previewId));
+planningToggleAll.refresh();
 // Monthly Investment / By Fund (Transactions tab) aren't part of a
 // toggle-all group — there's no "expand all" button on that tab — but
 // still need their own collapsedSummary wiring for their previews.
@@ -441,7 +449,8 @@ registerCardOrder("summary", [
             "sumXirrCard", "sumAllocCard", "sumCompositionCard", "sumIdealCard",
             "sumStreakCard", "sumFundCard", "sumTaxCard", "sumHeatmapCard", "sumCalCard",
           ]);
-registerCardOrder("budget", ["sumExpensesCard", "sumFireCard", "budgetRebalanceCard"]);
+registerCardOrder("budget", ["sumExpensesCard", "sumFireCard"]);
+registerCardOrder("planning", ["fcCard", "planningRebalanceCard"]);
 registerCardOrder("transactions", ["txp-history", "txp-curval", "txp-sip", "txp-entervalues", "txp-snapshot", "txnCharts"]);
 registerCardOrder("networth", ["nwBreakdownCard", "nwAssetTrendsCard", "nwHistCard", "nwChartCard", "nwCompChartCard", "nwProjCard"]);
 // Returns badges (Total bar + Liquid/Equity division rows) toggle between

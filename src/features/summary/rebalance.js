@@ -26,14 +26,14 @@ export function rebUid() { return "r_" + Date.now() + "_" + Math.random().toStri
 export function rebSuid() { return "s_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6); }
 
 export function renderRebalance() {
-            const wrap = el("budgetRebalanceBody");
+            const wrap = el("planningRebalanceBody");
             if (!wrap) return;
             if (!state.rebalance?.sections) state.rebalance = { sections: defaultRebSections() };
             const secs = state.rebalance.sections;
             const em = rebEditMode;
 
             // No back button or page title here — this renders inline into
-            // the Budget tab's own collapsible "Rebalance" card, whose
+            // the Planning tab's own collapsible "Rebalance" card, whose
             // header already shows the title; the only thing this toolbar
             // needs is the Edit toggle (structural add/remove-row edits
             // warrant their own toggle, separate from the app's blanket
