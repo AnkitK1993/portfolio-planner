@@ -22,9 +22,13 @@ export const othersOfSnap = (s) => OTHER_FIELDS.reduce((sum, f) => sum + (s[f.id
 // incomeExtra is frozen at whatever it was worth when the snapshot was
 // saved (same "freeze, don't recompute" treatment as bank/FD/PPF/etc via
 // othersOfSnap) — so flipping the "already in Bank" flag later doesn't
-// retroactively change past months' totals.
+// retroactively change past months' totals. Snapshots saved before Income
+// became its own per-snapshot field only have incomeExtra — back-fill
+// income/incomeInBank from it so every snap has a well-defined raw Income
+// to display/edit, without changing what it adds to the total.
 export const normalizeSnap = (key, v) => {
             const s = { key, ...v };
+            if (s.income == null) { s.income = s.incomeExtra || 0; s.incomeInBank = false; }
             s.total = (s.mf || 0) + (s.mfProfit || 0) + othersOfSnap(s) + (s.incomeExtra || 0);
             return s;
           };

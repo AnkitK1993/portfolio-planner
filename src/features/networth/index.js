@@ -21,9 +21,18 @@ const SNAPSHOT_DETAIL_FIELDS = [
             { key: "mf",       label: "MF Value" },
             { key: "mfProfit", label: "Unrealized Gain" },
             ...OTHER_FIELDS.map(f => ({ key: f.id, label: f.label })),
-            { key: "incomeExtra", label: "Income (not in Bank)" },
+            { key: "income",   label: "Income" },
             { key: "total",    label: "Total" },
           ];
+
+// Shows the raw Income figure everywhere it's listed, with a note when
+// it's excluded from the total (already folded into Bank & Savings) —
+// showing only the derived incomeExtra (0 when "in Bank") looked like
+// the entered Income had vanished/reset, even though it was saved fine.
+function fmtIncomeCell(s) {
+            const val = fmtCompact(s.income || 0);
+            return s.incomeInBank ? `${val} <span style="color:var(--dim)">(in Bank)</span>` : val;
+          }
 
 export function buildNwGrid() {
             el("nwFieldsGrid").innerHTML = NW_FIELDS.map(
@@ -273,15 +282,17 @@ export function renderNwHistory() {
                     DETAIL_FIELDS.map(f => {
                       const snapV = s[f.key] || 0, curV = cur[f.key] || 0, d = curV - snapV;
                       const dColor = d > 0 ? "var(--mint)" : d < 0 ? "var(--coral)" : "var(--dim)";
+                      const snapCell = f.key === "income" ? fmtIncomeCell(s) : fmtCompact(snapV);
+                      const curCell = f.key === "income" ? fmtIncomeCell(cur) : fmtCompact(curV);
                       return `<div class="nw-hist-cmp-row">
                         <span class="nw-hist-cmp-label">${f.label}</span>
-                        <span class="nw-hist-cmp-val">${fmtCompact(snapV)}</span>
-                        <span class="nw-hist-cmp-val">${fmtCompact(curV)}</span>
+                        <span class="nw-hist-cmp-val">${snapCell}</span>
+                        <span class="nw-hist-cmp-val">${curCell}</span>
                         <span class="nw-hist-cmp-delta" style="color:${dColor}">${d === 0 ? "—" : (d > 0 ? "+" : "") + fmtCompact(d)}</span>
                       </div>`;
                     }).join("")
                   : DETAIL_FIELDS.map(f =>
-                      `<div class="nw-hist-detail-row"><span>${f.label}</span><span>${fmtCompact(s[f.key] || 0)}</span></div>`
+                      `<div class="nw-hist-detail-row"><span>${f.label}</span><span>${f.key === "income" ? fmtIncomeCell(s) : fmtCompact(s[f.key] || 0)}</span></div>`
                     ).join("")
                 ) + `<button class="nw-hist-cmp-btn" data-key="${s.key}">${showCompare ? "Hide comparison" : "Compare with Current"}</button>`;
               }
@@ -377,9 +388,9 @@ export function editSnapshot(key) {
             const snap = state.networth.snapshots && state.networth.snapshots[key];
             if (!snap) return;
             const fid = (id) => "snapEdit-" + id;
-            const hasRawIncome = snap.income != null;
-            const incomeVal = hasRawIncome ? (snap.income || 0) : (snap.incomeExtra || 0);
-            const incomeInBank = hasRawIncome && !!snap.incomeInBank;
+            const normalized = normalizeSnap(key, snap);
+            const incomeVal = normalized.income;
+            const incomeInBank = normalized.incomeInBank;
             const readonlyRows = [
               { label: "MF Value", value: snap.mf || 0 },
               { label: "Unrealized Gain", value: snap.mfProfit || 0 },
@@ -465,7 +476,7 @@ export function renderSnapshotsList() {
               const isOpen = snapListExpanded.has(s.key);
               const detailHtml = isOpen
                 ? SNAPSHOT_DETAIL_FIELDS.map(f =>
-                    `<div class="nw-hist-detail-row"><span>${f.label}</span><span>${fmtCompact(s[f.key] || 0)}</span></div>`
+                    `<div class="nw-hist-detail-row"><span>${f.label}</span><span>${f.key === "income" ? fmtIncomeCell(s) : fmtCompact(s[f.key] || 0)}</span></div>`
                   ).join("") +
                   `<div class="nw-snap-edit-row">
                     <button class="btn btn-ghost btn-sm nw-snap-list-edit" data-key="${s.key}">Edit</button>
