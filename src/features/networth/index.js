@@ -200,7 +200,12 @@ export function takeSnapshot() {
             const incomeExtra = extraIncome(state.networth);
             const total = mfVal + (state.networth.mfProfit || 0) + other + incomeExtra;
             const doSave = () => {
-              const snap = { mf: mfVal, total, incomeExtra, savedAt: new Date().toISOString() };
+              const snap = {
+                mf: mfVal, total, incomeExtra,
+                income: state.networth.income || 0,
+                incomeInBank: !!state.networth.incomeInBank,
+                savedAt: new Date().toISOString(),
+              };
               NW_FIELDS.forEach((f) => { snap[f.id] = state.networth[f.id] || 0; });
               saveSnapshot(key, snap);
               saveState();
@@ -362,17 +367,22 @@ function deleteSnapshotWithUndo(key) {
 // snapshot, so this reads/writes the snapshot object directly instead
 // of routing through state.networth. MF Value and Unrealized Gain are
 // derived/frozen (never hand-entered, same as in Update Assets, where
-// mfProfit is readonly), so they're shown read-only here too. Income/
-// incomeInBank aren't historized per-snapshot (only the computed
-// incomeExtra is), so editing a past month doesn't touch those either.
+// mfProfit is readonly), so they're shown read-only here too. Income and
+// its "already in Bank" flag ARE historized per snapshot (frozen at
+// takeSnapshot() time, same as Bank/FD/etc.) and editable here — snaps
+// saved before that field existed only have the derived incomeExtra, so
+// those default income to incomeExtra (and the flag to off), which
+// reproduces the same incomeExtra via extraIncome() if left untouched.
 export function editSnapshot(key) {
             const snap = state.networth.snapshots && state.networth.snapshots[key];
             if (!snap) return;
             const fid = (id) => "snapEdit-" + id;
+            const hasRawIncome = snap.income != null;
+            const incomeVal = hasRawIncome ? (snap.income || 0) : (snap.incomeExtra || 0);
+            const incomeInBank = hasRawIncome && !!snap.incomeInBank;
             const readonlyRows = [
               { label: "MF Value", value: snap.mf || 0 },
               { label: "Unrealized Gain", value: snap.mfProfit || 0 },
-              ...(snap.incomeExtra ? [{ label: "Income (not in Bank)", value: snap.incomeExtra }] : []),
             ];
             let bodyElRef = null;
 
@@ -392,12 +402,24 @@ export function editSnapshot(key) {
                       <input class="form-inp" id="${fid(f.id)}" type="text" inputmode="numeric" value="${fmtNum(snap[f.id])}" />
                     </div>
                   `).join("")}
+                  <div style="border-top:1px solid var(--line);"></div>
+                  <div class="field" style="margin-bottom:0;">
+                    <label class="flabel" for="${fid("income")}">Income</label>
+                    <input class="form-inp" id="${fid("income")}" type="text" inputmode="numeric" value="${fmtNum(incomeVal)}" />
+                  </div>
+                  <label style="display:flex;align-items:center;gap:8px;font-size:10.5px;color:var(--dim);cursor:pointer;">
+                    <input type="checkbox" id="${fid("incomeInBank")}" ${incomeInBank ? "checked" : ""} />
+                    Already included in Bank &amp; Savings (don't add separately to Net Worth)
+                  </label>
                 `;
                 OTHER_FIELDS.forEach(f => {
                   const inp = bodyEl.querySelector("#" + fid(f.id));
                   inp.addEventListener("focus", () => { const v = num(inp.value); inp.value = v > 0 ? v : ""; });
                   inp.addEventListener("blur", () => { inp.value = fmtNum(num(inp.value)); });
                 });
+                const incomeInp = bodyEl.querySelector("#" + fid("income"));
+                incomeInp.addEventListener("focus", () => { const v = num(incomeInp.value); incomeInp.value = v > 0 ? v : ""; });
+                incomeInp.addEventListener("blur", () => { incomeInp.value = fmtNum(num(incomeInp.value)); });
               },
               footer: [
                 { label: "Cancel", variant: "ghost" },
@@ -407,6 +429,9 @@ export function editSnapshot(key) {
                   onClick: () => {
                     const updated = { ...snap };
                     OTHER_FIELDS.forEach(f => { updated[f.id] = num(bodyElRef.querySelector("#" + fid(f.id)).value); });
+                    updated.income = num(bodyElRef.querySelector("#" + fid("income")).value);
+                    updated.incomeInBank = bodyElRef.querySelector("#" + fid("incomeInBank")).checked;
+                    updated.incomeExtra = extraIncome(updated);
                     updated.total = (updated.mf || 0) + (updated.mfProfit || 0) + othersOfSnap(updated) + (updated.incomeExtra || 0);
                     saveSnapshot(key, updated);
                     saveState();
