@@ -11,7 +11,7 @@ import { _hasLocalData, authUser, fbAuthReady, fbEnabled, flushCloudSave, handle
 import { _upcomingHead } from "./features/portfolio/upcoming.js";
 import { animateNumber } from "./core/animate.js";
 import { applyTxnTotals, closeCurValModal, closeTxnModal, exportTxnsCSV, importTxnsCSV, openCurValModal, openTxnModal, renderReturns, renderTxns, saveCurVal, saveTxn, setTxnType, txnFilter } from "./features/transactions/index.js";
-import { buildNwGrid, renderNetWorth, renderNwCompositionChart, renderNwHistory, renderNwLineChart, renderNwProjection, renderSnapshotsList, takeSnapshot } from "./features/networth/index.js";
+import { buildNwGrid, renderAssetTrends, renderNetWorth, renderNwCompositionChart, renderNwHistory, renderNwLineChart, renderNwProjection, renderSnapshotsList, takeSnapshot } from "./features/networth/index.js";
 import { hideThemeMatrix, loadSavedAccent, showThemeMatrix, themeMatrixOpen } from "./features/admin/themes.js";
 import { calDayDate, calMonth, calView, calWeekOffset, calYear, closeCalDayModal, closeCalNoteModal, openCalNoteModal, renderCalendar, saveCalNote, setCalMonth, setCalView, setCalWeekOffset, setCalYear } from "./features/portfolio/calendar.js";
 import { createCollapsible } from "./core/collapsible.js";
@@ -392,6 +392,7 @@ function makeToggleAllGroup(btnId) {
 const nwToggleAll = makeToggleAllGroup("nwToggleAllBtn");
 [
             ["nwBreakdownToggle", "nwBreakdownBody", "nwBreakdownPreview"],
+            ["nwAssetTrendsToggle", "nwAssetTrendsBody", null],
             ["nwHistToggle", "nwHistBody", "nwHistPreview"],
             ["nwChartToggle", "nwChartBody", "nwChartPreview"],
             ["nwCompChartToggle", "nwCompChartBody", null],
@@ -432,7 +433,7 @@ registerCardOrder("summary", [
             "sumHeatmapCard", "sumIdealCard", "sumCalCard", "txnCharts",
           ]);
 registerCardOrder("transactions", ["txp-history", "txp-curval", "txp-sip", "txp-entervalues", "txp-snapshot"]);
-registerCardOrder("networth", ["nwBreakdownCard", "nwHistCard", "nwChartCard", "nwCompChartCard", "nwProjCard"]);
+registerCardOrder("networth", ["nwBreakdownCard", "nwAssetTrendsCard", "nwHistCard", "nwChartCard", "nwCompChartCard", "nwProjCard"]);
 // Returns badges (Total bar + Liquid/Equity division rows) toggle between
 // absolute return% and XIRR on click — all badges switch together since
 // they're one shared display preference (see rtnMode in core/state.js).
@@ -444,6 +445,7 @@ renderSnapshotsList();
 renderNwLineChart();
 renderNwCompositionChart();
 renderNwProjection();
+renderAssetTrends();
 applyTxnTotals();
 render();
 if (fbEnabled && !_hasLocalData) {

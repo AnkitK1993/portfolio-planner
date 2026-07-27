@@ -523,6 +523,24 @@
           </div>
         </div>
 
+        <!-- Per-Asset Trends: change over 1/3/6/9/12mo + all-time, avg
+             growth, best/worst performer, and allocation share, per asset -->
+        <div class="card" id="nwAssetTrendsCard" style="display:none;margin-bottom:12px">
+          <button class="card-toggle-head" id="nwAssetTrendsToggle" aria-expanded="false">
+            <div class="card-toggle-head-text">
+              <div class="sec-head">Per-Asset Trends</div>
+            </div>
+            <span class="card-toggle-chevron">▾</span>
+          </button>
+          <div class="card-toggle-body" id="nwAssetTrendsBody">
+            <div class="card-toggle-body-inner">
+              <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;" id="nwAssetTrendsPeriods"></div>
+              <div id="nwAssetTrendsBestWorst" style="font-size:10.5px;color:var(--dim);margin-bottom:12px;"></div>
+              <div id="nwAssetTrendsList"></div>
+            </div>
+          </div>
+        </div>
+
         <!-- Monthly History -->
         <div class="card" id="nwHistCard" style="margin-bottom:12px">
           <button class="card-toggle-head" id="nwHistToggle" aria-expanded="false">

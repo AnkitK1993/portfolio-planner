@@ -67,24 +67,58 @@ export function nwTotal(networth, liqFunds, eqFunds, liquid, equity) {
             return mfTotalValue(liqFunds, eqFunds, liquid, equity) + mfUnrealizedGain(liqFunds, eqFunds, liquid, equity) + other + extraIncome(networth);
           }
 
-// Average monthly compounding rate across consecutive snapshot pairs —
-// shared by the Projections cards' forward estimate and any other feature
-// that needs "what rate has this net worth actually been growing at".
-export function avgMonthlyGrowthRate(sortedSnaps) {
+// Average monthly compounding rate across consecutive snapshot pairs, for
+// whatever figure `getter` pulls off each snapshot — shared by the
+// Projections cards' forward estimate (via avgMonthlyGrowthRate, keyed to
+// .total) and the Per-Asset Trends card (keyed to each individual asset
+// field) so both use the exact same compounding math.
+export function avgMonthlyGrowthRateBy(sortedSnaps, getter) {
             let totalRate = 0, count = 0;
             for (let i = 1; i < sortedSnaps.length; i++) {
-              const prev = sortedSnaps[i - 1], curr = sortedSnaps[i];
-              if (prev.total > 0) {
-                const [py, pm] = prev.key.split("-").map(Number);
-                const [cy, cm] = curr.key.split("-").map(Number);
+              const prev = getter(sortedSnaps[i - 1]), curr = getter(sortedSnaps[i]);
+              if (prev > 0) {
+                const [py, pm] = sortedSnaps[i - 1].key.split("-").map(Number);
+                const [cy, cm] = sortedSnaps[i].key.split("-").map(Number);
                 const months = (cy - py) * 12 + (cm - pm);
                 if (months > 0) {
-                  totalRate += Math.pow(curr.total / prev.total, 1 / months) - 1;
+                  totalRate += Math.pow(curr / prev, 1 / months) - 1;
                   count++;
                 }
               }
             }
             return count > 0 ? totalRate / count : 0;
+          }
+
+export function avgMonthlyGrowthRate(sortedSnaps) {
+            return avgMonthlyGrowthRateBy(sortedSnaps, (s) => s.total);
+          }
+
+// The snapshot in effect `monthsBack` months ago — i.e. the most recent
+// snapshot dated at or before that target month, not necessarily an exact
+// key match (so a gap in snapshot cadence doesn't just read as "no data").
+// monthsBack: "all" for the earliest snapshot on record instead of a
+// relative offset. sortedSnaps must be ascending by key.
+export function snapshotMonthsAgo(sortedSnaps, monthsBack) {
+            if (!sortedSnaps.length) return null;
+            if (monthsBack === "all") return sortedSnaps[0];
+            const now = new Date();
+            const target = new Date(now.getFullYear(), now.getMonth() - monthsBack, 1);
+            const targetKey = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, "0")}`;
+            let match = null;
+            for (const s of sortedSnaps) {
+              if (s.key <= targetKey) match = s; else break;
+            }
+            return match;
+          }
+
+// ₹ and % change from a past value to a current one — null when there's
+// no past snapshot to compare against, so callers can render "—" instead
+// of a misleading 0% for genuinely missing history.
+export function changeFrom(pastVal, currentVal) {
+            if (pastVal == null) return null;
+            const delta = currentVal - pastVal;
+            const pct = pastVal !== 0 ? (delta / Math.abs(pastVal)) * 100 : null;
+            return { delta, pct };
           }
 
 export function buildCurrentSnapshot(networth, liqFunds, eqFunds, liquid, equity) {

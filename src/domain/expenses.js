@@ -230,3 +230,30 @@ export function averageExpenseBreakdown(series) {
               avgSurplus: n ? valid.reduce((s, m) => s + (m.surplusInvestment || 0), 0) / n : 0,
             };
           }
+
+// Income isn't re-entered every month (see Update Assets — it's a
+// "whatever was last set" figure, only changed when it actually changes,
+// like a raise), so a month with no snapshot of its own carries forward
+// the most recent prior snapshot's Income rather than reading as a gap.
+// Only genuinely returns null for months before any snapshot existed at
+// all. The in-progress current month uses the live Income value instead.
+export function monthlyIncomeSeries(periodKeys, networth) {
+            const snaps = networth?.snapshots || {};
+            const sortedKeys = Object.keys(snaps).sort();
+            const nowKey = monthKeyOf(new Date());
+            return periodKeys.map(key => {
+              if (key === nowKey) return { key, income: networth?.income || 0 };
+              let income = null;
+              for (const k of sortedKeys) {
+                if (k <= key) income = snaps[k]?.income ?? income;
+                else break;
+              }
+              return { key, income };
+            });
+          }
+
+export function averageIncome(series) {
+            const valid = series.filter(m => m.income !== null);
+            const n = valid.length;
+            return { monthsWithData: n, avgIncome: n ? valid.reduce((s, m) => s + m.income, 0) / n : 0 };
+          }

@@ -3,7 +3,7 @@ import { UI } from "../../core/ui.js";
 import { open as openModal } from "../../core/modal.js";
 import { refreshAncestorCollapsible } from "../../core/collapsible.js";
 import { _animOnRender, animateNumber, animateWidth } from "../../core/animate.js";
-import { avgMonthlyGrowthRate, buildCurrentSnapshot, mfTotalValue, mfUnrealizedGain, mfValueAsOf, nwTotal } from "../../domain/networth.js";
+import { avgMonthlyGrowthRate, avgMonthlyGrowthRateBy, buildCurrentSnapshot, changeFrom, mfTotalValue, mfUnrealizedGain, mfValueAsOf, nwTotal, snapshotMonthsAgo } from "../../domain/networth.js";
 import { editMode, EQ_FUNDS, LIQ_FUNDS, normalizeSnap, othersOfSnap, saveState, snapshotKey, state } from "../../core/state.js";
 import { el } from "../../core/dom.js";
 import { evalArithmetic, fmt, fmtCompact, fmtMonth, fmtNum, num } from "../../core/format.js";
@@ -14,6 +14,37 @@ export let nwHistExpanded = new Set();
 export let nwHistCompare  = new Set();
 
 export let snapListExpanded = new Set();
+
+// Per-Asset Trends card — view-only UI state (which period's change is
+// shown, which asset rows are expanded), not persisted, same treatment
+// as nwHistExpanded/rtnMode elsewhere in the app.
+let assetTrendPeriod = 12;
+const assetTrendExpanded = new Set();
+
+const ASSET_TREND_PERIODS = [
+            { key: 1, label: "1M" },
+            { key: 3, label: "3M" },
+            { key: 6, label: "6M" },
+            { key: 9, label: "9M" },
+            { key: 12, label: "12M" },
+            { key: "all", label: "All" },
+          ];
+
+// Unrealized Gain is deliberately excluded from bestWorst ranking (below)
+// — it's a derived component of MF, not an independent asset, and its %
+// swings off a small/zero base would drown out genuinely comparable
+// asset performance. It still gets its own row in the list.
+const ASSET_TREND_FIELDS = [
+            { key: "mf",       label: "MF Value",        bestWorst: true  },
+            { key: "mfProfit", label: "Unrealized Gain",  bestWorst: false },
+            { key: "bank",     label: "Bank & Savings",   bestWorst: true  },
+            { key: "fd",       label: "Fixed Deposit",    bestWorst: true  },
+            { key: "cash",     label: "Cash",             bestWorst: true  },
+            { key: "ppf",      label: "PPF",              bestWorst: true  },
+            { key: "epf",      label: "EPF",              bestWorst: true  },
+            { key: "bonds",    label: "Bonds",            bestWorst: true  },
+            { key: "income",   label: "Income",           bestWorst: true  },
+          ];
 
 // Shared by renderNwHistory() (Net Worth tab) and renderSnapshotsList()
 // (Transactions tab) — both list the same underlying snapshots, just
@@ -360,6 +391,7 @@ function refreshAllSnapshotViews() {
             renderNwLineChart();
             renderNwCompositionChart();
             renderNwProjection();
+            renderAssetTrends();
           }
 
 function deleteSnapshotWithUndo(key) {
@@ -730,6 +762,146 @@ export function renderNwCompositionChart() {
                   <span style="width:8px;height:8px;border-radius:2px;background:${ser.color};display:inline-block;"></span>${ser.label}
                 </span>`).join("");
             }
+          }
+
+function assetSparklineSvg(pts) {
+            if (pts.length < 2) return "";
+            const W = 100, H = 32, P = 3;
+            const mn = Math.min(...pts), mx = Math.max(...pts), rng = mx - mn || 1;
+            const px = i => (i / (pts.length - 1)) * (W - P * 2) + P;
+            const py = v => H - P - ((v - mn) / rng) * (H - P * 2);
+            const up = pts[pts.length - 1] >= pts[0];
+            const ld = pts.map((v, i) => `${i === 0 ? "M" : "L"}${px(i).toFixed(1)},${py(v).toFixed(1)}`).join(" ");
+            return `<svg viewBox="0 0 ${W} ${H}" style="width:100px;height:32px;display:block;">
+              <path d="${ld}" fill="none" stroke="${up ? "var(--mint)" : "var(--coral)"}" stroke-width="1.5" stroke-linejoin="round"/>
+            </svg>`;
+          }
+
+// Change over 1/3/6/9/12 months + all-time, avg monthly growth, an
+// allocation-share then-vs-now, and a sparkline for every individual
+// asset (including Income, tracked for reference even though it's never
+// part of the Net Worth total) — everything Monthly History gives for
+// the total, broken out per field. Also surfaces the best/worst
+// performer for whichever period is currently selected.
+export function renderAssetTrends() {
+            const card = el("nwAssetTrendsCard");
+            if (!card) return;
+            const sorted = Object.entries(state.networth.snapshots || {})
+              .map(([k, v]) => normalizeSnap(k, v))
+              .sort((a, b) => a.key.localeCompare(b.key));
+            if (sorted.length < 1) { card.style.display = "none"; return; }
+            card.style.display = "";
+
+            const mfVal = mfTotalValue(LIQ_FUNDS, EQ_FUNDS, state.liquid, state.equity);
+            const profit = mfUnrealizedGain(LIQ_FUNDS, EQ_FUNDS, state.liquid, state.equity);
+            const currentVals = {
+              mf: mfVal, mfProfit: profit,
+              bank: state.networth.bank || 0, fd: state.networth.fd || 0, cash: state.networth.cash || 0,
+              ppf: state.networth.ppf || 0, epf: state.networth.epf || 0, bonds: state.networth.bonds || 0,
+              income: state.networth.income || 0,
+            };
+            const currentTotal = mfVal + profit + OTHER_FIELDS.reduce((s, f) => s + (state.networth[f.id] || 0), 0);
+
+            const periodsEl = el("nwAssetTrendsPeriods");
+            if (periodsEl) {
+              periodsEl.innerHTML = ASSET_TREND_PERIODS.map(p =>
+                `<button class="txn-preset${assetTrendPeriod === p.key ? " active" : ""}" data-period="${p.key}">${p.label}</button>`
+              ).join("");
+              periodsEl.querySelectorAll("[data-period]").forEach(btn => {
+                btn.addEventListener("click", () => {
+                  const raw = btn.dataset.period;
+                  assetTrendPeriod = raw === "all" ? "all" : Number(raw);
+                  renderAssetTrends();
+                });
+              });
+            }
+
+            // Rows for the currently-selected period, computed once and
+            // reused by both the best/worst summary and the list itself.
+            const rows = ASSET_TREND_FIELDS.map(f => {
+              const pastSnap = snapshotMonthsAgo(sorted, assetTrendPeriod);
+              const pastVal = pastSnap ? (pastSnap[f.key] ?? 0) : null;
+              const change = changeFrom(pastVal, currentVals[f.key]);
+              return { ...f, current: currentVals[f.key], change };
+            });
+
+            const bestWorstEl = el("nwAssetTrendsBestWorst");
+            if (bestWorstEl) {
+              const ranked = rows.filter(r => r.bestWorst && r.change && r.change.pct !== null);
+              if (ranked.length >= 2) {
+                const best = ranked.reduce((a, b) => (b.change.pct > a.change.pct ? b : a));
+                const worst = ranked.reduce((a, b) => (b.change.pct < a.change.pct ? b : a));
+                const periodLbl = ASSET_TREND_PERIODS.find(p => p.key === assetTrendPeriod)?.label || "";
+                bestWorstEl.innerHTML = `Best performer (${periodLbl}): <b style="color:var(--mint)">${best.label} ${best.change.pct >= 0 ? "+" : ""}${best.change.pct.toFixed(1)}%</b>
+                  &nbsp;·&nbsp; Worst: <b style="color:var(--coral)">${worst.label} ${worst.change.pct >= 0 ? "+" : ""}${worst.change.pct.toFixed(1)}%</b>`;
+              } else {
+                bestWorstEl.innerHTML = "";
+              }
+            }
+
+            const listEl = el("nwAssetTrendsList");
+            if (!listEl) return;
+            listEl.innerHTML = rows.map(r => {
+              const isOpen = assetTrendExpanded.has(r.key);
+              const c = r.change;
+              const deltaStr = c && c.pct !== null
+                ? `<span style="color:${c.pct >= 0 ? "var(--mint)" : "var(--coral)"};font-size:10px;">${c.pct >= 0 ? "+" : ""}${c.pct.toFixed(1)}%</span>`
+                : `<span style="color:var(--dim);font-size:10px;">—</span>`;
+
+              let expandHtml = "";
+              if (isOpen) {
+                const periodRows = ASSET_TREND_PERIODS.map(p => {
+                  const pastSnap = snapshotMonthsAgo(sorted, p.key);
+                  const pastVal = pastSnap ? (pastSnap[r.key] ?? 0) : null;
+                  const ch = changeFrom(pastVal, r.current);
+                  const val = ch && ch.pct !== null
+                    ? `${ch.pct >= 0 ? "+" : ""}${ch.pct.toFixed(1)}% (${ch.delta >= 0 ? "+" : ""}${fmtCompact(ch.delta)})`
+                    : "—";
+                  return `<div class="nw-hist-detail-row"><span>${p.label}</span><span>${val}</span></div>`;
+                }).join("");
+
+                const growthRate = avgMonthlyGrowthRateBy(sorted, s => s[r.key] || 0);
+                const growthPct = (Math.pow(1 + growthRate, 12) - 1) * 100;
+
+                const allSnap = snapshotMonthsAgo(sorted, "all");
+                const shareHtml = r.key !== "income" && currentTotal > 0
+                  ? (() => {
+                      const shareNow = (r.current / currentTotal) * 100;
+                      const shareThen = allSnap && allSnap.total > 0 ? ((allSnap[r.key] || 0) / allSnap.total) * 100 : null;
+                      return `<div class="nw-hist-detail-row"><span>Share of Net Worth</span><span>${shareThen !== null ? shareThen.toFixed(0) + "% → " : ""}${shareNow.toFixed(0)}%</span></div>`;
+                    })()
+                  : "";
+
+                const pts = [...sorted.map(s => s[r.key] || 0), r.current];
+                expandHtml = `
+                  ${periodRows}
+                  <div class="nw-hist-detail-row"><span>Avg Monthly Growth</span><span>${growthPct >= 0 ? "+" : ""}${growthPct.toFixed(1)}%/yr</span></div>
+                  ${shareHtml}
+                  <div style="margin-top:10px;">${assetSparklineSvg(pts)}</div>
+                `;
+              }
+
+              return `<div class="nw-hist-item">
+                <div class="nw-hist-main nw-snap-list-main" data-key="${r.key}">
+                  <span style="color:var(--dim)">${isOpen ? "▾" : "▸"} ${r.label}</span>
+                  <span>
+                    <span style="font-weight:600;">${fmtCompact(r.current)}</span>
+                    ${deltaStr}
+                  </span>
+                </div>
+                ${isOpen ? `<div class="nw-hist-expand">${expandHtml}</div>` : ""}
+              </div>`;
+            }).join("");
+
+            listEl.querySelectorAll(".nw-snap-list-main").forEach(row => {
+              row.addEventListener("click", () => {
+                const key = row.dataset.key;
+                if (assetTrendExpanded.has(key)) assetTrendExpanded.delete(key);
+                else assetTrendExpanded.add(key);
+                renderAssetTrends();
+              });
+            });
+            refreshAncestorCollapsible(listEl);
           }
 
 export function renderNwProjection() {

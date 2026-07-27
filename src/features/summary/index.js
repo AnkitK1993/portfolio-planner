@@ -7,7 +7,7 @@ import { cachedPortfolioXirr, fundXirr, rollingPortfolioXirr } from "../../domai
 import { el } from "../../core/dom.js";
 import { estimateCapitalGainsTax, LTCG_EXEMPTION } from "../../domain/tax.js";
 import { fmt, fmtCompact, fmtMonth, pct } from "../../core/format.js";
-import { averageExpenseBreakdown, EXPENSE_PERIODS, EXPENSE_CATEGORIES, fixedExpensesByCategory, monthlyExpenseSeries, normalizeExpenseCategory, resolvePeriodKeys, totalMonthlyExpenses } from "../../domain/expenses.js";
+import { averageExpenseBreakdown, averageIncome, EXPENSE_PERIODS, EXPENSE_CATEGORIES, fixedExpensesByCategory, monthlyExpenseSeries, monthlyIncomeSeries, normalizeExpenseCategory, resolvePeriodKeys, totalMonthlyExpenses } from "../../domain/expenses.js";
 import { renderAllocBars, renderCompositionDonut } from "../portfolio/allocation.js";
 import { renderIdealAlloc } from "./rebalance.js";
 
@@ -560,6 +560,13 @@ function renderExpenses() {
             if (expIncludeExtra) avgTotal += brk.avgExtra;
             if (expIncludeSip) avgTotal += brk.avgSip;
 
+            // Income vs Expenses over the same selected period — Income is
+            // carried forward month to month (see monthlyIncomeSeries()),
+            // so this reads sensibly even for months between actual raises.
+            const incomeSeries = monthlyIncomeSeries(periodKeys, state.networth);
+            const incBrk = averageIncome(incomeSeries);
+            const avgSavingsRate = incBrk.avgIncome > 0 ? ((incBrk.avgIncome - avgTotal) / incBrk.avgIncome) * 100 : null;
+
             const periodChipsHtml = EXPENSE_PERIODS.map(p =>
               `<button class="txn-preset${expPeriod === p.key ? " active" : ""}" data-period="${p.key}">${p.label}</button>`
             ).join("");
@@ -578,6 +585,53 @@ function renderExpenses() {
                 </span>
                 <span style="font-family:'Roboto Mono',monospace;font-size:11px;color:var(--dim);">${fmtAvg(avgVal)}/mo</span>
               </label>`;
+
+            // Grouped bar chart, Income vs Expense per month across the
+            // selected period — paired by index since both series were
+            // built from the same periodKeys.
+            const chartMonths = periodKeys.map((key, i) => ({
+              // Clamped to 0 for the chart's own bar heights — a month's
+              // expense total can genuinely go negative (an under-spend
+              // month, see averageExpenseBreakdown's avgExtra comment
+              // above), which would otherwise produce an invalid negative
+              // <rect> height.
+              key,
+              income: Math.max(0, incomeSeries[i]?.income ?? 0),
+              expense: Math.max(0, series[i]?.total ?? 0),
+            }));
+            const incExpChartHtml = chartMonths.some(m => m.income > 0 || m.expense > 0)
+              ? (() => {
+                  const W = 600, H = 120, PAD_T = 8, PAD_B = 22;
+                  const maxV = Math.max(...chartMonths.map(m => Math.max(m.income, m.expense)), 1);
+                  const gap = W / chartMonths.length;
+                  const bw = Math.max(3, Math.floor(gap * 0.3));
+                  const bars = chartMonths.map((m, i) => {
+                    const cx = (i + 0.5) * gap;
+                    const incH = (m.income / maxV) * (H - PAD_T - PAD_B);
+                    const expH = (m.expense / maxV) * (H - PAD_T - PAD_B);
+                    const lbl = new Date(m.key + "-01T00:00:00").toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
+                    return `<rect x="${(cx - bw - 1).toFixed(1)}" y="${(H - PAD_B - incH).toFixed(1)}" width="${bw}" height="${incH.toFixed(1)}" rx="1.5" fill="var(--mint)" opacity="0.85"/>
+                      <rect x="${(cx + 1).toFixed(1)}" y="${(H - PAD_B - expH).toFixed(1)}" width="${bw}" height="${expH.toFixed(1)}" rx="1.5" fill="var(--coral)" opacity="0.85"/>
+                      <text x="${cx.toFixed(1)}" y="${H - 5}" text-anchor="middle" font-size="7" fill="var(--dim)" font-family="Roboto Mono,monospace">${lbl}</text>`;
+                  }).join("");
+                  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:104px;display:block;overflow:visible;">${bars}</svg>
+                    <div style="display:flex;gap:14px;margin-top:6px;">
+                      <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;color:var(--dim);"><span style="width:8px;height:8px;border-radius:2px;background:var(--mint);display:inline-block;"></span>Income</span>
+                      <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;color:var(--dim);"><span style="width:8px;height:8px;border-radius:2px;background:var(--coral);display:inline-block;"></span>Expenses</span>
+                    </div>`;
+                })()
+              : "";
+
+            const incExpBlockHtml = incBrk.monthsWithData > 0 ? `
+                <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line);">
+                  <div style="font-size:10px;color:var(--dim);margin-bottom:8px;">Income vs Expenses</div>
+                  ${incExpChartHtml}
+                  <div class="exp-stat-grid" style="margin-top:10px;">
+                    <div class="exp-stat-card"><div class="lbl">Avg Income</div><div class="val">${fmtAvg(incBrk.avgIncome)}</div></div>
+                    <div class="exp-stat-card"><div class="lbl">Avg Expenses</div><div class="val">${fmtAvg(avgTotal)}</div></div>
+                    <div class="exp-stat-card"><div class="lbl">Savings Rate</div><div class="val" style="color:${avgSavingsRate === null ? "inherit" : avgSavingsRate >= 0 ? "var(--mint)" : "var(--coral)"}">${avgSavingsRate === null ? "—" : Math.round(avgSavingsRate) + "%"}</div></div>
+                  </div>
+                </div>` : "";
 
             const trendsBodyHtml = brk.monthsWithData > 0
               ? `<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;">
@@ -599,7 +653,8 @@ function renderExpenses() {
                     <div class="nw-proj-card"><div class="pk">6 months</div><div class="pv">${fmtAvg(avgTotal * 6)}</div></div>
                     <div class="nw-proj-card"><div class="pk">12 months</div><div class="pv">${fmtAvg(avgTotal * 12)}</div></div>
                   </div>
-                </div>`
+                </div>
+                ${incExpBlockHtml}`
               : `<div style="font-size:10.5px;color:var(--dim);padding:8px 0;">No Net Worth snapshots in this period yet — save monthly snapshots on the Net Worth tab to see trends and projections.</div>`;
 
             wrap.innerHTML = `
