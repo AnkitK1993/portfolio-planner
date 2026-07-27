@@ -35,7 +35,19 @@ function fmtIncomeCell(s) {
           }
 
 export function buildNwGrid() {
-            el("nwFieldsGrid").innerHTML = NW_FIELDS.map(
+            // Mutual Funds isn't a NW_FIELDS/state.networth entry (it's
+            // synced live from the Portfolio tab's fund holdings, same as
+            // Unrealized Gain) — shown here as a readonly grid field, same
+            // visual treatment as every other asset, per its own #nw-mf
+            // input kept in sync by renderNetWorth().
+            const mfFieldHtml = `
+              <div class="field" style="margin-bottom:0;">
+                <label class="flabel" for="nw-mf">Mutual Funds <span style="color:var(--dim);font-size:8px;text-transform:none;letter-spacing:0;">(auto-calculated)</span></label>
+                <div class="ibox"><span class="pfx">&#8377;</span>
+                  <input class="num" id="nw-mf" type="text" placeholder="0" inputmode="numeric" readonly style="opacity:0.6;cursor:default;" />
+                </div>
+              </div>`;
+            el("nwFieldsGrid").innerHTML = mfFieldHtml + NW_FIELDS.map(
               (f) => `
               <div class="field" style="margin-bottom:0;">
                 <label class="flabel" for="nw-${f.id}">${f.label}${f.id === "mfProfit" ? ' <span style="color:var(--dim);font-size:8px;text-transform:none;letter-spacing:0;">(auto-calculated)</span>' : ""}</label>
@@ -99,7 +111,10 @@ export function renderNetWorth() {
             const breakdownPreview = el("nwBreakdownPreview");
             if (breakdownPreview) breakdownPreview.textContent = fmt(total);
 
-            el("nwMfVal").textContent = fmt(mfVal);
+            const mfInp = el("nw-mf");
+            if (mfInp) mfInp.value = mfVal !== 0 ? Math.round(mfVal).toLocaleString("en-IN") : "";
+            const updateTotalEl = el("nwUpdateTotal");
+            if (updateTotalEl) updateTotalEl.textContent = fmt(total);
             animateNumber(el("nwHeroVal"), total, _animOnRender && !editMode ? 2000 : 500, _animOnRender && !editMode);
             const _snapKey = snapshotKey();
             const _hasSnap = !!(state.networth.snapshots && state.networth.snapshots[_snapKey]);
