@@ -55,14 +55,15 @@ const SNAPSHOT_DETAIL_FIELDS = [
             { key: "mfProfit", label: "Unrealized Gain" },
             ...OTHER_FIELDS.map(f => ({ key: f.id, label: f.label })),
             { key: "income",   label: "Income" },
+            { key: "expenses", label: "Expenses" },
             { key: "total",    label: "Total" },
           ];
 
-// Bank & Savings and Income double as a quick calculator (see
+// Bank & Savings, Income and Expenses double as a quick calculator (see
 // evalArithmetic()) — every other field stays plain num() parsing,
 // unchanged. Shared between Update Assets (buildNwGrid) and the
 // snapshot edit popup (editSnapshot).
-const CALC_FIELDS = ["bank", "income"];
+const CALC_FIELDS = ["bank", "income", "expenses"];
 const calcHint = (id) => CALC_FIELDS.includes(id)
             ? ' <span style="color:var(--dim);font-size:8px;text-transform:none;letter-spacing:0;">(+/- to add or subtract)</span>'
             : "";
@@ -120,6 +121,25 @@ export function buildNwGrid() {
               });
               incomeInp.addEventListener("focus", () => { const v = num(incomeInp.value); incomeInp.value = v > 0 ? v : ""; });
               incomeInp.addEventListener("blur",  () => { incomeInp.value = fmtNum(evalArithmetic(incomeInp.value)); });
+            }
+
+            // Expenses — a direct, optional override for the Expenses
+            // card's "Total This Month" figure (see totalMonthlyExpenses()/
+            // monthlyExpenseSeries() in domain/expenses.js). Bank alone
+            // can't always isolate genuine spend — e.g. income landing in
+            // the same account the same month as spending leaves no way to
+            // net that out of a plain bank-balance diff — so this lets you
+            // state the real figure directly instead. 0/unset = fall back
+            // to the bank-derived estimate, same convention as goalAmount.
+            const expensesInp = el("nw-expenses");
+            if (expensesInp) {
+              expensesInp.value = fmtNum(state.networth.expenses);
+              expensesInp.addEventListener("input", (e) => {
+                setNetworthField("expenses", evalArithmetic(e.target.value));
+                renderNetWorth();
+              });
+              expensesInp.addEventListener("focus", () => { const v = num(expensesInp.value); expensesInp.value = v > 0 ? v : ""; });
+              expensesInp.addEventListener("blur",  () => { expensesInp.value = fmtNum(evalArithmetic(expensesInp.value)); });
             }
           }
 
@@ -251,6 +271,7 @@ export function takeSnapshot() {
               const snap = {
                 mf: mfVal, total,
                 income: state.networth.income || 0,
+                expenses: state.networth.expenses || 0,
                 savedAt: new Date().toISOString(),
               };
               NW_FIELDS.forEach((f) => { snap[f.id] = state.networth[f.id] || 0; });
@@ -424,7 +445,9 @@ export function editSnapshot(key) {
             const snap = state.networth.snapshots && state.networth.snapshots[key];
             if (!snap) return;
             const fid = (id) => "snapEdit-" + id;
-            const incomeVal = normalizeSnap(key, snap).income;
+            const normalized = normalizeSnap(key, snap);
+            const incomeVal = normalized.income;
+            const expensesVal = normalized.expenses;
             const readonlyRows = [
               { label: "MF Value", value: snap.mf || 0 },
               { label: "Unrealized Gain", value: snap.mfProfit || 0 },
@@ -455,6 +478,13 @@ export function editSnapshot(key) {
                   <div style="font-size:10.5px;color:var(--dim);margin-top:8px;">
                     Assumed already reflected in Bank &amp; Savings — tracked for reference, not added separately to the total.
                   </div>
+                  <div class="field" style="margin-bottom:0;margin-top:12px;">
+                    <label class="flabel" for="${fid("expenses")}">Expenses${calcHint("expenses")}</label>
+                    <input class="form-inp" id="${fid("expenses")}" type="text" inputmode="numeric" value="${fmtNum(expensesVal)}" />
+                  </div>
+                  <div style="font-size:10.5px;color:var(--dim);margin-top:8px;">
+                    Optional — this month's real total spend, when Bank alone can't isolate it. 0/blank falls back to the bank-based estimate.
+                  </div>
                 `;
                 OTHER_FIELDS.forEach(f => {
                   const inp = bodyEl.querySelector("#" + fid(f.id));
@@ -465,6 +495,9 @@ export function editSnapshot(key) {
                 const incomeInp = bodyEl.querySelector("#" + fid("income"));
                 incomeInp.addEventListener("focus", () => { const v = num(incomeInp.value); incomeInp.value = v > 0 ? v : ""; });
                 incomeInp.addEventListener("blur", () => { incomeInp.value = fmtNum(evalArithmetic(incomeInp.value)); });
+                const expensesInp = bodyEl.querySelector("#" + fid("expenses"));
+                expensesInp.addEventListener("focus", () => { const v = num(expensesInp.value); expensesInp.value = v > 0 ? v : ""; });
+                expensesInp.addEventListener("blur", () => { expensesInp.value = fmtNum(evalArithmetic(expensesInp.value)); });
               },
               footer: [
                 { label: "Cancel", variant: "ghost" },
@@ -478,6 +511,7 @@ export function editSnapshot(key) {
                       updated[f.id] = parse(bodyElRef.querySelector("#" + fid(f.id)).value);
                     });
                     updated.income = evalArithmetic(bodyElRef.querySelector("#" + fid("income")).value);
+                    updated.expenses = evalArithmetic(bodyElRef.querySelector("#" + fid("expenses")).value);
                     updated.total = (updated.mf || 0) + (updated.mfProfit || 0) + othersOfSnap(updated);
                     saveSnapshot(key, updated);
                     saveState();

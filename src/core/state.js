@@ -30,6 +30,7 @@ export const othersOfSnap = (s) => OTHER_FIELDS.reduce((sum, f) => sum + (s[f.id
 export const normalizeSnap = (key, v) => {
             const s = { key, ...v };
             if (s.income == null) s.income = s.incomeExtra || 0;
+            if (s.expenses == null) s.expenses = 0;
             s.total = (s.mf || 0) + (s.mfProfit || 0) + othersOfSnap(s);
             return s;
           };
@@ -77,6 +78,7 @@ export function defaultState() {
               networth: {
                 ...Object.fromEntries(NW_FIELDS.map((f) => [f.id, 0])),
                 income: 0,
+                expenses: 0,
                 snapshots: {},
               },
               forecast: { investments: 0, monthlyInvest: 0, annualRate: 12, stepUp: 0, inflationRate: 6, mode: "project", goalBank: 0, goalTarget: 0, goalYears: 10, goalRate: 12, fcScenario: "base", fcShowAll: false },
@@ -144,6 +146,7 @@ export function loadState() {
                 networth: {
                   ...Object.fromEntries(NW_FIELDS.map((f) => [f.id, s.networth?.[f.id] ?? 0])),
                   income: s.networth?.income ?? 0,
+                  expenses: s.networth?.expenses ?? 0,
                   snapshots: { ...(s.networth?.snapshots || {}) },
                 },
                 forecast: { ...def.forecast, ...(s.forecast || {}) },

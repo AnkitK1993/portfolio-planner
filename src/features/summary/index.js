@@ -426,7 +426,7 @@ function renderExpenses() {
             card.style.display = "";
 
             const items = state.surplus?.fixedExpenses || [];
-            const { fixed, sip, surplusInvestment, planned, bankSpend, extra, total } = totalMonthlyExpenses({
+            const { fixed, sip, surplusInvestment, planned, bankSpend, extra, total, isManual } = totalMonthlyExpenses({
               fixedExpenses: items, liqFunds: LIQ_FUNDS, eqFunds: EQ_FUNDS,
               liquid: state.liquid, equity: state.equity, networth: state.networth,
               transactions: state.transactions,
@@ -678,7 +678,7 @@ function renderExpenses() {
                   <span class="exp-hero-lbl">Total This Month</span>
                   <span class="exp-hero-val">${fmt(total)}</span>
                 </div>
-                <div class="exp-hero-sub">SIP excluded &mdash; it's an investment, not an expense</div>
+                <div class="exp-hero-sub">${isManual ? "Manually entered above — overrides the Bank-based estimate" : "SIP excluded — it's an investment, not an expense"}</div>
               </div>
               ${netCashFlow !== null ? `
               <div class="exp-hero" style="margin-top:12px;">

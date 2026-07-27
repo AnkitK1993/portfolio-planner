@@ -118,6 +118,15 @@ export function bankSpentThisMonth(networth) {
 // `sip` figure whenever actual logged investing this month is less than
 // that (e.g. no transactions logged yet, or the SIP hasn't auto-debited),
 // leaving existing behavior unchanged in that case.
+// `networth.expenses` is an optional direct entry (see Update Assets) for
+// when Bank alone can't isolate genuine spend from investing/saving —
+// e.g. income landing in the same account the same month as spending,
+// which bankSpentThisMonth() has no way to net out. When set (>0), it
+// replaces the bank-derived `total` outright; `extra` is recomputed as
+// total-minus-fixed so the fixed+extra=total invariant the rest of the
+// card relies on still holds. bankSpend is still returned so the
+// breakdown/segment bar has something to show, even though it no longer
+// drives the headline total.
 export function totalMonthlyExpenses({ fixedExpenses, liqFunds, eqFunds, liquid, equity, networth, transactions }) {
             const fixed = fixedExpensesTotal(fixedExpenses);
             const sip = totalMonthlySip(liqFunds, eqFunds, liquid, equity);
@@ -126,6 +135,10 @@ export function totalMonthlyExpenses({ fixedExpenses, liqFunds, eqFunds, liquid,
             const surplusInvestment = investedForPlanning - sip;
             const planned = fixed + investedForPlanning;
             const bankSpend = bankSpentThisMonth(networth);
+            const manualExpenses = Number(networth?.expenses) || 0;
+            if (manualExpenses > 0) {
+              return { fixed, sip, surplusInvestment, planned, bankSpend, extra: manualExpenses - fixed, total: manualExpenses, isManual: true };
+            }
             if (!bankSpend) {
               // No snapshot to diff against yet — the only real number we
               // have is the fixed budget; SIP stays excluded even here.
@@ -195,8 +208,16 @@ export function resolvePeriodKeys(periodKey) {
 // count in a given month now respects each one's own startDate (see
 // expenseActiveInMonth), so an expense added this month no longer bleeds
 // into earlier months it didn't exist in. SIP has no such concept and
-// stays fully retroactive. A month with no snapshot pair to diff comes
-// back with bankDrop/extra/total all null rather than a guessed value.
+// stays fully retroactive.
+//
+// A month can also carry a manually-entered `expenses` figure (current
+// month: networth.expenses; past months: that month's own snapshot) —
+// same reasoning as totalMonthlyExpenses()'s manualExpenses: it wins
+// outright over the bank-diffed total, and critically it's the only way
+// a month with no *preceding* snapshot to diff against (there's no prior
+// month to compute a bank drop from) gets a real total instead of null.
+// Without a manual figure and no snapshot pair to diff, bankDrop/extra/
+// total all come back null rather than a guessed value.
 //
 // Like totalMonthlyExpenses(), each month's actual logged investing (from
 // transactions dated in that month) is recognized as investment rather
@@ -209,6 +230,15 @@ export function monthlyExpenseSeries(periodKeys, { fixedExpenses, liqFunds, eqFu
 
             return periodKeys.map(key => {
               const fixed = fixedExpensesTotal(fixedExpenses, key);
+              const investedForPlanning = Math.max(sip, investedInMonth(transactions, key));
+              const surplusInvestment = investedForPlanning - sip;
+              const planned = fixed + investedForPlanning;
+
+              const manualExpenses = Number(key === nowKey ? networth?.expenses : snaps[key]?.expenses) || 0;
+              if (manualExpenses > 0) {
+                return { key, fixed, sip, surplusInvestment, planned, bankDrop: null, extra: manualExpenses - fixed, total: manualExpenses, isManual: true };
+              }
+
               let bankDrop = null;
               if (key === nowKey) {
                 const bs = bankSpentThisMonth(networth);
@@ -219,9 +249,6 @@ export function monthlyExpenseSeries(periodKeys, { fixedExpenses, liqFunds, eqFu
                   bankDrop = Math.max(0, (snaps[prevKey].bank || 0) - (snaps[key].bank || 0));
                 }
               }
-              const investedForPlanning = Math.max(sip, investedInMonth(transactions, key));
-              const surplusInvestment = investedForPlanning - sip;
-              const planned = fixed + investedForPlanning;
               if (bankDrop === null) return { key, fixed, sip, surplusInvestment, planned, bankDrop: null, extra: null, total: null };
               const extra = bankDrop - planned;
               return { key, fixed, sip, surplusInvestment, planned, bankDrop, extra, total: fixed + extra };
@@ -232,8 +259,11 @@ export function monthlyExpenseSeries(periodKeys, { fixedExpenses, liqFunds, eqFu
 // full period length) so a handful of missing snapshots don't silently
 // drag the average down — monthsWithData is surfaced so the caller can be
 // upfront about how much of the period is actually backed by real numbers.
+// Filters on `total` (not `bankDrop`) so manually-entered months — which
+// have a real total but no bankDrop, see monthlyExpenseSeries() — still
+// count as data.
 export function averageExpenseBreakdown(series) {
-            const valid = series.filter(m => m.bankDrop !== null);
+            const valid = series.filter(m => m.total !== null);
             const n = valid.length;
             return {
               monthsWithData: n,
