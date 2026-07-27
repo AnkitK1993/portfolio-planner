@@ -725,15 +725,6 @@
       .exp-bank-arrow { color: var(--dim); margin: 0 5px; }
       .exp-bank-sub { font-size: 9.5px; color: var(--dim); }
 
-      .exp-extra-row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
-      .exp-extra-badge {
-        font-family: "Roboto Mono", monospace; font-size: 12px; font-weight: 700;
-        padding: 3px 9px; border-radius: 20px; white-space: nowrap;
-      }
-      .exp-extra-badge.over  { color: #fbbf24; background: rgba(251,191,36,0.12); border: 1px solid rgba(251,191,36,0.25); }
-      .exp-extra-badge.under { color: #4ade80; background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.22); }
-      .exp-extra-badge.surplus { color: #a78bfa; background: rgba(167,139,250,0.12); border: 1px solid rgba(167,139,250,0.28); }
-
       .exp-hero {
         margin-top: 14px; border-radius: 14px; padding: 16px 18px;
         background: linear-gradient(135deg, rgba(0,245,160,0.07) 0%, transparent 55%), var(--panel-2);

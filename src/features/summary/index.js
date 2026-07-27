@@ -536,13 +536,9 @@ function renderExpenses() {
                   </div>
                   <div class="exp-bank-sub">As of ${fmtMonth(bankSpend.asOfKey)} snapshot vs. now on the Net Worth tab &mdash; a drop of ${fmt(bankSpend.amount)}</div>
                   ${segBarHtml}
-                  ${surplusInvestment > 0 ? `<div class="exp-extra-row">
-                    <span style="font-size:11px;color:var(--txt)">Surplus investment this month</span>
-                    <span class="exp-extra-badge surplus">+${fmtCompact(surplusInvestment)}</span>
-                  </div>` : ""}
-                  <div class="exp-extra-row">
-                    <span style="font-size:11px;color:var(--txt)">${extra >= 0 ? "Extra beyond planned" : "Under planned"}</span>
-                    <span class="exp-extra-badge ${extra > 0 ? "over" : "under"}">${extra >= 0 ? "+" : "−"}${fmt(Math.abs(extra))}</span>
+                  <div class="exp-stat-grid" style="margin-top:12px;">
+                    ${surplusInvestment > 0 ? `<div class="exp-stat-card"><div class="lbl">Surplus Investment</div><div class="val" style="color:#a78bfa">+${fmtCompact(surplusInvestment)}</div></div>` : ""}
+                    <div class="exp-stat-card"><div class="lbl">${extra >= 0 ? "Extra Beyond Planned" : "Under Planned"}</div><div class="val" style="color:${extra > 0 ? "#fbbf24" : "#4ade80"}">${extra >= 0 ? "+" : "−"}${fmt(Math.abs(extra))}</div></div>
                   </div>
                 </div>`
               : `<div class="exp-bank-block" style="font-size:10.5px;color:var(--dim);">
