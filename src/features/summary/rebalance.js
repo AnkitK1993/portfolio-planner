@@ -103,9 +103,9 @@ export function renderRebalance() {
 
             // ── event listeners on freshly rendered DOM ──
 
-            // Reached from Net Worth's Asset Breakdown card (not its own
-            // nav button), so "back" returns there rather than Home.
-            el("rebBackBtn").addEventListener("click", () => { navigateTo("networth"); });
+            // Reached from Budget's Rebalance card (not its own nav
+            // button), so "back" returns there rather than Home.
+            el("rebBackBtn").addEventListener("click", () => { navigateTo("budget"); });
 
             el("rebEditToggle").addEventListener("click", () => {
               rebEditMode = !rebEditMode;

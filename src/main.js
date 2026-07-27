@@ -95,7 +95,7 @@ el("txnAddBtn").addEventListener("click", () => openTxnModal());
 el("txnModalClose").addEventListener("click", closeTxnModal);
 el("dataModalClose").addEventListener("click", () => dataModalCtl.close());
 el("dataModalCancelBtn").addEventListener("click", () => dataModalCtl.close());
-el("nwRebalanceLinkBtn").addEventListener("click", () => { navigateTo("rebalance"); });
+el("budgetRebalanceLinkBtn").addEventListener("click", () => { navigateTo("rebalance"); });
 el("dataExportBtn").addEventListener("click", exportData);
 el("dataImportBtn").addEventListener("click", () => el("dataImportFile").click());
 el("dataImportFile").addEventListener("change", importData);
@@ -441,7 +441,7 @@ registerCardOrder("summary", [
             "sumXirrCard", "sumAllocCard", "sumCompositionCard", "sumIdealCard",
             "sumStreakCard", "sumFundCard", "sumTaxCard", "sumHeatmapCard", "sumCalCard",
           ]);
-registerCardOrder("budget", ["sumExpensesCard", "sumFireCard"]);
+registerCardOrder("budget", ["sumExpensesCard", "sumFireCard", "budgetRebalanceCard"]);
 registerCardOrder("transactions", ["txp-history", "txp-curval", "txp-sip", "txp-entervalues", "txp-snapshot", "txnCharts"]);
 registerCardOrder("networth", ["nwBreakdownCard", "nwAssetTrendsCard", "nwHistCard", "nwChartCard", "nwCompChartCard", "nwProjCard"]);
 // Returns badges (Total bar + Liquid/Equity division rows) toggle between

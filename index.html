@@ -459,6 +459,18 @@
             </div>
           </div>
         </div>
+
+        <!-- Rebalance — entry point to the manual, named-account ledger
+             (Cash/Bank/Mutual Funds/Bonds/PPF/Cards), formerly buried in
+             the Admin dropdown. Not collapsible — there's nothing to
+             expand in place, it's purely a link out to its own page. -->
+        <div class="card" id="budgetRebalanceCard" style="margin-bottom:12px">
+          <div class="sec-head" style="margin-bottom:4px">Rebalance</div>
+          <div style="font-size:10px;color:var(--dim);margin-bottom:12px">Manual account-level ledger — Cash, Bank, Mutual Funds, Bonds, PPF, Cards</div>
+          <button class="btn btn-ghost" id="budgetRebalanceLinkBtn" style="width:100%;font-size:11px;">
+            View account-level detail →
+          </button>
+        </div>
       </section>
 
       <!-- ═══════════════ NET WORTH ═══════════════ -->
@@ -509,13 +521,6 @@
               <div id="nwBreakdown"></div>
             </div>
           </div>
-          <!-- Deliberately outside the collapsible body — this is the
-               entry point to the named-account ledger (formerly buried in
-               the Admin dropdown as "Rebalance"), so it stays visible
-               whether or not the card above is expanded. -->
-          <button class="btn btn-ghost" id="nwRebalanceLinkBtn" style="width:100%;margin-top:12px;font-size:11px;">
-            View account-level detail →
-          </button>
         </div>
 
         <!-- Per-Asset Trends: change over 1/3/6/9/12mo + all-time, avg
