@@ -4,6 +4,7 @@ import { open as openModal } from "../../core/modal.js";
 import { refreshAncestorCollapsible } from "../../core/collapsible.js";
 import { _animOnRender, animateNumber, animateWidth } from "../../core/animate.js";
 import { avgMonthlyGrowthRate, avgMonthlyGrowthRateBy, buildCurrentSnapshot, changeFrom, mfTotalValue, mfUnrealizedGain, mfValueAsOf, nwTotal, snapshotMonthsAgo } from "../../domain/networth.js";
+import { totalMonthlyExpenses } from "../../domain/expenses.js";
 import { editMode, EQ_FUNDS, LIQ_FUNDS, normalizeSnap, othersOfSnap, saveState, snapshotKey, state } from "../../core/state.js";
 import { el } from "../../core/dom.js";
 import { evalArithmetic, fmt, fmtCompact, fmtMonth, fmtNum, num } from "../../core/format.js";
@@ -160,6 +161,22 @@ export function renderNetWorth() {
             if (mfInp) mfInp.value = mfVal !== 0 ? Math.round(mfVal).toLocaleString("en-IN") : "";
             const updateTotalEl = el("nwUpdateTotal");
             if (updateTotalEl) updateTotalEl.textContent = fmt(total);
+
+            // Mirrors the Expenses card's "Total This Month" (Budget tab) —
+            // same totalMonthlyExpenses() call, same manual-override
+            // behaviour — so it's visible right next to the Bank/Expenses
+            // inputs that actually drive it, without switching tabs.
+            const updateExpEl = el("nwUpdateExpenseTotal");
+            const updateExpSubEl = el("nwUpdateExpenseSub");
+            if (updateExpEl) {
+              const { total: expTotal, isManual } = totalMonthlyExpenses({
+                fixedExpenses: state.surplus?.fixedExpenses, liqFunds: LIQ_FUNDS, eqFunds: EQ_FUNDS,
+                liquid: state.liquid, equity: state.equity, networth: state.networth,
+                transactions: state.transactions,
+              });
+              updateExpEl.textContent = fmt(expTotal);
+              if (updateExpSubEl) updateExpSubEl.textContent = isManual ? "Manually entered below" : "Fixed + unplanned bank spend, SIP excluded";
+            }
             animateNumber(el("nwHeroVal"), total, _animOnRender && !editMode ? 2000 : 500, _animOnRender && !editMode);
             const _snapKey = snapshotKey();
             const _hasSnap = !!(state.networth.snapshots && state.networth.snapshots[_snapKey]);
