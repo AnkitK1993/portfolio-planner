@@ -162,7 +162,7 @@ export function renderNetWorth() {
             const updateTotalEl = el("nwUpdateTotal");
             if (updateTotalEl) updateTotalEl.textContent = fmt(total);
 
-            // Mirrors the Expenses card's "Total This Month" (Budget tab) —
+            // Mirrors the Expenses card's "Total This Month" (Planning tab) —
             // same totalMonthlyExpenses() call, same manual-override
             // behaviour — so it's visible right next to the Bank/Expenses
             // inputs that actually drive it, without switching tabs.

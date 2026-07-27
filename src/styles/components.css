@@ -735,7 +735,7 @@
       .exp-hero-val { font-family: "Roboto", sans-serif; font-size: 25px; font-weight: 700; color: var(--mint); }
       .exp-hero-sub { font-size: 9.5px; color: var(--dim); margin-top: 5px; }
 
-      /* ── Rebalance (now inline in a Budget-tab card) ── */
+      /* ── Rebalance (now inline in a Planning-tab card) ── */
       .reb-page-head {
         display: flex; align-items: center; gap: 10px;
         margin-bottom: 18px; padding-bottom: 14px;

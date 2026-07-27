@@ -36,7 +36,6 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/><polyline points="9 21 9 12 15 12 15 21"/></svg>
       </button>
       <button id="summaryBtn" data-tab="summary">Analytics</button>
-      <button id="budgetBtn" data-tab="budget">Budget</button>
       <button id="networthBtn" data-tab="networth">Net Worth</button>
       <button id="txnsBtn" data-tab="transactions">TXN</button>
       <button id="planningBtn" data-tab="forecast">Planning</button>
@@ -417,51 +416,6 @@
         </div>
       </section>
 
-      <!-- ═══════════════ BUDGET ═══════════════ -->
-      <section class="tab-section" id="tab-budget">
-        <div class="pg-head pg-head-with-action">
-          <div>
-            <h1>Budget <span class="accent">&amp; Goals</span></h1>
-            <p>Monthly cash flow and progress toward your long-range targets.</p>
-          </div>
-          <button class="pg-head-toggle-all" id="budgetToggleAllBtn" title="Expand all cards" aria-label="Expand all cards">
-            <span class="pg-head-toggle-all-icon">▾</span>
-          </button>
-        </div>
-
-        <!-- Expenses (collapsed by default; shows Total This Month while collapsed) -->
-        <div class="card" id="sumExpensesCard" style="display:none;margin-bottom:12px">
-          <button class="card-toggle-head" id="expCardToggle" aria-expanded="false">
-            <div class="card-toggle-head-text">
-              <div class="sec-head" style="margin-bottom:4px">Expenses</div>
-              <div style="font-size:10px;color:var(--dim)">Fixed monthly costs, plus this month's Bank spending (auto-tracked from the Net Worth tab)</div>
-            </div>
-            <span class="card-toggle-preview" id="expCollapsedTotal"></span>
-            <span class="card-toggle-chevron">▾</span>
-          </button>
-          <div class="exp-card-body" id="expCardBody">
-            <div id="sumExpensesBody"></div>
-          </div>
-        </div>
-
-        <!-- Financial Goals progress -->
-        <div class="card" id="sumFireCard" style="display:none;margin-bottom:12px">
-          <button class="card-toggle-head" id="sumFireToggle" aria-expanded="false">
-            <div class="card-toggle-head-text">
-              <div class="sec-head" style="margin-bottom:4px">Financial Goals</div>
-              <div style="font-size:10px;color:var(--dim)">Progress toward your target corpus</div>
-            </div>
-            <span class="card-toggle-chevron">▾</span>
-          </button>
-          <div class="card-toggle-body" id="sumFireCollBody">
-            <div class="card-toggle-body-inner">
-              <div id="sumFireBody"></div>
-            </div>
-          </div>
-        </div>
-
-      </section>
-
       <!-- ═══════════════ NET WORTH ═══════════════ -->
       <section class="tab-section" id="tab-networth">
         <div class="pg-head pg-head-with-action">
@@ -610,11 +564,46 @@
         <div class="pg-head pg-head-with-action">
           <div>
             <h1>Financial <span class="accent">Planning</span></h1>
-            <p>Long-range projections and manual account rebalancing.</p>
+            <p>Expenses, goals, long-range projections, and manual account rebalancing.</p>
           </div>
           <button class="pg-head-toggle-all" id="planningToggleAllBtn" title="Expand all cards" aria-label="Expand all cards">
             <span class="pg-head-toggle-all-icon">▾</span>
           </button>
+        </div>
+
+        <!-- Expenses (collapsed by default; shows Total This Month while
+             collapsed). Moved here from the standalone Budget tab, which
+             only ever held this and Financial Goals below — both are the
+             same kind of forward-looking money-planning tool as
+             Projections/Rebalance, just merged onto one tab. -->
+        <div class="card" id="sumExpensesCard" style="display:none;margin-bottom:12px">
+          <button class="card-toggle-head" id="expCardToggle" aria-expanded="false">
+            <div class="card-toggle-head-text">
+              <div class="sec-head" style="margin-bottom:4px">Expenses</div>
+              <div style="font-size:10px;color:var(--dim)">Fixed monthly costs, plus this month's Bank spending (auto-tracked from the Net Worth tab)</div>
+            </div>
+            <span class="card-toggle-preview" id="expCollapsedTotal"></span>
+            <span class="card-toggle-chevron">▾</span>
+          </button>
+          <div class="exp-card-body" id="expCardBody">
+            <div id="sumExpensesBody"></div>
+          </div>
+        </div>
+
+        <!-- Financial Goals progress — moved here from Budget, see above. -->
+        <div class="card" id="sumFireCard" style="display:none;margin-bottom:12px">
+          <button class="card-toggle-head" id="sumFireToggle" aria-expanded="false">
+            <div class="card-toggle-head-text">
+              <div class="sec-head" style="margin-bottom:4px">Financial Goals</div>
+              <div style="font-size:10px;color:var(--dim)">Progress toward your target corpus</div>
+            </div>
+            <span class="card-toggle-chevron">▾</span>
+          </button>
+          <div class="card-toggle-body" id="sumFireCollBody">
+            <div class="card-toggle-body-inner">
+              <div id="sumFireBody"></div>
+            </div>
+          </div>
         </div>
 
         <!-- Projections — the 30-year forecast tool, collapsed by default
