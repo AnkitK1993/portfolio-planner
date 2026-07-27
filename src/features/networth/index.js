@@ -6,7 +6,7 @@ import { _animOnRender, animateNumber, animateWidth } from "../../core/animate.j
 import { avgMonthlyGrowthRate, buildCurrentSnapshot, extraIncome, mfTotalValue, mfUnrealizedGain, mfValueAsOf, nwTotal } from "../../domain/networth.js";
 import { editMode, EQ_FUNDS, LIQ_FUNDS, normalizeSnap, othersOfSnap, saveState, snapshotKey, state } from "../../core/state.js";
 import { el } from "../../core/dom.js";
-import { fmt, fmtCompact, fmtMonth, fmtNum, num } from "../../core/format.js";
+import { evalArithmetic, fmt, fmtCompact, fmtMonth, fmtNum, num } from "../../core/format.js";
 import { deleteSnapshot, healSnapshotMf, saveSnapshot, setNetworthField } from "../../store/actions.js";
 
 export let nwHistExpanded = new Set();
@@ -45,6 +45,15 @@ function fmtIncomeDim(s) {
             return s.incomeInBank ? `<span style="color:var(--dim)">${val}</span>` : val;
           }
 
+// Bank & Savings and Income double as a quick calculator (see
+// evalArithmetic()) — every other field stays plain num() parsing,
+// unchanged. Shared between Update Assets (buildNwGrid) and the
+// snapshot edit popup (editSnapshot).
+const CALC_FIELDS = ["bank", "income"];
+const calcHint = (id) => CALC_FIELDS.includes(id)
+            ? ' <span style="color:var(--dim);font-size:8px;text-transform:none;letter-spacing:0;">(+/- to add or subtract)</span>'
+            : "";
+
 export function buildNwGrid() {
             // Mutual Funds isn't a NW_FIELDS/state.networth entry (it's
             // synced live from the Portfolio tab's fund holdings, same as
@@ -61,7 +70,7 @@ export function buildNwGrid() {
             el("nwFieldsGrid").innerHTML = mfFieldHtml + NW_FIELDS.map(
               (f) => `
               <div class="field" style="margin-bottom:0;">
-                <label class="flabel" for="nw-${f.id}">${f.label}${f.id === "mfProfit" ? ' <span style="color:var(--dim);font-size:8px;text-transform:none;letter-spacing:0;">(auto-calculated)</span>' : ""}</label>
+                <label class="flabel" for="nw-${f.id}">${f.label}${f.id === "mfProfit" ? ' <span style="color:var(--dim);font-size:8px;text-transform:none;letter-spacing:0;">(auto-calculated)</span>' : ""}${calcHint(f.id)}</label>
                 <div class="ibox"><span class="pfx">&#8377;</span>
                   <input class="num" id="nw-${f.id}" type="text" placeholder="0"
                     inputmode="numeric" value="${fmtNum(state.networth[f.id])}"
@@ -74,12 +83,13 @@ export function buildNwGrid() {
               if (f.id === "mfProfit") return;
               const inp = el("nw-" + f.id);
               if (!inp) return;
+              const parse = CALC_FIELDS.includes(f.id) ? evalArithmetic : num;
               inp.addEventListener("input", (e) => {
-                setNetworthField(f.id, num(e.target.value));
+                setNetworthField(f.id, parse(e.target.value));
                 renderNetWorth();
               });
               inp.addEventListener("focus", () => { const v = num(inp.value); inp.value = v > 0 ? v : ""; });
-              inp.addEventListener("blur",  () => { inp.value = fmtNum(num(inp.value)); });
+              inp.addEventListener("blur",  () => { inp.value = fmtNum(parse(inp.value)); });
             });
 
             // Income — not part of NW_FIELDS (see extraIncome() in
@@ -92,11 +102,11 @@ export function buildNwGrid() {
             if (incomeInp) {
               incomeInp.value = fmtNum(state.networth.income);
               incomeInp.addEventListener("input", (e) => {
-                setNetworthField("income", num(e.target.value));
+                setNetworthField("income", evalArithmetic(e.target.value));
                 renderNetWorth();
               });
               incomeInp.addEventListener("focus", () => { const v = num(incomeInp.value); incomeInp.value = v > 0 ? v : ""; });
-              incomeInp.addEventListener("blur",  () => { incomeInp.value = fmtNum(num(incomeInp.value)); });
+              incomeInp.addEventListener("blur",  () => { incomeInp.value = fmtNum(evalArithmetic(incomeInp.value)); });
             }
             const incomeFlag = el("nw-income-in-bank");
             if (incomeFlag) {
@@ -436,13 +446,13 @@ export function editSnapshot(key) {
                   <div style="border-top:1px solid var(--line);"></div>
                   ${OTHER_FIELDS.map(f => `
                     <div class="field" style="margin-bottom:0;">
-                      <label class="flabel" for="${fid(f.id)}">${f.label}</label>
+                      <label class="flabel" for="${fid(f.id)}">${f.label}${calcHint(f.id)}</label>
                       <input class="form-inp" id="${fid(f.id)}" type="text" inputmode="numeric" value="${fmtNum(snap[f.id])}" />
                     </div>
                   `).join("")}
                   <div style="border-top:1px solid var(--line);"></div>
                   <div class="field" style="margin-bottom:0;">
-                    <label class="flabel" for="${fid("income")}">Income</label>
+                    <label class="flabel" for="${fid("income")}">Income${calcHint("income")}</label>
                     <input class="form-inp" id="${fid("income")}" type="text" inputmode="numeric" value="${fmtNum(incomeVal)}" />
                   </div>
                   <label style="display:flex;align-items:center;gap:8px;font-size:10.5px;color:var(--dim);cursor:pointer;">
@@ -452,12 +462,13 @@ export function editSnapshot(key) {
                 `;
                 OTHER_FIELDS.forEach(f => {
                   const inp = bodyEl.querySelector("#" + fid(f.id));
+                  const parse = CALC_FIELDS.includes(f.id) ? evalArithmetic : num;
                   inp.addEventListener("focus", () => { const v = num(inp.value); inp.value = v > 0 ? v : ""; });
-                  inp.addEventListener("blur", () => { inp.value = fmtNum(num(inp.value)); });
+                  inp.addEventListener("blur", () => { inp.value = fmtNum(parse(inp.value)); });
                 });
                 const incomeInp = bodyEl.querySelector("#" + fid("income"));
                 incomeInp.addEventListener("focus", () => { const v = num(incomeInp.value); incomeInp.value = v > 0 ? v : ""; });
-                incomeInp.addEventListener("blur", () => { incomeInp.value = fmtNum(num(incomeInp.value)); });
+                incomeInp.addEventListener("blur", () => { incomeInp.value = fmtNum(evalArithmetic(incomeInp.value)); });
               },
               footer: [
                 { label: "Cancel", variant: "ghost" },
@@ -466,8 +477,11 @@ export function editSnapshot(key) {
                   variant: "primary",
                   onClick: () => {
                     const updated = { ...snap };
-                    OTHER_FIELDS.forEach(f => { updated[f.id] = num(bodyElRef.querySelector("#" + fid(f.id)).value); });
-                    updated.income = num(bodyElRef.querySelector("#" + fid("income")).value);
+                    OTHER_FIELDS.forEach(f => {
+                      const parse = CALC_FIELDS.includes(f.id) ? evalArithmetic : num;
+                      updated[f.id] = parse(bodyElRef.querySelector("#" + fid(f.id)).value);
+                    });
+                    updated.income = evalArithmetic(bodyElRef.querySelector("#" + fid("income")).value);
                     updated.incomeInBank = bodyElRef.querySelector("#" + fid("incomeInBank")).checked;
                     updated.incomeExtra = extraIncome(updated);
                     updated.total = (updated.mf || 0) + (updated.mfProfit || 0) + othersOfSnap(updated) + (updated.incomeExtra || 0);

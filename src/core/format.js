@@ -13,6 +13,20 @@ export const num = (v) => Number(String(v || "").replace(/,/g, "")) || 0;
 
 export const fmtNum = (v) => (v > 0 ? Math.round(v).toLocaleString("en-IN") : "");
 
+// Lets a field double as a quick add/subtract calculator — typing
+// "5000+2000-500" sums the signed terms instead of requiring the user
+// to do the arithmetic themselves before entering a single number.
+// Deliberately +/- only (no *, /, parens): that's the one thing users
+// asked for, and it's safe to do with a regex scan rather than needing
+// a real expression parser or eval(). A plain number with no operators
+// behaves exactly like num() — same fallback of 0 for empty/invalid.
+export const evalArithmetic = (v) => {
+            const cleaned = String(v || "").replace(/,/g, "");
+            const terms = cleaned.match(/[+-]?\d*\.?\d+/g);
+            if (!terms) return 0;
+            return terms.reduce((sum, t) => sum + parseFloat(t), 0);
+          };
+
 export const fmtCompact = (n) => {
             const v = Math.round(n || 0);
             const sign = v < 0 ? "−" : "";
