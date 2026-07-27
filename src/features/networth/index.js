@@ -35,6 +35,7 @@ const ASSET_TREND_PERIODS = [
 // swings off a small/zero base would drown out genuinely comparable
 // asset performance. It still gets its own row in the list.
 const ASSET_TREND_FIELDS = [
+            { key: "total",    label: "Total",            bestWorst: false, highlight: true },
             { key: "mf",       label: "MF Value",        bestWorst: true  },
             { key: "mfProfit", label: "Unrealized Gain",  bestWorst: false },
             { key: "bank",     label: "Bank & Savings",   bestWorst: true  },
@@ -794,13 +795,13 @@ export function renderAssetTrends() {
 
             const mfVal = mfTotalValue(LIQ_FUNDS, EQ_FUNDS, state.liquid, state.equity);
             const profit = mfUnrealizedGain(LIQ_FUNDS, EQ_FUNDS, state.liquid, state.equity);
+            const currentTotal = mfVal + profit + OTHER_FIELDS.reduce((s, f) => s + (state.networth[f.id] || 0), 0);
             const currentVals = {
-              mf: mfVal, mfProfit: profit,
+              total: currentTotal, mf: mfVal, mfProfit: profit,
               bank: state.networth.bank || 0, fd: state.networth.fd || 0, cash: state.networth.cash || 0,
               ppf: state.networth.ppf || 0, epf: state.networth.epf || 0, bonds: state.networth.bonds || 0,
               income: state.networth.income || 0,
             };
-            const currentTotal = mfVal + profit + OTHER_FIELDS.reduce((s, f) => s + (state.networth[f.id] || 0), 0);
 
             const periodsEl = el("nwAssetTrendsPeriods");
             if (periodsEl) {
@@ -864,7 +865,7 @@ export function renderAssetTrends() {
                 const growthPct = (Math.pow(1 + growthRate, 12) - 1) * 100;
 
                 const allSnap = snapshotMonthsAgo(sorted, "all");
-                const shareHtml = r.key !== "income" && currentTotal > 0
+                const shareHtml = r.key !== "income" && r.key !== "total" && currentTotal > 0
                   ? (() => {
                       const shareNow = (r.current / currentTotal) * 100;
                       const shareThen = allSnap && allSnap.total > 0 ? ((allSnap[r.key] || 0) / allSnap.total) * 100 : null;
@@ -881,11 +882,11 @@ export function renderAssetTrends() {
                 `;
               }
 
-              return `<div class="nw-hist-item">
+              return `<div class="nw-hist-item"${r.highlight ? ' style="border-bottom-width:0;padding-bottom:6px;margin-bottom:6px;border-bottom:1px solid var(--line);"' : ""}>
                 <div class="nw-hist-main nw-snap-list-main" data-key="${r.key}">
                   <span style="color:var(--dim)">${isOpen ? "▾" : "▸"} ${r.label}</span>
                   <span>
-                    <span style="font-weight:600;">${fmtCompact(r.current)}</span>
+                    <span style="font-weight:600;${r.highlight ? "color:var(--mint);" : ""}">${fmtCompact(r.current)}</span>
                     ${deltaStr}
                   </span>
                 </div>

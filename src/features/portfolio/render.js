@@ -6,7 +6,7 @@ import { cachedPortfolioXirr, fundXirr } from "../../domain/xirr.js";
 import { renderCalendar } from "./calendar.js";
 import { renderForecast } from "../forecast/index.js";
 import { renderHoldings } from "../transactions/index.js";
-import { renderNetWorth, renderNwHistory } from "../networth/index.js";
+import { renderAssetTrends, renderNetWorth, renderNwHistory } from "../networth/index.js";
 import { renderRebalance } from "../summary/rebalance.js";
 import { renderSparklines, renderSummaryExtras } from "../summary/index.js";
 import { renderUpcoming } from "./upcoming.js";
@@ -354,6 +354,7 @@ export function render() {
             renderSparklines();
             renderNetWorth();
             renderNwHistory();
+            renderAssetTrends();
             renderUpcoming();
             renderHoldings();
             renderCalendar();
