@@ -3,7 +3,7 @@ import { UI } from "../../core/ui.js";
 import { open as openModal } from "../../core/modal.js";
 import { refreshAncestorCollapsible } from "../../core/collapsible.js";
 import { _animOnRender, animateNumber, animateWidth } from "../../core/animate.js";
-import { avgMonthlyGrowthRate, buildCurrentSnapshot, extraIncome, mfTotalValue, mfUnrealizedGain, mfValueAsOf, nwTotal } from "../../domain/networth.js";
+import { avgMonthlyGrowthRate, buildCurrentSnapshot, mfTotalValue, mfUnrealizedGain, mfValueAsOf, nwTotal } from "../../domain/networth.js";
 import { editMode, EQ_FUNDS, LIQ_FUNDS, normalizeSnap, othersOfSnap, saveState, snapshotKey, state } from "../../core/state.js";
 import { el } from "../../core/dom.js";
 import { evalArithmetic, fmt, fmtCompact, fmtMonth, fmtNum, num } from "../../core/format.js";
@@ -25,25 +25,6 @@ const SNAPSHOT_DETAIL_FIELDS = [
             { key: "income",   label: "Income" },
             { key: "total",    label: "Total" },
           ];
-
-// Shows the raw Income figure everywhere it's listed, with a note when
-// it's excluded from the total (already folded into Bank & Savings) —
-// showing only the derived incomeExtra (0 when "in Bank") looked like
-// the entered Income had vanished/reset, even though it was saved fine.
-function fmtIncomeCell(s) {
-            const val = fmtCompact(s.income || 0);
-            return s.incomeInBank ? `${val} <span style="color:var(--dim)">(in Bank)</span>` : val;
-          }
-
-// Same figure, dimmed instead of annotated with text — Monthly History's
-// denser table has no room for an inline note, but a plain unstyled value
-// that silently doesn't add into the Total (because it's folded into
-// Bank & Savings that month) reads as a math error. Dimming signals
-// "this row didn't count" without adding words.
-function fmtIncomeDim(s) {
-            const val = fmtCompact(s.income || 0);
-            return s.incomeInBank ? `<span style="color:var(--dim)">${val}</span>` : val;
-          }
 
 // Bank & Savings and Income double as a quick calculator (see
 // evalArithmetic()) — every other field stays plain num() parsing,
@@ -93,11 +74,11 @@ export function buildNwGrid() {
             });
 
             // Income — not part of NW_FIELDS (see extraIncome() in
-            // domain/networth.js for why: it needs the "already in Bank"
-            // flag's conditional logic, not a flat unconditional sum).
-            // Not auto-reset month to month, same as every other field
-            // here — whatever was last entered IS the default for the next
-            // month, until the user changes it.
+            // domain/networth.js for why: it's always assumed to already
+            // be reflected in Bank & Savings, so it never adds a second
+            // contribution to Net Worth). Not auto-reset month to month,
+            // same as every other field here — whatever was last entered
+            // IS the default for the next month, until the user changes it.
             const incomeInp = el("nw-income");
             if (incomeInp) {
               incomeInp.value = fmtNum(state.networth.income);
@@ -107,14 +88,6 @@ export function buildNwGrid() {
               });
               incomeInp.addEventListener("focus", () => { const v = num(incomeInp.value); incomeInp.value = v > 0 ? v : ""; });
               incomeInp.addEventListener("blur",  () => { incomeInp.value = fmtNum(evalArithmetic(incomeInp.value)); });
-            }
-            const incomeFlag = el("nw-income-in-bank");
-            if (incomeFlag) {
-              incomeFlag.checked = !!state.networth.incomeInBank;
-              incomeFlag.addEventListener("change", (e) => {
-                setNetworthField("incomeInBank", e.target.checked);
-                renderNetWorth();
-              });
             }
           }
 
@@ -127,8 +100,7 @@ export function renderNetWorth() {
             const other = NW_FIELDS.filter((f) => f.id !== "mfProfit").reduce(
               (s, f) => s + (state.networth[f.id] || 0), 0,
             );
-            const incomeExtra = extraIncome(state.networth);
-            const total = mfVal + profit + other + incomeExtra;
+            const total = mfVal + profit + other;
             const breakdownPreview = el("nwBreakdownPreview");
             if (breakdownPreview) breakdownPreview.textContent = fmt(total);
 
@@ -210,9 +182,9 @@ export function renderNetWorth() {
               { label: "PPF", value: state.networth.ppf || 0, color: "#8be8ff" },
               { label: "EPF", value: state.networth.epf || 0, color: "#2dd4bf" },
               { label: "Bonds", value: state.networth.bonds || 0, color: "#c084fc" },
-              // Only shows up when it's actually adding to the total (i.e.
-              // not already folded into Bank & Savings) — see extraIncome().
-              { label: "Income (not in Bank)", value: incomeExtra, color: "#fbbf24" },
+              // Income deliberately isn't listed here — it's always assumed
+              // to already be reflected in Bank & Savings, so including it
+              // too would double-count it in this breakdown.
             ].filter((c) => c.value > 0);
 
             if (!cats.length) {
@@ -242,13 +214,11 @@ export function takeSnapshot() {
             const other = NW_FIELDS.filter((f) => f.id !== "mfProfit").reduce(
               (s, f) => s + (state.networth[f.id] || 0), 0
             );
-            const incomeExtra = extraIncome(state.networth);
-            const total = mfVal + (state.networth.mfProfit || 0) + other + incomeExtra;
+            const total = mfVal + (state.networth.mfProfit || 0) + other;
             const doSave = () => {
               const snap = {
-                mf: mfVal, total, incomeExtra,
+                mf: mfVal, total,
                 income: state.networth.income || 0,
-                incomeInBank: !!state.networth.incomeInBank,
                 savedAt: new Date().toISOString(),
               };
               NW_FIELDS.forEach((f) => { snap[f.id] = state.networth[f.id] || 0; });
@@ -318,17 +288,15 @@ export function renderNwHistory() {
                     DETAIL_FIELDS.map(f => {
                       const snapV = s[f.key] || 0, curV = cur[f.key] || 0, d = curV - snapV;
                       const dColor = d > 0 ? "var(--mint)" : d < 0 ? "var(--coral)" : "var(--dim)";
-                      const snapCell = f.key === "income" ? fmtIncomeDim(s) : fmtCompact(snapV);
-                      const curCell = f.key === "income" ? fmtIncomeDim(cur) : fmtCompact(curV);
                       return `<div class="nw-hist-cmp-row">
                         <span class="nw-hist-cmp-label">${f.label}</span>
-                        <span class="nw-hist-cmp-val">${snapCell}</span>
-                        <span class="nw-hist-cmp-val">${curCell}</span>
+                        <span class="nw-hist-cmp-val">${fmtCompact(snapV)}</span>
+                        <span class="nw-hist-cmp-val">${fmtCompact(curV)}</span>
                         <span class="nw-hist-cmp-delta" style="color:${dColor}">${d === 0 ? "—" : (d > 0 ? "+" : "") + fmtCompact(d)}</span>
                       </div>`;
                     }).join("")
                   : DETAIL_FIELDS.map(f =>
-                      `<div class="nw-hist-detail-row"><span>${f.label}</span><span>${f.key === "income" ? fmtIncomeDim(s) : fmtCompact(s[f.key] || 0)}</span></div>`
+                      `<div class="nw-hist-detail-row"><span>${f.label}</span><span>${fmtCompact(s[f.key] || 0)}</span></div>`
                     ).join("")
                 ) + `<button class="nw-hist-cmp-btn" data-key="${s.key}">${showCompare ? "Hide comparison" : "Compare with Current"}</button>`;
               }
@@ -415,19 +383,15 @@ function deleteSnapshotWithUndo(key) {
 // snapshot, so this reads/writes the snapshot object directly instead
 // of routing through state.networth. MF Value and Unrealized Gain are
 // derived/frozen (never hand-entered, same as in Update Assets, where
-// mfProfit is readonly), so they're shown read-only here too. Income and
-// its "already in Bank" flag ARE historized per snapshot (frozen at
-// takeSnapshot() time, same as Bank/FD/etc.) and editable here — snaps
-// saved before that field existed only have the derived incomeExtra, so
-// those default income to incomeExtra (and the flag to off), which
-// reproduces the same incomeExtra via extraIncome() if left untouched.
+// mfProfit is readonly), so they're shown read-only here too. Income is
+// historized per snapshot (frozen at takeSnapshot() time, same as
+// Bank/FD/etc.) and editable here, but — same rule as everywhere else —
+// it's tracked for reference only and never adds into the total.
 export function editSnapshot(key) {
             const snap = state.networth.snapshots && state.networth.snapshots[key];
             if (!snap) return;
             const fid = (id) => "snapEdit-" + id;
-            const normalized = normalizeSnap(key, snap);
-            const incomeVal = normalized.income;
-            const incomeInBank = normalized.incomeInBank;
+            const incomeVal = normalizeSnap(key, snap).income;
             const readonlyRows = [
               { label: "MF Value", value: snap.mf || 0 },
               { label: "Unrealized Gain", value: snap.mfProfit || 0 },
@@ -455,10 +419,9 @@ export function editSnapshot(key) {
                     <label class="flabel" for="${fid("income")}">Income${calcHint("income")}</label>
                     <input class="form-inp" id="${fid("income")}" type="text" inputmode="numeric" value="${fmtNum(incomeVal)}" />
                   </div>
-                  <label style="display:flex;align-items:center;gap:8px;font-size:10.5px;color:var(--dim);cursor:pointer;">
-                    <input type="checkbox" id="${fid("incomeInBank")}" ${incomeInBank ? "checked" : ""} />
-                    Already included in Bank &amp; Savings (don't add separately to Net Worth)
-                  </label>
+                  <div style="font-size:10.5px;color:var(--dim);margin-top:8px;">
+                    Assumed already reflected in Bank &amp; Savings — tracked for reference, not added separately to the total.
+                  </div>
                 `;
                 OTHER_FIELDS.forEach(f => {
                   const inp = bodyEl.querySelector("#" + fid(f.id));
@@ -482,9 +445,7 @@ export function editSnapshot(key) {
                       updated[f.id] = parse(bodyElRef.querySelector("#" + fid(f.id)).value);
                     });
                     updated.income = evalArithmetic(bodyElRef.querySelector("#" + fid("income")).value);
-                    updated.incomeInBank = bodyElRef.querySelector("#" + fid("incomeInBank")).checked;
-                    updated.incomeExtra = extraIncome(updated);
-                    updated.total = (updated.mf || 0) + (updated.mfProfit || 0) + othersOfSnap(updated) + (updated.incomeExtra || 0);
+                    updated.total = (updated.mf || 0) + (updated.mfProfit || 0) + othersOfSnap(updated);
                     saveSnapshot(key, updated);
                     saveState();
                     refreshAllSnapshotViews();
@@ -517,7 +478,7 @@ export function renderSnapshotsList() {
               const isOpen = snapListExpanded.has(s.key);
               const detailHtml = isOpen
                 ? SNAPSHOT_DETAIL_FIELDS.map(f =>
-                    `<div class="nw-hist-detail-row"><span>${f.label}</span><span>${f.key === "income" ? fmtIncomeCell(s) : fmtCompact(s[f.key] || 0)}</span></div>`
+                    `<div class="nw-hist-detail-row"><span>${f.label}</span><span>${fmtCompact(s[f.key] || 0)}</span></div>`
                   ).join("") +
                   `<div class="nw-snap-edit-row">
                     <button class="btn btn-ghost btn-sm nw-snap-list-edit" data-key="${s.key}">Edit</button>

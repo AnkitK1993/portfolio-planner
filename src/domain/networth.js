@@ -47,14 +47,16 @@ export function mfUnrealizedGain(liqFunds, eqFunds, liquid, equity) {
             return total;
           }
 
-// Income is a separately-tracked figure, not part of NW_FIELDS, because
-// it needs conditional inclusion rather than a flat sum: incomeInBank
-// checked means the salary/income has already landed in the Bank &
-// Savings figure, so adding it again here would double-count it. Left
-// unchecked, it's money not yet reflected in Bank — a genuine, separate
-// contribution to net worth.
+// Income is always assumed to already be reflected in the Bank &
+// Savings figure by the time it's entered, so it never adds a second,
+// separate contribution to Net Worth — this always returns 0. Kept as
+// its own function (rather than deleting the +0 term at every call
+// site) so the "why doesn't Income count here" answer lives in one
+// place. Income vs Expenses (Summary tab) is a monthly cash-flow view,
+// not a Net Worth total, so it uses the raw networth.income figure
+// directly instead of this.
 export function extraIncome(networth) {
-            return networth.incomeInBank ? 0 : (networth.income || 0);
+            return 0;
           }
 
 export function nwTotal(networth, liqFunds, eqFunds, liquid, equity) {
@@ -90,7 +92,5 @@ export function buildCurrentSnapshot(networth, liqFunds, eqFunds, liquid, equity
             NW_FIELDS.forEach((f) => { cur[f.id] = networth[f.id] || 0; });
             cur.mfProfit = mfUnrealizedGain(liqFunds, eqFunds, liquid, equity);
             cur.income = networth.income || 0;
-            cur.incomeInBank = !!networth.incomeInBank;
-            cur.incomeExtra = extraIncome(networth);
             return cur;
           }

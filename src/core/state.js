@@ -19,17 +19,18 @@ export function syncFundArrays() {
 
 export const othersOfSnap = (s) => OTHER_FIELDS.reduce((sum, f) => sum + (s[f.id] || 0), 0);
 
-// incomeExtra is frozen at whatever it was worth when the snapshot was
-// saved (same "freeze, don't recompute" treatment as bank/FD/PPF/etc via
-// othersOfSnap) — so flipping the "already in Bank" flag later doesn't
-// retroactively change past months' totals. Snapshots saved before Income
-// became its own per-snapshot field only have incomeExtra — back-fill
-// income/incomeInBank from it so every snap has a well-defined raw Income
-// to display/edit, without changing what it adds to the total.
+// Income never adds into the total — it's always assumed to already be
+// reflected in Bank & Savings — so total is just MF + gain + the other
+// asset fields. Snapshots saved before Income became its own field only
+// have the old derived incomeExtra — back-fill income from that so
+// every snap has a well-defined raw Income to display/edit; older
+// snapshots that had incomeExtra > 0 (income NOT counted as in-Bank at
+// the time) will show that figure but, per the new rule, it no longer
+// adds into the recomputed total here.
 export const normalizeSnap = (key, v) => {
             const s = { key, ...v };
-            if (s.income == null) { s.income = s.incomeExtra || 0; s.incomeInBank = false; }
-            s.total = (s.mf || 0) + (s.mfProfit || 0) + othersOfSnap(s) + (s.incomeExtra || 0);
+            if (s.income == null) s.income = s.incomeExtra || 0;
+            s.total = (s.mf || 0) + (s.mfProfit || 0) + othersOfSnap(s);
             return s;
           };
 
@@ -76,7 +77,6 @@ export function defaultState() {
               networth: {
                 ...Object.fromEntries(NW_FIELDS.map((f) => [f.id, 0])),
                 income: 0,
-                incomeInBank: false,
                 snapshots: {},
               },
               forecast: { investments: 0, monthlyInvest: 0, annualRate: 12, stepUp: 0, inflationRate: 6, mode: "project", goalBank: 0, goalTarget: 0, goalYears: 10, goalRate: 12, fcScenario: "base", fcShowAll: false },
@@ -144,7 +144,6 @@ export function loadState() {
                 networth: {
                   ...Object.fromEntries(NW_FIELDS.map((f) => [f.id, s.networth?.[f.id] ?? 0])),
                   income: s.networth?.income ?? 0,
-                  incomeInBank: !!s.networth?.incomeInBank,
                   snapshots: { ...(s.networth?.snapshots || {}) },
                 },
                 forecast: { ...def.forecast, ...(s.forecast || {}) },
