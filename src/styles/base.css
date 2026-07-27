@@ -1904,7 +1904,7 @@
         nav.tabs, #themeMatrix, .nav-dropdown, .edit-banner, .modal-overlay,
         .holdings-chevron, .coll-chevron, .drag-handle, .fund-archive-btn,
         .add-fund-row, #privacyBtn, .reb-icon-btn, .reb-add-row-btn,
-        .reb-add-section-btn, .reb-edit-btn, .reb-back-btn, .nw-hist-del,
+        .reb-add-section-btn, .reb-edit-btn, .nw-hist-del,
         .nw-snap-row, .cal-nav, .txn-preset, .btn, .btn-ghost,
         .btn-sm, .fund-cat-select
         { display: none !important; }

@@ -4,7 +4,6 @@ import { EQ_FUNDS, LIQ_FUNDS, defaultRebSections, deployable, editMode, saveStat
 import { _animOnRender, animateWidth } from "../../core/animate.js";
 import { el } from "../../core/dom.js";
 import { fmt, fmtCompact, pct } from "../../core/format.js";
-import { navigateTo } from "../../core/ui.js";
 import { addRebalanceRow, addRebalanceSection, deleteRebalanceRow, deleteRebalanceSection, setIdealWeight, setRebalanceRowName, setRebalanceRowValue, setRebalanceSectionName } from "../../store/actions.js";
 
 export let rebEditMode = false;
@@ -27,15 +26,19 @@ export function rebUid() { return "r_" + Date.now() + "_" + Math.random().toStri
 export function rebSuid() { return "s_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6); }
 
 export function renderRebalance() {
-            const wrap = el("rebPageContent");
+            const wrap = el("budgetRebalanceBody");
             if (!wrap) return;
             if (!state.rebalance?.sections) state.rebalance = { sections: defaultRebSections() };
             const secs = state.rebalance.sections;
             const em = rebEditMode;
 
-            let html = `<div class="reb-page-head">
-              <button class="reb-back-btn" id="rebBackBtn">&#8592;</button>
-              <span class="reb-page-title">Rebalance</span>
+            // No back button or page title here — this renders inline into
+            // the Budget tab's own collapsible "Rebalance" card, whose
+            // header already shows the title; the only thing this toolbar
+            // needs is the Edit toggle (structural add/remove-row edits
+            // warrant their own toggle, separate from the app's blanket
+            // Edit mode).
+            let html = `<div class="reb-page-head" style="justify-content:flex-end;">
               <button class="reb-edit-btn${em ? " done" : ""}" id="rebEditToggle">${em ? "Done" : "Edit"}</button>
             </div>
             <div${em ? ' class="reb-edit-mode"' : ""}>`;
@@ -102,10 +105,6 @@ export function renderRebalance() {
             wrap.innerHTML = html;
 
             // ── event listeners on freshly rendered DOM ──
-
-            // Reached from Budget's Rebalance card (not its own nav
-            // button), so "back" returns there rather than Home.
-            el("rebBackBtn").addEventListener("click", () => { navigateTo("budget"); });
 
             el("rebEditToggle").addEventListener("click", () => {
               rebEditMode = !rebEditMode;

@@ -95,7 +95,6 @@ el("txnAddBtn").addEventListener("click", () => openTxnModal());
 el("txnModalClose").addEventListener("click", closeTxnModal);
 el("dataModalClose").addEventListener("click", () => dataModalCtl.close());
 el("dataModalCancelBtn").addEventListener("click", () => dataModalCtl.close());
-el("budgetRebalanceLinkBtn").addEventListener("click", () => { navigateTo("rebalance"); });
 el("dataExportBtn").addEventListener("click", exportData);
 el("dataImportBtn").addEventListener("click", () => el("dataImportFile").click());
 el("dataImportFile").addEventListener("change", importData);
@@ -426,6 +425,7 @@ const budgetToggleAll = makeToggleAllGroup("budgetToggleAllBtn");
 [
             ["expCardToggle", "expCardBody", "expCollapsedTotal"],
             ["sumFireToggle", "sumFireCollBody", null],
+            ["budgetRebalanceToggle", "budgetRebalanceCollBody", null],
           ].forEach(([headerId, bodyId, previewId]) => budgetToggleAll.add(headerId, bodyId, previewId));
 budgetToggleAll.refresh();
 // Monthly Investment / By Fund (Transactions tab) aren't part of a

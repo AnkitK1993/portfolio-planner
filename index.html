@@ -464,12 +464,22 @@
              (Cash/Bank/Mutual Funds/Bonds/PPF/Cards), formerly buried in
              the Admin dropdown. Not collapsible — there's nothing to
              expand in place, it's purely a link out to its own page. -->
+        <!-- Rebalance — manual, named-account ledger (Cash/Bank/Mutual
+             Funds/Bonds/PPF/Cards). Expands in place, same as every other
+             Budget card, instead of linking out to a separate page. -->
         <div class="card" id="budgetRebalanceCard" style="margin-bottom:12px">
-          <div class="sec-head" style="margin-bottom:4px">Rebalance</div>
-          <div style="font-size:10px;color:var(--dim);margin-bottom:12px">Manual account-level ledger — Cash, Bank, Mutual Funds, Bonds, PPF, Cards</div>
-          <button class="btn btn-ghost" id="budgetRebalanceLinkBtn" style="width:100%;font-size:11px;">
-            View account-level detail →
+          <button class="card-toggle-head" id="budgetRebalanceToggle" aria-expanded="false">
+            <div class="card-toggle-head-text">
+              <div class="sec-head" style="margin-bottom:4px">Rebalance</div>
+              <div style="font-size:10px;color:var(--dim)">Manual account-level ledger — Cash, Bank, Mutual Funds, Bonds, PPF, Cards</div>
+            </div>
+            <span class="card-toggle-chevron">▾</span>
           </button>
+          <div class="card-toggle-body" id="budgetRebalanceCollBody">
+            <div class="card-toggle-body-inner">
+              <div id="budgetRebalanceBody"></div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -962,11 +972,6 @@
             </div>
           </div>
         </div>
-      </section>
-
-      <!-- ═══════════════ REBALANCE ═══════════════ -->
-      <section class="tab-section" id="tab-rebalance">
-        <div id="rebPageContent"></div>
       </section>
 
     </div>

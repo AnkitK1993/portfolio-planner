@@ -358,9 +358,14 @@ export function render() {
             renderUpcoming();
             renderHoldings();
             renderCalendar();
+            // Rebalance now renders inline into a Budget-tab card (like
+            // Expenses/Financial Goals) rather than a standalone page, so
+            // it's kept in sync unconditionally the same way those are —
+            // Forecast is still the one tab-gated render, since its chart
+            // work is comparatively heavy and only ever visible on its own tab.
+            renderRebalance();
             const _activeTab = document.querySelector(".tab-section.active")?.id;
             if (_activeTab === "tab-forecast") renderForecast();
-            if (_activeTab === "tab-rebalance") renderRebalance();
             applyAllCardOrders();
             setAnimOnRender(false); // reset after first render; re-set by navigateTo()
           }

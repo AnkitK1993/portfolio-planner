@@ -737,22 +737,11 @@
       .exp-hero-val { font-family: "Roboto", sans-serif; font-size: 25px; font-weight: 700; color: var(--mint); }
       .exp-hero-sub { font-size: 9.5px; color: var(--dim); margin-top: 5px; }
 
-      /* ── Rebalance Full Page ── */
-      #tab-rebalance { padding-bottom: 80px; }
+      /* ── Rebalance (now inline in a Budget-tab card) ── */
       .reb-page-head {
         display: flex; align-items: center; gap: 10px;
         margin-bottom: 18px; padding-bottom: 14px;
         border-bottom: 1px solid var(--line);
-      }
-      .reb-back-btn {
-        background: none; border: none; color: var(--dim); cursor: pointer;
-        font-size: 18px; padding: 4px 8px 4px 0; line-height: 1;
-        transition: color 0.15s; flex-shrink: 0;
-      }
-      .reb-back-btn:hover { color: var(--txt); }
-      .reb-page-title {
-        font-family: "Roboto", sans-serif; font-size: 22px; font-weight: 600;
-        color: var(--txt); flex: 1;
       }
       .reb-edit-btn {
         font-family: "Roboto Mono", monospace; font-size: 10px;
