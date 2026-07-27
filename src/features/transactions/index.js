@@ -1,5 +1,6 @@
 import { EQ_FUNDS, LIQ_FUNDS, fundName, rtnMode, saveState, state } from "../../core/state.js";
 import { UI, closeNavDropdowns, collapseTxpCard, expandTxpCard, navigateTo } from "../../core/ui.js";
+import { refreshAncestorCollapsible } from "../../core/collapsible.js";
 import { cachedPortfolioXirr } from "../../domain/xirr.js";
 import { checkProfitMilestones } from "../portfolio/funds.js";
 import { el } from "../../core/dom.js";
@@ -671,20 +672,6 @@ export function renderTxnCharts(txns) {
                 : "";
             }
 
-            // createCollapsible()'s ResizeObserver only sees size changes
-            // of the .card-toggle-body element itself — while it's open,
-            // that box is pinned to a fixed max-height, so content growing
-            // *inside* it (e.g. expanding a fund row) never changes the
-            // observed box and the observer never fires, silently clipping
-            // the new content. Call this after mutating innerHTML of
-            // anything inside such a body to recompute its max-height.
-            function refreshCollapsibleHeight(contentEl) {
-              const body = contentEl?.closest(".card-toggle-body");
-              if (body && body.classList.contains("open")) {
-                body.style.maxHeight = body.scrollHeight + "px";
-              }
-            }
-
             // ── Per-fund monthly breakdown (expanded-state detail) —
             // capped to the last 6 months present in this filter so the
             // table stays a fixed, reasonable width regardless of how far
@@ -720,7 +707,7 @@ export function renderTxnCharts(txns) {
                     </div>
                   </div>`;
               }
-              refreshCollapsibleHeight(monthTableEl);
+              refreshAncestorCollapsible(monthTableEl);
             }
 
             // ── By Fund — merges the old standalone txnSummary total/count
@@ -843,7 +830,7 @@ export function renderTxnCharts(txns) {
                   });
                 });
               }
-              refreshCollapsibleHeight(fundListEl);
+              refreshAncestorCollapsible(fundListEl);
             }
           }
 

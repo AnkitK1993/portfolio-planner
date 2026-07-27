@@ -1,6 +1,7 @@
 import { NW_FIELDS, OTHER_FIELDS } from "../../core/constants.js";
 import { UI } from "../../core/ui.js";
 import { open as openModal } from "../../core/modal.js";
+import { refreshAncestorCollapsible } from "../../core/collapsible.js";
 import { _animOnRender, animateNumber, animateWidth } from "../../core/animate.js";
 import { avgMonthlyGrowthRate, buildCurrentSnapshot, extraIncome, mfTotalValue, mfUnrealizedGain, mfValueAsOf, nwTotal } from "../../domain/networth.js";
 import { editMode, EQ_FUNDS, LIQ_FUNDS, normalizeSnap, othersOfSnap, saveState, snapshotKey, state } from "../../core/state.js";
@@ -334,6 +335,7 @@ export function renderNwHistory() {
               </div>
               ${rows}
             </div>`;
+            refreshAncestorCollapsible(el("nwHistory"));
 
             el("nwHistory").querySelectorAll(".nw-hist-main").forEach(row => {
               row.addEventListener("click", () => {

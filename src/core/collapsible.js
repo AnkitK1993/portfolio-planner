@@ -128,3 +128,20 @@ export function createCollapsible({
     },
   };
 }
+
+// Standalone version of the `refresh()` method above, for content nested
+// inside a createCollapsible() body that a *different* module owns (e.g.
+// a per-row expand/collapse inside a card whose outer open/close toggle
+// was wired up elsewhere, in main.js). The ResizeObserver that keeps an
+// open .card-toggle-body's max-height in sync only fires when the
+// observed box's own size changes — while it's open, that box is pinned
+// to a fixed max-height, so content growing *inside* it (expanding one
+// more row) never changes the observed box and the observer never fires,
+// silently clipping the new content. Call this after mutating anything
+// inside such a body whose height can change while open.
+export function refreshAncestorCollapsible(contentEl) {
+  const body = contentEl?.closest(".card-toggle-body");
+  if (body && body.classList.contains("open")) {
+    body.style.maxHeight = body.scrollHeight + "px";
+  }
+}
