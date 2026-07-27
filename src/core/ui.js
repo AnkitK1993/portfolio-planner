@@ -168,8 +168,9 @@ export function navigateTo(tabId) {
             el("tab-" + tabId).classList.add("active");
             el("homeBtn").classList.toggle("active", tabId === "portfolio");
             el("summaryBtn").classList.toggle("active", tabId === "summary");
+            el("budgetBtn").classList.toggle("active", tabId === "budget");
             el("networthBtn").classList.toggle("active", tabId === "networth");
-            el("ddForecastBtn").classList.toggle("active", tabId === "forecast");
+            el("planningBtn").classList.toggle("active", tabId === "forecast");
             el("txnsBtn").classList.toggle("active", tabId === "transactions");
             el("adminBtn").classList.remove("active");
             setAnimOnRender(true); // trigger count-up animation on tab enter

@@ -39,8 +39,6 @@ setTabActivateHandler(tabId => {
               el("txnFilters").style.display = "";
               el("returnsList").style.display = "none";
               renderTxns();
-            } else if (tabId === "summary") {
-              renderTxns();
             }
           });
 
@@ -49,12 +47,16 @@ el("summaryBtn").addEventListener("click", () => {
             if (!authUser) { UI.toast("err", "Unauthorized — please sign in to access this section", 4000); return; }
             navigateTo("summary");
           });
+el("budgetBtn").addEventListener("click", () => {
+            if (!authUser) { UI.toast("err", "Unauthorized — please sign in to access this section", 4000); return; }
+            navigateTo("budget");
+          });
 el("networthBtn").addEventListener("click", () => {
             if (!authUser) { UI.toast("err", "Unauthorized — please sign in to access this section", 4000); return; }
             navigateTo("networth");
           });
-el("ddForecastBtn").addEventListener("click", () => {
-            if (!authUser) { closeNavDropdowns(); UI.toast("err", "Unauthorized — please sign in to access this section", 4000); return; }
+el("planningBtn").addEventListener("click", () => {
+            if (!authUser) { UI.toast("err", "Unauthorized — please sign in to access this section", 4000); return; }
             navigateTo("forecast");
           });
 el("adminBtn").addEventListener("click", e => { e.stopPropagation(); openNavDropdown("adminDropdown", el("adminBtn")); });
@@ -93,7 +95,7 @@ el("txnAddBtn").addEventListener("click", () => openTxnModal());
 el("txnModalClose").addEventListener("click", closeTxnModal);
 el("dataModalClose").addEventListener("click", () => dataModalCtl.close());
 el("dataModalCancelBtn").addEventListener("click", () => dataModalCtl.close());
-el("ddRebalanceBtn").addEventListener("click", () => { closeNavDropdowns(); navigateTo("rebalance"); });
+el("nwRebalanceLinkBtn").addEventListener("click", () => { navigateTo("rebalance"); });
 el("dataExportBtn").addEventListener("click", exportData);
 el("dataImportBtn").addEventListener("click", () => el("dataImportFile").click());
 el("dataImportFile").addEventListener("change", importData);
@@ -400,39 +402,47 @@ const nwToggleAll = makeToggleAllGroup("nwToggleAllBtn");
           ].forEach(([headerId, bodyId, previewId]) => nwToggleAll.add(headerId, bodyId, previewId));
 nwToggleAll.refresh();
 createCollapsible({ header: el("holdingsToggle"), body: el("holdingsBody") });
-// Every collapsible card on the Summary tab after Portfolio Health Score
+// Every collapsible card on the Analytics tab after Portfolio Health Score
 // (which stays plain/always-expanded) is grouped behind #sumToggleAllBtn
-// the same way the Net Worth tab's cards are. Expenses keeps its existing
-// Total-This-Month collapsed preview; Streak/Fund Performance/Tax Estimate/
-// Monthly Investment get their own previews populated by their render
-// functions (see summary/index.js and transactions/index.js).
+// the same way the Net Worth tab's cards are. Streak/Fund Performance/Tax
+// Estimate get their own previews populated by their render functions
+// (see summary/index.js).
 const sumToggleAll = makeToggleAllGroup("sumToggleAllBtn");
 [
-            ["expCardToggle", "expCardBody", "expCollapsedTotal"],
-            ["sumFireToggle", "sumFireCollBody", null],
             ["sumXirrToggle", "sumXirrCollBody", null],
             ["sumAllocToggle", "sumAllocCollBody", null],
             ["sumCompToggle", "sumCompCollBody", null],
+            ["sumIdealToggle", "sumIdealCollBody", null],
             ["sumStreakToggle", "sumStreakCollBody", "sumStreakPreview"],
             ["sumFundToggle", "sumFundCollBody", "sumFundPreview"],
             ["sumTaxToggle", "sumTaxCollBody", "sumTaxPreview"],
             ["sumHeatmapToggle", "sumHeatmapCollBody", null],
-            ["sumIdealToggle", "sumIdealCollBody", null],
             ["calToggle", "calCollBody", null],
-            ["txnBarToggle", "txnBarCollBody", "txnBarPreview"],
-            ["txnDonutToggle", "txnDonutCollBody", null],
           ].forEach(([headerId, bodyId, previewId]) => sumToggleAll.add(headerId, bodyId, previewId));
 sumToggleAll.refresh();
+// Budget tab's own expand-all group — Expenses keeps its existing
+// Total-This-Month collapsed preview.
+const budgetToggleAll = makeToggleAllGroup("budgetToggleAllBtn");
+[
+            ["expCardToggle", "expCardBody", "expCollapsedTotal"],
+            ["sumFireToggle", "sumFireCollBody", null],
+          ].forEach(([headerId, bodyId, previewId]) => budgetToggleAll.add(headerId, bodyId, previewId));
+budgetToggleAll.refresh();
+// Monthly Investment / By Fund (Transactions tab) aren't part of a
+// toggle-all group — there's no "expand all" button on that tab — but
+// still need their own collapsedSummary wiring for their previews.
+createCollapsible({ header: el("txnBarToggle"), body: el("txnBarCollBody"), collapsedSummary: el("txnBarPreview") });
+createCollapsible({ header: el("txnDonutToggle"), body: el("txnDonutCollBody") });
 // Card reordering (Edit mode only) — up/down arrows, not drag-and-drop,
 // so it needs no extra library and works the same on touch and mouse.
 // Health Score stays pinned first (excluded), same as it's excluded
 // from the collapsible/expand-all group above.
 registerCardOrder("summary", [
-            "sumExpensesCard", "sumFireCard", "sumXirrCard", "sumAllocCard",
-            "sumCompositionCard", "sumStreakCard", "sumFundCard", "sumTaxCard",
-            "sumHeatmapCard", "sumIdealCard", "sumCalCard", "txnCharts",
+            "sumXirrCard", "sumAllocCard", "sumCompositionCard", "sumIdealCard",
+            "sumStreakCard", "sumFundCard", "sumTaxCard", "sumHeatmapCard", "sumCalCard",
           ]);
-registerCardOrder("transactions", ["txp-history", "txp-curval", "txp-sip", "txp-entervalues", "txp-snapshot"]);
+registerCardOrder("budget", ["sumExpensesCard", "sumFireCard"]);
+registerCardOrder("transactions", ["txp-history", "txp-curval", "txp-sip", "txp-entervalues", "txp-snapshot", "txnCharts"]);
 registerCardOrder("networth", ["nwBreakdownCard", "nwAssetTrendsCard", "nwHistCard", "nwChartCard", "nwCompChartCard", "nwProjCard"]);
 // Returns badges (Total bar + Liquid/Equity division rows) toggle between
 // absolute return% and XIRR on click — all badges switch together since
