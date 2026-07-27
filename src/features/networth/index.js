@@ -298,17 +298,15 @@ export function renderNwHistory() {
                     DETAIL_FIELDS.map(f => {
                       const snapV = s[f.key] || 0, curV = cur[f.key] || 0, d = curV - snapV;
                       const dColor = d > 0 ? "var(--mint)" : d < 0 ? "var(--coral)" : "var(--dim)";
-                      const snapCell = f.key === "income" ? fmtIncomeCell(s) : fmtCompact(snapV);
-                      const curCell = f.key === "income" ? fmtIncomeCell(cur) : fmtCompact(curV);
                       return `<div class="nw-hist-cmp-row">
                         <span class="nw-hist-cmp-label">${f.label}</span>
-                        <span class="nw-hist-cmp-val">${snapCell}</span>
-                        <span class="nw-hist-cmp-val">${curCell}</span>
+                        <span class="nw-hist-cmp-val">${fmtCompact(snapV)}</span>
+                        <span class="nw-hist-cmp-val">${fmtCompact(curV)}</span>
                         <span class="nw-hist-cmp-delta" style="color:${dColor}">${d === 0 ? "—" : (d > 0 ? "+" : "") + fmtCompact(d)}</span>
                       </div>`;
                     }).join("")
                   : DETAIL_FIELDS.map(f =>
-                      `<div class="nw-hist-detail-row"><span>${f.label}</span><span>${f.key === "income" ? fmtIncomeCell(s) : fmtCompact(s[f.key] || 0)}</span></div>`
+                      `<div class="nw-hist-detail-row"><span>${f.label}</span><span>${fmtCompact(s[f.key] || 0)}</span></div>`
                     ).join("")
                 ) + `<button class="nw-hist-cmp-btn" data-key="${s.key}">${showCompare ? "Hide comparison" : "Compare with Current"}</button>`;
               }
