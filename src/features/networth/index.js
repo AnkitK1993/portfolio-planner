@@ -1,19 +1,12 @@
 import { NW_FIELDS, OTHER_FIELDS } from "../../core/constants.js";
 import { UI } from "../../core/ui.js";
+import { open as openModal } from "../../core/modal.js";
 import { _animOnRender, animateNumber, animateWidth } from "../../core/animate.js";
 import { avgMonthlyGrowthRate, buildCurrentSnapshot, extraIncome, mfTotalValue, mfUnrealizedGain, mfValueAsOf, nwTotal } from "../../domain/networth.js";
 import { editMode, EQ_FUNDS, LIQ_FUNDS, normalizeSnap, othersOfSnap, saveState, snapshotKey, state } from "../../core/state.js";
 import { el } from "../../core/dom.js";
 import { fmt, fmtCompact, fmtMonth, fmtNum, num } from "../../core/format.js";
 import { deleteSnapshot, healSnapshotMf, saveSnapshot, setNetworthField } from "../../store/actions.js";
-
-export let nwEditingKey  = null;
-
-export function setNwEditingKey(v) { nwEditingKey = v; }
-
-export let nwLiveSaved   = null;
-
-export function setNwLiveSaved(v) { nwLiveSaved = v; }
 
 export let nwHistExpanded = new Set();
 
@@ -86,35 +79,24 @@ export function buildNwGrid() {
 export function renderNetWorth() {
             const mfVal = mfTotalValue(LIQ_FUNDS, EQ_FUNDS, state.liquid, state.equity);
             const profit = mfUnrealizedGain(LIQ_FUNDS, EQ_FUNDS, state.liquid, state.equity);
-            // While editing a historical snapshot, keep its frozen unrealized
-            // gain instead of overwriting it with today's live figure.
-            if (!nwEditingKey) setNetworthField("mfProfit", profit);
-            const displayedProfit = nwEditingKey ? (state.networth.mfProfit || 0) : profit;
+            setNetworthField("mfProfit", profit);
             const inp = el("nw-mfProfit");
-            if (inp) inp.value = displayedProfit !== 0 ? Math.round(displayedProfit).toLocaleString("en-IN") : "";
+            if (inp) inp.value = profit !== 0 ? Math.round(profit).toLocaleString("en-IN") : "";
             const other = NW_FIELDS.filter((f) => f.id !== "mfProfit").reduce(
               (s, f) => s + (state.networth[f.id] || 0), 0,
             );
             const incomeExtra = extraIncome(state.networth);
-            const total = mfVal + displayedProfit + other + incomeExtra;
+            const total = mfVal + profit + other + incomeExtra;
             const breakdownPreview = el("nwBreakdownPreview");
             if (breakdownPreview) breakdownPreview.textContent = fmt(total);
 
             el("nwMfVal").textContent = fmt(mfVal);
             animateNumber(el("nwHeroVal"), total, _animOnRender && !editMode ? 2000 : 500, _animOnRender && !editMode);
-            const _snapKey   = snapshotKey();
-            const _hasSnap   = !!(state.networth.snapshots && state.networth.snapshots[_snapKey]);
-            const _snapBtn   = el("nwSnapshotBtn");
-            const _cancelBtn = el("nwSnapCancelBtn");
-            if (nwEditingKey) {
-              _snapBtn.textContent = "Update — " + fmtMonth(nwEditingKey);
-              _snapBtn.style.display = "";
-              if (_cancelBtn) _cancelBtn.style.display = "";
-            } else {
-              _snapBtn.textContent = "Save snapshot — " + fmtMonth(_snapKey);
-              _snapBtn.style.display = _hasSnap ? "none" : "";
-              if (_cancelBtn) _cancelBtn.style.display = "none";
-            }
+            const _snapKey = snapshotKey();
+            const _hasSnap = !!(state.networth.snapshots && state.networth.snapshots[_snapKey]);
+            const _snapBtn = el("nwSnapshotBtn");
+            _snapBtn.textContent = "Save snapshot — " + fmtMonth(_snapKey);
+            _snapBtn.style.display = _hasSnap ? "none" : "";
 
             // Delta chips, stats row, sparkline — driven by snapshots
             const snaps = state.networth.snapshots || {};
@@ -210,45 +192,26 @@ export function renderNetWorth() {
           }
 
 export function takeSnapshot() {
-            const key = nwEditingKey || snapshotKey();
-            // MF Value is always derived from transactions dated on or
-            // before this snapshot's month — not today's live fund total —
-            // so editing a past month's other fields never disturbs it.
+            const key = snapshotKey();
             const mfVal = mfValueAsOf(key, LIQ_FUNDS, EQ_FUNDS, state.transactions);
             const other = NW_FIELDS.filter((f) => f.id !== "mfProfit").reduce(
               (s, f) => s + (state.networth[f.id] || 0), 0
             );
-            // state.networth.mfProfit already holds the correct figure here —
-            // live if creating a new snapshot, frozen historical if editing one.
             const incomeExtra = extraIncome(state.networth);
             const total = mfVal + (state.networth.mfProfit || 0) + other + incomeExtra;
             const doSave = () => {
               const snap = { mf: mfVal, total, incomeExtra, savedAt: new Date().toISOString() };
               NW_FIELDS.forEach((f) => { snap[f.id] = state.networth[f.id] || 0; });
               saveSnapshot(key, snap);
-              if (nwEditingKey) {
-                // restore live values and exit edit mode
-                if (nwLiveSaved) {
-                  NW_FIELDS.forEach(f => setNetworthField(f.id, nwLiveSaved[f.id] || 0));
-                  nwLiveSaved = null;
-                }
-                nwEditingKey = null;
-                buildNwGrid();
-              }
               saveState();
-              renderNetWorth();
-              renderNwHistory();
-              renderSnapshotsList();
-              renderNwLineChart();
-              renderNwCompositionChart();
-              renderNwProjection();
+              refreshAllSnapshotViews();
               const msg = el("nwSnapMsg");
               if (msg) {
                 msg.textContent = "Saved ✓ " + fmtMonth(key);
                 setTimeout(() => { if (msg.textContent.startsWith("Saved")) msg.textContent = ""; }, 3000);
               }
             };
-            if (state.networth.snapshots[key] && !nwEditingKey) {
+            if (state.networth.snapshots[key]) {
               UI.confirm("Replace the existing snapshot for " + fmtMonth(key) + "?", "Overwrite snapshot?", "Overwrite", doSave);
             } else {
               doSave();
@@ -394,34 +357,65 @@ function deleteSnapshotWithUndo(key) {
             });
           }
 
-// Starts editing an arbitrary month's snapshot (not just the current
-// one) — stashes today's live NW_FIELDS values, swaps in the snapshot's
-// frozen values so Update Assets shows what was true then, and marks
-// nwEditingKey so takeSnapshot()'s existing "update in place" path picks
-// up the right month. Income/incomeInBank aren't historized per-snapshot
-// (only the computed incomeExtra is, same "frozen" treatment as every
-// other field), so editing a past month doesn't touch those — they stay
-// live/current, same as they already are outside of any edit.
+// Edits an arbitrary month's snapshot entirely within its own popup —
+// Update Assets only ever reflects live/current values, never a past
+// snapshot, so this reads/writes the snapshot object directly instead
+// of routing through state.networth. MF Value and Unrealized Gain are
+// derived/frozen (never hand-entered, same as in Update Assets, where
+// mfProfit is readonly), so they're shown read-only here too. Income/
+// incomeInBank aren't historized per-snapshot (only the computed
+// incomeExtra is), so editing a past month doesn't touch those either.
 export function editSnapshot(key) {
             const snap = state.networth.snapshots && state.networth.snapshots[key];
             if (!snap) return;
-            setNwLiveSaved({});
-            NW_FIELDS.forEach(f => { nwLiveSaved[f.id] = state.networth[f.id] || 0; });
-            NW_FIELDS.forEach(f => setNetworthField(f.id, snap[f.id] || 0));
-            setNwEditingKey(key);
-            buildNwGrid();
-            renderNetWorth();
-            const msg = el("nwSnapMsg");
-            if (msg) msg.textContent = "Editing " + fmtMonth(key) + " — adjust values in Update Assets and click Update";
-            // The fields to edit live in the separate Update Assets card —
-            // without opening (and scrolling to) it, the only visible
-            // change from clicking Edit is a small message + button label
-            // here in Snapshots, which reads as "nothing happened".
-            const entervalues = el("txp-entervalues");
-            if (entervalues) {
-              entervalues.classList.add("open");
-              entervalues.scrollIntoView({ behavior: "smooth", block: "start" });
-            }
+            const fid = (id) => "snapEdit-" + id;
+            const readonlyRows = [
+              { label: "MF Value", value: snap.mf || 0 },
+              { label: "Unrealized Gain", value: snap.mfProfit || 0 },
+              ...(snap.incomeExtra ? [{ label: "Income (not in Bank)", value: snap.incomeExtra }] : []),
+            ];
+            let bodyElRef = null;
+
+            openModal({
+              title: "Edit " + fmtMonth(key),
+              size: "sm",
+              body: (bodyEl) => {
+                bodyElRef = bodyEl;
+                bodyEl.innerHTML = `
+                  <div>
+                    ${readonlyRows.map(r => `<div class="nw-hist-detail-row"><span>${r.label}</span><span>${fmt(r.value)}</span></div>`).join("")}
+                  </div>
+                  <div style="border-top:1px solid var(--line);"></div>
+                  ${OTHER_FIELDS.map(f => `
+                    <div class="field" style="margin-bottom:0;">
+                      <label class="flabel" for="${fid(f.id)}">${f.label}</label>
+                      <input class="form-inp" id="${fid(f.id)}" type="text" inputmode="numeric" value="${fmtNum(snap[f.id])}" />
+                    </div>
+                  `).join("")}
+                `;
+                OTHER_FIELDS.forEach(f => {
+                  const inp = bodyEl.querySelector("#" + fid(f.id));
+                  inp.addEventListener("focus", () => { const v = num(inp.value); inp.value = v > 0 ? v : ""; });
+                  inp.addEventListener("blur", () => { inp.value = fmtNum(num(inp.value)); });
+                });
+              },
+              footer: [
+                { label: "Cancel", variant: "ghost" },
+                {
+                  label: "Save",
+                  variant: "primary",
+                  onClick: () => {
+                    const updated = { ...snap };
+                    OTHER_FIELDS.forEach(f => { updated[f.id] = num(bodyElRef.querySelector("#" + fid(f.id)).value); });
+                    updated.total = (updated.mf || 0) + (updated.mfProfit || 0) + othersOfSnap(updated) + (updated.incomeExtra || 0);
+                    saveSnapshot(key, updated);
+                    saveState();
+                    refreshAllSnapshotViews();
+                    UI.toast("success", "Snapshot updated — " + fmtMonth(key), 2500);
+                  },
+                },
+              ],
+            });
           }
 
 // Transactions tab's Snapshots card — a lighter-weight list than Monthly
