@@ -192,20 +192,11 @@ export function renderNetWorth() {
             const sorted = Object.entries(snaps)
               .map(([k, v]) => normalizeSnap(k, v))
               .sort((a, b) => a.key.localeCompare(b.key));
-            const deltaRow = el("nwDeltaChips");
             const avgEl = el("nwAvgGrowth");
+            const avgArrowEl = el("nwAvgGrowthArrow");
 
             if (sorted.length >= 1) {
               const last = sorted[sorted.length - 1];
-              // MoM: diff between live total and most recent snapshot
-              const momChip = el("nwMomChip");
-              if (momChip) {
-                const mom = total - last.total;
-                const sign = mom >= 0 ? "▲" : "▼";
-                momChip.textContent = `${sign} ${mom >= 0 ? "+" : "−"}${fmt(Math.abs(mom))} MoM`;
-                momChip.className = "nw-delta-chip" + (mom < 0 ? " neg" : "");
-              }
-              if (deltaRow) deltaRow.style.display = "flex";
 
               // Avg monthly growth
               if (avgEl) {
@@ -213,12 +204,17 @@ export function renderNetWorth() {
                 for (let i = 1; i < sorted.length; i++) { sumDelta += sorted[i].total - sorted[i-1].total; countDelta++; }
                 sumDelta += total - last.total; countDelta++;
                 const avg = countDelta > 0 ? sumDelta / countDelta : 0;
+                const avgColor = avg >= 0 ? "var(--mint)" : "var(--coral)";
                 avgEl.textContent = (avg >= 0 ? "+" : "−") + fmt(Math.abs(avg));
-                avgEl.style.color = avg >= 0 ? "var(--mint)" : "var(--coral)";
+                avgEl.style.color = avgColor;
+                if (avgArrowEl) {
+                  avgArrowEl.textContent = avg >= 0 ? "▲" : "▼";
+                  avgArrowEl.style.color = avgColor;
+                }
               }
             } else {
-              if (deltaRow) deltaRow.style.display = "none";
               if (avgEl) { avgEl.textContent = "—"; avgEl.style.color = "var(--dim)"; }
+              if (avgArrowEl) avgArrowEl.textContent = "";
             }
 
             // Hero chart — last 6 snapshots + live total, with axis labels
