@@ -913,6 +913,44 @@ export function renderSparklines() {
             });
           }
 
+/* Per-fund XIRR breakdown inside the expanded Portfolio XIRR card — same
+   fundXirr() call the Fund Performance table's XIRR column uses, just
+   listed plainly here so expanding the headline number is enough to see
+   which fund is actually driving it, without jumping to that table.
+   Funds with no computable XIRR (no transactions logged yet) still show
+   up with a dash rather than being silently dropped, matching how the
+   Fund Performance table treats them. */
+function renderXirrFundList() {
+            const wrap = el("sumXirrFundList");
+            if (!wrap) return;
+            const rows = [...LIQ_FUNDS.map(f => ({ f, isLiq: true })), ...EQ_FUNDS.map(f => ({ f, isLiq: false }))]
+              .map(({ f, isLiq }) => {
+                const s = isLiq ? state.liquid[f.id] : state.equity[f.id];
+                const invested = s?.paid || 0;
+                const current = isLiq ? (s?.currentValue || s?.value || 0) : (s?.currentValue || s?.shown || 0);
+                return { name: fundName(f.id), xirr: fundXirr(f.id, isLiq, s, state.transactions), invested, current };
+              })
+              .filter(r => r.invested > 0 || r.current > 0);
+
+            if (!rows.length) { wrap.innerHTML = ""; return; }
+
+            wrap.innerHTML = `
+              <div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:9px;">XIRR by Fund</div>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                ${rows.map(r => {
+                  const hasXirr = r.xirr !== null;
+                  const isUp = hasXirr && r.xirr >= 0;
+                  const valTxt = hasXirr ? (isUp ? "+" : "") + (r.xirr * 100).toFixed(2) + "%" : "—";
+                  const color = !hasXirr ? "var(--dim)" : isUp ? "var(--mint)" : "var(--coral)";
+                  return `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+                    <span style="font-size:12px;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.name}</span>
+                    <span style="font-family:'Roboto Mono',monospace;font-size:12px;font-weight:700;color:${color};white-space:nowrap;">${valTxt}</span>
+                  </div>`;
+                }).join("")}
+              </div>
+            `;
+          }
+
 /* Small trend line inside the Portfolio XIRR card — recomputes XIRR as of
    each historical net worth snapshot (see rollingPortfolioXirr) rather than
    just showing today's single number, so a slipping/improving return rate
@@ -951,9 +989,10 @@ function renderXirrTrend() {
           }
 
 export function renderXirrAndHeatmap() {
-            // Portfolio XIRR — per-fund breakdown lives in the Fund
-            // Performance table's sortable XIRR column + Portfolio total
-            // row below, so this card only needs the headline number.
+            // Portfolio XIRR — collapsed state only shows the headline
+            // number; expanding reveals the per-fund breakdown (below) and
+            // the trend chart, so you don't need to jump to the Fund
+            // Performance table just to see which fund is driving it.
             const xirrCard = el("sumXirrCard");
             const xirrEl = el("sumXirr");
             if (xirrCard && xirrEl) {
@@ -968,6 +1007,7 @@ export function renderXirrAndHeatmap() {
                 xirrCard.style.display = "none";
               }
             }
+            renderXirrFundList();
             renderXirrTrend();
 
             // Investment streak — collapsed state just shows the title +
