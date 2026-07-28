@@ -358,7 +358,7 @@ export function render() {
             renderUpcoming();
             renderHoldings();
             renderCalendar();
-            // Rebalance now renders inline into a Budget-tab card (like
+            // Rebalance now renders inline into a Planning-tab card (like
             // Expenses/Financial Goals) rather than a standalone page, so
             // it's kept in sync unconditionally the same way those are —
             // Forecast is still the one tab-gated render, since its chart

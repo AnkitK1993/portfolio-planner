@@ -168,7 +168,6 @@ export function navigateTo(tabId) {
             el("tab-" + tabId).classList.add("active");
             el("homeBtn").classList.toggle("active", tabId === "portfolio");
             el("summaryBtn").classList.toggle("active", tabId === "summary");
-            el("budgetBtn").classList.toggle("active", tabId === "budget");
             el("networthBtn").classList.toggle("active", tabId === "networth");
             el("planningBtn").classList.toggle("active", tabId === "forecast");
             el("txnsBtn").classList.toggle("active", tabId === "transactions");

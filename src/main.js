@@ -47,10 +47,6 @@ el("summaryBtn").addEventListener("click", () => {
             if (!authUser) { UI.toast("err", "Unauthorized — please sign in to access this section", 4000); return; }
             navigateTo("summary");
           });
-el("budgetBtn").addEventListener("click", () => {
-            if (!authUser) { UI.toast("err", "Unauthorized — please sign in to access this section", 4000); return; }
-            navigateTo("budget");
-          });
 el("networthBtn").addEventListener("click", () => {
             if (!authUser) { UI.toast("err", "Unauthorized — please sign in to access this section", 4000); return; }
             navigateTo("networth");
@@ -419,19 +415,15 @@ const sumToggleAll = makeToggleAllGroup("sumToggleAllBtn");
             ["calToggle", "calCollBody", null],
           ].forEach(([headerId, bodyId, previewId]) => sumToggleAll.add(headerId, bodyId, previewId));
 sumToggleAll.refresh();
-// Budget tab's own expand-all group — Expenses keeps its existing
-// Total-This-Month collapsed preview.
-const budgetToggleAll = makeToggleAllGroup("budgetToggleAllBtn");
+// Planning tab's own expand-all group — Expenses/Financial Goals (moved
+// here from the now-removed standalone Budget tab; Expenses keeps its
+// existing Total-This-Month collapsed preview), Projections (the
+// forecast tool, previously the only always-open content on this tab),
+// and Rebalance (moved here from Budget earlier).
+const planningToggleAll = makeToggleAllGroup("planningToggleAllBtn");
 [
             ["expCardToggle", "expCardBody", "expCollapsedTotal"],
             ["sumFireToggle", "sumFireCollBody", null],
-          ].forEach(([headerId, bodyId, previewId]) => budgetToggleAll.add(headerId, bodyId, previewId));
-budgetToggleAll.refresh();
-// Planning tab's own expand-all group — Projections (the forecast tool,
-// previously the only always-open content on this tab) and Rebalance
-// (moved here from Budget).
-const planningToggleAll = makeToggleAllGroup("planningToggleAllBtn");
-[
             ["fcCardToggle", "fcCardCollBody", null],
             ["planningRebalanceToggle", "planningRebalanceCollBody", null],
           ].forEach(([headerId, bodyId, previewId]) => planningToggleAll.add(headerId, bodyId, previewId));
@@ -449,8 +441,7 @@ registerCardOrder("summary", [
             "sumXirrCard", "sumAllocCard", "sumCompositionCard", "sumIdealCard",
             "sumStreakCard", "sumFundCard", "sumTaxCard", "sumHeatmapCard", "sumCalCard",
           ]);
-registerCardOrder("budget", ["sumExpensesCard", "sumFireCard"]);
-registerCardOrder("planning", ["fcCard", "planningRebalanceCard"]);
+registerCardOrder("planning", ["sumExpensesCard", "sumFireCard", "fcCard", "planningRebalanceCard"]);
 registerCardOrder("transactions", ["txp-history", "txp-curval", "txp-sip", "txp-entervalues", "txp-snapshot", "txnCharts"]);
 registerCardOrder("networth", ["nwBreakdownCard", "nwAssetTrendsCard", "nwHistCard", "nwChartCard", "nwCompChartCard", "nwProjCard"]);
 // Returns badges (Total bar + Liquid/Equity division rows) toggle between
