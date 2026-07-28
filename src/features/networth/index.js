@@ -184,13 +184,16 @@ export function renderNetWorth() {
             _snapBtn.textContent = "Save snapshot — " + fmtMonth(_snapKey);
             _snapBtn.style.display = _hasSnap ? "none" : "";
 
-            // Delta chips, stats row, sparkline — driven by snapshots
+            // Delta chip, Avg Monthly Growth tile, hero chart — driven by
+            // snapshots. The stat row itself always shows (Current Net
+            // Worth needs no snapshot history), so only the pieces that
+            // genuinely need a prior snapshot fall back to a placeholder.
             const snaps = state.networth.snapshots || {};
             const sorted = Object.entries(snaps)
               .map(([k, v]) => normalizeSnap(k, v))
               .sort((a, b) => a.key.localeCompare(b.key));
             const deltaRow = el("nwDeltaChips");
-            const statRow  = el("nwStatRow");
+            const avgEl = el("nwAvgGrowth");
 
             if (sorted.length >= 1) {
               const last = sorted[sorted.length - 1];
@@ -205,40 +208,61 @@ export function renderNetWorth() {
               if (deltaRow) deltaRow.style.display = "flex";
 
               // Avg monthly growth
-              if (statRow) {
+              if (avgEl) {
                 let sumDelta = 0, countDelta = 0;
                 for (let i = 1; i < sorted.length; i++) { sumDelta += sorted[i].total - sorted[i-1].total; countDelta++; }
                 sumDelta += total - last.total; countDelta++;
                 const avg = countDelta > 0 ? sumDelta / countDelta : 0;
-                const avgEl = el("nwAvgGrowth");
-                if (avgEl) {
-                  avgEl.textContent = (avg >= 0 ? "+" : "−") + fmt(Math.abs(avg));
-                  avgEl.style.color = avg >= 0 ? "var(--mint)" : "var(--coral)";
-                }
-                statRow.style.display = "grid";
+                avgEl.textContent = (avg >= 0 ? "+" : "−") + fmt(Math.abs(avg));
+                avgEl.style.color = avg >= 0 ? "var(--mint)" : "var(--coral)";
               }
             } else {
               if (deltaRow) deltaRow.style.display = "none";
-              if (statRow)  statRow.style.display  = "none";
+              if (avgEl) { avgEl.textContent = "—"; avgEl.style.color = "var(--dim)"; }
             }
 
-            // Hero sparkline — last 6 snapshots + live total
+            // Hero chart — last 6 snapshots + live total, with axis labels
+            // (a compact analog of the fuller "Net Worth Over Time" card
+            // below, minus its projection/milestone overlays — this one is
+            // just the at-a-glance trend).
             const sparkEl = el("nwHeroSparkline");
             if (sparkEl) {
-              const pts = [...sorted.slice(-6).map(s => s.total), total];
+              const now = new Date();
+              const nowKey = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
+              const pts = [...sorted.slice(-6).map(s => ({ key: s.key, v: s.total })), { key: nowKey, v: total }];
               if (pts.length >= 2) {
-                const mn = Math.min(...pts), mx = Math.max(...pts), rng = mx - mn || 1;
-                const W = 110, H = 52, P = 4;
-                const px = i => (i / (pts.length - 1)) * (W - P * 2) + P;
-                const py = v => H - P - ((v - mn) / rng) * (H - P * 2);
-                const ld = pts.map((v, i) => `${i === 0 ? "M" : "L"}${px(i).toFixed(1)},${py(v).toFixed(1)}`).join(" ");
-                const ad = ld + ` L${px(pts.length-1).toFixed(1)},${H} L${P},${H} Z`;
-                const lx = px(pts.length-1).toFixed(1), ly = py(total).toFixed(1);
-                sparkEl.innerHTML = `<defs><linearGradient id="spkG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3dd68c" stop-opacity="0.3"/><stop offset="100%" stop-color="#3dd68c" stop-opacity="0"/></linearGradient></defs>
-                  <path d="${ad}" fill="url(#spkG)"/>
-                  <path d="${ld}" fill="none" stroke="#3dd68c" stroke-width="2" stroke-linejoin="round"/>
-                  <circle cx="${lx}" cy="${ly}" r="3.5" fill="#3dd68c"/>`;
-              } else { sparkEl.innerHTML = ""; }
+                const vals = pts.map(p => p.v);
+                const mn = Math.min(...vals), mx = Math.max(...vals), rng = mx - mn || 1;
+                const up = pts[pts.length - 1].v >= pts[0].v;
+                const color = up ? "var(--mint)" : "var(--coral)";
+                const W = 600, H = 160, PAD_T = 10, PAD_B = 20, PAD_L = 42, PAD_R = 8;
+                const n = pts.length;
+                const toX = i => PAD_L + (i / (n - 1)) * (W - PAD_L - PAD_R);
+                const toY = v => PAD_T + (1 - (v - mn) / rng) * (H - PAD_T - PAD_B);
+                const lineStr = pts.map((p, i) => `${i === 0 ? "M" : "L"}${toX(i).toFixed(1)},${toY(p.v).toFixed(1)}`).join(" ");
+                const areaStr = lineStr + ` L${toX(n - 1).toFixed(1)},${H - PAD_B} L${toX(0).toFixed(1)},${H - PAD_B} Z`;
+                const gridLines = Array.from({ length: 3 }, (_, i) => {
+                  const v = mn + rng * (i + 1) / 4;
+                  const y = toY(v).toFixed(1);
+                  return `<line x1="${PAD_L}" y1="${y}" x2="${W}" y2="${y}" stroke="var(--line)" stroke-width="1"/>
+                    <text x="${PAD_L - 6}" y="${parseFloat(y) + 3}" text-anchor="end" font-size="9" fill="var(--dim)" font-family="Roboto Mono,monospace">${fmtCompact(v)}</text>`;
+                }).join("");
+                const monthLabels = pts.map((p, i) => {
+                  const [yr, mo] = p.key.split("-");
+                  const lbl = new Date(+yr, +mo - 1, 1).toLocaleDateString("en-IN", { month: "short" });
+                  const anchor = i === 0 ? "start" : i === n - 1 ? "end" : "middle";
+                  return `<text x="${toX(i).toFixed(1)}" y="${H - 4}" text-anchor="${anchor}" font-size="9" fill="var(--dim)" font-family="Roboto Mono,monospace">${lbl}</text>`;
+                }).join("");
+                const lx = toX(n - 1).toFixed(1), ly = toY(total).toFixed(1);
+                sparkEl.innerHTML = `<defs><linearGradient id="heroSpkG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${color}" stop-opacity="0.28"/><stop offset="100%" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>
+                  ${gridLines}
+                  <path d="${areaStr}" fill="url(#heroSpkG)"/>
+                  <path d="${lineStr}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+                  ${monthLabels}
+                  <circle cx="${lx}" cy="${ly}" r="3.5" fill="${color}"/>`;
+              } else {
+                sparkEl.innerHTML = `<text x="300" y="80" text-anchor="middle" font-size="11" fill="var(--dim)" font-family="Roboto Mono,monospace">Save a snapshot each month to start building this chart</text>`;
+              }
             }
 
             // Asset breakdown bars

@@ -474,26 +474,23 @@
           </button>
         </div>
 
-        <!-- Hero with inline sparkline -->
+        <!-- Hero: stat tiles (Current Net Worth, Avg Monthly Growth) + a
+             full-width trend chart across saved snapshots. -->
         <div class="nw-hero">
-          <div class="nw-hero-label">Current Net Worth</div>
-          <div class="nw-hero-inner">
-            <div>
-              <div class="nw-hero-val" id="nwHeroVal">₹0</div>
+          <div class="nw-stat-row" id="nwStatRow">
+            <div class="nw-stat-card">
+              <div class="nw-stat-label">Current Net Worth</div>
+              <div class="nw-stat-val nw-stat-val-hero" id="nwHeroVal">₹0</div>
               <div class="nw-delta-chips" id="nwDeltaChips" style="display:none">
                 <span class="nw-delta-chip" id="nwMomChip"></span>
               </div>
             </div>
-            <svg id="nwHeroSparkline" class="nw-hero-sparkline" viewBox="0 0 110 52" preserveAspectRatio="none"></svg>
+            <div class="nw-stat-card">
+              <div class="nw-stat-label">Avg Monthly Growth</div>
+              <div class="nw-stat-val" id="nwAvgGrowth">—</div>
+            </div>
           </div>
-        </div>
-
-        <!-- Stats row -->
-        <div class="nw-stat-row" id="nwStatRow" style="display:none">
-          <div class="nw-stat-card">
-            <div class="nw-stat-label">Avg Monthly Growth</div>
-            <div class="nw-stat-val" id="nwAvgGrowth">—</div>
-          </div>
+          <svg id="nwHeroSparkline" class="nw-hero-sparkline" viewBox="0 0 600 160" preserveAspectRatio="none"></svg>
         </div>
 
         <!-- Asset Breakdown — own card -->
