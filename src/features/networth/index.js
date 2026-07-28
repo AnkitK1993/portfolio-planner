@@ -205,7 +205,7 @@ export function renderNetWorth() {
                 sumDelta += total - last.total; countDelta++;
                 const avg = countDelta > 0 ? sumDelta / countDelta : 0;
                 const avgColor = avg >= 0 ? "var(--mint)" : "var(--coral)";
-                avgEl.textContent = (avg >= 0 ? "+" : "−") + fmt(Math.abs(avg));
+                avgEl.textContent = fmt(Math.abs(avg));
                 avgEl.style.color = avgColor;
                 if (avgArrowEl) {
                   avgArrowEl.textContent = avg >= 0 ? "▲" : "▼";
