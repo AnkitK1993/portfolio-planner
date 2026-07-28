@@ -1,6 +1,7 @@
 import { EQ_CATEGORIES } from "../../core/constants.js";
 import { EQ_FUNDS, LIQ_FUNDS, editMode, fundName, normalizeSnap, saveState, state } from "../../core/state.js";
 import { UI } from "../../core/ui.js";
+import { open as openModal } from "../../core/modal.js";
 import { _animOnRender, _animRaf, animateNumber, animateWidth } from "../../core/animate.js";
 import { avgMonthlyGrowthRate, nwTotal } from "../../domain/networth.js";
 import { cachedPortfolioXirr, fundXirr, rollingPortfolioXirr } from "../../domain/xirr.js";
@@ -337,13 +338,17 @@ export function renderHealthScore() {
 
             const dims = [
               { label: "Consistency",  score: cScore, note: cNote, color: "var(--liq)",
-                desc: "Consecutive months with investments: 25 pts at 24+ months, 20 at 12+, 15 at 6+, 10 at 3+, 5 at 1+." },
+                what: "How many consecutive months you've logged at least one investment, counting back from this month.",
+                max: "Reach 25/25 with a 24+ month unbroken streak (20 pts at 12+ months, 15 at 6+, 10 at 3+, 5 at 1+)." },
               { label: "Allocation",   score: aScore, note: aNote, color: "var(--mint)",
-                desc: "25 pts minus your equity category drift from target weights (0.8 pts lost per 1% drift)." },
+                what: "How closely your current equity holdings match the ideal category weights you've set (Large/Flexi/Mid/Small Cap, on the Portfolio tab).",
+                max: "Reach 25/25 by keeping your actual allocation within about 6% of target — every 1% of drift costs 0.8 points." },
               { label: "Liq. Buffer",  score: bScore, note: bNote, color: "var(--amber)",
-                desc: "Deployable liquid funds vs monthly expenses: 25 pts at 6+ months buffer, 17 at 3+, 10 at 1+, 0 below." },
+                what: "Your deployable liquid fund balance (fund value minus any reserve you've earmarked) measured against your monthly expenses.",
+                max: "Reach 25/25 by keeping at least 6 months of expenses covered in liquid funds (17 pts at 3+ months, 10 at 1+, 0 below 1)." },
               { label: "Returns",      score: rScore, note: rNote, color: "var(--purple)",
-                desc: "Based on annualised portfolio XIRR: 25 pts at 18%+, 20 at 12%+, 15 at 8%+, 8 at 0%+, 0 if negative." },
+                what: "Your portfolio's annualised XIRR across every logged transaction — the actual return you're earning on your money.",
+                max: "Reach 25/25 with an XIRR of 18%+ (20 pts at 12%+, 15 at 8%+, 8 at 0%+, 0 if negative)." },
             ];
 
             wrap.innerHTML = `
@@ -359,10 +364,10 @@ export function renderHealthScore() {
                   </div>
                 </div>
                 <div style="flex:1;min-width:180px;display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;">
-                  ${dims.map(d => `
-                    <div title="${d.desc}">
+                  ${dims.map((d, i) => `
+                    <div class="phs-dim" data-i="${i}" style="cursor:pointer;">
                       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
-                        <span style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:var(--dim)">${d.label}</span>
+                        <span style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:var(--dim)">${d.label} <span style="opacity:0.6;">ⓘ</span></span>
                         <span style="font-family:'Roboto Mono',monospace;font-size:10.5px;font-weight:700;color:${d.color}">${d.score}/25</span>
                       </div>
                       <div style="height:3px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;margin-bottom:3px;">
@@ -374,6 +379,26 @@ export function renderHealthScore() {
               </div>`;
 
             if (card) card.style.display = "";
+
+            wrap.querySelectorAll(".phs-dim").forEach(dimEl => {
+              dimEl.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const d = dims[+dimEl.dataset.i];
+                openModal({
+                  title: d.label,
+                  size: "sm",
+                  body: (target) => {
+                    target.innerHTML = `
+                      <p style="font-size:12px;color:var(--txt);line-height:1.5;">${d.what}</p>
+                      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line);">
+                        <div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:5px;">How to reach 25/25</div>
+                        <p style="font-size:12px;color:var(--txt);line-height:1.5;">${d.max}</p>
+                      </div>`;
+                  },
+                  footer: [{ label: "Got it", variant: "primary" }],
+                });
+              });
+            });
 
             // Animate arc, score number, and dimension bars
             if (_animOnRender) {
