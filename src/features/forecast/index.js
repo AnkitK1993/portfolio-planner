@@ -1,6 +1,7 @@
 import { _animOnRender, animateNumber } from "../../core/animate.js";
 import { editMode, state } from "../../core/state.js";
 import { el } from "../../core/dom.js";
+import { refreshAncestorCollapsible } from "../../core/collapsible.js";
 import { fcGoalMonthly, fcProjectedAdv, fcTotalInvested } from "../../domain/forecastMath.js";
 import { fmt, num } from "../../core/format.js";
 
@@ -174,6 +175,12 @@ function renderFcCompare(ctx) {
                 <button class="reb-edit-btn${em ? " done" : ""}" id="fcCompareEditToggle">${em ? "Done" : "Edit"}</button>
               </div>
               ${bodyHtml}`;
+
+            // The Projections card is a collapsible whose open max-height is
+            // pinned when it's expanded — content growing inside it (typing
+            // an amount, revealing the result grid) never re-triggers that
+            // height on its own, silently clipping the new rows.
+            refreshAncestorCollapsible(wrap);
 
             el("fcCompareEditToggle").addEventListener("click", () => {
               fcCompareEditMode = !fcCompareEditMode;
