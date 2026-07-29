@@ -4,7 +4,7 @@ import { EQ_FUNDS, LIQ_FUNDS, defaultRebSections, deployable, editMode, saveStat
 import { _animOnRender, animateWidth } from "../../core/animate.js";
 import { el } from "../../core/dom.js";
 import { refreshAncestorCollapsible } from "../../core/collapsible.js";
-import { fmt, fmtCompact, pct } from "../../core/format.js";
+import { fmt, fmtCompact, num, pct } from "../../core/format.js";
 import { addRebalanceRow, addRebalanceSection, deleteRebalanceRow, deleteRebalanceSection, setIdealFundWeight, setIdealWeight, setRebalanceRowName, setRebalanceRowValue, setRebalanceSectionName } from "../../store/actions.js";
 
 export let rebEditMode = false;
@@ -365,6 +365,8 @@ export function renderIdealAlloc() {
               if (bar1El) bar1El.innerHTML = "";
               if (bar2El) bar2El.innerHTML = "";
               if (bar3El) bar3El.innerHTML = "";
+              const investBreakdownElEmpty = el("idealInvestBreakdown");
+              if (investBreakdownElEmpty) investBreakdownElEmpty.innerHTML = "";
               return;
             }
 
@@ -423,6 +425,8 @@ export function renderIdealAlloc() {
               if (bar1El) bar1El.innerHTML = `<div style="font-size:11px;color:var(--dim);margin-top:10px;">No equity funds with values entered.</div>`;
               if (bar2El) bar2El.innerHTML = "";
               if (bar3El) bar3El.innerHTML = "";
+              const investBreakdownElEmpty = el("idealInvestBreakdown");
+              if (investBreakdownElEmpty) investBreakdownElEmpty.innerHTML = "";
               return;
             }
 
@@ -519,6 +523,46 @@ export function renderIdealAlloc() {
               bar1El.innerHTML = barSectionHtml("Ideal Equity Allocation", "var(--mint)", fmt(Math.round(eqAfter)), bar1Segs, bar1Rows) + transfersHtml;
               if (_animOnRender && !editMode)
                 bar1El.querySelectorAll(".alloc-seg-bar").forEach(bar => animateWidth(bar, 100, 1000));
+            }
+
+            // --- Invest New Money: a plain "what if I invest ₹N today"
+            // calculator. Current/Target use today's actual equity total
+            // (eqCurrent), not eqAfter (which folds in deployable liquid
+            // cash the way Bar 1 does) — this deliberately answers "how
+            // should what I already hold be split" on its own. The Invest
+            // column splits the typed amount proportionally to each
+            // fund's idealPct (its target share of the whole equity
+            // portfolio), same convention Bar 2 below already uses for
+            // deployable liquid cash — simple and consistent, and it
+            // leaves solving for existing drift to Rebalance Actions
+            // above rather than re-solving it here. Read-only: this is a
+            // calculator, not something that logs transactions itself. -->
+            const investBreakdownEl = el("idealInvestBreakdown");
+            if (investBreakdownEl) {
+              const investAmt = num(el("idealInvestAmt")?.value);
+              const investRows = fundTargets.map(f => {
+                const targetToday = eqCurrent * (f.idealPct / 100);
+                const investShare = investAmt > 0 ? investAmt * (f.idealPct / 100) : null;
+                return `
+                  <div style="display:grid;grid-template-columns:1fr auto auto${investShare !== null ? " auto" : ""};align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);">
+                    <span style="font-size:11px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${f.name}</span>
+                    <div style="text-align:right;min-width:58px">
+                      <div style="font-size:8px;color:var(--dim);margin-bottom:1px">Current</div>
+                      <div style="font-family:'Roboto Mono',monospace;font-size:10px;color:var(--txt)">${fmt(Math.round(f.current))}</div>
+                    </div>
+                    <div style="text-align:right;min-width:58px">
+                      <div style="font-size:8px;color:var(--dim);margin-bottom:1px">Target</div>
+                      <div style="font-family:'Roboto Mono',monospace;font-size:10px;color:var(--txt)">${fmt(Math.round(targetToday))}</div>
+                    </div>
+                    ${investShare !== null ? `
+                    <div style="text-align:right;min-width:58px">
+                      <div style="font-size:8px;color:var(--dim);margin-bottom:1px">Invest</div>
+                      <div style="font-family:'Roboto Mono',monospace;font-size:10px;font-weight:700;color:var(--mint)">${fmt(Math.round(investShare))}</div>
+                    </div>` : ""}
+                  </div>`;
+              }).join("");
+              investBreakdownEl.innerHTML = `<div style="margin-top:8px;">${investRows}</div>`;
+              refreshAncestorCollapsible(investBreakdownEl);
             }
 
             // --- Bar 2: Liquid → Equity redistribution ---
