@@ -474,10 +474,11 @@ export function updateAuthUI() {
             const authBtn  = el("ddAuthBtn");
             const isGuest  = !authUser;
 
-            // Admin-only items — hide for guests. Edit mode itself has no
-            // visible button anymore (see main.js's swipe-up gesture on
-            // #tabs), gated there by the same authUser check instead.
-            ["ddDataBtn", "txnsBtn"].forEach(id => {
+            // Admin-only items — hide for guests. Edit mode's own icon
+            // (see main.js's swipe-up gesture and scroll-revealed shortcut
+            // on #tabs) needs the same guest-hiding treatment the old
+            // static Edit button got.
+            ["ddDataBtn", "txnsBtn", "navEditBtn"].forEach(id => {
               const el2 = el(id); if (el2) el2.style.display = isGuest ? "none" : "";
             });
 

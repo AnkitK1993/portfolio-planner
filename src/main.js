@@ -153,19 +153,25 @@ el("txnSortSel").addEventListener("change", () => {
             txnFilter.sort = el("txnSortSel").value;
             renderTxns();
           });
-// Edit mode has no visible button — swipe up anywhere on the bottom nav
-// bar to toggle it (same toggleEditMode() call handles entering AND
-// saving-on-exit, exactly like the old button's two-state click did).
+// Edit mode has no visible button by default — swipe up anywhere on the
+// bottom nav bar to toggle it (same toggleEditMode() call handles entering
+// AND saving-on-exit, exactly like the old button's two-state click did).
+// A dedicated icon also sits pinned next to Home, but stays hidden (see
+// .nav-pinned.scrolled in base.css) until #tabs is actually scrolled
+// horizontally — the swipe gesture already covers the default, unscrolled
+// case, so the icon only needs to step in once scrolling makes that
+// gesture's target area less obvious.
 // Pointer Events rather than touch-specific ones so this also works via
 // mouse-drag on desktop. Only a vertical-dominant upward swipe past the
 // threshold counts, so it doesn't fire on an ordinary tap, and doesn't
 // fight the bar's own horizontal auto-scroll (see .tabs' touch-action).
 // Guarded by authUser the same way the old button was hidden for guests
 // in updateAuthUI() — a guest could never see/click that button, so the
-// gesture that replaces it needs the same access check.
+// gesture and icon that replace it need the same access check.
 (() => {
             const SWIPE_UP_THRESHOLD = 45;
             const tabsEl = el("tabs");
+            const navPinned = el("navPinned");
             let startX = 0, startY = 0, tracking = false;
             tabsEl.addEventListener("pointerdown", (e) => {
               tracking = true;
@@ -183,6 +189,15 @@ el("txnSortSel").addEventListener("change", () => {
               }
             });
             tabsEl.addEventListener("pointercancel", () => { tracking = false; });
+
+            tabsEl.addEventListener("scroll", () => {
+              navPinned.classList.toggle("scrolled", tabsEl.scrollLeft > 0);
+            });
+            el("navEditBtn").addEventListener("click", () => {
+              if (!authUser) { UI.toast("err", "Unauthorized — please sign in to access this section", 4000); return; }
+              closeNavDropdowns();
+              toggleEditMode();
+            });
           })();
 el("calPrev").addEventListener("click", () => {
             if (calView === "week") { setCalWeekOffset(calWeekOffset - 1); renderCalendar(); return; }
