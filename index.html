@@ -783,31 +783,23 @@
           </div>
         </div>
 
-        <!-- Invest New Money — a plain "what if" calculator: given each
-             equity fund's target share (Ideal Allocation's category/fund
-             weights, Analytics tab), shows current vs. today's target
-             plus how to split a hypothetical new investment. Read-only
-             guidance, not something that logs transactions itself. -->
+        <!-- Invest New Money — a scratch "what if" planner: tap Edit to
+             put a hypothetical amount into one or more equity funds and
+             see your invested total plus how each fund's allocation %
+             shifts. Read-only exploration, not something that logs
+             transactions itself — content is fully owned/rendered by
+             renderInvestNewMoney() (like Rebalance's own card). -->
         <div class="card" id="investNewMoneyCard" style="margin-bottom:12px">
           <button class="card-toggle-head" id="investNewMoneyToggle" aria-expanded="false">
             <div class="card-toggle-head-text">
               <div class="sec-head" style="margin-bottom:4px">Invest New Money</div>
-              <div style="font-size:10px;color:var(--dim)">Where a new investment should go, based on your ideal equity split</div>
+              <div style="font-size:10px;color:var(--dim)">See how adding money to specific funds shifts your allocation</div>
             </div>
             <span class="card-toggle-chevron">▾</span>
           </button>
           <div class="card-toggle-body" id="investNewMoneyCollBody">
             <div class="card-toggle-body-inner">
-              <!-- The amount input is static markup with its own one-time
-                   listener (wired in main.js), same pattern as Forecast's
-                   #fcCompareExtra — so retyping it survives an unrelated
-                   re-render of this card; only #investNewMoneyBreakdown
-                   gets rebuilt each render. Not persisted to state. -->
-              <label class="flabel" for="investNewMoneyAmt">How much are you about to invest?</label>
-              <div class="ibox"><span class="pfx">&#8377;</span>
-                <input class="num" id="investNewMoneyAmt" type="number" min="0" placeholder="0" inputmode="numeric" />
-              </div>
-              <div id="investNewMoneyBreakdown"></div>
+              <div id="investNewMoneyBody"></div>
             </div>
           </div>
         </div>

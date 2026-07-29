@@ -20,7 +20,6 @@ import { exportData, importData } from "./features/admin/data.js";
 import { fcInflEl, fcShowAllEl, fcStepUpEl, renderForecast } from "./features/forecast/index.js";
 import { num } from "./core/format.js";
 import { openManageSips, saveManageSips } from "./features/portfolio/sips.js";
-import { renderInvestNewMoney } from "./features/summary/rebalance.js";
 import { openFundCollapsible, rebuildFundCollapsibles } from "./features/portfolio/funds.js";
 import { render, scheduleRender } from "./features/portfolio/render.js";
 
@@ -252,7 +251,6 @@ el("fcRate").addEventListener("input", (e) => {
           });
 el("fcSlider").addEventListener("input", () => renderForecast());
 el("fcCompareExtra").addEventListener("input", () => renderForecast());
-el("investNewMoneyAmt").addEventListener("input", () => renderInvestNewMoney());
 if (fcStepUpEl) fcStepUpEl.addEventListener("input", (e) => {
             setForecastField("stepUp", parseFloat(e.target.value) || 0);
             renderForecast(); saveState();
