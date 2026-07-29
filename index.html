@@ -797,34 +797,15 @@
           </div>
         </div>
 
-            </div>
-          </div>
-        </div>
+        <!-- What if you invested more? — moved back inside Projections
+             (it was briefly its own card); a dedicated Edit/Done toggle,
+             independent of the app's blanket Edit mode, same convention
+             as Rebalance/Invest New Money's own local edit toggles.
+             Content is fully owned/rendered by renderForecast()'s
+             renderFcCompare() helper. Hidden in Reverse SIP mode, since
+             there's no slider/monthly-investment concept there. -->
+        <div class="fc-compare-wrap" id="fcCompareWrap"></div>
 
-        <!-- What if you invested more? — split out of Projections: a
-             distinct "what if" exploration tool (like Invest New Money),
-             bolted onto the end of the main forecast card before. Still
-             computed inside renderForecast() (it needs that card's own
-             rate/horizon/slider state), only the card chrome moved. Hidden
-             in Reverse SIP mode, same as before, since there's no slider/
-             monthly-investment concept there. -->
-        <div class="card" id="fcCompareCard" style="margin-bottom:12px">
-          <button class="card-toggle-head" id="fcCompareToggle" aria-expanded="false">
-            <div class="card-toggle-head-text">
-              <div class="sec-head" style="margin-bottom:4px">What If You Invested More?</div>
-              <div style="font-size:10px;color:var(--dim)">Compare an extra monthly contribution at the same horizon and return rate</div>
-            </div>
-            <span class="card-toggle-chevron">▾</span>
-          </button>
-          <div class="card-toggle-body" id="fcCompareCollBody">
-            <div class="card-toggle-body-inner">
-              <div class="fc-compare-wrap" id="fcCompareWrap">
-                <label class="flabel" for="fcCompareExtra">What if you invested this much more per month?</label>
-                <div class="ibox"><span class="pfx">&#8377;</span>
-                  <input class="num" id="fcCompareExtra" type="number" min="0" placeholder="0" inputmode="numeric" />
-                </div>
-                <div id="fcCompareResult"></div>
-              </div>
             </div>
           </div>
         </div>
@@ -836,7 +817,7 @@
         <div class="card" id="planningRebalanceCard" style="margin-bottom:12px">
           <button class="card-toggle-head" id="planningRebalanceToggle" aria-expanded="false">
             <div class="card-toggle-head-text">
-              <div class="sec-head" style="margin-bottom:4px">Rebalance</div>
+              <div class="sec-head" style="margin-bottom:4px">Money Manager Rebalancing</div>
               <div style="font-size:10px;color:var(--dim)">Manual account-level ledger — Cash, Bank, Mutual Funds, Bonds, PPF, Cards</div>
             </div>
             <span class="card-toggle-chevron">▾</span>

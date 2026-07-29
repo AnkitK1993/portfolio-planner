@@ -4,6 +4,14 @@ import { el } from "../../core/dom.js";
 import { fcGoalMonthly, fcProjectedAdv, fcTotalInvested } from "../../domain/forecastMath.js";
 import { fmt, num } from "../../core/format.js";
 
+export let fcCompareEditMode = false;
+
+// Scratch "what if" draft — same non-persisted, session-only convention
+// as this input always had (never written to state.forecast); a plain
+// module variable rather than a DOM read since the whole section now
+// gets rebuilt via innerHTML on every render (see renderFcCompare()).
+let fcCompareExtraDraft = 0;
+
 export function renderForecast() {
             const fc = state.forecast || {};
             const mode = fc.mode || "project";
@@ -15,7 +23,7 @@ export function renderForecast() {
             const dispEl     = el("fcDisplay");
             const chartWrap  = document.querySelector(".fc-chart-wrap");
             const sliderWrap = document.querySelector(".fc-slider-wrap");
-            const compareCard = el("fcCompareCard");
+            const compareWrap = el("fcCompareWrap");
 
             if (projInputs) projInputs.style.display = mode === "project" ? "" : "none";
             if (goalInputs) goalInputs.style.display  = mode === "goal"    ? "" : "none";
@@ -23,7 +31,7 @@ export function renderForecast() {
             if (dispEl)     dispEl.style.display       = mode === "project" ? "" : "none";
             if (chartWrap)  chartWrap.style.display    = mode === "project" ? "" : "none";
             if (sliderWrap) sliderWrap.style.display   = mode === "project" ? "" : "none";
-            if (compareCard) compareCard.style.display = mode === "project" ? "" : "none";
+            if (compareWrap) compareWrap.style.display = mode === "project" ? "" : "none";
 
             if (mode === "goal") { renderGoalMode(); return; }
 
@@ -96,18 +104,7 @@ export function renderForecast() {
             // up/time horizon the slider + scenario picker above already
             // use — reuses fcProjectedAdv() rather than a second model, so
             // this always agrees with whatever the main projection shows.
-            const compareResultEl = el("fcCompareResult");
-            if (compareResultEl) {
-              const extra = num(el("fcCompareExtra")?.value);
-              if (extra > 0 && step > 0) {
-                let withExtra = fcProjectedAdv(0, invest, monthly + extra, activeRate, T, stepUp);
-                if (useInflation && T > 0) withExtra /= Math.pow(1 + inflation / 100, T);
-                const diff = withExtra - projected;
-                compareResultEl.innerHTML = `At ${timeLabel}, that's <b style="color:var(--mint)">${fmt(Math.round(withExtra))}</b> instead of ${fmt(Math.round(projected))} — <b style="color:var(--mint)">+${fmt(Math.round(diff))} more</b>.`;
-              } else {
-                compareResultEl.innerHTML = "";
-              }
-            }
+            renderFcCompare({ invest, monthly, activeRate, T, stepUp, useInflation, inflation, timeLabel, projected, step });
 
             // Sync inputs
             const safe = (id, v) => { const e = el(id); if (e && document.activeElement !== e) e.value = v || ""; };
@@ -115,6 +112,81 @@ export function renderForecast() {
             safe("fcRate", rate); safe("fcStepUp", stepUp);
             const fcInflEl = el("fcInflation");
             if (fcInflEl) fcInflEl.checked = useInflation;
+          }
+
+// "What If You Invested More?" — a dedicated Edit/Done toggle instead of
+// an always-editable field, same local-edit-mode convention as Rebalance/
+// Invest New Money (independent of the app's blanket Edit mode). Editing
+// shows just the input, with no live result underneath — this whole
+// section is rebuilt via innerHTML on every renderForecast() call (slider
+// drags, scenario switches, etc.), so a per-keystroke listener would
+// fight the user's own typing; the comparison only (re)computes once
+// Done is tapped, matching how Invest New Money's own Edit/Done works.
+function renderFcCompare(ctx) {
+            const wrap = el("fcCompareWrap");
+            if (!wrap) return;
+
+            const em = fcCompareEditMode;
+
+            let bodyHtml;
+            if (em) {
+              bodyHtml = `
+                <div class="field" style="margin-top:12px;margin-bottom:0;">
+                  <label class="flabel" for="fcCompareExtra">Extra amount per month</label>
+                  <div class="ibox"><span class="pfx">&#8377;</span>
+                    <input class="num" id="fcCompareExtra" type="number" min="0" placeholder="0" inputmode="numeric" value="${fcCompareExtraDraft || ""}"/>
+                  </div>
+                </div>`;
+            } else if (fcCompareExtraDraft <= 0) {
+              bodyHtml = `<div style="font-size:11px;color:var(--dim);padding:2px 0 4px;">Tap Edit to compare an extra monthly contribution.</div>`;
+            } else if (ctx.step <= 0) {
+              bodyHtml = `<div style="font-size:11px;color:var(--dim);padding:2px 0 4px;">Move the year slider above to see a projection.</div>`;
+            } else {
+              let withExtra = fcProjectedAdv(0, ctx.invest, ctx.monthly + fcCompareExtraDraft, ctx.activeRate, ctx.T, ctx.stepUp);
+              if (ctx.useInflation && ctx.T > 0) withExtra /= Math.pow(1 + ctx.inflation / 100, ctx.T);
+              const diff = withExtra - ctx.projected;
+              const diffPct = ctx.projected > 0 ? (diff / ctx.projected) * 100 : 0;
+              bodyHtml = `
+                <div style="font-size:10px;color:var(--dim);margin:10px 0 12px;">+${fmt(fcCompareExtraDraft)}/mo more, at ${ctx.timeLabel}</div>
+                <div class="fc-compare-grid">
+                  <div class="fc-compare-stat">
+                    <div class="fc-compare-stat-lbl">Without Extra</div>
+                    <div class="fc-compare-stat-val">${fmt(Math.round(ctx.projected))}</div>
+                  </div>
+                  <div class="fc-compare-arrow">&rarr;</div>
+                  <div class="fc-compare-stat fc-compare-stat-hi">
+                    <div class="fc-compare-stat-lbl">With Extra</div>
+                    <div class="fc-compare-stat-val">${fmt(Math.round(withExtra))}</div>
+                  </div>
+                </div>
+                <div class="fc-compare-delta">
+                  <span class="fc-compare-delta-amt">+${fmt(Math.round(diff))}</span>
+                  <span class="fc-compare-delta-sub">more${ctx.projected > 0 ? ` (${diffPct >= 0 ? "+" : ""}${diffPct.toFixed(1)}%)` : ""}</span>
+                </div>`;
+            }
+
+            wrap.innerHTML = `
+              <div class="reb-page-head" style="margin-bottom:14px;padding-bottom:12px;">
+                <div style="flex:1;">
+                  <div class="sec-head" style="margin-bottom:4px;">What If You Invested More?</div>
+                  <div style="font-size:10px;color:var(--dim);">Compare an extra monthly contribution at the same horizon and return rate</div>
+                </div>
+                <button class="reb-edit-btn${em ? " done" : ""}" id="fcCompareEditToggle">${em ? "Done" : "Edit"}</button>
+              </div>
+              ${bodyHtml}`;
+
+            el("fcCompareEditToggle").addEventListener("click", () => {
+              fcCompareEditMode = !fcCompareEditMode;
+              renderForecast();
+            });
+
+            const inp = el("fcCompareExtra");
+            if (inp) {
+              inp.addEventListener("change", e => {
+                fcCompareExtraDraft = Math.max(0, num(e.target.value));
+                renderForecast();
+              });
+            }
           }
 
 export function renderGoalMode() {

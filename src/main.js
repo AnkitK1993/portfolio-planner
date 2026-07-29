@@ -280,7 +280,6 @@ el("fcRate").addEventListener("input", (e) => {
             saveState();
           });
 el("fcSlider").addEventListener("input", () => renderForecast());
-el("fcCompareExtra").addEventListener("input", () => renderForecast());
 if (fcStepUpEl) fcStepUpEl.addEventListener("input", (e) => {
             setForecastField("stepUp", parseFloat(e.target.value) || 0);
             renderForecast(); saveState();
@@ -457,7 +456,6 @@ const planningToggleAll = makeToggleAllGroup("planningToggleAllBtn");
             ["sumExpTrendsToggle", "sumExpTrendsCollBody", "sumExpTrendsPreview"],
             ["sumFireToggle", "sumFireCollBody", "sumFirePreview"],
             ["fcCardToggle", "fcCardCollBody", null],
-            ["fcCompareToggle", "fcCompareCollBody", null],
             ["planningRebalanceToggle", "planningRebalanceCollBody", null],
             ["sumLoansToggle", "sumLoansCollBody", "sumLoansPreview"],
             ["investNewMoneyToggle", "investNewMoneyCollBody", null],
@@ -476,7 +474,7 @@ registerCardOrder("summary", [
             "sumXirrCard", "sumAllocCard", "sumCompositionCard", "sumIdealCard", "sumRebalActionsCard",
             "sumStreakCard", "sumFundCard", "sumTaxCard", "sumHeatmapCard", "sumCalCard",
           ]);
-registerCardOrder("planning", ["sumExpensesCard", "sumExpTrendsCard", "sumFireCard", "fcCard", "fcCompareCard", "planningRebalanceCard", "sumLoansCard", "investNewMoneyCard"]);
+registerCardOrder("planning", ["sumExpensesCard", "sumExpTrendsCard", "sumFireCard", "fcCard", "planningRebalanceCard", "sumLoansCard", "investNewMoneyCard"]);
 registerCardOrder("transactions", ["txp-history", "txp-curval", "txp-sip", "txp-entervalues", "txp-snapshot", "txnCharts"]);
 registerCardOrder("networth", ["nwBreakdownCard", "nwAssetTrendsCard", "nwHistCard", "nwChartCard", "nwCompChartCard", "nwProjCard"]);
 // Returns badges (Total bar + Liquid/Equity division rows) toggle between
