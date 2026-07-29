@@ -183,17 +183,21 @@ function renderFcCompare(ctx) {
             refreshAncestorCollapsible(wrap);
 
             el("fcCompareEditToggle").addEventListener("click", () => {
+              // Read the input's live value directly instead of relying on a
+              // separate "change" listener to have committed it first —
+              // clicking Done blurs the input, and if a "change" handler
+              // rebuilt this very button out from under the click mid-
+              // gesture, the click itself gets swallowed (nothing fires on
+              // either the old or new button), requiring a second click to
+              // actually toggle. Reading it here, with no rerender in
+              // between, makes one click always enough.
+              if (fcCompareEditMode) {
+                const liveInp = el("fcCompareExtra");
+                if (liveInp) fcCompareExtraDraft = Math.max(0, num(liveInp.value));
+              }
               fcCompareEditMode = !fcCompareEditMode;
               renderForecast();
             });
-
-            const inp = el("fcCompareExtra");
-            if (inp) {
-              inp.addEventListener("change", e => {
-                fcCompareExtraDraft = Math.max(0, num(e.target.value));
-                renderForecast();
-              });
-            }
           }
 
 export function renderGoalMode() {
