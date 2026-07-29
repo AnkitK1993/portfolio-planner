@@ -58,6 +58,11 @@
         right: 0;
         z-index: 100;
         overflow-x: auto;
+        /* Swipe-up-to-toggle-Edit-mode lives on this element (see main.js)
+           — pan-x keeps the existing horizontal auto-scroll working while
+           stopping the browser from also trying to pan the page vertically
+           during that gesture. */
+        touch-action: pan-x;
         padding: 6px 10px;
         gap: 2px;
         scrollbar-width: none;
@@ -721,28 +726,6 @@
         color: var(--dim);
         white-space: nowrap;
       }
-      .edit-toggle {
-        background: none;
-        border: 1px solid var(--line);
-        border-radius: 6px;
-        color: var(--txt);
-        font-family: "Roboto", sans-serif;
-        font-size: 10px;
-        letter-spacing: 0.5px;
-        padding: 4px 10px;
-        cursor: pointer;
-        transition: border-color 0.15s, color 0.15s, background 0.15s;
-        white-space: nowrap;
-      }
-      .edit-toggle:hover {
-        border-color: var(--mint);
-        color: var(--mint);
-      }
-      .edit-toggle.done {
-        border-color: var(--mint);
-        background: var(--mint);
-        color: #0a0f0d;
-      }
 
       /* ── VIEW MODE: inputs are display-only ── */
       body:not(.edit-mode) .num {
@@ -832,7 +815,6 @@
         }
         /* Hide save indicator text on mobile — frees space for tab labels */
         .dot, #saveTxt { display: none; }
-        .edit-toggle { font-size: 8px; padding: 3px 6px; letter-spacing: 0.3px; }
         .app {
           padding-bottom: calc(72px + env(safe-area-inset-bottom));
         }
@@ -1225,7 +1207,6 @@
         box-shadow: 0 0 0 3px color-mix(in srgb, var(--mint) 18%, transparent);
       }
       .num.liq:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--liq) 20%, transparent); }
-      .edit-toggle:focus-visible,
       .btn:focus-visible {
         outline: 2px solid var(--mint);
         outline-offset: 2px;

@@ -153,7 +153,37 @@ el("txnSortSel").addEventListener("change", () => {
             txnFilter.sort = el("txnSortSel").value;
             renderTxns();
           });
-el("editToggleBtn").addEventListener("click", () => { closeNavDropdowns(); toggleEditMode(); });
+// Edit mode has no visible button — swipe up anywhere on the bottom nav
+// bar to toggle it (same toggleEditMode() call handles entering AND
+// saving-on-exit, exactly like the old button's two-state click did).
+// Pointer Events rather than touch-specific ones so this also works via
+// mouse-drag on desktop. Only a vertical-dominant upward swipe past the
+// threshold counts, so it doesn't fire on an ordinary tap, and doesn't
+// fight the bar's own horizontal auto-scroll (see .tabs' touch-action).
+// Guarded by authUser the same way the old button was hidden for guests
+// in updateAuthUI() — a guest could never see/click that button, so the
+// gesture that replaces it needs the same access check.
+(() => {
+            const SWIPE_UP_THRESHOLD = 45;
+            const tabsEl = el("tabs");
+            let startX = 0, startY = 0, tracking = false;
+            tabsEl.addEventListener("pointerdown", (e) => {
+              tracking = true;
+              startX = e.clientX;
+              startY = e.clientY;
+            });
+            tabsEl.addEventListener("pointerup", (e) => {
+              if (!tracking) return;
+              tracking = false;
+              const dx = e.clientX - startX;
+              const dy = e.clientY - startY;
+              if (-dy > SWIPE_UP_THRESHOLD && -dy > Math.abs(dx) && authUser) {
+                closeNavDropdowns();
+                toggleEditMode();
+              }
+            });
+            tabsEl.addEventListener("pointercancel", () => { tracking = false; });
+          })();
 el("calPrev").addEventListener("click", () => {
             if (calView === "week") { setCalWeekOffset(calWeekOffset - 1); renderCalendar(); return; }
             setCalMonth(calMonth - 1); if (calMonth < 0) { setCalMonth(11); setCalYear(calYear - 1); } renderCalendar();
