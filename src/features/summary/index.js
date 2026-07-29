@@ -217,11 +217,72 @@ export function renderFundTable() {
               </div>`;
             }
 
+            // --- By Category (equity funds only — liquid funds have no
+            // category) --- only worth showing once there's more than one
+            // category to actually compare; a single category duplicates
+            // the Portfolio total row above. XIRR per category isn't a
+            // simple average of its funds' XIRRs — it's recomputed from
+            // that category's own pooled cash flows via cachedPortfolioXirr,
+            // same as the Portfolio total row does across every fund. ---
+            const catMap = {};
+            EQ_FUNDS.forEach(f => {
+              const s = state.equity[f.id];
+              const invested = s?.paid || 0;
+              const afterExp = s?.shown || 0;
+              const current = s?.currentValue || afterExp;
+              if (invested <= 0 && current <= 0) return;
+              const cat = s?.category || "Uncategorized";
+              if (!catMap[cat]) catMap[cat] = { cat, invested: 0, afterExp: 0, current: 0, fundIds: [] };
+              catMap[cat].invested += invested;
+              catMap[cat].afterExp += afterExp;
+              catMap[cat].current += current;
+              catMap[cat].fundIds.push(f.id);
+            });
+            const catOrder = c => { const i = EQ_CATEGORIES.indexOf(c); return i === -1 ? 999 : i; };
+            const catRows = Object.values(catMap)
+              .map(c => {
+                const returns = c.afterExp > 0 ? c.current - c.afterExp : null;
+                const returnsPct = c.afterExp > 0 ? pct(returns, c.afterExp) : null;
+                const catTxns = (state.transactions || []).filter(t => c.fundIds.includes(t.fundId) && t.date && Number(t.afterExpense ?? t.invested) > 0);
+                const xirr = (catTxns.length && c.current > 0) ? cachedPortfolioXirr(catTxns, c.current) : null;
+                return { ...c, returns, returnsPct, xirr };
+              })
+              .sort((a, b) => catOrder(a.cat) - catOrder(b.cat));
+
+            const catRowsHtml = catRows.length >= 2 ? `
+              <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line);">
+                <div style="font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;">By Category</div>
+                <div class="fperf-table">
+                  <div class="fperf-row fperf-head">
+                    <span style="font-family:'Roboto Mono',monospace;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.6px;color:var(--dim);">Category</span>
+                    <span class="fperf-num" style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.6px;color:var(--dim);">Invested</span>
+                    <span class="fperf-num" style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.6px;color:var(--dim);">Returns</span>
+                    <span class="fperf-num" style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.6px;color:var(--dim);">Ret %</span>
+                    <span class="fperf-num" style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.6px;color:var(--dim);">XIRR</span>
+                  </div>
+                  ${catRows.map(c => {
+                    const retClass = c.returns == null ? "" : c.returns >= 0 ? "mint" : "coral";
+                    const retTxt = c.returns == null ? "—" : signedCompact(c.returns);
+                    const retPctTxt = c.returnsPct == null ? "—" : (c.returnsPct >= 0 ? "+" : "") + c.returnsPct.toFixed(2) + "%";
+                    const xirrTxt = c.xirr == null ? "—" : (c.xirr * 100 >= 0 ? "+" : "") + (c.xirr * 100).toFixed(2) + "%";
+                    const xirrClass = c.xirr == null ? "" : c.xirr >= 0 ? "mint" : "coral";
+                    return `<div class="fperf-row">
+                      <span class="fperf-name">${c.cat}</span>
+                      <span class="fperf-num">${fmtCompact(c.invested)}</span>
+                      <span class="fperf-num"${retClass ? ` style="color:var(--${retClass})"` : ""}>${retTxt}</span>
+                      <span class="fperf-num"${retClass ? ` style="color:var(--${retClass})"` : ""}>${retPctTxt}</span>
+                      <span class="fperf-num"${xirrClass ? ` style="color:var(--${xirrClass})"` : ""}>${xirrTxt}</span>
+                    </div>`;
+                  }).join("")}
+                </div>
+              </div>` : "";
+
             wrap.innerHTML = `<div class="fperf-table">
               <div class="fperf-row fperf-head">${headHtml}</div>
               ${rowsHtml}
               ${totalRowHtml}
-            </div>`;
+            </div>
+            ${catRowsHtml}`;
 
             wrap.querySelectorAll(".fperf-th").forEach(btn => {
               btn.addEventListener("click", () => {
@@ -233,11 +294,11 @@ export function renderFundTable() {
             });
           }
 
-export function renderHealthScore() {
-            const card = el("sumHealthCard");
-            const wrap = el("sumHealthScore");
-            if (!wrap) return;
-
+// Pure scoring logic behind the Health Score card — split out from
+// renderHealthScore() so takeSnapshot() (features/networth/index.js) can
+// stash today's total alongside a Net Worth snapshot without touching any
+// DOM, building up the history renderHealthTrend() below reads back.
+export function computeHealthScore() {
             // ── Dimension 1: Consistency (investment streak) ──
             const txnMonths = new Set((state.transactions || [])
               .filter(t => t.type !== "redemption" && t.date)
@@ -319,6 +380,16 @@ export function renderHealthScore() {
             const total = cScore + aScore + bScore + rScore;
             const grade = total >= 80 ? "Excellent" : total >= 60 ? "Good" : total >= 40 ? "Fair" : "Needs Work";
             const gc    = total >= 80 ? "var(--mint)" : total >= 60 ? "var(--mint-soft)" : total >= 40 ? "var(--amber)" : "var(--coral)";
+
+            return { cScore, cNote, aScore, aNote, bScore, bNote, rScore, rNote, total, grade, gc };
+          }
+
+export function renderHealthScore() {
+            const card = el("sumHealthCard");
+            const wrap = el("sumHealthScore");
+            if (!wrap) return;
+
+            const { cScore, cNote, aScore, aNote, bScore, bNote, rScore, rNote, total, grade, gc } = computeHealthScore();
 
             // SVG arc gauge (225° start → sweeps clockwise 270° at 100%)
             const CX = 50, CY = 50, R = 36;
@@ -429,6 +500,54 @@ export function renderHealthScore() {
                 bar.style.width = (bar.dataset.w || "0") + "%";
               });
             }
+
+            renderHealthTrend();
+          }
+
+/* Health Score trend, underneath the gauge — unlike the XIRR trend above it
+   (which can recompute past values purely from transaction history),
+   Allocation drift and Liquidity Buffer both depend on point-in-time fund
+   balances this app has never stored historically, so there's no sound way
+   to reconstruct past scores. Instead, takeSnapshot() (features/networth/
+   index.js) stashes that moment's computeHealthScore().total onto the
+   snapshot itself going forward — this only ever plots snapshots that
+   actually have one, so old pre-feature snapshots are silently skipped
+   rather than showing a misleading 0. Fixed 0–100 y-axis (not auto-scaled
+   like the XIRR trend) so a same-size move always reads as the same size
+   move, regardless of how tightly the score has clustered recently. */
+function renderHealthTrend() {
+            const svg  = el("sumHealthTrend");
+            const hint = el("sumHealthTrendHint");
+            if (!svg) return;
+
+            const snaps = state.networth.snapshots || {};
+            const points = Object.entries(snaps)
+              .map(([key, v]) => ({ key, score: v.healthScore }))
+              .filter(p => typeof p.score === "number")
+              .sort((a, b) => a.key.localeCompare(b.key));
+
+            if (points.length < 3) {
+              svg.style.display = "none";
+              if (hint) hint.style.display = "";
+              return;
+            }
+            svg.style.display = "";
+            if (hint) hint.style.display = "none";
+
+            const vals = points.map(p => p.score);
+            const W = 300, H = 44, P = 4;
+            const n = vals.length;
+            const toX = i => P + (i / (n - 1)) * (W - P * 2);
+            const toY = v => H - P - (v / 100) * (H - P * 2);
+
+            const lineStr = vals.map((v, i) => `${i === 0 ? "M" : "L"}${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(" ");
+            const last = vals[n - 1];
+            const lastColor = last >= 80 ? "var(--mint)" : last >= 60 ? "var(--mint-soft)" : last >= 40 ? "var(--amber)" : "var(--coral)";
+
+            svg.innerHTML = `
+              <path d="${lineStr}" fill="none" stroke="${lastColor}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
+              <circle cx="${toX(n - 1).toFixed(1)}" cy="${toY(last).toFixed(1)}" r="2.5" fill="${lastColor}"/>
+            `;
           }
 
 // Expense Trends section state — view-only UI preferences (which period to

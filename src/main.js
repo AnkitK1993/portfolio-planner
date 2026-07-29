@@ -408,6 +408,7 @@ const sumToggleAll = makeToggleAllGroup("sumToggleAllBtn");
             ["sumAllocToggle", "sumAllocCollBody", null],
             ["sumCompToggle", "sumCompCollBody", null],
             ["sumIdealToggle", "sumIdealCollBody", null],
+            ["sumRebalActionsToggle", "sumRebalActionsCollBody", "sumRebalActionsPreview"],
             ["sumStreakToggle", "sumStreakCollBody", "sumStreakPreview"],
             ["sumFundToggle", "sumFundCollBody", "sumFundPreview"],
             ["sumTaxToggle", "sumTaxCollBody", "sumTaxPreview"],
@@ -439,7 +440,7 @@ createCollapsible({ header: el("txnDonutToggle"), body: el("txnDonutCollBody") }
 // Health Score stays pinned first (excluded), same as it's excluded
 // from the collapsible/expand-all group above.
 registerCardOrder("summary", [
-            "sumXirrCard", "sumAllocCard", "sumCompositionCard", "sumIdealCard",
+            "sumXirrCard", "sumAllocCard", "sumCompositionCard", "sumIdealCard", "sumRebalActionsCard",
             "sumStreakCard", "sumFundCard", "sumTaxCard", "sumHeatmapCard", "sumCalCard",
           ]);
 registerCardOrder("planning", ["sumExpensesCard", "sumFireCard", "fcCard", "planningRebalanceCard", "investNewMoneyCard"]);

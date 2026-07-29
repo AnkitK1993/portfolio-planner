@@ -9,6 +9,7 @@ import { editMode, EQ_FUNDS, LIQ_FUNDS, normalizeSnap, othersOfSnap, saveState, 
 import { el } from "../../core/dom.js";
 import { evalArithmetic, fmt, fmtCompact, fmtMonth, fmtNum, num } from "../../core/format.js";
 import { deleteSnapshot, healSnapshotMf, saveSnapshot, setNetworthField } from "../../store/actions.js";
+import { computeHealthScore } from "../summary/index.js";
 
 export let nwHistExpanded = new Set();
 
@@ -309,6 +310,7 @@ export function takeSnapshot() {
                 mf: mfVal, total,
                 income: state.networth.income || 0,
                 expenses: state.networth.expenses || 0,
+                healthScore: computeHealthScore().total,
                 savedAt: new Date().toISOString(),
               };
               NW_FIELDS.forEach((f) => { snap[f.id] = state.networth[f.id] || 0; });

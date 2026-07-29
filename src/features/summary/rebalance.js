@@ -207,6 +207,9 @@ export function renderIdealAlloc() {
             const bar1El   = el("idealAllocBarSection");
             const bar2El   = el("rebalMoveSection");
             const bar3El   = el("afterRebalBarSection");
+            const actionsCard    = el("sumRebalActionsCard");
+            const actionsSection = el("rebalActionsSection");
+            const actionsPreview = el("sumRebalActionsPreview");
             if (!editorEl) return;
 
             if (!state.idealWeights) state.idealWeights = {};
@@ -365,6 +368,7 @@ export function renderIdealAlloc() {
               if (bar1El) bar1El.innerHTML = "";
               if (bar2El) bar2El.innerHTML = "";
               if (bar3El) bar3El.innerHTML = "";
+              if (actionsCard) actionsCard.style.display = "none";
               return;
             }
 
@@ -423,6 +427,7 @@ export function renderIdealAlloc() {
               if (bar1El) bar1El.innerHTML = `<div style="font-size:11px;color:var(--dim);margin-top:10px;">No equity funds with values entered.</div>`;
               if (bar2El) bar2El.innerHTML = "";
               if (bar3El) bar3El.innerHTML = "";
+              if (actionsCard) actionsCard.style.display = "none";
               return;
             }
 
@@ -503,8 +508,7 @@ export function renderIdealAlloc() {
               if (underQ[ui].remaining <= MATERIALITY) ui++;
             }
             const transfersHtml = transfers.length
-              ? `<div class="sec-head mt">Rebalance Actions &nbsp;— &nbsp;<span style="font-family:'Roboto Mono',monospace;color:var(--amber)">${transfers.length} move${transfers.length !== 1 ? "s" : ""}</span></div>
-                  <div>${transfers.map(t => `
+              ? `<div>${transfers.map(t => `
                     <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:11px;">
                       <span style="width:8px;height:8px;border-radius:2px;background:${t.from.color};flex-shrink:0;"></span>
                       <span style="color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.from.name}</span>
@@ -513,13 +517,16 @@ export function renderIdealAlloc() {
                       <span style="color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;">${t.to.name}</span>
                       <span style="font-family:'Roboto Mono',monospace;color:var(--amber);white-space:nowrap;">${fmt(Math.round(t.amount))}</span>
                     </div>`).join("")}</div>`
-              : "";
+              : `<div style="font-size:11px;color:var(--mint);padding:6px 0;">✓ Already within target allocation — no rebalancing moves needed.</div>`;
 
             if (bar1El) {
-              bar1El.innerHTML = barSectionHtml("Ideal Equity Allocation", "var(--mint)", fmt(Math.round(eqAfter)), bar1Segs, bar1Rows) + transfersHtml;
+              bar1El.innerHTML = barSectionHtml("Ideal Equity Allocation", "var(--mint)", fmt(Math.round(eqAfter)), bar1Segs, bar1Rows);
               if (_animOnRender && !editMode)
                 bar1El.querySelectorAll(".alloc-seg-bar").forEach(bar => animateWidth(bar, 100, 1000));
             }
+            if (actionsCard) actionsCard.style.display = "";
+            if (actionsSection) actionsSection.innerHTML = transfersHtml;
+            if (actionsPreview) actionsPreview.textContent = transfers.length ? `${transfers.length} move${transfers.length !== 1 ? "s" : ""}` : "Balanced ✓";
 
             // --- Bar 2: Liquid → Equity redistribution ---
             if (bar2El) {
