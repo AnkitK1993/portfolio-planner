@@ -554,38 +554,27 @@ export function renderIdealAlloc() {
               }
             }
 
-            // --- Bar 3: Portfolio After Rebalancing (all funds, post-move) ---
+            // --- Bar 3: Portfolio After Rebalancing (equity funds only,
+            // post-move) --- deliberately excludes leftover/reserved
+            // liquid balances — this bar is about how equity itself is
+            // split after rebalancing, not a full net-worth breakdown,
+            // and reserved liquid cash isn't part of that split. ---
             if (bar3El) {
-              // Equity funds: current + their fromLiq portion
               const eqAfterItems = fundTargets.map(f => ({
-                name: f.name, afterVal: f.current + f.fromLiq, color: f.color, isLiq: false,
-              }));
-              // Liquid funds: what remains after deploying (= reserve, capped at value)
-              let liqColorIdx = fundTargets.length;
-              const liqAfterItems = LIQ_FUNDS.map(f => {
-                const ls = state.liquid[f.id];
-                const val = ls?.value || 0;
-                const dep = Math.max(0, val - (ls?.reserve || 0));
-                const afterVal = val - dep;
-                return afterVal > 1 ? { name: ls?.name || f.defaultName, afterVal, color: ALLOC_PALETTE[liqColorIdx++ % ALLOC_PALETTE.length], isLiq: true } : null;
-              }).filter(Boolean);
-
-              const allAfter = [...eqAfterItems, ...liqAfterItems].sort((a, b) => b.afterVal - a.afterVal);
-              const grandTotal = allAfter.reduce((s, f) => s + f.afterVal, 0);
+                name: f.name, afterVal: f.current + f.fromLiq, color: f.color,
+              })).sort((a, b) => b.afterVal - a.afterVal);
+              const grandTotal = eqAfterItems.reduce((s, f) => s + f.afterVal, 0);
 
               if (grandTotal > 0) {
-                const bar3Segs = allAfter.map(f => {
+                const bar3Segs = eqAfterItems.map(f => {
                   const pct = (f.afterVal / grandTotal) * 100;
                   return mkSeg(pct, f.color, `${f.name}: ${fmt(Math.round(f.afterVal))}`);
                 }).join("");
-                const bar3Rows = allAfter.map(f => {
+                const bar3Rows = eqAfterItems.map(f => {
                   const pct = ((f.afterVal / grandTotal) * 100).toFixed(1);
                   return `<div style="display:grid;grid-template-columns:10px 1fr auto auto;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--line);">
                     <span style="width:10px;height:10px;border-radius:2px;background:${f.color};display:block;flex-shrink:0"></span>
-                    <div>
-                      <div style="font-size:11px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${f.name}</div>
-                      ${f.isLiq ? `<div style="font-size:9px;color:var(--dim)">liquid (reserved)</div>` : ""}
-                    </div>
+                    <div style="font-size:11px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${f.name}</div>
                     <span style="font-family:'Roboto Mono',monospace;font-size:11px;color:var(--txt);text-align:right;white-space:nowrap;">${fmt(Math.round(f.afterVal))}</span>
                     <span style="font-family:'Roboto Mono',monospace;font-size:10px;font-weight:700;color:${f.color};text-align:right;min-width:38px;">${pct}%</span>
                   </div>`;
