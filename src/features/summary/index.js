@@ -19,8 +19,14 @@ export function renderSummaryExtras(eqCur, liqCur, totCur, eqTgt, liqTgt, totTgt
             /* — Expenses (fixed items + auto bank-spend) — */
             renderExpenses();
 
+            /* — Expense Trends (averages, projections, Income vs Expenses) — */
+            renderExpenseTrends();
+
             /* — Financial Independence progress — */
             renderFireProgress();
+
+            /* — Loans / EMIs (standalone tracker, not part of Net Worth) — */
+            renderLoans();
 
             /* — Ideal Allocation card — */
             renderIdealAlloc();
@@ -689,10 +695,119 @@ function renderExpenses() {
                   Save a Net Worth snapshot to start tracking bank spending automatically &mdash; until then, Total This Month is just your Fixed Total.
                 </div>`;
 
-            // ── Expense Trends: average/mo + projections over a chosen
-            // lookback period, with each category (Fixed / Extra / SIP)
-            // individually toggleable so the average only counts what the
-            // user actually wants counted (SIP defaults off — see above). ──
+            wrap.innerHTML = `
+              <div>${rows || emptyHtml}</div>
+              ${editMode ? `<button class="btn btn-ghost exp-add-btn" id="expAddBtn">+ Add Fixed Expense</button>` : ""}
+              <div class="exp-stat-grid">
+                <div class="exp-stat-card"><div class="lbl">Fixed Total</div><div class="val">${fmt(fixed)}</div></div>
+                <div class="exp-stat-card"><div class="lbl">Monthly SIP</div><div class="val">${fmt(sip)}</div></div>
+                <div class="exp-stat-card"><div class="lbl">Planned Outflow</div><div class="val">${fmt(planned)}</div></div>
+              </div>
+              ${catBreakdownHtml}
+              <div style="font-size:9px;color:var(--dim);opacity:0.8;">SIP total is set per-fund on the Portfolio tab</div>
+              ${bankHtml}
+              <div class="exp-hero">
+                <div class="exp-hero-top">
+                  <span class="exp-hero-lbl">Total This Month</span>
+                  <span class="exp-hero-val">${fmt(total)}</span>
+                </div>
+                <div class="exp-hero-sub">${isManual ? "Manually entered above — overrides the Bank-based estimate" : "SIP excluded — it's an investment, not an expense"}</div>
+              </div>
+              ${netCashFlow !== null ? `
+              <div class="exp-hero" style="margin-top:12px;">
+                <div class="exp-hero-top">
+                  <span class="exp-hero-lbl">Income vs Expenses</span>
+                  <span class="exp-hero-val" style="color:${netCashFlow >= 0 ? "var(--mint)" : "var(--coral)"}">${netCashFlow >= 0 ? "+" : "−"}${fmt(Math.abs(netCashFlow))}</span>
+                </div>
+                <div class="exp-hero-sub">${fmt(incomeVal)} income &minus; ${fmt(total)} expenses this month</div>
+              </div>` : ""}
+              ${bufMonths !== null ? `
+              <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line);font-size:11px;color:var(--dim);">
+                Emergency fund: <b style="color:${bufMonths >= 6 ? "var(--mint)" : bufMonths >= 3 ? "var(--amber)" : "var(--coral)"};font-family:'Roboto Mono',monospace">${bufMonths.toFixed(1)} months</b> of expenses covered
+                (<span style="color:var(--txt)">${fmt(totalLiqFree)}</span> deployable liquid ÷ <span style="color:var(--txt)">${fmt(total)}</span>/mo)
+              </div>` : ""}`;
+
+            if (_animOnRender && !editMode)
+              wrap.querySelectorAll(".alloc-seg-bar").forEach(bar => animateWidth(bar, 100, 800));
+
+            wrap.querySelectorAll(".exp-name-inp").forEach(inp => {
+              inp.addEventListener("change", e => {
+                if (!editMode) { renderExpenses(); return; }
+                const item = items.find(i => i.id === e.target.dataset.id);
+                if (item) { item.name = e.target.value; saveState(); }
+              });
+            });
+            wrap.querySelectorAll(".exp-cat-sel").forEach(sel => {
+              sel.addEventListener("change", e => {
+                const item = items.find(i => i.id === e.target.dataset.id);
+                if (!item) return;
+                item.category = e.target.value;
+                saveState();
+                renderExpenses();
+              });
+            });
+            wrap.querySelectorAll(".exp-date-inp").forEach(inp => {
+              inp.addEventListener("change", e => {
+                const item = items.find(i => i.id === e.target.dataset.id);
+                if (!item) return;
+                item.startDate = e.target.value || "";
+                saveState();
+                renderExpenses();
+                renderExpenseTrends();
+                renderHealthScore();
+                renderFireProgress();
+              });
+            });
+            wrap.querySelectorAll(".exp-amt-inp").forEach(inp => {
+              inp.addEventListener("change", e => {
+                if (!editMode) { renderExpenses(); return; }
+                const item = items.find(i => i.id === e.target.dataset.id);
+                if (!item) return;
+                item.amount = Math.max(0, parseFloat(e.target.value) || 0);
+                saveState();
+                renderExpenses();
+                renderExpenseTrends();
+                renderHealthScore();
+                renderFireProgress();
+              });
+            });
+            wrap.querySelectorAll(".exp-del-btn").forEach(btn => {
+              btn.addEventListener("click", () => {
+                if (!editMode) return;
+                state.surplus.fixedExpenses = items.filter(i => i.id !== btn.dataset.id);
+                saveState();
+                renderExpenses();
+                renderExpenseTrends();
+                renderHealthScore();
+                renderFireProgress();
+              });
+            });
+            const addBtn = el("expAddBtn");
+            if (addBtn) {
+              addBtn.addEventListener("click", () => {
+                if (!state.surplus.fixedExpenses) state.surplus.fixedExpenses = [];
+                state.surplus.fixedExpenses.push({ id: "exp_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6), name: "", amount: 0 });
+                saveState();
+                renderExpenses();
+                renderExpenseTrends();
+              });
+            }
+          }
+
+/* Expense Trends — split out of renderExpenses() into its own card: average/
+   mo + projections over a chosen lookback period, with each category
+   (Fixed / Extra / SIP) individually toggleable so the average only counts
+   what the user actually wants counted (SIP defaults off), plus an Income
+   vs Expenses chart over the same period. A self-contained analysis tool
+   with its own controls, a different concern from Expenses' job of
+   managing this month's actual numbers. */
+function renderExpenseTrends() {
+            const card = el("sumExpTrendsCard");
+            const wrap = el("sumExpTrendsBody");
+            if (!card || !wrap) return;
+            card.style.display = "";
+
+            const items = state.surplus?.fixedExpenses || [];
             const periodKeys = resolvePeriodKeys(expPeriod);
             const series = monthlyExpenseSeries(periodKeys, {
               fixedExpenses: items, liqFunds: LIQ_FUNDS, eqFunds: EQ_FUNDS,
@@ -711,6 +826,9 @@ function renderExpenses() {
             const incomeSeries = monthlyIncomeSeries(periodKeys, state.networth);
             const incBrk = averageIncome(incomeSeries);
             const avgSavingsRate = incBrk.avgIncome > 0 ? ((incBrk.avgIncome - avgTotal) / incBrk.avgIncome) * 100 : null;
+
+            const previewEl = el("sumExpTrendsPreview");
+            if (previewEl) previewEl.textContent = brk.monthsWithData > 0 ? ((avgTotal < 0 ? "−" : "") + fmt(Math.abs(avgTotal)) + "/mo") : "";
 
             const periodChipsHtml = EXPENSE_PERIODS.map(p =>
               `<button class="txn-preset${expPeriod === p.key ? " active" : ""}" data-period="${p.key}">${p.label}</button>`
@@ -803,49 +921,13 @@ function renderExpenses() {
               : `<div style="font-size:10.5px;color:var(--dim);padding:8px 0;">No Net Worth snapshots in this period yet — save monthly snapshots on the Net Worth tab to see trends and projections.</div>`;
 
             wrap.innerHTML = `
-              <div>${rows || emptyHtml}</div>
-              ${editMode ? `<button class="btn btn-ghost exp-add-btn" id="expAddBtn">+ Add Fixed Expense</button>` : ""}
-              <div class="exp-stat-grid">
-                <div class="exp-stat-card"><div class="lbl">Fixed Total</div><div class="val">${fmt(fixed)}</div></div>
-                <div class="exp-stat-card"><div class="lbl">Monthly SIP</div><div class="val">${fmt(sip)}</div></div>
-                <div class="exp-stat-card"><div class="lbl">Planned Outflow</div><div class="val">${fmt(planned)}</div></div>
-              </div>
-              ${catBreakdownHtml}
-              <div style="font-size:9px;color:var(--dim);opacity:0.8;">SIP total is set per-fund on the Portfolio tab</div>
-              ${bankHtml}
-              <div class="exp-hero">
-                <div class="exp-hero-top">
-                  <span class="exp-hero-lbl">Total This Month</span>
-                  <span class="exp-hero-val">${fmt(total)}</span>
-                </div>
-                <div class="exp-hero-sub">${isManual ? "Manually entered above — overrides the Bank-based estimate" : "SIP excluded — it's an investment, not an expense"}</div>
-              </div>
-              ${netCashFlow !== null ? `
-              <div class="exp-hero" style="margin-top:12px;">
-                <div class="exp-hero-top">
-                  <span class="exp-hero-lbl">Income vs Expenses</span>
-                  <span class="exp-hero-val" style="color:${netCashFlow >= 0 ? "var(--mint)" : "var(--coral)"}">${netCashFlow >= 0 ? "+" : "−"}${fmt(Math.abs(netCashFlow))}</span>
-                </div>
-                <div class="exp-hero-sub">${fmt(incomeVal)} income &minus; ${fmt(total)} expenses this month</div>
-              </div>` : ""}
-              ${bufMonths !== null ? `
-              <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line);font-size:11px;color:var(--dim);">
-                Emergency fund: <b style="color:${bufMonths >= 6 ? "var(--mint)" : bufMonths >= 3 ? "var(--amber)" : "var(--coral)"};font-family:'Roboto Mono',monospace">${bufMonths.toFixed(1)} months</b> of expenses covered
-                (<span style="color:var(--txt)">${fmt(totalLiqFree)}</span> deployable liquid ÷ <span style="color:var(--txt)">${fmt(total)}</span>/mo)
-              </div>` : ""}
-              <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--line);">
-                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--dim);margin-bottom:10px;">Expense Trends</div>
-                <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px;">${periodChipsHtml}</div>
-                ${trendsBodyHtml}
-              </div>`;
-
-            if (_animOnRender && !editMode)
-              wrap.querySelectorAll(".alloc-seg-bar").forEach(bar => animateWidth(bar, 100, 800));
+              <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px;">${periodChipsHtml}</div>
+              ${trendsBodyHtml}`;
 
             wrap.querySelectorAll("[data-period]").forEach(btn => {
               btn.addEventListener("click", () => {
                 expPeriod = btn.dataset.period;
-                renderExpenses();
+                renderExpenseTrends();
               });
             });
             wrap.querySelectorAll(".exp-cat-chk").forEach(chk => {
@@ -854,77 +936,22 @@ function renderExpenses() {
                 if (cat === "fixed") expIncludeFixed = e.target.checked;
                 if (cat === "extra") expIncludeExtra = e.target.checked;
                 if (cat === "sip") expIncludeSip = e.target.checked;
-                renderExpenses();
+                renderExpenseTrends();
               });
             });
-
-            wrap.querySelectorAll(".exp-name-inp").forEach(inp => {
-              inp.addEventListener("change", e => {
-                if (!editMode) { renderExpenses(); return; }
-                const item = items.find(i => i.id === e.target.dataset.id);
-                if (item) { item.name = e.target.value; saveState(); }
-              });
-            });
-            wrap.querySelectorAll(".exp-cat-sel").forEach(sel => {
-              sel.addEventListener("change", e => {
-                const item = items.find(i => i.id === e.target.dataset.id);
-                if (!item) return;
-                item.category = e.target.value;
-                saveState();
-                renderExpenses();
-              });
-            });
-            wrap.querySelectorAll(".exp-date-inp").forEach(inp => {
-              inp.addEventListener("change", e => {
-                const item = items.find(i => i.id === e.target.dataset.id);
-                if (!item) return;
-                item.startDate = e.target.value || "";
-                saveState();
-                renderExpenses();
-                renderHealthScore();
-                renderFireProgress();
-              });
-            });
-            wrap.querySelectorAll(".exp-amt-inp").forEach(inp => {
-              inp.addEventListener("change", e => {
-                if (!editMode) { renderExpenses(); return; }
-                const item = items.find(i => i.id === e.target.dataset.id);
-                if (!item) return;
-                item.amount = Math.max(0, parseFloat(e.target.value) || 0);
-                saveState();
-                renderExpenses();
-                renderHealthScore();
-                renderFireProgress();
-              });
-            });
-            wrap.querySelectorAll(".exp-del-btn").forEach(btn => {
-              btn.addEventListener("click", () => {
-                if (!editMode) return;
-                state.surplus.fixedExpenses = items.filter(i => i.id !== btn.dataset.id);
-                saveState();
-                renderExpenses();
-                renderHealthScore();
-                renderFireProgress();
-              });
-            });
-            const addBtn = el("expAddBtn");
-            if (addBtn) {
-              addBtn.addEventListener("click", () => {
-                if (!state.surplus.fixedExpenses) state.surplus.fixedExpenses = [];
-                state.surplus.fixedExpenses.push({ id: "exp_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6), name: "", amount: 0 });
-                saveState();
-                renderExpenses();
-              });
-            }
           }
 
-/* Goal defaults to the suggested 25× annual expenses figure (the standard
-   4%-withdrawal-rate FI rule of thumb) but can be overridden with any
-   custom target (a house, a number, early retirement, whatever) via the
-   editable amount below — set in edit mode, persisted in
-   state.surplus.goalAmount, 0/unset meaning "use the suggestion". Reuses
-   the Expenses card's total and the Net Worth Projections card's growth
-   rate, so this needs no other state of its own. */
+/* Financial Goals — a named list (state.surplus.goals), each measured
+   independently against the SAME current net worth (there's no fund-
+   earmarking infrastructure to actually split money between goals, so
+   each goal just answers "at this rate, when would this much be
+   reached"). A brand-new goal's amount field defaults blank rather than
+   prefilled with the suggested 25×-expenses figure — that suggestion is
+   shown as a footnote hint instead, since it's a reasonable default for
+   "my whole net worth target" but not for an arbitrary named goal like a
+   house downpayment. Reuses the Expenses card's total and the Net Worth
+   tab's snapshot history for the growth-rate projection, so this needs no
+   other state of its own. */
 function renderFireProgress() {
             const card = el("sumFireCard");
             const wrap = el("sumFireBody");
@@ -936,83 +963,228 @@ function renderFireProgress() {
               transactions: state.transactions,
             }).total;
             const suggestedTarget = monthlyExp * 12 * 25;
-            const customGoal = state.surplus?.goalAmount || 0;
-            const goalTarget = customGoal > 0 ? customGoal : suggestedTarget;
+            const goals = state.surplus?.goals || [];
 
-            if (goalTarget <= 0 && !editMode) { card.style.display = "none"; return; }
+            if (!goals.length && !editMode) { card.style.display = "none"; return; }
             card.style.display = "";
 
             const cur = nwTotal(state.networth, LIQ_FUNDS, EQ_FUNDS, state.liquid, state.equity);
-            const progressPct = goalTarget > 0 ? Math.min(100, (cur / goalTarget) * 100) : 0;
-
             const snaps = state.networth.snapshots || {};
             const sorted = Object.entries(snaps).map(([k, v]) => normalizeSnap(k, v)).sort((a, b) => a.key.localeCompare(b.key));
             const r = sorted.length >= 2 ? avgMonthlyGrowthRate(sorted) : 0;
 
-            let etaHtml;
-            if (goalTarget <= 0) {
-              etaHtml = `<span style="color:var(--dim)">Set a custom goal below, or add fixed expenses to use the suggested 25× target.</span>`;
-            } else if (cur >= goalTarget) {
-              etaHtml = `<span style="color:var(--mint);font-weight:600;">You've reached your goal 🎉</span>`;
-            } else if (sorted.length < 2 || r <= 0) {
-              etaHtml = `<span style="color:var(--dim)">Add more monthly Net Worth snapshots to project a timeline.</span>`;
-            } else {
-              const monthsAway = Math.log(goalTarget / cur) / Math.log(1 + r);
+            const etaFor = (target) => {
+              if (target <= 0) return `<span style="color:var(--dim)">Set a target amount below.</span>`;
+              if (cur >= target) return `<span style="color:var(--mint);font-weight:600;">Reached 🎉</span>`;
+              if (sorted.length < 2 || r <= 0) return `<span style="color:var(--dim)">Add more monthly Net Worth snapshots to project a timeline.</span>`;
+              const monthsAway = Math.log(target / cur) / Math.log(1 + r);
               const yrsAway = monthsAway / 12;
               const etaDate = new Date();
               etaDate.setMonth(etaDate.getMonth() + Math.round(monthsAway));
               const etaLabel = etaDate.toLocaleDateString("en-IN", { month: "short", year: "numeric" });
-              etaHtml = `~<b style="color:var(--txt)">${yrsAway.toFixed(1)} years</b> away — projected <b style="color:var(--txt)">${etaLabel}</b> at your current net worth growth rate.`;
-            }
+              return `~<b style="color:var(--txt)">${yrsAway.toFixed(1)} years</b> away — projected <b style="color:var(--txt)">${etaLabel}</b>.`;
+            };
 
-            const headlineHtml = goalTarget > 0
-              ? `Net worth <b style="color:var(--txt)">${fmt(cur)}</b> of <b style="color:var(--txt)">${fmt(goalTarget)}</b> Goal`
-              : `Net worth <b style="color:var(--txt)">${fmt(cur)}</b> &mdash; no goal set yet`;
+            const previewEl = el("sumFirePreview");
+            if (previewEl) previewEl.textContent = goals.length ? `${goals.length} goal${goals.length !== 1 ? "s" : ""}` : "";
 
-            const goalInputHtml = editMode
-              ? `<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
-                  <span style="font-size:10px;color:var(--dim)">Custom Goal Amount <span style="opacity:0.7">— blank uses ${fmt(suggestedTarget)} (25&times; expenses)</span></span>
-                  <div style="display:flex;align-items:center;gap:4px;">
-                    <span style="font-size:11px;color:var(--dim)">₹</span>
-                    <input type="number" id="fireGoalInp" min="0" step="10000" value="${customGoal || ""}" placeholder="${suggestedTarget > 0 ? Math.round(suggestedTarget) : "0"}"
-                      style="background:var(--input-bg,rgba(255,255,255,0.06));border:1px solid var(--line);border-radius:5px;color:var(--txt);
-                             font-family:'Roboto Mono',monospace;font-size:11px;text-align:right;padding:4px 7px;width:130px;"/>
+            const rows = goals.map(g => {
+              const target = g.amount || 0;
+              const progressPct = target > 0 ? Math.min(100, (cur / target) * 100) : 0;
+              return `
+                <div style="padding:12px 0;border-bottom:1px solid var(--line);">
+                  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:7px;">
+                    ${editMode
+                      ? `<input class="goal-name-inp" data-id="${g.id}" value="${g.name || ""}" placeholder="Goal name"
+                          style="flex:1;min-width:0;background:var(--input-bg,rgba(255,255,255,0.06));border:1px solid var(--line);border-radius:5px;color:var(--txt);font-size:12px;padding:5px 8px;"/>`
+                      : `<span style="font-size:12.5px;color:var(--txt);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${g.name || "Goal"}</span>`}
+                    <span style="font-family:'Roboto Mono',monospace;font-size:14px;font-weight:700;color:var(--mint);flex-shrink:0;">${target > 0 ? progressPct.toFixed(1) + "%" : "—"}</span>
+                    ${editMode ? `<button class="goal-del-btn" data-id="${g.id}" style="background:none;border:none;color:var(--coral);cursor:pointer;font-size:13px;padding:2px 4px;flex-shrink:0;">✕</button>` : ""}
                   </div>
-                </div>`
-              : "";
+                  <div style="height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden;margin-bottom:7px;">
+                    <div class="fire-bar" data-w="${progressPct.toFixed(1)}" style="height:100%;width:0%;background:linear-gradient(90deg,var(--liq),var(--mint));border-radius:4px;"></div>
+                  </div>
+                  <div style="font-size:10.5px;color:var(--dim);line-height:1.5;">
+                    ${target > 0 ? `${fmt(cur)} of ${fmt(target)} — ` : ""}${etaFor(target)}
+                  </div>
+                  ${editMode ? `
+                  <div style="margin-top:8px;display:flex;align-items:center;gap:6px;">
+                    <span style="font-size:11px;color:var(--dim)">₹</span>
+                    <input type="number" class="goal-amt-inp" data-id="${g.id}" min="0" step="10000" value="${g.amount || ""}" placeholder="Target amount"
+                      style="flex:1;background:var(--input-bg,rgba(255,255,255,0.06));border:1px solid var(--line);border-radius:5px;color:var(--txt);
+                             font-family:'Roboto Mono',monospace;font-size:11px;padding:4px 7px;"/>
+                  </div>` : ""}
+                </div>`;
+            }).join("");
 
-            const footnoteText = customGoal > 0
-              ? `Custom goal${editMode ? "" : " — tap Edit to change or clear it"}. Suggested (25&times; expenses): ${fmt(suggestedTarget)}.`
-              : `Using the suggested 25&times; annual expenses target (4% withdrawal rule)${editMode ? "" : " — tap Edit to set a custom goal"}.`;
+            const emptyHtml = `<div style="font-size:11px;color:var(--dim);padding:8px 0;">
+              ${editMode ? `No goals yet — use "+ Add Goal" below.` : `No goals added. Tap Edit to add one.`}
+            </div>`;
 
             wrap.innerHTML = `
-              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
-                <span style="font-size:11px;color:var(--dim)">${headlineHtml}</span>
-                <span style="font-family:'Roboto Mono',monospace;font-size:16px;font-weight:700;color:var(--mint)">${goalTarget > 0 ? progressPct.toFixed(1) + "%" : "—"}</span>
-              </div>
-              <div style="height:10px;background:rgba(255,255,255,0.06);border-radius:5px;overflow:hidden;margin-bottom:10px;">
-                <div class="fire-bar" data-w="${progressPct.toFixed(1)}" style="height:100%;width:0%;background:linear-gradient(90deg,var(--liq),var(--mint));border-radius:5px;"></div>
-              </div>
-              <div style="font-size:11px;color:var(--dim);line-height:1.5;">${etaHtml}</div>
-              ${goalInputHtml}
-              <div style="font-size:9px;color:var(--dim);opacity:0.75;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);">
-                ${footnoteText}
-              </div>`;
+              <div style="font-size:10.5px;color:var(--dim);margin-bottom:10px;">Current Net Worth: <b style="color:var(--txt)">${fmt(cur)}</b></div>
+              <div>${rows || emptyHtml}</div>
+              ${editMode ? `
+              <button class="btn btn-ghost goal-add-btn" id="goalAddBtn">+ Add Goal</button>
+              <div style="font-size:9px;color:var(--dim);opacity:0.8;margin-top:8px;">Suggested (25&times; annual expenses, the 4% withdrawal rule): ${fmt(suggestedTarget)}</div>
+              ` : ""}`;
 
-            const bar = wrap.querySelector(".fire-bar");
-            if (bar) {
-              if (_animOnRender) animateWidth(bar, progressPct, 1200);
-              else bar.style.width = progressPct + "%";
-            }
+            wrap.querySelectorAll(".fire-bar").forEach(bar => {
+              const w = parseFloat(bar.dataset.w) || 0;
+              if (_animOnRender) animateWidth(bar, w, 1200);
+              else bar.style.width = w + "%";
+            });
 
-            const goalInp = el("fireGoalInp");
-            if (goalInp) {
-              goalInp.addEventListener("change", e => {
-                if (!editMode) { renderFireProgress(); return; }
-                if (!state.surplus) state.surplus = {};
-                state.surplus.goalAmount = Math.max(0, parseFloat(e.target.value) || 0);
+            wrap.querySelectorAll(".goal-name-inp").forEach(inp => {
+              inp.addEventListener("change", e => {
+                const g = goals.find(x => x.id === e.target.dataset.id);
+                if (g) { g.name = e.target.value; saveState(); }
+              });
+            });
+            wrap.querySelectorAll(".goal-amt-inp").forEach(inp => {
+              inp.addEventListener("change", e => {
+                const g = goals.find(x => x.id === e.target.dataset.id);
+                if (!g) return;
+                g.amount = Math.max(0, parseFloat(e.target.value) || 0);
                 saveState();
                 renderFireProgress();
+              });
+            });
+            wrap.querySelectorAll(".goal-del-btn").forEach(btn => {
+              btn.addEventListener("click", () => {
+                state.surplus.goals = goals.filter(g => g.id !== btn.dataset.id);
+                saveState();
+                renderFireProgress();
+              });
+            });
+            const addBtn = el("goalAddBtn");
+            if (addBtn) {
+              addBtn.addEventListener("click", () => {
+                if (!state.surplus.goals) state.surplus.goals = [];
+                state.surplus.goals.push({ id: "goal_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6), name: "", amount: 0 });
+                saveState();
+                renderFireProgress();
+              });
+            }
+          }
+
+/* Loans / EMIs — a standalone tracker for loan balances and monthly EMI
+   outflow. Deliberately NOT wired into Net Worth, Health Score, Tax
+   Estimate, or FIRE progress: all of those currently assume asset-only net
+   worth, and every one of them (plus every saved Net Worth snapshot) would
+   need rework to subtract liabilities correctly — a much bigger, riskier
+   change than a plain tracking card. "EMI" is also a listed Expenses
+   category, but that's a separate manually-entered figure for this
+   month's spend total — the two aren't linked, by design, for the same
+   reason. */
+function renderLoans() {
+            const card = el("sumLoansCard");
+            const wrap = el("sumLoansBody");
+            if (!card || !wrap) return;
+
+            const loans = state.loans || [];
+            if (!loans.length && !editMode) { card.style.display = "none"; return; }
+            card.style.display = "";
+
+            const totalOutstanding = loans.reduce((s, l) => s + (l.outstanding || 0), 0);
+            const totalEmi = loans.reduce((s, l) => s + (l.emi || 0), 0);
+
+            const previewEl = el("sumLoansPreview");
+            if (previewEl) previewEl.textContent = loans.length ? fmt(totalOutstanding) + " outstanding" : "";
+
+            const fieldStyle = "width:100%;background:var(--input-bg,rgba(255,255,255,0.06));border:1px solid var(--line);border-radius:5px;color:var(--txt);font-family:'Roboto Mono',monospace;font-size:11px;text-align:right;padding:5px 6px;";
+
+            const rows = loans.map(l => `
+              <div style="padding:10px 0;border-bottom:1px solid var(--line);">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;">
+                  ${editMode
+                    ? `<input class="loan-name-inp" data-id="${l.id}" value="${l.name || ""}" placeholder="Loan name" style="flex:1;min-width:0;background:var(--input-bg,rgba(255,255,255,0.06));border:1px solid var(--line);border-radius:5px;color:var(--txt);font-size:12px;padding:5px 8px;"/>`
+                    : `<span style="font-size:12.5px;color:var(--txt);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${l.name || "Loan"}</span>`}
+                  ${editMode ? `<button class="loan-del-btn" data-id="${l.id}" style="background:none;border:none;color:var(--coral);cursor:pointer;font-size:13px;padding:2px 4px;flex-shrink:0;">✕</button>` : ""}
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+                  <div>
+                    <div style="font-size:9px;color:var(--dim);margin-bottom:3px;">Outstanding</div>
+                    ${editMode
+                      ? `<div class="ibox"><span class="pfx">₹</span><input type="number" class="loan-outstanding-inp" data-id="${l.id}" min="0" step="1000" value="${l.outstanding || ""}" placeholder="0" style="${fieldStyle}"/></div>`
+                      : `<div style="font-family:'Roboto Mono',monospace;font-size:12px;color:var(--txt);">${fmt(l.outstanding || 0)}</div>`}
+                  </div>
+                  <div>
+                    <div style="font-size:9px;color:var(--dim);margin-bottom:3px;">Monthly EMI</div>
+                    ${editMode
+                      ? `<div class="ibox"><span class="pfx">₹</span><input type="number" class="loan-emi-inp" data-id="${l.id}" min="0" step="500" value="${l.emi || ""}" placeholder="0" style="${fieldStyle}"/></div>`
+                      : `<div style="font-family:'Roboto Mono',monospace;font-size:12px;color:var(--txt);">${fmt(l.emi || 0)}</div>`}
+                  </div>
+                  <div>
+                    <div style="font-size:9px;color:var(--dim);margin-bottom:3px;">Rate</div>
+                    ${editMode
+                      ? `<input type="number" class="loan-rate-inp" data-id="${l.id}" min="0" max="50" step="0.1" value="${l.rate || ""}" placeholder="0" style="${fieldStyle}"/>`
+                      : `<div style="font-family:'Roboto Mono',monospace;font-size:12px;color:var(--txt);">${l.rate ? l.rate + "%" : "—"}</div>`}
+                  </div>
+                </div>
+              </div>`).join("");
+
+            const emptyHtml = `<div style="font-size:11px;color:var(--dim);padding:8px 0;">
+              ${editMode ? `No loans yet — use "+ Add Loan" below.` : `No loans added.`}
+            </div>`;
+
+            wrap.innerHTML = `
+              <div>${rows || emptyHtml}</div>
+              ${editMode ? `<button class="btn btn-ghost loan-add-btn" id="loanAddBtn">+ Add Loan</button>` : ""}
+              ${loans.length ? `
+              <div class="exp-stat-grid" style="margin-top:14px;">
+                <div class="exp-stat-card"><div class="lbl">Total Outstanding</div><div class="val">${fmt(totalOutstanding)}</div></div>
+                <div class="exp-stat-card"><div class="lbl">Total Monthly EMI</div><div class="val">${fmt(totalEmi)}</div></div>
+              </div>
+              <div style="font-size:9px;color:var(--dim);opacity:0.8;margin-top:10px;">Tracked for reference only — not subtracted from Net Worth or any other total in this app.</div>
+              ` : ""}`;
+
+            wrap.querySelectorAll(".loan-name-inp").forEach(inp => {
+              inp.addEventListener("change", e => {
+                const l = loans.find(x => x.id === e.target.dataset.id);
+                if (l) { l.name = e.target.value; saveState(); }
+              });
+            });
+            wrap.querySelectorAll(".loan-outstanding-inp").forEach(inp => {
+              inp.addEventListener("change", e => {
+                const l = loans.find(x => x.id === e.target.dataset.id);
+                if (!l) return;
+                l.outstanding = Math.max(0, parseFloat(e.target.value) || 0);
+                saveState();
+                renderLoans();
+              });
+            });
+            wrap.querySelectorAll(".loan-emi-inp").forEach(inp => {
+              inp.addEventListener("change", e => {
+                const l = loans.find(x => x.id === e.target.dataset.id);
+                if (!l) return;
+                l.emi = Math.max(0, parseFloat(e.target.value) || 0);
+                saveState();
+                renderLoans();
+              });
+            });
+            wrap.querySelectorAll(".loan-rate-inp").forEach(inp => {
+              inp.addEventListener("change", e => {
+                const l = loans.find(x => x.id === e.target.dataset.id);
+                if (!l) return;
+                l.rate = Math.max(0, parseFloat(e.target.value) || 0);
+                saveState();
+              });
+            });
+            wrap.querySelectorAll(".loan-del-btn").forEach(btn => {
+              btn.addEventListener("click", () => {
+                state.loans = loans.filter(l => l.id !== btn.dataset.id);
+                saveState();
+                renderLoans();
+              });
+            });
+            const addBtn = el("loanAddBtn");
+            if (addBtn) {
+              addBtn.addEventListener("click", () => {
+                if (!state.loans) state.loans = [];
+                state.loans.push({ id: "loan_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6), name: "", outstanding: 0, emi: 0, rate: 0 });
+                saveState();
+                renderLoans();
               });
             }
           }

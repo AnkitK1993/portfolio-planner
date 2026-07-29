@@ -90,6 +90,11 @@ export function defaultState() {
               returnsLog: [],
               calendarNotes: [],
               rebalance: { sections: defaultRebSections() },
+              // Standalone loan/EMI tracker — informational only, never
+              // subtracted from Net Worth or any other total in the app
+              // (see the "Loans / EMIs" card comment in
+              // features/summary/index.js for why).
+              loans: [],
               cardOrder: {},
               _meta: { v: 0, savedAt: null, syncedAt: null },
             };
@@ -108,12 +113,18 @@ export function normalizeSurplus(raw) {
                 ? [{ id: "exp_migrated", name: "Monthly Expenses", amount: r.expenses }]
                 : [];
             }
+            // Financial Goals moved from a single flat goalAmount to a
+            // named list (same one-time-migration convention as
+            // fixedExpenses above) — one pre-existing custom goal becomes
+            // a single migrated entry rather than being dropped.
+            let goals = Array.isArray(r.goals) ? r.goals : null;
+            if (!goals) {
+              goals = r.goalAmount > 0 ? [{ id: "goal_migrated", name: "My Goal", amount: r.goalAmount }] : [];
+            }
             return {
               fixedExpenses,
+              goals,
               taxSlabPct: r.taxSlabPct ?? 30,
-              // 0/unset = Financial Goals card falls back to its suggested
-              // 25x-annual-expenses target instead of a user-picked figure.
-              goalAmount: Number(r.goalAmount) || 0,
             };
           }
 
@@ -160,6 +171,7 @@ export function loadState() {
                 returnsLog: Array.isArray(s.returnsLog) ? s.returnsLog : [],
                 calendarNotes: Array.isArray(s.calendarNotes) ? s.calendarNotes : [],
                 rebalance: { sections: Array.isArray(s.rebalance?.sections) ? s.rebalance.sections : defaultRebSections() },
+                loans: Array.isArray(s.loans) ? s.loans : [],
                 cardOrder: (s.cardOrder && typeof s.cardOrder === "object") ? s.cardOrder : {},
                 _meta: { ...def._meta, ...(s._meta || {}) },
               };

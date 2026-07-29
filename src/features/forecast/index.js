@@ -15,7 +15,7 @@ export function renderForecast() {
             const dispEl     = el("fcDisplay");
             const chartWrap  = document.querySelector(".fc-chart-wrap");
             const sliderWrap = document.querySelector(".fc-slider-wrap");
-            const compareWrap = el("fcCompareWrap");
+            const compareCard = el("fcCompareCard");
 
             if (projInputs) projInputs.style.display = mode === "project" ? "" : "none";
             if (goalInputs) goalInputs.style.display  = mode === "goal"    ? "" : "none";
@@ -23,7 +23,7 @@ export function renderForecast() {
             if (dispEl)     dispEl.style.display       = mode === "project" ? "" : "none";
             if (chartWrap)  chartWrap.style.display    = mode === "project" ? "" : "none";
             if (sliderWrap) sliderWrap.style.display   = mode === "project" ? "" : "none";
-            if (compareWrap) compareWrap.style.display = mode === "project" ? "" : "none";
+            if (compareCard) compareCard.style.display = mode === "project" ? "" : "none";
 
             if (mode === "goal") { renderGoalMode(); return; }
 

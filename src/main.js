@@ -424,9 +424,12 @@ sumToggleAll.refresh();
 const planningToggleAll = makeToggleAllGroup("planningToggleAllBtn");
 [
             ["expCardToggle", "expCardBody", "expCollapsedTotal"],
-            ["sumFireToggle", "sumFireCollBody", null],
+            ["sumExpTrendsToggle", "sumExpTrendsCollBody", "sumExpTrendsPreview"],
+            ["sumFireToggle", "sumFireCollBody", "sumFirePreview"],
             ["fcCardToggle", "fcCardCollBody", null],
+            ["fcCompareToggle", "fcCompareCollBody", null],
             ["planningRebalanceToggle", "planningRebalanceCollBody", null],
+            ["sumLoansToggle", "sumLoansCollBody", "sumLoansPreview"],
             ["investNewMoneyToggle", "investNewMoneyCollBody", null],
           ].forEach(([headerId, bodyId, previewId]) => planningToggleAll.add(headerId, bodyId, previewId));
 planningToggleAll.refresh();
@@ -443,7 +446,7 @@ registerCardOrder("summary", [
             "sumXirrCard", "sumAllocCard", "sumCompositionCard", "sumIdealCard", "sumRebalActionsCard",
             "sumStreakCard", "sumFundCard", "sumTaxCard", "sumHeatmapCard", "sumCalCard",
           ]);
-registerCardOrder("planning", ["sumExpensesCard", "sumFireCard", "fcCard", "planningRebalanceCard", "investNewMoneyCard"]);
+registerCardOrder("planning", ["sumExpensesCard", "sumExpTrendsCard", "sumFireCard", "fcCard", "fcCompareCard", "planningRebalanceCard", "sumLoansCard", "investNewMoneyCard"]);
 registerCardOrder("transactions", ["txp-history", "txp-curval", "txp-sip", "txp-entervalues", "txp-snapshot", "txnCharts"]);
 registerCardOrder("networth", ["nwBreakdownCard", "nwAssetTrendsCard", "nwHistCard", "nwChartCard", "nwCompChartCard", "nwProjCard"]);
 // Returns badges (Total bar + Liquid/Equity division rows) toggle between

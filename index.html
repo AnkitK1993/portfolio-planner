@@ -613,13 +613,35 @@
           </div>
         </div>
 
+        <!-- Expense Trends — split out of Expenses: that card is about
+             managing this month's actual spend, this one is a self-
+             contained historical analysis tool (period picker, averages,
+             projections, Income vs Expenses chart) with its own controls,
+             a different concern entirely. -->
+        <div class="card" id="sumExpTrendsCard" style="display:none;margin-bottom:12px">
+          <button class="card-toggle-head" id="sumExpTrendsToggle" aria-expanded="false">
+            <div class="card-toggle-head-text">
+              <div class="sec-head" style="margin-bottom:4px">Expense Trends</div>
+              <div style="font-size:10px;color:var(--dim)">Averages, projections, and Income vs Expenses over time</div>
+            </div>
+            <span class="card-toggle-preview" id="sumExpTrendsPreview"></span>
+            <span class="card-toggle-chevron">▾</span>
+          </button>
+          <div class="card-toggle-body" id="sumExpTrendsCollBody">
+            <div class="card-toggle-body-inner">
+              <div id="sumExpTrendsBody"></div>
+            </div>
+          </div>
+        </div>
+
         <!-- Financial Goals progress — moved here from Budget, see above. -->
         <div class="card" id="sumFireCard" style="display:none;margin-bottom:12px">
           <button class="card-toggle-head" id="sumFireToggle" aria-expanded="false">
             <div class="card-toggle-head-text">
               <div class="sec-head" style="margin-bottom:4px">Financial Goals</div>
-              <div style="font-size:10px;color:var(--dim)">Progress toward your target corpus</div>
+              <div style="font-size:10px;color:var(--dim)">Progress toward each of your target corpuses</div>
             </div>
+            <span class="card-toggle-preview" id="sumFirePreview"></span>
             <span class="card-toggle-chevron">▾</span>
           </button>
           <div class="card-toggle-body" id="sumFireCollBody">
@@ -776,16 +798,34 @@
           </div>
         </div>
 
-        <!-- What-if: extra monthly contribution, compared at the same
-             time horizon/rate/step-up the slider + scenario above use. -->
-        <div class="fc-compare-wrap" id="fcCompareWrap">
-          <label class="flabel" for="fcCompareExtra">What if you invested this much more per month?</label>
-          <div class="ibox"><span class="pfx">&#8377;</span>
-            <input class="num" id="fcCompareExtra" type="number" min="0" placeholder="0" inputmode="numeric" />
+            </div>
           </div>
-          <div id="fcCompareResult"></div>
         </div>
 
+        <!-- What if you invested more? — split out of Projections: a
+             distinct "what if" exploration tool (like Invest New Money),
+             bolted onto the end of the main forecast card before. Still
+             computed inside renderForecast() (it needs that card's own
+             rate/horizon/slider state), only the card chrome moved. Hidden
+             in Reverse SIP mode, same as before, since there's no slider/
+             monthly-investment concept there. -->
+        <div class="card" id="fcCompareCard" style="margin-bottom:12px">
+          <button class="card-toggle-head" id="fcCompareToggle" aria-expanded="false">
+            <div class="card-toggle-head-text">
+              <div class="sec-head" style="margin-bottom:4px">What If You Invested More?</div>
+              <div style="font-size:10px;color:var(--dim)">Compare an extra monthly contribution at the same horizon and return rate</div>
+            </div>
+            <span class="card-toggle-chevron">▾</span>
+          </button>
+          <div class="card-toggle-body" id="fcCompareCollBody">
+            <div class="card-toggle-body-inner">
+              <div class="fc-compare-wrap" id="fcCompareWrap">
+                <label class="flabel" for="fcCompareExtra">What if you invested this much more per month?</label>
+                <div class="ibox"><span class="pfx">&#8377;</span>
+                  <input class="num" id="fcCompareExtra" type="number" min="0" placeholder="0" inputmode="numeric" />
+                </div>
+                <div id="fcCompareResult"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -805,6 +845,28 @@
           <div class="card-toggle-body" id="planningRebalanceCollBody">
             <div class="card-toggle-body-inner">
               <div id="planningRebalanceBody"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Loans / EMIs — standalone informational tracker for loan
+             balances and monthly EMI outflow. Deliberately NOT netted
+             against Net Worth, Health Score, Tax Estimate, or FIRE
+             progress — those all currently assume asset-only net worth,
+             and subtracting liabilities everywhere they're used would be a
+             much larger, riskier change than adding a tracking card. -->
+        <div class="card" id="sumLoansCard" style="display:none;margin-bottom:12px">
+          <button class="card-toggle-head" id="sumLoansToggle" aria-expanded="false">
+            <div class="card-toggle-head-text">
+              <div class="sec-head" style="margin-bottom:4px">Loans / EMIs</div>
+              <div style="font-size:10px;color:var(--dim)">Track loan balances and monthly EMI — informational only, not subtracted from Net Worth</div>
+            </div>
+            <span class="card-toggle-preview" id="sumLoansPreview"></span>
+            <span class="card-toggle-chevron">▾</span>
+          </button>
+          <div class="card-toggle-body" id="sumLoansCollBody">
+            <div class="card-toggle-body-inner">
+              <div id="sumLoansBody"></div>
             </div>
           </div>
         </div>
