@@ -389,12 +389,21 @@ export function renderIdealAlloc() {
               funds.forEach(f => {
                 const fundWt = catFundWts ? (catFundWts[f.id] || 0) : catWt;
                 const idealAmt = eqAfter * fundWt / 100;
+                // fromLiq is what Bar 2 is already about to deploy here —
+                // toAdd has to net that out (current + fromLiq, not just
+                // current) or every fund looks under-weighted whenever
+                // there's meaningful deployable liquid in play, since
+                // idealAmt is scaled to the eventual post-deployment total
+                // while raw current isn't. Identical to the old formula
+                // whenever deployable is 0 (fromLiq drops out), so this
+                // only changes anything in the exact case it needs to.
+                const fromLiq = deployable > 0 ? Math.max(0, deployable * fundWt / 100) : 0;
                 fundTargets.push({
                   ...f, catWt,
                   idealAmt,
                   idealPct: eqAfter > 0 ? (idealAmt / eqAfter * 100) : 0,
-                  toAdd: idealAmt - f.current,
-                  fromLiq: deployable > 0 ? Math.max(0, deployable * fundWt / 100) : 0,
+                  toAdd: idealAmt - (f.current + fromLiq),
+                  fromLiq,
                   color: ALLOC_PALETTE[colorIdx++ % ALLOC_PALETTE.length],
                 });
               });
@@ -411,13 +420,13 @@ export function renderIdealAlloc() {
               uncatFunds.forEach(f => {
                 const share = uncatCurTotal > 0 ? f.current / uncatCurTotal : 1 / uncatFunds.length;
                 const idealAmt = remainingIdealEq * share;
-                const fromLiq  = remainingLiq * share;
+                const fromLiq = deployable > 0 ? Math.max(0, remainingLiq * share) : 0;
                 fundTargets.push({
                   ...f, catWt: 0,
                   idealAmt,
                   idealPct: eqAfter > 0 ? (idealAmt / eqAfter * 100) : 0,
-                  toAdd: idealAmt - f.current,
-                  fromLiq: deployable > 0 ? Math.max(0, fromLiq) : 0,
+                  toAdd: idealAmt - (f.current + fromLiq),
+                  fromLiq,
                   color: ALLOC_PALETTE[colorIdx++ % ALLOC_PALETTE.length],
                 });
               });
