@@ -3,7 +3,7 @@ import { EQ_FUNDS, LIQ_FUNDS, editMode, fundName, saveState, state, syncFundArra
 import { UI, updateCollNameReadonly } from "../../core/ui.js";
 import { createCollapsible } from "../../core/collapsible.js";
 import { el } from "../../core/dom.js";
-import { fmt, fmtNum, num } from "../../core/format.js";
+import { fmtNum, num } from "../../core/format.js";
 import { render, scheduleRender } from "./render.js";
 
 // Fund cards get torn down and rebuilt wholesale (drag-reorder, archive)

@@ -403,5 +403,3 @@ export function registerOverlay(overlayEl, { dismissible = true, onClose } = {})
   overlayEl._modalCtl = { open: doOpen, close: doClose, isOpen: () => isOpen };
   return overlayEl._modalCtl;
 }
-
-export const Modal = { open, confirm, alert, registerOverlay };
