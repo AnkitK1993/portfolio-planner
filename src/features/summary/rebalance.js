@@ -239,24 +239,27 @@ export function renderIdealAlloc() {
             });
 
             // Within-category fund split — only meaningful once a category
-            // has 2+ funds (a single fund trivially gets 100% of its
-            // category). Defaults to each fund's current share of the
-            // category so expanding one for the first time doesn't jump
-            // the numbers, but is fully overridable per fund via
-            // idealFundWeights once the user types a value. Same
-            // "percentage of its own scope" convention as the category
-            // weights above — this is a percentage of the CATEGORY's
-            // target, not the whole portfolio.
+            // has 2+ funds (a single fund trivially gets its category's
+            // whole weight). Each fund's weight is a percentage of the
+            // WHOLE PORTFOLIO (same scale as the category weights above),
+            // not a share of the category — so a category's own funds are
+            // expected to sum to that category's weight, not to 100.
+            // Defaults to each fund's current share of the category,
+            // scaled by the category's weight, so expanding one for the
+            // first time doesn't jump the numbers; fully overridable per
+            // fund via idealFundWeights once the user types a value.
             const fundWeightsByCat = {};
             EQ_CATEGORIES.forEach(cat => {
               const funds = catGroups[cat];
               if (!funds || funds.length < 2) return;
+              const catWt = weights[cat] || 0;
               const catCurTotal = funds.reduce((s, f) => s + f.current, 0);
               const wts = {};
               funds.forEach(f => {
+                const curShare = catCurTotal > 0 ? (f.current / catCurTotal) : (1 / funds.length);
                 wts[f.id] = state.idealFundWeights?.[f.id] !== undefined
                   ? state.idealFundWeights[f.id]
-                  : Math.round(catCurTotal > 0 ? (f.current / catCurTotal * 100) : (100 / funds.length));
+                  : Math.round(curShare * catWt);
               });
               fundWeightsByCat[cat] = wts;
             });
@@ -273,9 +276,10 @@ export function renderIdealAlloc() {
                 const funds = catGroups[cat] || [];
                 const expandable = funds.length > 1;
                 const isOpen = expandable && expandedIdealCats.has(cat);
+                const catWtForRow = weights[cat] || 0;
                 const catFundWts = fundWeightsByCat[cat];
                 const fundWtTotal = expandable ? funds.reduce((s, f) => s + (catFundWts[f.id] || 0), 0) : 0;
-                const fundWtOk = Math.abs(fundWtTotal - 100) < 0.5;
+                const fundWtOk = Math.abs(fundWtTotal - catWtForRow) < 0.5;
 
                 const subRowsHtml = isOpen ? `
                   <div style="padding:2px 0 10px 15px;">
@@ -288,7 +292,7 @@ export function renderIdealAlloc() {
                         <span style="font-size:9px;color:var(--dim)">%</span>
                       </div>`).join("")}
                     <div style="text-align:right;font-size:9px;margin-top:3px;color:${fundWtOk ? "var(--mint)" : "var(--coral)"};">
-                      Of ${cat}: ${fundWtTotal.toFixed(0)}% ${fundWtOk ? "✓" : "— must equal 100%"}
+                      Of portfolio: ${fundWtTotal.toFixed(0)}% ${fundWtOk ? "✓" : `— must equal ${catWtForRow}% (${cat}'s own target)`}
                     </div>
                   </div>` : "";
 
@@ -367,22 +371,26 @@ export function renderIdealAlloc() {
             let colorIdx = 0;
             const fundTargets = [];
 
-            // Process categorized funds first (in EQ_CATEGORIES order)
+            // Process categorized funds first (in EQ_CATEGORIES order). Each
+            // fund's weight (fundWt) is already a whole-portfolio
+            // percentage — see fundWeightsByCat above — so it drives
+            // idealAmt directly rather than being scaled by catIdeal. A
+            // single-fund category has no per-fund entry at all, so it
+            // simply inherits the category's own weight wholesale.
             EQ_CATEGORIES.forEach(cat => {
               const funds = catGroups[cat];
               if (!funds?.length) return;
               const catWt = weights[cat] || 0;
-              const catIdeal = eqAfter * catWt / 100;
               const catFundWts = fundWeightsByCat[cat]; // undefined when the category has just 1 fund
               funds.forEach(f => {
-                const share = catFundWts ? (catFundWts[f.id] || 0) / 100 : 1;
-                const idealAmt = catIdeal * share;
+                const fundWt = catFundWts ? (catFundWts[f.id] || 0) : catWt;
+                const idealAmt = eqAfter * fundWt / 100;
                 fundTargets.push({
                   ...f, catWt,
                   idealAmt,
                   idealPct: eqAfter > 0 ? (idealAmt / eqAfter * 100) : 0,
                   toAdd: idealAmt - f.current,
-                  fromLiq: deployable > 0 ? Math.max(0, deployable * (catWt / 100) * share) : 0,
+                  fromLiq: deployable > 0 ? Math.max(0, deployable * fundWt / 100) : 0,
                   color: ALLOC_PALETTE[colorIdx++ % ALLOC_PALETTE.length],
                 });
               });
