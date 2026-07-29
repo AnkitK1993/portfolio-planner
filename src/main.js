@@ -221,14 +221,28 @@ el("ddAuthBtn").addEventListener("click", async () => {
                 .catch(e => UI.toast("err", "Sign-out failed: " + e.message, 4000));
             } else {
               const provider = new firebase.auth.GoogleAuthProvider();
+              // Mobile Safari/Chrome routinely fail signInWithPopup with no
+              // usable signal at all — the popup can be silently blocked or
+              // the promise can just hang forever (never resolving or
+              // rejecting), which looks to the user like the button does
+              // nothing. Skip the popup attempt on mobile entirely and go
+              // straight to the full-page redirect flow, which has none of
+              // those failure modes and is already handled end-to-end by
+              // getRedirectResult() in initFirebase().
+              const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+              if (isMobile) {
+                firebase.auth().signInWithRedirect(provider)
+                  .catch(e => UI.toast("err", e.message || "Sign-in failed", 5000));
+                return;
+              }
               try {
                 const result = await firebase.auth().signInWithPopup(provider);
                 handleSignInResult(result);
               } catch (e) {
                 const ignored = ["auth/popup-closed-by-user", "auth/cancelled-popup-request"];
                 if (ignored.includes(e.code)) return;
-                // Popups are blocked/unsupported on many mobile browsers & in-app
-                // webviews — fall back to a full-page redirect flow instead.
+                // Popups are blocked/unsupported in some desktop contexts too
+                // (e.g. in-app webviews) — fall back to redirect there as well.
                 const fallbackToRedirect = [
                   "auth/popup-blocked",
                   "auth/operation-not-supported-in-this-environment",
