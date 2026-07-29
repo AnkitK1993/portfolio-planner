@@ -125,6 +125,14 @@ export function setIdealWeight(category, weight) {
             state.idealWeights[category] = weight;
           }
 
+// Within-category split — only meaningful for categories with 2+ funds;
+// each fund's weight is a percentage of that category's own target (not
+// the whole portfolio), same convention as setIdealWeight() one level up.
+export function setIdealFundWeight(fundId, weight) {
+            if (!state.idealFundWeights) state.idealFundWeights = {};
+            state.idealFundWeights[fundId] = weight;
+          }
+
 // ── Net worth — replaces direct state.networth[f.id] = ... reach-throughs
 // in networth/index.js's buildNwGrid() and main.js's snapshot-edit/cancel
 // handlers ──

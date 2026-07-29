@@ -3,10 +3,17 @@ import { EQ_CATEGORIES } from "../../core/constants.js";
 import { EQ_FUNDS, LIQ_FUNDS, defaultRebSections, deployable, editMode, saveState, state } from "../../core/state.js";
 import { _animOnRender, animateWidth } from "../../core/animate.js";
 import { el } from "../../core/dom.js";
+import { refreshAncestorCollapsible } from "../../core/collapsible.js";
 import { fmt, fmtCompact, pct } from "../../core/format.js";
-import { addRebalanceRow, addRebalanceSection, deleteRebalanceRow, deleteRebalanceSection, setIdealWeight, setRebalanceRowName, setRebalanceRowValue, setRebalanceSectionName } from "../../store/actions.js";
+import { addRebalanceRow, addRebalanceSection, deleteRebalanceRow, deleteRebalanceSection, setIdealFundWeight, setIdealWeight, setRebalanceRowName, setRebalanceRowValue, setRebalanceSectionName } from "../../store/actions.js";
 
 export let rebEditMode = false;
+
+// Which categories' Target Equity Split rows are expanded to show their
+// individual funds — only categories with 2+ equity funds ever get the
+// expand affordance at all. View-only UI state, not persisted, same
+// treatment as nwHistExpanded/rebEditMode elsewhere in the app.
+const expandedIdealCats = new Set();
 
 export function rebFmtDiff(d) {
             const abs = Math.abs(d);
@@ -220,6 +227,40 @@ export function renderIdealAlloc() {
             const totalWeight = activeCats.reduce((s, cat) => s + (weights[cat] || 0), 0);
             const weightOk = Math.abs(totalWeight - 100) < 0.5;
 
+            // Group equity funds by category — needed both by the weight
+            // editor below (to know which categories are worth expanding)
+            // and by the ideal-amount math further down.
+            const catGroups = {};
+            EQ_FUNDS.forEach(f => {
+              const cat = state.equity[f.id]?.category || "";
+              const key = cat || "__uncat__";
+              if (!catGroups[key]) catGroups[key] = [];
+              catGroups[key].push({ id: f.id, name: state.equity[f.id]?.name || f.defaultName, current: state.equity[f.id]?.shown || 0, cat });
+            });
+
+            // Within-category fund split — only meaningful once a category
+            // has 2+ funds (a single fund trivially gets 100% of its
+            // category). Defaults to each fund's current share of the
+            // category so expanding one for the first time doesn't jump
+            // the numbers, but is fully overridable per fund via
+            // idealFundWeights once the user types a value. Same
+            // "percentage of its own scope" convention as the category
+            // weights above — this is a percentage of the CATEGORY's
+            // target, not the whole portfolio.
+            const fundWeightsByCat = {};
+            EQ_CATEGORIES.forEach(cat => {
+              const funds = catGroups[cat];
+              if (!funds || funds.length < 2) return;
+              const catCurTotal = funds.reduce((s, f) => s + f.current, 0);
+              const wts = {};
+              funds.forEach(f => {
+                wts[f.id] = state.idealFundWeights?.[f.id] !== undefined
+                  ? state.idealFundWeights[f.id]
+                  : Math.round(catCurTotal > 0 ? (f.current / catCurTotal * 100) : (100 / funds.length));
+              });
+              fundWeightsByCat[cat] = wts;
+            });
+
             // --- Editable weights section ---
             if (activeCats.length === 0) {
               editorEl.innerHTML = `
@@ -228,24 +269,60 @@ export function renderIdealAlloc() {
                   No categories assigned. Go to the <b style="color:var(--txt)">Portfolio tab</b> → edit each equity fund → set its category.
                 </div>`;
             } else {
-              const weightItems = activeCats.map(cat => `
-                <div style="display:grid;grid-template-columns:1fr 56px 16px;align-items:center;gap:5px;padding:4px 0;">
-                  <span style="font-size:11px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${cat}</span>
-                  <input type="number" class="ideal-wt-inp" data-cat="${cat}" min="0" max="100" step="1" value="${weights[cat]}" ${editMode ? "" : "readonly"}
-                    style="background:var(--input-bg,rgba(255,255,255,0.06));border:1px solid var(--line);border-radius:5px;color:${editMode ? "var(--txt)" : "var(--dim)"};
-                           font-family:'Roboto Mono',monospace;font-size:11px;text-align:right;padding:3px 6px;width:100%;${editMode ? "" : "cursor:default;"}"/>
-                  <span style="font-size:10px;color:var(--dim)">%</span>
-                </div>`).join("");
+              const weightItems = activeCats.map(cat => {
+                const funds = catGroups[cat] || [];
+                const expandable = funds.length > 1;
+                const isOpen = expandable && expandedIdealCats.has(cat);
+                const catFundWts = fundWeightsByCat[cat];
+                const fundWtTotal = expandable ? funds.reduce((s, f) => s + (catFundWts[f.id] || 0), 0) : 0;
+                const fundWtOk = Math.abs(fundWtTotal - 100) < 0.5;
+
+                const subRowsHtml = isOpen ? `
+                  <div style="padding:2px 0 10px 15px;">
+                    ${funds.map(f => `
+                      <div style="display:grid;grid-template-columns:1fr 56px 16px;align-items:center;gap:5px;padding:3px 0;">
+                        <span style="font-size:10.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${f.name}</span>
+                        <input type="number" class="ideal-fund-wt-inp" data-fund="${f.id}" min="0" max="100" step="1" value="${catFundWts[f.id]}" ${editMode ? "" : "readonly"}
+                          style="background:var(--input-bg,rgba(255,255,255,0.06));border:1px solid var(--line);border-radius:5px;color:${editMode ? "var(--txt)" : "var(--dim)"};
+                                 font-family:'Roboto Mono',monospace;font-size:10.5px;text-align:right;padding:2px 6px;width:100%;${editMode ? "" : "cursor:default;"}"/>
+                        <span style="font-size:9px;color:var(--dim)">%</span>
+                      </div>`).join("")}
+                    <div style="text-align:right;font-size:9px;margin-top:3px;color:${fundWtOk ? "var(--mint)" : "var(--coral)"};">
+                      Of ${cat}: ${fundWtTotal.toFixed(0)}% ${fundWtOk ? "✓" : "— must equal 100%"}
+                    </div>
+                  </div>` : "";
+
+                return `
+                  <div style="display:grid;grid-template-columns:1fr 56px 16px;align-items:center;gap:5px;padding:4px 0;">
+                    <span class="${expandable ? "ideal-cat-toggle" : ""}" data-cat="${cat}" style="font-size:11px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${expandable ? "cursor:pointer;" : ""}">
+                      ${expandable ? `<span style="display:inline-block;width:10px;font-size:8px;color:var(--dim);">${isOpen ? "▾" : "▸"}</span>` : ""}${cat}
+                    </span>
+                    <input type="number" class="ideal-wt-inp" data-cat="${cat}" min="0" max="100" step="1" value="${weights[cat]}" ${editMode ? "" : "readonly"}
+                      style="background:var(--input-bg,rgba(255,255,255,0.06));border:1px solid var(--line);border-radius:5px;color:${editMode ? "var(--txt)" : "var(--dim)"};
+                             font-family:'Roboto Mono',monospace;font-size:11px;text-align:right;padding:3px 6px;width:100%;${editMode ? "" : "cursor:default;"}"/>
+                    <span style="font-size:10px;color:var(--dim)">%</span>
+                  </div>
+                  ${subRowsHtml}`;
+              }).join("");
 
               editorEl.innerHTML = `
                 <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--dim);margin-bottom:7px">
                   Target Equity Split ${editMode ? "" : `<span style="font-weight:400;text-transform:none;letter-spacing:normal;">— tap Edit to change</span>`}
                 </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 18px;">${weightItems}</div>
+                <div style="display:flex;flex-direction:column;">${weightItems}</div>
                 <div style="text-align:right;font-size:10px;margin-top:5px;color:${weightOk ? "var(--mint)" : "var(--coral)"};">
                   Total: ${totalWeight.toFixed(0)}% ${weightOk ? "✓" : "— must equal 100%"}
                 </div>`;
             }
+
+            editorEl.querySelectorAll(".ideal-cat-toggle").forEach(labelEl => {
+              labelEl.addEventListener("click", () => {
+                const cat = labelEl.dataset.cat;
+                if (expandedIdealCats.has(cat)) expandedIdealCats.delete(cat);
+                else expandedIdealCats.add(cat);
+                renderIdealAlloc();
+              });
+            });
 
             editorEl.querySelectorAll(".ideal-wt-inp").forEach(inp => {
               inp.addEventListener("change", e => {
@@ -257,6 +334,20 @@ export function renderIdealAlloc() {
                 renderIdealAlloc();
               });
             });
+
+            editorEl.querySelectorAll(".ideal-fund-wt-inp").forEach(inp => {
+              inp.addEventListener("change", e => {
+                if (!editMode) { renderIdealAlloc(); return; }
+                setIdealFundWeight(e.target.dataset.fund, parseFloat(e.target.value) || 0);
+                saveState();
+                renderIdealAlloc();
+              });
+            });
+
+            // Expanding/collapsing a category changes this section's height
+            // without changing the card's OWN size, which ResizeObserver
+            // doesn't catch on its own — see refreshAncestorCollapsible().
+            refreshAncestorCollapsible(editorEl);
 
             // --- Calculations ---
             const deployable = LIQ_FUNDS.reduce((s, f) => {
@@ -273,15 +364,6 @@ export function renderIdealAlloc() {
               return;
             }
 
-            // Group equity funds by category
-            const catGroups = {};
-            EQ_FUNDS.forEach(f => {
-              const cat = state.equity[f.id]?.category || "";
-              const key = cat || "__uncat__";
-              if (!catGroups[key]) catGroups[key] = [];
-              catGroups[key].push({ id: f.id, name: state.equity[f.id]?.name || f.defaultName, current: state.equity[f.id]?.shown || 0, cat });
-            });
-
             let colorIdx = 0;
             const fundTargets = [];
 
@@ -291,9 +373,9 @@ export function renderIdealAlloc() {
               if (!funds?.length) return;
               const catWt = weights[cat] || 0;
               const catIdeal = eqAfter * catWt / 100;
-              const catCurTotal = funds.reduce((s, f) => s + f.current, 0);
+              const catFundWts = fundWeightsByCat[cat]; // undefined when the category has just 1 fund
               funds.forEach(f => {
-                const share = catCurTotal > 0 ? f.current / catCurTotal : 1 / funds.length;
+                const share = catFundWts ? (catFundWts[f.id] || 0) / 100 : 1;
                 const idealAmt = catIdeal * share;
                 fundTargets.push({
                   ...f, catWt,
