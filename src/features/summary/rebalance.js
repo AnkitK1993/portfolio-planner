@@ -628,6 +628,43 @@ export function renderInvestNewMoney() {
               return;
             }
 
+            // --- Target % per fund — mirrors renderIdealAlloc's own
+            // category/fund-weight math (deliberately duplicated rather
+            // than shared, same tradeoff as elsewhere in this file) so
+            // each row can show what its "ideal" share of equity is,
+            // right alongside current/new. A fund with no category
+            // assigned has no defined target.
+            if (!state.idealWeights) state.idealWeights = {};
+            const DEF_WEIGHTS = { "Large Cap": 45, "Flexi Cap": 33, "Mid Cap": 22 };
+            const catWeights = {};
+            EQ_CATEGORIES.forEach(cat => {
+              catWeights[cat] = state.idealWeights[cat] !== undefined ? state.idealWeights[cat] : (DEF_WEIGHTS[cat] || 0);
+            });
+            const catGroups = {};
+            funds.forEach(f => {
+              const key = f.cat || "__uncat__";
+              (catGroups[key] = catGroups[key] || []).push(f);
+            });
+            const fundWeightsByCat = {};
+            EQ_CATEGORIES.forEach(cat => {
+              const catFunds = catGroups[cat];
+              if (!catFunds || catFunds.length < 2) return;
+              const catWt = catWeights[cat] || 0;
+              const catCurTotal = catFunds.reduce((s, f) => s + f.current, 0);
+              const wts = {};
+              catFunds.forEach(f => {
+                const curShare = catCurTotal > 0 ? (f.current / catCurTotal) : (1 / catFunds.length);
+                wts[f.id] = state.idealFundWeights?.[f.id] !== undefined ? state.idealFundWeights[f.id] : Math.round(curShare * catWt);
+              });
+              fundWeightsByCat[cat] = wts;
+            });
+            const targetPctById = {};
+            funds.forEach(f => {
+              if (!f.cat || !catGroups[f.cat]) { targetPctById[f.id] = null; return; }
+              const catFunds = catGroups[f.cat];
+              targetPctById[f.id] = catFunds.length > 1 ? (fundWeightsByCat[f.cat]?.[f.id] || 0) : (catWeights[f.cat] || 0);
+            });
+
             const em = investEditMode;
             const eqCurrent = funds.reduce((s, f) => s + f.current, 0);
             const totalInvested = funds.reduce((s, f) => s + Math.max(0, investDrafts[f.id] || 0), 0);
@@ -641,12 +678,14 @@ export function renderInvestNewMoney() {
               const delta = newPct - curPct;
               const deltaColor = delta > 0.05 ? "var(--mint)" : delta < -0.05 ? "var(--coral)" : "var(--dim)";
               const deltaArrow = delta > 0.05 ? "▲" : delta < -0.05 ? "▼" : "";
+              const targetPct = targetPctById[f.id];
+              const tagText = [f.cat, targetPct !== null ? `Target ${targetPct.toFixed(0)}%` : "No target set"].filter(Boolean).join(" · ");
 
               return `
                 <div style="padding:8px 0;border-bottom:1px solid var(--line);">
                   <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;">
                     <span style="font-size:11.5px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${f.name}</span>
-                    ${f.cat ? `<span style="font-size:9px;color:var(--dim);flex-shrink:0;">${f.cat}</span>` : ""}
+                    <span style="font-size:9px;color:var(--dim);flex-shrink:0;white-space:nowrap;">${tagText}</span>
                   </div>
                   <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:5px;">
                     <span style="font-size:10.5px;color:var(--dim);">
