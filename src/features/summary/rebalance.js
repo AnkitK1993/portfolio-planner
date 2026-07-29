@@ -365,8 +365,6 @@ export function renderIdealAlloc() {
               if (bar1El) bar1El.innerHTML = "";
               if (bar2El) bar2El.innerHTML = "";
               if (bar3El) bar3El.innerHTML = "";
-              const investBreakdownElEmpty = el("idealInvestBreakdown");
-              if (investBreakdownElEmpty) investBreakdownElEmpty.innerHTML = "";
               return;
             }
 
@@ -425,8 +423,6 @@ export function renderIdealAlloc() {
               if (bar1El) bar1El.innerHTML = `<div style="font-size:11px;color:var(--dim);margin-top:10px;">No equity funds with values entered.</div>`;
               if (bar2El) bar2El.innerHTML = "";
               if (bar3El) bar3El.innerHTML = "";
-              const investBreakdownElEmpty = el("idealInvestBreakdown");
-              if (investBreakdownElEmpty) investBreakdownElEmpty.innerHTML = "";
               return;
             }
 
@@ -525,46 +521,6 @@ export function renderIdealAlloc() {
                 bar1El.querySelectorAll(".alloc-seg-bar").forEach(bar => animateWidth(bar, 100, 1000));
             }
 
-            // --- Invest New Money: a plain "what if I invest ₹N today"
-            // calculator. Current/Target use today's actual equity total
-            // (eqCurrent), not eqAfter (which folds in deployable liquid
-            // cash the way Bar 1 does) — this deliberately answers "how
-            // should what I already hold be split" on its own. The Invest
-            // column splits the typed amount proportionally to each
-            // fund's idealPct (its target share of the whole equity
-            // portfolio), same convention Bar 2 below already uses for
-            // deployable liquid cash — simple and consistent, and it
-            // leaves solving for existing drift to Rebalance Actions
-            // above rather than re-solving it here. Read-only: this is a
-            // calculator, not something that logs transactions itself. -->
-            const investBreakdownEl = el("idealInvestBreakdown");
-            if (investBreakdownEl) {
-              const investAmt = num(el("idealInvestAmt")?.value);
-              const investRows = fundTargets.map(f => {
-                const targetToday = eqCurrent * (f.idealPct / 100);
-                const investShare = investAmt > 0 ? investAmt * (f.idealPct / 100) : null;
-                return `
-                  <div style="display:grid;grid-template-columns:1fr auto auto${investShare !== null ? " auto" : ""};align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);">
-                    <span style="font-size:11px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${f.name}</span>
-                    <div style="text-align:right;min-width:58px">
-                      <div style="font-size:8px;color:var(--dim);margin-bottom:1px">Current</div>
-                      <div style="font-family:'Roboto Mono',monospace;font-size:10px;color:var(--txt)">${fmt(Math.round(f.current))}</div>
-                    </div>
-                    <div style="text-align:right;min-width:58px">
-                      <div style="font-size:8px;color:var(--dim);margin-bottom:1px">Target</div>
-                      <div style="font-family:'Roboto Mono',monospace;font-size:10px;color:var(--txt)">${fmt(Math.round(targetToday))}</div>
-                    </div>
-                    ${investShare !== null ? `
-                    <div style="text-align:right;min-width:58px">
-                      <div style="font-size:8px;color:var(--dim);margin-bottom:1px">Invest</div>
-                      <div style="font-family:'Roboto Mono',monospace;font-size:10px;font-weight:700;color:var(--mint)">${fmt(Math.round(investShare))}</div>
-                    </div>` : ""}
-                  </div>`;
-              }).join("");
-              investBreakdownEl.innerHTML = `<div style="margin-top:8px;">${investRows}</div>`;
-              refreshAncestorCollapsible(investBreakdownEl);
-            }
-
             // --- Bar 2: Liquid → Equity redistribution ---
             if (bar2El) {
               if (deployable > 1) {
@@ -634,4 +590,119 @@ export function renderIdealAlloc() {
                 bar3El.innerHTML = "";
               }
             }
+          }
+
+// Invest New Money (Planning tab) — a plain "what if I invest ₹N today"
+// calculator, standalone from Ideal Allocation's own card since it lives
+// on a different tab. Intentionally mirrors renderIdealAlloc()'s
+// category/fund-weight math (weights → catGroups → fundWeightsByCat →
+// per-fund idealPct) rather than importing it, so this relocation
+// doesn't risk touching that already-tested code — see the Ideal
+// Allocation card (Analytics tab) for the weight editor itself.
+//
+// idealPct here is deliberately independent of any current total,
+// deployable liquid cash, or hypothetical investment — Current/Target
+// use today's actual equity total (eqCurrent) and Invest uses the typed
+// amount, each caller multiplying the same % in separately. Uncategorized
+// funds split whatever % isn't claimed by any category (100 minus the
+// sum of every categorized fund's own weight — not the nominal category
+// weights, in case a category's own funds don't sum to its target)
+// proportionally to their current values, same fallback
+// renderIdealAlloc() uses for its own uncategorized funds.
+export function renderInvestNewMoney() {
+            const breakdownEl = el("investNewMoneyBreakdown");
+            if (!breakdownEl) return;
+
+            if (!state.idealWeights) state.idealWeights = {};
+            const DEF_WEIGHTS = { "Large Cap": 45, "Flexi Cap": 33, "Mid Cap": 22 };
+            const weights = {};
+            EQ_CATEGORIES.forEach(cat => {
+              weights[cat] = state.idealWeights[cat] !== undefined
+                ? state.idealWeights[cat]
+                : (DEF_WEIGHTS[cat] || 0);
+            });
+
+            const catGroups = {};
+            EQ_FUNDS.forEach(f => {
+              const cat = state.equity[f.id]?.category || "";
+              const key = cat || "__uncat__";
+              if (!catGroups[key]) catGroups[key] = [];
+              catGroups[key].push({ id: f.id, name: state.equity[f.id]?.name || f.defaultName, current: state.equity[f.id]?.shown || 0, cat });
+            });
+
+            const fundWeightsByCat = {};
+            EQ_CATEGORIES.forEach(cat => {
+              const funds = catGroups[cat];
+              if (!funds || funds.length < 2) return;
+              const catWt = weights[cat] || 0;
+              const catCurTotal = funds.reduce((s, f) => s + f.current, 0);
+              const wts = {};
+              funds.forEach(f => {
+                const curShare = catCurTotal > 0 ? (f.current / catCurTotal) : (1 / funds.length);
+                wts[f.id] = state.idealFundWeights?.[f.id] !== undefined
+                  ? state.idealFundWeights[f.id]
+                  : Math.round(curShare * catWt);
+              });
+              fundWeightsByCat[cat] = wts;
+            });
+
+            const shares = [];
+            let sumFundWt = 0;
+            EQ_CATEGORIES.forEach(cat => {
+              const funds = catGroups[cat];
+              if (!funds?.length) return;
+              const catWt = weights[cat] || 0;
+              const catFundWts = fundWeightsByCat[cat];
+              funds.forEach(f => {
+                const fundWt = catFundWts ? (catFundWts[f.id] || 0) : catWt;
+                sumFundWt += fundWt;
+                shares.push({ ...f, idealPct: fundWt });
+              });
+            });
+
+            const uncatFunds = catGroups["__uncat__"] || [];
+            if (uncatFunds.length) {
+              const uncatCurTotal = uncatFunds.reduce((s, f) => s + f.current, 0);
+              const remainingPct = Math.max(0, 100 - sumFundWt);
+              uncatFunds.forEach(f => {
+                const share = uncatCurTotal > 0 ? f.current / uncatCurTotal : 1 / uncatFunds.length;
+                shares.push({ ...f, idealPct: remainingPct * share });
+              });
+            }
+
+            if (!shares.length) {
+              breakdownEl.innerHTML = `<div style="font-size:11px;color:var(--dim);padding:8px 0;">
+                No equity funds with a target set yet — set one up in <b style="color:var(--txt)">Ideal Allocation</b> on the Analytics tab.
+              </div>`;
+              refreshAncestorCollapsible(breakdownEl);
+              return;
+            }
+
+            const eqCurrent = EQ_FUNDS.reduce((s, f) => s + (state.equity[f.id]?.shown || 0), 0);
+            const investAmt = num(el("investNewMoneyAmt")?.value);
+
+            const rows = shares.map(f => {
+              const targetToday = eqCurrent * (f.idealPct / 100);
+              const investShare = investAmt > 0 ? investAmt * (f.idealPct / 100) : null;
+              return `
+                <div style="display:grid;grid-template-columns:1fr auto auto${investShare !== null ? " auto" : ""};align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);">
+                  <span style="font-size:11px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${f.name}</span>
+                  <div style="text-align:right;min-width:58px">
+                    <div style="font-size:8px;color:var(--dim);margin-bottom:1px">Current</div>
+                    <div style="font-family:'Roboto Mono',monospace;font-size:10px;color:var(--txt)">${fmt(Math.round(f.current))}</div>
+                  </div>
+                  <div style="text-align:right;min-width:58px">
+                    <div style="font-size:8px;color:var(--dim);margin-bottom:1px">Target</div>
+                    <div style="font-family:'Roboto Mono',monospace;font-size:10px;color:var(--txt)">${fmt(Math.round(targetToday))}</div>
+                  </div>
+                  ${investShare !== null ? `
+                  <div style="text-align:right;min-width:58px">
+                    <div style="font-size:8px;color:var(--dim);margin-bottom:1px">Invest</div>
+                    <div style="font-family:'Roboto Mono',monospace;font-size:10px;font-weight:700;color:var(--mint)">${fmt(Math.round(investShare))}</div>
+                  </div>` : ""}
+                </div>`;
+            }).join("");
+
+            breakdownEl.innerHTML = `<div style="margin-top:4px;">${rows}</div>`;
+            refreshAncestorCollapsible(breakdownEl);
           }

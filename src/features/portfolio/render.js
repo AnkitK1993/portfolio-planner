@@ -7,7 +7,7 @@ import { renderCalendar } from "./calendar.js";
 import { renderForecast } from "../forecast/index.js";
 import { renderHoldings } from "../transactions/index.js";
 import { renderAssetTrends, renderNetWorth, renderNwHistory } from "../networth/index.js";
-import { renderRebalance } from "../summary/rebalance.js";
+import { renderInvestNewMoney, renderRebalance } from "../summary/rebalance.js";
 import { renderSparklines, renderSummaryExtras } from "../summary/index.js";
 import { renderUpcoming } from "./upcoming.js";
 import { setAllocBar } from "./allocation.js";
@@ -364,6 +364,7 @@ export function render() {
             // Forecast is still the one tab-gated render, since its chart
             // work is comparatively heavy and only ever visible on its own tab.
             renderRebalance();
+            renderInvestNewMoney();
             const _activeTab = document.querySelector(".tab-section.active")?.id;
             if (_activeTab === "tab-forecast") renderForecast();
             applyAllCardOrders();

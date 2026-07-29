@@ -20,7 +20,7 @@ import { exportData, importData } from "./features/admin/data.js";
 import { fcInflEl, fcShowAllEl, fcStepUpEl, renderForecast } from "./features/forecast/index.js";
 import { num } from "./core/format.js";
 import { openManageSips, saveManageSips } from "./features/portfolio/sips.js";
-import { renderIdealAlloc } from "./features/summary/rebalance.js";
+import { renderInvestNewMoney } from "./features/summary/rebalance.js";
 import { openFundCollapsible, rebuildFundCollapsibles } from "./features/portfolio/funds.js";
 import { render, scheduleRender } from "./features/portfolio/render.js";
 
@@ -252,7 +252,7 @@ el("fcRate").addEventListener("input", (e) => {
           });
 el("fcSlider").addEventListener("input", () => renderForecast());
 el("fcCompareExtra").addEventListener("input", () => renderForecast());
-el("idealInvestAmt").addEventListener("input", () => renderIdealAlloc());
+el("investNewMoneyAmt").addEventListener("input", () => renderInvestNewMoney());
 if (fcStepUpEl) fcStepUpEl.addEventListener("input", (e) => {
             setForecastField("stepUp", parseFloat(e.target.value) || 0);
             renderForecast(); saveState();
@@ -428,6 +428,7 @@ const planningToggleAll = makeToggleAllGroup("planningToggleAllBtn");
             ["sumFireToggle", "sumFireCollBody", null],
             ["fcCardToggle", "fcCardCollBody", null],
             ["planningRebalanceToggle", "planningRebalanceCollBody", null],
+            ["investNewMoneyToggle", "investNewMoneyCollBody", null],
           ].forEach(([headerId, bodyId, previewId]) => planningToggleAll.add(headerId, bodyId, previewId));
 planningToggleAll.refresh();
 // Monthly Investment / By Fund (Transactions tab) aren't part of a
@@ -443,7 +444,7 @@ registerCardOrder("summary", [
             "sumXirrCard", "sumAllocCard", "sumCompositionCard", "sumIdealCard",
             "sumStreakCard", "sumFundCard", "sumTaxCard", "sumHeatmapCard", "sumCalCard",
           ]);
-registerCardOrder("planning", ["sumExpensesCard", "sumFireCard", "fcCard", "planningRebalanceCard"]);
+registerCardOrder("planning", ["sumExpensesCard", "sumFireCard", "fcCard", "planningRebalanceCard", "investNewMoneyCard"]);
 registerCardOrder("transactions", ["txp-history", "txp-curval", "txp-sip", "txp-entervalues", "txp-snapshot", "txnCharts"]);
 registerCardOrder("networth", ["nwBreakdownCard", "nwAssetTrendsCard", "nwHistCard", "nwChartCard", "nwCompChartCard", "nwProjCard"]);
 // Returns badges (Total bar + Liquid/Equity division rows) toggle between

@@ -305,20 +305,6 @@
             <div class="card-toggle-body-inner">
               <div id="idealWeightsEditor"></div>
               <div id="idealAllocBarSection"></div>
-
-              <!-- Invest New Money — a plain "what if" calculator, same
-                   pattern as Forecast's #fcCompareExtra: the input is
-                   static markup with its own one-time listener (wired in
-                   main.js), so retyping the amount survives an unrelated
-                   re-render of this card; only #idealInvestBreakdown gets
-                   rebuilt each render. Not persisted to state. -->
-              <div class="sec-head mt">Invest New Money</div>
-              <label class="flabel" for="idealInvestAmt">How much are you about to invest?</label>
-              <div class="ibox"><span class="pfx">&#8377;</span>
-                <input class="num" id="idealInvestAmt" type="number" min="0" placeholder="0" inputmode="numeric" />
-              </div>
-              <div id="idealInvestBreakdown"></div>
-
               <div id="rebalMoveSection"></div>
               <div id="afterRebalBarSection"></div>
             </div>
@@ -793,6 +779,35 @@
           <div class="card-toggle-body" id="planningRebalanceCollBody">
             <div class="card-toggle-body-inner">
               <div id="planningRebalanceBody"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Invest New Money — a plain "what if" calculator: given each
+             equity fund's target share (Ideal Allocation's category/fund
+             weights, Analytics tab), shows current vs. today's target
+             plus how to split a hypothetical new investment. Read-only
+             guidance, not something that logs transactions itself. -->
+        <div class="card" id="investNewMoneyCard" style="margin-bottom:12px">
+          <button class="card-toggle-head" id="investNewMoneyToggle" aria-expanded="false">
+            <div class="card-toggle-head-text">
+              <div class="sec-head" style="margin-bottom:4px">Invest New Money</div>
+              <div style="font-size:10px;color:var(--dim)">Where a new investment should go, based on your ideal equity split</div>
+            </div>
+            <span class="card-toggle-chevron">▾</span>
+          </button>
+          <div class="card-toggle-body" id="investNewMoneyCollBody">
+            <div class="card-toggle-body-inner">
+              <!-- The amount input is static markup with its own one-time
+                   listener (wired in main.js), same pattern as Forecast's
+                   #fcCompareExtra — so retyping it survives an unrelated
+                   re-render of this card; only #investNewMoneyBreakdown
+                   gets rebuilt each render. Not persisted to state. -->
+              <label class="flabel" for="investNewMoneyAmt">How much are you about to invest?</label>
+              <div class="ibox"><span class="pfx">&#8377;</span>
+                <input class="num" id="investNewMoneyAmt" type="number" min="0" placeholder="0" inputmode="numeric" />
+              </div>
+              <div id="investNewMoneyBreakdown"></div>
             </div>
           </div>
         </div>
