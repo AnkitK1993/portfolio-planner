@@ -121,6 +121,18 @@ export function changeFrom(pastVal, currentVal) {
             return { delta, pct };
           }
 
+// Months to reach `target` from `current`, compounding at a fixed monthly
+// rate — the same formula independently duplicated by Net Worth's next-
+// milestone ETA (renderNwMilestone, features/networth/index.js) and
+// Financial Goals' per-goal ETA (renderFireProgress, features/summary/
+// index.js) before this extraction. This is the bare formula, not a
+// validated API — callers are responsible for their own guards (target
+// actually greater than current, rate actually positive, etc.) before
+// calling it, same as both call sites already did beforehand.
+export function monthsToReach(target, current, monthlyRate) {
+            return Math.log(target / current) / Math.log(1 + monthlyRate);
+          }
+
 export function buildCurrentSnapshot(networth, liqFunds, eqFunds, liquid, equity) {
             const cur = { mf: mfTotalValue(liqFunds, eqFunds, liquid, equity), total: nwTotal(networth, liqFunds, eqFunds, liquid, equity) };
             NW_FIELDS.forEach((f) => { cur[f.id] = networth[f.id] || 0; });

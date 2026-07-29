@@ -3,7 +3,10 @@ import { EQ_FUNDS, LIQ_FUNDS, editMode, fundName, normalizeSnap, saveState, stat
 import { UI } from "../../core/ui.js";
 import { open as openModal } from "../../core/modal.js";
 import { _animOnRender, _animRaf, animateNumber, animateWidth } from "../../core/animate.js";
-import { avgMonthlyGrowthRate, nwTotal } from "../../domain/networth.js";
+import { arcPath } from "../../core/arcGauge.js";
+import { renderItemList } from "../../core/itemList.js";
+import { renderTrendChart } from "../../core/trendChart.js";
+import { avgMonthlyGrowthRate, monthsToReach, nwTotal } from "../../domain/networth.js";
 import { cachedPortfolioXirr, fundXirr, rollingPortfolioXirr } from "../../domain/xirr.js";
 import { el } from "../../core/dom.js";
 import { estimateCapitalGainsTax, LTCG_EXEMPTION } from "../../domain/tax.js";
@@ -33,8 +36,10 @@ export function renderSummaryExtras(eqCur, liqCur, totCur, eqTgt, liqTgt, totTgt
 
             /* — Fund performance table — */
             renderFundTable();
-            /* — XIRR + heatmap — */
-            renderXirrAndHeatmap();
+            /* — Portfolio XIRR, Investment Streak, Returns Heatmap — */
+            renderPortfolioXirr();
+            renderInvestmentStreak();
+            renderReturnsHeatmap();
             /* — Allocation bars — */
             renderAllocBars();
             /* — Portfolio composition donut — */
@@ -133,11 +138,12 @@ function portfolioXirrSummary() {
             return cachedPortfolioXirr(allTxns, totalVal);
           }
 
-export function renderFundTable() {
-            const wrap = el("sumFundTable");
-            if (!wrap) return;
-
-            const rows = [...LIQ_FUNDS.map(f => ({ f, isLiq: true })), ...EQ_FUNDS.map(f => ({ f, isLiq: false }))]
+// Pure calc: per-fund performance rows (liquid + equity) — split out from
+// renderFundTable() the same way computeHealthScore() was split out from
+// renderHealthScore() above, so the row-building logic is independently
+// testable rather than re-derived as part of a template-building function.
+function computeFundRows() {
+            return [...LIQ_FUNDS.map(f => ({ f, isLiq: true })), ...EQ_FUNDS.map(f => ({ f, isLiq: false }))]
               .map(({ f, isLiq }) => {
                 const s = isLiq ? state.liquid[f.id] : state.equity[f.id];
                 const invested = s.paid || 0;
@@ -160,6 +166,46 @@ export function renderFundTable() {
                 };
               })
               .filter(r => r.invested > 0 || r.current > 0);
+          }
+
+// Pure calc: equity-only category rollup (Large/Flexi/Mid Cap, etc.) — only
+// meaningful once there's more than one category to compare, so callers
+// check catRows.length >= 2 before showing it. XIRR per category isn't a
+// simple average of its funds' XIRRs — it's recomputed from that
+// category's own pooled cash flows via cachedPortfolioXirr, same as the
+// Portfolio total row does across every fund.
+function computeCategoryRollup() {
+            const catMap = {};
+            EQ_FUNDS.forEach(f => {
+              const s = state.equity[f.id];
+              const invested = s?.paid || 0;
+              const afterExp = s?.shown || 0;
+              const current = s?.currentValue || afterExp;
+              if (invested <= 0 && current <= 0) return;
+              const cat = s?.category || "Uncategorized";
+              if (!catMap[cat]) catMap[cat] = { cat, invested: 0, afterExp: 0, current: 0, fundIds: [] };
+              catMap[cat].invested += invested;
+              catMap[cat].afterExp += afterExp;
+              catMap[cat].current += current;
+              catMap[cat].fundIds.push(f.id);
+            });
+            const catOrder = c => { const i = EQ_CATEGORIES.indexOf(c); return i === -1 ? 999 : i; };
+            return Object.values(catMap)
+              .map(c => {
+                const returns = c.afterExp > 0 ? c.current - c.afterExp : null;
+                const returnsPct = c.afterExp > 0 ? pct(returns, c.afterExp) : null;
+                const catTxns = (state.transactions || []).filter(t => c.fundIds.includes(t.fundId) && t.date && Number(t.afterExpense ?? t.invested) > 0);
+                const xirr = (catTxns.length && c.current > 0) ? cachedPortfolioXirr(catTxns, c.current) : null;
+                return { ...c, returns, returnsPct, xirr };
+              })
+              .sort((a, b) => catOrder(a.cat) - catOrder(b.cat));
+          }
+
+function renderFundTable() {
+            const wrap = el("sumFundTable");
+            if (!wrap) return;
+
+            const rows = computeFundRows();
 
             if (!rows.length) {
               wrap.innerHTML = UI.emptyState("📊", "No fund data yet", "Add transactions and current values to see performance here.");
@@ -223,37 +269,11 @@ export function renderFundTable() {
               </div>`;
             }
 
-            // --- By Category (equity funds only — liquid funds have no
-            // category) --- only worth showing once there's more than one
+            // By Category (equity funds only — liquid funds have no
+            // category) — only worth showing once there's more than one
             // category to actually compare; a single category duplicates
-            // the Portfolio total row above. XIRR per category isn't a
-            // simple average of its funds' XIRRs — it's recomputed from
-            // that category's own pooled cash flows via cachedPortfolioXirr,
-            // same as the Portfolio total row does across every fund. ---
-            const catMap = {};
-            EQ_FUNDS.forEach(f => {
-              const s = state.equity[f.id];
-              const invested = s?.paid || 0;
-              const afterExp = s?.shown || 0;
-              const current = s?.currentValue || afterExp;
-              if (invested <= 0 && current <= 0) return;
-              const cat = s?.category || "Uncategorized";
-              if (!catMap[cat]) catMap[cat] = { cat, invested: 0, afterExp: 0, current: 0, fundIds: [] };
-              catMap[cat].invested += invested;
-              catMap[cat].afterExp += afterExp;
-              catMap[cat].current += current;
-              catMap[cat].fundIds.push(f.id);
-            });
-            const catOrder = c => { const i = EQ_CATEGORIES.indexOf(c); return i === -1 ? 999 : i; };
-            const catRows = Object.values(catMap)
-              .map(c => {
-                const returns = c.afterExp > 0 ? c.current - c.afterExp : null;
-                const returnsPct = c.afterExp > 0 ? pct(returns, c.afterExp) : null;
-                const catTxns = (state.transactions || []).filter(t => c.fundIds.includes(t.fundId) && t.date && Number(t.afterExpense ?? t.invested) > 0);
-                const xirr = (catTxns.length && c.current > 0) ? cachedPortfolioXirr(catTxns, c.current) : null;
-                return { ...c, returns, returnsPct, xirr };
-              })
-              .sort((a, b) => catOrder(a.cat) - catOrder(b.cat));
+            // the Portfolio total row above.
+            const catRows = computeCategoryRollup();
 
             const catRowsHtml = catRows.length >= 2 ? `
               <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line);">
@@ -390,7 +410,7 @@ export function computeHealthScore() {
             return { cScore, cNote, aScore, aNote, bScore, bNote, rScore, rNote, total, grade, gc };
           }
 
-export function renderHealthScore() {
+function renderHealthScore() {
             const card = el("sumHealthCard");
             const wrap = el("sumHealthScore");
             if (!wrap) return;
@@ -399,18 +419,9 @@ export function renderHealthScore() {
 
             // SVG arc gauge (225° start → sweeps clockwise 270° at 100%)
             const CX = 50, CY = 50, R = 36;
-            function gPolar(deg) {
-              const rad = (deg - 90) * Math.PI / 180;
-              return { x: (CX + R * Math.cos(rad)).toFixed(1), y: (CY + R * Math.sin(rad)).toFixed(1) };
-            }
-            function gArc(startDeg, sweepDeg) {
-              const endDeg = startDeg + sweepDeg;
-              const s = gPolar(startDeg), e = gPolar(endDeg);
-              return `M ${s.x} ${s.y} A ${R} ${R} 0 ${sweepDeg > 180 ? 1 : 0} 1 ${e.x} ${e.y}`;
-            }
-            const bgPath = gArc(225, 270);
+            const bgPath = arcPath(CX, CY, R, 225, 270);
             const fgSweep = Math.max(0, 270 * total / 100);
-            const fgPath  = fgSweep > 1 ? gArc(225, fgSweep) : null;
+            const fgPath  = fgSweep > 1 ? arcPath(CX, CY, R, 225, fgSweep) : null;
             const fgArcLen = R * fgSweep * Math.PI / 180;
 
             const dims = [
@@ -522,38 +533,16 @@ export function renderHealthScore() {
    like the XIRR trend) so a same-size move always reads as the same size
    move, regardless of how tightly the score has clustered recently. */
 function renderHealthTrend() {
-            const svg  = el("sumHealthTrend");
-            const hint = el("sumHealthTrendHint");
-            if (!svg) return;
-
             const snaps = state.networth.snapshots || {};
             const points = Object.entries(snaps)
               .map(([key, v]) => ({ key, score: v.healthScore }))
               .filter(p => typeof p.score === "number")
               .sort((a, b) => a.key.localeCompare(b.key));
 
-            if (points.length < 3) {
-              svg.style.display = "none";
-              if (hint) hint.style.display = "";
-              return;
-            }
-            svg.style.display = "";
-            if (hint) hint.style.display = "none";
-
-            const vals = points.map(p => p.score);
-            const W = 300, H = 44, P = 4;
-            const n = vals.length;
-            const toX = i => P + (i / (n - 1)) * (W - P * 2);
-            const toY = v => H - P - (v / 100) * (H - P * 2);
-
-            const lineStr = vals.map((v, i) => `${i === 0 ? "M" : "L"}${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(" ");
-            const last = vals[n - 1];
-            const lastColor = last >= 80 ? "var(--mint)" : last >= 60 ? "var(--mint-soft)" : last >= 40 ? "var(--amber)" : "var(--coral)";
-
-            svg.innerHTML = `
-              <path d="${lineStr}" fill="none" stroke="${lastColor}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
-              <circle cx="${toX(n - 1).toFixed(1)}" cy="${toY(last).toFixed(1)}" r="2.5" fill="${lastColor}"/>
-            `;
+            renderTrendChart(el("sumHealthTrend"), el("sumHealthTrendHint"), points.map(p => p.score), {
+              yDomain: [0, 100],
+              colorFor: last => last >= 80 ? "var(--mint)" : last >= 60 ? "var(--mint-soft)" : last >= 40 ? "var(--amber)" : "var(--coral)",
+            });
           }
 
 // Expense Trends section state — view-only UI preferences (which period to
@@ -602,37 +591,6 @@ function renderExpenses() {
             const collapsedTotalEl = el("expCollapsedTotal");
             if (collapsedTotalEl) collapsedTotalEl.textContent = fmt(total);
 
-            // In view mode, the amount renders as plain formatted text
-            // (fmt() gives "₹1,00,000") rather than a number input — native
-            // <input type="number"> can't display comma grouping even when
-            // readonly, so it was showing raw digits ("100000") next to
-            // properly formatted totals elsewhere on the card. The dot's
-            // color reflects the item's category (Rent/EMI/Utility/
-            // Insurance/Subscription/Other) rather than just cycling a
-            // palette by position, so it carries real meaning at a glance.
-            const rows = items.map((item) => {
-              const cat = normalizeExpenseCategory(item.category);
-              const startLabel = item.startDate ? fmtMonth(item.startDate.slice(0, 7)) : "";
-              return `
-              <div class="exp-row">
-                <span class="exp-dot" style="background:${cat.color}" title="${cat.label}"></span>
-                <div class="exp-name-col">
-                  <input class="exp-name-inp" data-id="${item.id}" value="${item.name || ""}" placeholder="Expense name" ${editMode ? "" : "readonly"}/>
-                  <div class="exp-meta-row">
-                    ${editMode
-                      ? `<select class="exp-cat-sel" data-id="${item.id}">${EXPENSE_CATEGORIES.map(c => `<option value="${c.key}"${c.key === cat.key ? " selected" : ""}>${c.label}</option>`).join("")}</select>
-                         <input type="date" class="exp-date-inp" data-id="${item.id}" value="${item.startDate || ""}" title="Start date — this expense won't count toward months before this"/>`
-                      : `<span class="exp-cat-tag" style="color:${cat.color}">${cat.label}</span>
-                         ${startLabel ? `<span class="exp-date-tag" title="Doesn't count before ${startLabel}">from ${startLabel}</span>` : ""}`}
-                  </div>
-                </div>
-                ${editMode
-                  ? `<input type="number" class="exp-amt-inp" data-id="${item.id}" min="0" step="100" value="${item.amount || ""}" placeholder="0"/>`
-                  : `<span class="exp-amt-txt">${fmt(item.amount || 0)}</span>`}
-                <button class="exp-del-btn" data-id="${item.id}" style="visibility:${editMode ? "visible" : "hidden"}">✕</button>
-              </div>`;
-            }).join("");
-
             const catBreakdown = fixedExpensesByCategory(items);
             const catBreakdownHtml = catBreakdown.length > 1
               ? `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;">
@@ -641,10 +599,6 @@ function renderExpenses() {
                   </span>`).join("")}
                 </div>`
               : "";
-
-            const emptyHtml = `<div class="exp-empty">
-              ${editMode ? `No fixed expenses yet — use "+ Add Fixed Expense" below.` : `No fixed expenses added. Tap Edit to add rent, EMIs, subscriptions, etc.`}
-            </div>`;
 
             // Fixed items + SIPs are both a BREAKDOWN of the bank drop
             // (SIPs auto-debit from the same account) — used only to work
@@ -695,9 +649,14 @@ function renderExpenses() {
                   Save a Net Worth snapshot to start tracking bank spending automatically &mdash; until then, Total This Month is just your Fixed Total.
                 </div>`;
 
+            // wrap (unlike its children) is the same persistent DOM node
+            // across every render — capturing focus against it, before
+            // this function smashes its own innerHTML below, is what
+            // lets renderItemList() restore focus correctly afterward.
+            const hadFocusInside = wrap.contains(document.activeElement);
+
             wrap.innerHTML = `
-              <div>${rows || emptyHtml}</div>
-              ${editMode ? `<button class="btn btn-ghost exp-add-btn" id="expAddBtn">+ Add Fixed Expense</button>` : ""}
+              <div class="expenses-list-wrap"></div>
               <div class="exp-stat-grid">
                 <div class="exp-stat-card"><div class="lbl">Fixed Total</div><div class="val">${fmt(fixed)}</div></div>
                 <div class="exp-stat-card"><div class="lbl">Monthly SIP</div><div class="val">${fmt(sip)}</div></div>
@@ -726,6 +685,66 @@ function renderExpenses() {
                 Emergency fund: <b style="color:${bufMonths >= 6 ? "var(--mint)" : bufMonths >= 3 ? "var(--amber)" : "var(--coral)"};font-family:'Roboto Mono',monospace">${bufMonths.toFixed(1)} months</b> of expenses covered
                 (<span style="color:var(--txt)">${fmt(totalLiqFree)}</span> deployable liquid ÷ <span style="color:var(--txt)">${fmt(total)}</span>/mo)
               </div>` : ""}`;
+
+            // In view mode, the amount renders as plain formatted text
+            // (fmt() gives "₹1,00,000") rather than a number input — native
+            // <input type="number"> can't display comma grouping even when
+            // readonly, so it was showing raw digits ("100000") next to
+            // properly formatted totals elsewhere on the card. The dot's
+            // color reflects the item's category (Rent/EMI/Utility/
+            // Insurance/Subscription/Other) rather than just cycling a
+            // palette by position, so it carries real meaning at a glance.
+            // The delete button is always rendered (never omitted) — the
+            // row is a 4-column CSS grid (dot / name / amount / delete),
+            // and omitting the 4th cell entirely in view mode would shift
+            // the amount into its column; only its own data-role (which
+            // is what makes it clickable) is conditional on edit mode.
+            renderItemList(wrap.querySelector(".expenses-list-wrap"), {
+              items,
+              editMode,
+              addLabel: "+ Add Fixed Expense",
+              addBtnClass: "exp-add-btn",
+              hadFocusInside,
+              emptyEditText: `No fixed expenses yet — use "+ Add Fixed Expense" below.`,
+              emptyViewText: `No fixed expenses added. Tap Edit to add rent, EMIs, subscriptions, etc.`,
+              renderRow: (item, editMode) => {
+                const cat = normalizeExpenseCategory(item.category);
+                const startLabel = item.startDate ? fmtMonth(item.startDate.slice(0, 7)) : "";
+                return `
+                <li class="exp-row">
+                  <span class="exp-dot" style="background:${cat.color}" title="${cat.label}"></span>
+                  <div class="exp-name-col">
+                    <input class="exp-name-inp" data-id="${item.id}" value="${item.name || ""}" placeholder="Expense name" ${editMode ? "" : "readonly"}/>
+                    <div class="exp-meta-row">
+                      ${editMode
+                        ? `<select class="exp-cat-sel" data-id="${item.id}">${EXPENSE_CATEGORIES.map(c => `<option value="${c.key}"${c.key === cat.key ? " selected" : ""}>${c.label}</option>`).join("")}</select>
+                           <input type="date" class="exp-date-inp" data-id="${item.id}" value="${item.startDate || ""}" title="Start date — this expense won't count toward months before this"/>`
+                        : `<span class="exp-cat-tag" style="color:${cat.color}">${cat.label}</span>
+                           ${startLabel ? `<span class="exp-date-tag" title="Doesn't count before ${startLabel}">from ${startLabel}</span>` : ""}`}
+                    </div>
+                  </div>
+                  ${editMode
+                    ? `<input type="number" class="exp-amt-inp" data-id="${item.id}" min="0" step="100" value="${item.amount || ""}" placeholder="0"/>`
+                    : `<span class="exp-amt-txt">${fmt(item.amount || 0)}</span>`}
+                  <button class="exp-del-btn" ${editMode ? `data-role="delete-item"` : ""} data-id="${item.id}" aria-label="Delete ${item.name || "expense"}" style="visibility:${editMode ? "visible" : "hidden"}">✕</button>
+                </li>`;
+              },
+              onAdd: () => {
+                if (!state.surplus.fixedExpenses) state.surplus.fixedExpenses = [];
+                state.surplus.fixedExpenses.push({ id: "exp_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6), name: "", amount: 0 });
+                saveState();
+                renderExpenses();
+                renderExpenseTrends();
+              },
+              onDelete: (id) => {
+                state.surplus.fixedExpenses = items.filter(i => i.id !== id);
+                saveState();
+                renderExpenses();
+                renderExpenseTrends();
+                renderHealthScore();
+                renderFireProgress();
+              },
+            });
 
             if (_animOnRender && !editMode)
               wrap.querySelectorAll(".alloc-seg-bar").forEach(bar => animateWidth(bar, 100, 800));
@@ -771,27 +790,6 @@ function renderExpenses() {
                 renderFireProgress();
               });
             });
-            wrap.querySelectorAll(".exp-del-btn").forEach(btn => {
-              btn.addEventListener("click", () => {
-                if (!editMode) return;
-                state.surplus.fixedExpenses = items.filter(i => i.id !== btn.dataset.id);
-                saveState();
-                renderExpenses();
-                renderExpenseTrends();
-                renderHealthScore();
-                renderFireProgress();
-              });
-            });
-            const addBtn = el("expAddBtn");
-            if (addBtn) {
-              addBtn.addEventListener("click", () => {
-                if (!state.surplus.fixedExpenses) state.surplus.fixedExpenses = [];
-                state.surplus.fixedExpenses.push({ id: "exp_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6), name: "", amount: 0 });
-                saveState();
-                renderExpenses();
-                renderExpenseTrends();
-              });
-            }
           }
 
 /* Expense Trends — split out of renderExpenses() into its own card: average/
@@ -977,7 +975,7 @@ function renderFireProgress() {
               if (target <= 0) return `<span style="color:var(--dim)">Set a target amount below.</span>`;
               if (cur >= target) return `<span style="color:var(--mint);font-weight:600;">Reached 🎉</span>`;
               if (sorted.length < 2 || r <= 0) return `<span style="color:var(--dim)">Add more monthly Net Worth snapshots to project a timeline.</span>`;
-              const monthsAway = Math.log(target / cur) / Math.log(1 + r);
+              const monthsAway = monthsToReach(target, cur, r);
               const yrsAway = monthsAway / 12;
               const etaDate = new Date();
               etaDate.setMonth(etaDate.getMonth() + Math.round(monthsAway));
@@ -988,46 +986,63 @@ function renderFireProgress() {
             const previewEl = el("sumFirePreview");
             if (previewEl) previewEl.textContent = goals.length ? `${goals.length} goal${goals.length !== 1 ? "s" : ""}` : "";
 
-            const rows = goals.map(g => {
-              const target = g.amount || 0;
-              const progressPct = target > 0 ? Math.min(100, (cur / target) * 100) : 0;
-              return `
-                <div style="padding:12px 0;border-bottom:1px solid var(--line);">
-                  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:7px;">
-                    ${editMode
-                      ? `<input class="goal-name-inp" data-id="${g.id}" value="${g.name || ""}" placeholder="Goal name"
-                          style="flex:1;min-width:0;background:var(--input-bg,rgba(255,255,255,0.06));border:1px solid var(--line);border-radius:5px;color:var(--txt);font-size:12px;padding:5px 8px;"/>`
-                      : `<span style="font-size:12.5px;color:var(--txt);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${g.name || "Goal"}</span>`}
-                    <span style="font-family:'Roboto Mono',monospace;font-size:14px;font-weight:700;color:var(--mint);flex-shrink:0;">${target > 0 ? progressPct.toFixed(1) + "%" : "—"}</span>
-                    ${editMode ? `<button class="goal-del-btn" data-id="${g.id}" style="background:none;border:none;color:var(--coral);cursor:pointer;font-size:13px;padding:2px 4px;flex-shrink:0;">✕</button>` : ""}
-                  </div>
-                  <div style="height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden;margin-bottom:7px;">
-                    <div class="fire-bar" data-w="${progressPct.toFixed(1)}" style="height:100%;width:0%;background:linear-gradient(90deg,var(--liq),var(--mint));border-radius:4px;"></div>
-                  </div>
-                  <div style="font-size:10.5px;color:var(--dim);line-height:1.5;">
-                    ${target > 0 ? `${fmt(cur)} of ${fmt(target)} — ` : ""}${etaFor(target)}
-                  </div>
-                  ${editMode ? `
-                  <div style="margin-top:8px;display:flex;align-items:center;gap:6px;">
-                    <span style="font-size:11px;color:var(--dim)">₹</span>
-                    <input type="number" class="goal-amt-inp" data-id="${g.id}" min="0" step="10000" value="${g.amount || ""}" placeholder="Target amount"
-                      style="flex:1;background:var(--input-bg,rgba(255,255,255,0.06));border:1px solid var(--line);border-radius:5px;color:var(--txt);
-                             font-family:'Roboto Mono',monospace;font-size:11px;padding:4px 7px;"/>
-                  </div>` : ""}
-                </div>`;
-            }).join("");
-
-            const emptyHtml = `<div style="font-size:11px;color:var(--dim);padding:8px 0;">
-              ${editMode ? `No goals yet — use "+ Add Goal" below.` : `No goals added. Tap Edit to add one.`}
-            </div>`;
+            // wrap is the same persistent DOM node across every render —
+            // capture focus against it before smashing its innerHTML below,
+            // so renderItemList() can restore focus correctly afterward.
+            const hadFocusInside = wrap.contains(document.activeElement);
 
             wrap.innerHTML = `
               <div style="font-size:10.5px;color:var(--dim);margin-bottom:10px;">Current Net Worth: <b style="color:var(--txt)">${fmt(cur)}</b></div>
-              <div>${rows || emptyHtml}</div>
-              ${editMode ? `
-              <button class="btn btn-ghost goal-add-btn" id="goalAddBtn">+ Add Goal</button>
-              <div style="font-size:9px;color:var(--dim);opacity:0.8;margin-top:8px;">Suggested (25&times; annual expenses, the 4% withdrawal rule): ${fmt(suggestedTarget)}</div>
-              ` : ""}`;
+              <div class="goals-list-wrap"></div>
+              ${editMode ? `<div style="font-size:9px;color:var(--dim);opacity:0.8;margin-top:8px;">Suggested (25&times; annual expenses, the 4% withdrawal rule): ${fmt(suggestedTarget)}</div>` : ""}`;
+
+            renderItemList(wrap.querySelector(".goals-list-wrap"), {
+              items: goals,
+              editMode,
+              addLabel: "+ Add Goal",
+              emptyEditText: `No goals yet — use "+ Add Goal" below.`,
+              emptyViewText: `No goals added. Tap Edit to add one.`,
+              hadFocusInside,
+              renderRow: (g, editMode) => {
+                const target = g.amount || 0;
+                const progressPct = target > 0 ? Math.min(100, (cur / target) * 100) : 0;
+                return `
+                  <li style="padding:12px 0;border-bottom:1px solid var(--line);">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:7px;">
+                      ${editMode
+                        ? `<input class="goal-name-inp" data-id="${g.id}" value="${g.name || ""}" placeholder="Goal name"
+                            style="flex:1;min-width:0;background:var(--input-bg,rgba(255,255,255,0.06));border:1px solid var(--line);border-radius:5px;color:var(--txt);font-size:12px;padding:5px 8px;"/>`
+                        : `<span style="font-size:12.5px;color:var(--txt);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${g.name || "Goal"}</span>`}
+                      <span style="font-family:'Roboto Mono',monospace;font-size:14px;font-weight:700;color:var(--mint);flex-shrink:0;">${target > 0 ? progressPct.toFixed(1) + "%" : "—"}</span>
+                      ${editMode ? `<button type="button" data-role="delete-item" data-id="${g.id}" aria-label="Delete ${g.name || "goal"}" style="background:none;border:none;color:var(--coral);cursor:pointer;font-size:13px;padding:2px 4px;flex-shrink:0;">✕</button>` : ""}
+                    </div>
+                    <div style="height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden;margin-bottom:7px;">
+                      <div class="fire-bar" data-w="${progressPct.toFixed(1)}" style="height:100%;width:0%;background:linear-gradient(90deg,var(--liq),var(--mint));border-radius:4px;"></div>
+                    </div>
+                    <div style="font-size:10.5px;color:var(--dim);line-height:1.5;">
+                      ${target > 0 ? `${fmt(cur)} of ${fmt(target)} — ` : ""}${etaFor(target)}
+                    </div>
+                    ${editMode ? `
+                    <div style="margin-top:8px;display:flex;align-items:center;gap:6px;">
+                      <span style="font-size:11px;color:var(--dim)">₹</span>
+                      <input type="number" class="goal-amt-inp" data-id="${g.id}" min="0" step="10000" value="${g.amount || ""}" placeholder="Target amount"
+                        style="flex:1;background:var(--input-bg,rgba(255,255,255,0.06));border:1px solid var(--line);border-radius:5px;color:var(--txt);
+                               font-family:'Roboto Mono',monospace;font-size:11px;padding:4px 7px;"/>
+                    </div>` : ""}
+                  </li>`;
+              },
+              onAdd: () => {
+                if (!state.surplus.goals) state.surplus.goals = [];
+                state.surplus.goals.push({ id: "goal_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6), name: "", amount: 0 });
+                saveState();
+                renderFireProgress();
+              },
+              onDelete: (id) => {
+                state.surplus.goals = goals.filter(g => g.id !== id);
+                saveState();
+                renderFireProgress();
+              },
+            });
 
             wrap.querySelectorAll(".fire-bar").forEach(bar => {
               const w = parseFloat(bar.dataset.w) || 0;
@@ -1050,22 +1065,6 @@ function renderFireProgress() {
                 renderFireProgress();
               });
             });
-            wrap.querySelectorAll(".goal-del-btn").forEach(btn => {
-              btn.addEventListener("click", () => {
-                state.surplus.goals = goals.filter(g => g.id !== btn.dataset.id);
-                saveState();
-                renderFireProgress();
-              });
-            });
-            const addBtn = el("goalAddBtn");
-            if (addBtn) {
-              addBtn.addEventListener("click", () => {
-                if (!state.surplus.goals) state.surplus.goals = [];
-                state.surplus.goals.push({ id: "goal_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6), name: "", amount: 0 });
-                saveState();
-                renderFireProgress();
-              });
-            }
           }
 
 /* Loans / EMIs — a standalone tracker for loan balances and monthly EMI
@@ -1094,43 +1093,13 @@ function renderLoans() {
 
             const fieldStyle = "width:100%;background:var(--input-bg,rgba(255,255,255,0.06));border:1px solid var(--line);border-radius:5px;color:var(--txt);font-family:'Roboto Mono',monospace;font-size:11px;text-align:right;padding:5px 6px;";
 
-            const rows = loans.map(l => `
-              <div style="padding:10px 0;border-bottom:1px solid var(--line);">
-                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;">
-                  ${editMode
-                    ? `<input class="loan-name-inp" data-id="${l.id}" value="${l.name || ""}" placeholder="Loan name" style="flex:1;min-width:0;background:var(--input-bg,rgba(255,255,255,0.06));border:1px solid var(--line);border-radius:5px;color:var(--txt);font-size:12px;padding:5px 8px;"/>`
-                    : `<span style="font-size:12.5px;color:var(--txt);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${l.name || "Loan"}</span>`}
-                  ${editMode ? `<button class="loan-del-btn" data-id="${l.id}" style="background:none;border:none;color:var(--coral);cursor:pointer;font-size:13px;padding:2px 4px;flex-shrink:0;">✕</button>` : ""}
-                </div>
-                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
-                  <div>
-                    <div style="font-size:9px;color:var(--dim);margin-bottom:3px;">Outstanding</div>
-                    ${editMode
-                      ? `<div class="ibox"><span class="pfx">₹</span><input type="number" class="loan-outstanding-inp" data-id="${l.id}" min="0" step="1000" value="${l.outstanding || ""}" placeholder="0" style="${fieldStyle}"/></div>`
-                      : `<div style="font-family:'Roboto Mono',monospace;font-size:12px;color:var(--txt);">${fmt(l.outstanding || 0)}</div>`}
-                  </div>
-                  <div>
-                    <div style="font-size:9px;color:var(--dim);margin-bottom:3px;">Monthly EMI</div>
-                    ${editMode
-                      ? `<div class="ibox"><span class="pfx">₹</span><input type="number" class="loan-emi-inp" data-id="${l.id}" min="0" step="500" value="${l.emi || ""}" placeholder="0" style="${fieldStyle}"/></div>`
-                      : `<div style="font-family:'Roboto Mono',monospace;font-size:12px;color:var(--txt);">${fmt(l.emi || 0)}</div>`}
-                  </div>
-                  <div>
-                    <div style="font-size:9px;color:var(--dim);margin-bottom:3px;">Rate</div>
-                    ${editMode
-                      ? `<input type="number" class="loan-rate-inp" data-id="${l.id}" min="0" max="50" step="0.1" value="${l.rate || ""}" placeholder="0" style="${fieldStyle}"/>`
-                      : `<div style="font-family:'Roboto Mono',monospace;font-size:12px;color:var(--txt);">${l.rate ? l.rate + "%" : "—"}</div>`}
-                  </div>
-                </div>
-              </div>`).join("");
-
-            const emptyHtml = `<div style="font-size:11px;color:var(--dim);padding:8px 0;">
-              ${editMode ? `No loans yet — use "+ Add Loan" below.` : `No loans added.`}
-            </div>`;
+            // wrap is the same persistent DOM node across every render —
+            // capture focus against it before smashing its innerHTML below,
+            // so renderItemList() can restore focus correctly afterward.
+            const hadFocusInside = wrap.contains(document.activeElement);
 
             wrap.innerHTML = `
-              <div>${rows || emptyHtml}</div>
-              ${editMode ? `<button class="btn btn-ghost loan-add-btn" id="loanAddBtn">+ Add Loan</button>` : ""}
+              <div class="loans-list-wrap"></div>
               ${loans.length ? `
               <div class="exp-stat-grid" style="margin-top:14px;">
                 <div class="exp-stat-card"><div class="lbl">Total Outstanding</div><div class="val">${fmt(totalOutstanding)}</div></div>
@@ -1138,6 +1107,55 @@ function renderLoans() {
               </div>
               <div style="font-size:9px;color:var(--dim);opacity:0.8;margin-top:10px;">Tracked for reference only — not subtracted from Net Worth or any other total in this app.</div>
               ` : ""}`;
+
+            renderItemList(wrap.querySelector(".loans-list-wrap"), {
+              items: loans,
+              editMode,
+              addLabel: "+ Add Loan",
+              hadFocusInside,
+              emptyEditText: `No loans yet — use "+ Add Loan" below.`,
+              emptyViewText: `No loans added.`,
+              renderRow: (l, editMode) => `
+                <li style="padding:10px 0;border-bottom:1px solid var(--line);">
+                  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;">
+                    ${editMode
+                      ? `<input class="loan-name-inp" data-id="${l.id}" value="${l.name || ""}" placeholder="Loan name" style="flex:1;min-width:0;background:var(--input-bg,rgba(255,255,255,0.06));border:1px solid var(--line);border-radius:5px;color:var(--txt);font-size:12px;padding:5px 8px;"/>`
+                      : `<span style="font-size:12.5px;color:var(--txt);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${l.name || "Loan"}</span>`}
+                    ${editMode ? `<button type="button" data-role="delete-item" data-id="${l.id}" aria-label="Delete ${l.name || "loan"}" style="background:none;border:none;color:var(--coral);cursor:pointer;font-size:13px;padding:2px 4px;flex-shrink:0;">✕</button>` : ""}
+                  </div>
+                  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+                    <div>
+                      <div style="font-size:9px;color:var(--dim);margin-bottom:3px;">Outstanding</div>
+                      ${editMode
+                        ? `<div class="ibox"><span class="pfx">₹</span><input type="number" class="loan-outstanding-inp" data-id="${l.id}" min="0" step="1000" value="${l.outstanding || ""}" placeholder="0" style="${fieldStyle}"/></div>`
+                        : `<div style="font-family:'Roboto Mono',monospace;font-size:12px;color:var(--txt);">${fmt(l.outstanding || 0)}</div>`}
+                    </div>
+                    <div>
+                      <div style="font-size:9px;color:var(--dim);margin-bottom:3px;">Monthly EMI</div>
+                      ${editMode
+                        ? `<div class="ibox"><span class="pfx">₹</span><input type="number" class="loan-emi-inp" data-id="${l.id}" min="0" step="500" value="${l.emi || ""}" placeholder="0" style="${fieldStyle}"/></div>`
+                        : `<div style="font-family:'Roboto Mono',monospace;font-size:12px;color:var(--txt);">${fmt(l.emi || 0)}</div>`}
+                    </div>
+                    <div>
+                      <div style="font-size:9px;color:var(--dim);margin-bottom:3px;">Rate</div>
+                      ${editMode
+                        ? `<input type="number" class="loan-rate-inp" data-id="${l.id}" min="0" max="50" step="0.1" value="${l.rate || ""}" placeholder="0" style="${fieldStyle}"/>`
+                        : `<div style="font-family:'Roboto Mono',monospace;font-size:12px;color:var(--txt);">${l.rate ? l.rate + "%" : "—"}</div>`}
+                    </div>
+                  </div>
+                </li>`,
+              onAdd: () => {
+                if (!state.loans) state.loans = [];
+                state.loans.push({ id: "loan_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6), name: "", outstanding: 0, emi: 0, rate: 0 });
+                saveState();
+                renderLoans();
+              },
+              onDelete: (id) => {
+                state.loans = loans.filter(l => l.id !== id);
+                saveState();
+                renderLoans();
+              },
+            });
 
             wrap.querySelectorAll(".loan-name-inp").forEach(inp => {
               inp.addEventListener("change", e => {
@@ -1171,22 +1189,6 @@ function renderLoans() {
                 saveState();
               });
             });
-            wrap.querySelectorAll(".loan-del-btn").forEach(btn => {
-              btn.addEventListener("click", () => {
-                state.loans = loans.filter(l => l.id !== btn.dataset.id);
-                saveState();
-                renderLoans();
-              });
-            });
-            const addBtn = el("loanAddBtn");
-            if (addBtn) {
-              addBtn.addEventListener("click", () => {
-                if (!state.loans) state.loans = [];
-                state.loans.push({ id: "loan_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6), name: "", outstanding: 0, emi: 0, rate: 0 });
-                saveState();
-                renderLoans();
-              });
-            }
           }
 
 export function renderSparklines() {
@@ -1273,42 +1275,25 @@ function renderXirrFundList() {
    is visible at a glance. Needs 3+ snapshots with a computable XIRR to be
    worth showing as a "trend" at all. */
 function renderXirrTrend() {
-            const wrap = el("sumXirrTrendWrap");
-            const svg  = el("sumXirrTrend");
-            if (!wrap || !svg) return;
-
             const snaps = state.networth.snapshots || {};
             const sorted = Object.entries(snaps).map(([k, v]) => normalizeSnap(k, v)).sort((a, b) => a.key.localeCompare(b.key));
             const points = rollingPortfolioXirr(sorted, state.transactions).filter(p => p.xirr !== null);
 
-            if (points.length < 3) { wrap.style.display = "none"; return; }
-            wrap.style.display = "";
-
-            const vals = points.map(p => p.xirr * 100);
-            const minV = Math.min(...vals, 0), maxV = Math.max(...vals, 0);
-            const range = (maxV - minV) || 1;
-            const W = 300, H = 44, P = 4;
-            const n = vals.length;
-            const toX = i => P + (i / (n - 1)) * (W - P * 2);
-            const toY = v => H - P - ((v - minV) / range) * (H - P * 2);
-            const zeroY = toY(0).toFixed(1);
-
-            const lineStr = vals.map((v, i) => `${i === 0 ? "M" : "L"}${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(" ");
-            const last = vals[n - 1];
-            const lastColor = last >= 0 ? "var(--mint)" : "var(--coral)";
-
-            svg.innerHTML = `
-              <line x1="${P}" y1="${zeroY}" x2="${W - P}" y2="${zeroY}" stroke="var(--line)" stroke-width="1" stroke-dasharray="3,3"/>
-              <path d="${lineStr}" fill="none" stroke="${lastColor}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
-              <circle cx="${toX(n - 1).toFixed(1)}" cy="${toY(last).toFixed(1)}" r="2.5" fill="${lastColor}"/>
-            `;
+            renderTrendChart(el("sumXirrTrend"), null, points.map(p => p.xirr * 100), {
+              wrapEl: el("sumXirrTrendWrap"),
+              showZeroLine: true,
+              colorFor: last => last >= 0 ? "var(--mint)" : "var(--coral)",
+            });
           }
 
-export function renderXirrAndHeatmap() {
-            // Portfolio XIRR — collapsed state only shows the headline
-            // number; expanding reveals the per-fund breakdown (below) and
-            // the trend chart, so you don't need to jump to the Fund
-            // Performance table just to see which fund is driving it.
+// Portfolio XIRR — collapsed state only shows the headline number;
+// expanding reveals the per-fund breakdown and the trend chart, so you
+// don't need to jump to the Fund Performance table just to see which
+// fund is driving it. Split out from a single renderXirrAndHeatmap() that
+// used to also render Investment Streak and Returns Heatmap below — three
+// unrelated cards sharing nothing, now each gets its own function like
+// every other card in this file already does.
+function renderPortfolioXirr() {
             const xirrCard = el("sumXirrCard");
             const xirrEl = el("sumXirr");
             if (xirrCard && xirrEl) {
@@ -1325,123 +1310,123 @@ export function renderXirrAndHeatmap() {
             }
             renderXirrFundList();
             renderXirrTrend();
+          }
 
-            // Investment streak — collapsed state just shows the title +
-            // 🔥 count (via #sumStreakPreview); expanded adds a month-by-
-            // month invested breakdown covering the streak's own range.
+// Investment streak — collapsed state just shows the title + 🔥 count (via
+// #sumStreakPreview); expanded adds a month-by-month invested breakdown
+// covering the streak's own range.
+function renderInvestmentStreak() {
             const streakCard = el("sumStreakCard");
-            if (streakCard) {
-              const months = new Set((state.transactions || [])
-                .filter(t => t.type !== "redemption" && t.date)
-                .map(t => t.date.slice(0, 7)));
-              const now = new Date();
-              let streak = 0;
-              for (let i = 0; i < 120; i++) {
-                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-                const key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
-                if (months.has(key)) streak++;
-                else if (i > 0) break;
-              }
-              if (streak >= 2) {
-                el("sumStreakCount").textContent = streak;
-                el("sumStreakLabel").textContent = `consecutive month${streak !== 1 ? "s" : ""} investing`;
-                const streakPreview = el("sumStreakPreview");
-                if (streakPreview) streakPreview.textContent = "🔥 " + streak;
-                const rangeEl = el("sumStreakRange");
-                const fmtMo = d => d.toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
-                if (rangeEl) {
-                  const startD = new Date(now.getFullYear(), now.getMonth() - (streak - 1), 1);
-                  rangeEl.textContent = `${fmtMo(startD)} – ${fmtMo(now)}`;
-                }
-                const monthlyEl = el("sumStreakMonthly");
-                if (monthlyEl) {
-                  const rows = [];
-                  for (let i = streak - 1; i >= 0; i--) {
-                    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-                    const key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
-                    const amt = (state.transactions || [])
-                      .filter(t => t.type !== "redemption" && t.date && t.date.slice(0, 7) === key)
-                      .reduce((s, t) => s + (Number(t.afterExpense ?? t.invested) || 0), 0);
-                    rows.push({ label: fmtMo(d), amt });
-                  }
-                  monthlyEl.innerHTML = `
-                    <div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Monthly Breakdown</div>
-                    ${rows.map(r => `
-                      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);font-size:11px;">
-                        <span style="color:var(--dim)">${r.label}</span>
-                        <span style="font-family:'Roboto Mono',monospace;color:var(--txt);font-weight:600;">${fmt(r.amt)}</span>
-                      </div>`).join("")}`;
-                }
-                streakCard.style.display = "";
-              } else {
-                streakCard.style.display = "none";
-              }
+            if (!streakCard) return;
+            const months = new Set((state.transactions || [])
+              .filter(t => t.type !== "redemption" && t.date)
+              .map(t => t.date.slice(0, 7)));
+            const now = new Date();
+            let streak = 0;
+            for (let i = 0; i < 120; i++) {
+              const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+              const key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+              if (months.has(key)) streak++;
+              else if (i > 0) break;
             }
+            if (streak >= 2) {
+              el("sumStreakCount").textContent = streak;
+              el("sumStreakLabel").textContent = `consecutive month${streak !== 1 ? "s" : ""} investing`;
+              const streakPreview = el("sumStreakPreview");
+              if (streakPreview) streakPreview.textContent = "🔥 " + streak;
+              const rangeEl = el("sumStreakRange");
+              const fmtMo = d => d.toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
+              if (rangeEl) {
+                const startD = new Date(now.getFullYear(), now.getMonth() - (streak - 1), 1);
+                rangeEl.textContent = `${fmtMo(startD)} – ${fmtMo(now)}`;
+              }
+              const monthlyEl = el("sumStreakMonthly");
+              if (monthlyEl) {
+                const rows = [];
+                for (let i = streak - 1; i >= 0; i--) {
+                  const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                  const key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+                  const amt = (state.transactions || [])
+                    .filter(t => t.type !== "redemption" && t.date && t.date.slice(0, 7) === key)
+                    .reduce((s, t) => s + (Number(t.afterExpense ?? t.invested) || 0), 0);
+                  rows.push({ label: fmtMo(d), amt });
+                }
+                monthlyEl.innerHTML = `
+                  <div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Monthly Breakdown</div>
+                  ${rows.map(r => `
+                    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);font-size:11px;">
+                      <span style="color:var(--dim)">${r.label}</span>
+                      <span style="font-family:'Roboto Mono',monospace;color:var(--txt);font-weight:600;">${fmt(r.amt)}</span>
+                    </div>`).join("")}`;
+              }
+              streakCard.style.display = "";
+            } else {
+              streakCard.style.display = "none";
+            }
+          }
 
-            // Returns heatmap using networth snapshots
+// Returns heatmap using networth snapshots.
+function renderReturnsHeatmap() {
             const hmCard = el("sumHeatmapCard");
             const hmEl = el("sumHeatmap");
-            if (hmCard && hmEl) {
-              const snaps = state.networth.snapshots || {};
-              const sorted = Object.entries(snaps).map(([k, v]) => normalizeSnap(k, v)).sort((a, b) => a.key.localeCompare(b.key));
-              if (sorted.length < 2) { hmCard.style.display = "none"; }
-              else {
-                hmCard.style.display = "";
+            if (!hmCard || !hmEl) return;
+            const snaps = state.networth.snapshots || {};
+            const sorted = Object.entries(snaps).map(([k, v]) => normalizeSnap(k, v)).sort((a, b) => a.key.localeCompare(b.key));
+            if (sorted.length < 2) { hmCard.style.display = "none"; return; }
+            hmCard.style.display = "";
 
-                // Best/worst month-over-month % change, and max peak-to-trough
-                // drawdown — computed over the FULL snapshot history, unlike
-                // the heatmap grid below which only shows the last 12 months.
-                const fmtMo = key => new Date(key + "-01T00:00:00").toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
-                let bestMo = null, worstMo = null;
-                let peak = sorted[0].total, peakKey = sorted[0].key;
-                let maxDD = 0, maxDDPeakKey = null, maxDDTroughKey = null;
-                for (let i = 1; i < sorted.length; i++) {
-                  const prev = sorted[i - 1], curr = sorted[i];
-                  if (prev.total > 0) {
-                    const chPct = (curr.total - prev.total) / prev.total * 100;
-                    if (!bestMo || chPct > bestMo.pct) bestMo = { key: curr.key, pct: chPct };
-                    if (!worstMo || chPct < worstMo.pct) worstMo = { key: curr.key, pct: chPct };
-                  }
-                  if (curr.total > peak) { peak = curr.total; peakKey = curr.key; }
-                  else if (peak > 0) {
-                    const ddPct = (curr.total - peak) / peak * 100;
-                    if (ddPct < maxDD) { maxDD = ddPct; maxDDPeakKey = peakKey; maxDDTroughKey = curr.key; }
-                  }
-                }
-                const statsHtml = (bestMo || worstMo || maxDD < 0) ? `
-                  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--line);">
-                    ${bestMo ? `<div>
-                      <div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Best Month</div>
-                      <div style="font-family:'Roboto Mono',monospace;font-size:13px;font-weight:700;color:var(--mint)">+${bestMo.pct.toFixed(1)}%</div>
-                      <div style="font-size:9px;color:var(--dim)">${fmtMo(bestMo.key)}</div>
-                    </div>` : ""}
-                    ${worstMo ? `<div>
-                      <div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Worst Month</div>
-                      <div style="font-family:'Roboto Mono',monospace;font-size:13px;font-weight:700;color:${worstMo.pct < 0 ? "var(--coral)" : "var(--mint)"}">${worstMo.pct >= 0 ? "+" : ""}${worstMo.pct.toFixed(1)}%</div>
-                      <div style="font-size:9px;color:var(--dim)">${fmtMo(worstMo.key)}</div>
-                    </div>` : ""}
-                    ${maxDD < 0 ? `<div>
-                      <div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Max Drawdown</div>
-                      <div style="font-family:'Roboto Mono',monospace;font-size:13px;font-weight:700;color:var(--coral)">${maxDD.toFixed(1)}%</div>
-                      <div style="font-size:9px;color:var(--dim)">${fmtMo(maxDDPeakKey)} → ${fmtMo(maxDDTroughKey)}</div>
-                    </div>` : ""}
-                  </div>` : "";
-
-                const rows = sorted.slice(-12).map((s, i, arr) => {
-                  const prev = arr[i - 1];
-                  const delta = prev ? s.total - prev.total : null;
-                  const pct = prev && prev.total > 0 ? ((s.total - prev.total) / prev.total * 100) : null;
-                  const color = delta === null ? "transparent" : delta >= 0 ? `rgba(0,245,160,${Math.min(0.7, Math.abs(pct || 0) / 10)})` : `rgba(248,113,113,${Math.min(0.7, Math.abs(pct || 0) / 10)})`;
-                  const lbl = new Date(s.key + "-01T00:00:00").toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
-                  return `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:3px;min-width:48px;padding:6px 4px;background:${color};border-radius:6px;border:1px solid var(--line);">
-                    <div style="font-size:8px;color:var(--dim);font-family:'Roboto Mono',monospace;">${lbl}</div>
-                    <div style="font-size:10px;font-weight:700;color:${delta === null ? "var(--dim)" : delta >= 0 ? "var(--mint)" : "var(--coral)"};">${delta !== null ? (delta >= 0 ? "+" : "−") + fmt(Math.abs(delta)) : "—"}</div>
-                    <div style="font-size:8px;color:var(--dim);">${pct !== null ? (pct >= 0 ? "+" : "") + pct.toFixed(1) + "%" : ""}</div>
-                  </div>`;
-                }).join("");
-                hmEl.innerHTML = `${statsHtml}<div style="display:flex;gap:6px;flex-wrap:wrap;">${rows}</div>
-                  <div style="font-size:9px;color:var(--dim);margin-top:8px;">Darker = bigger month-over-month swing, green = gain, red = loss.</div>`;
+            // Best/worst month-over-month % change, and max peak-to-trough
+            // drawdown — computed over the FULL snapshot history, unlike
+            // the heatmap grid below which only shows the last 12 months.
+            const fmtMo = key => new Date(key + "-01T00:00:00").toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
+            let bestMo = null, worstMo = null;
+            let peak = sorted[0].total, peakKey = sorted[0].key;
+            let maxDD = 0, maxDDPeakKey = null, maxDDTroughKey = null;
+            for (let i = 1; i < sorted.length; i++) {
+              const prev = sorted[i - 1], curr = sorted[i];
+              if (prev.total > 0) {
+                const chPct = (curr.total - prev.total) / prev.total * 100;
+                if (!bestMo || chPct > bestMo.pct) bestMo = { key: curr.key, pct: chPct };
+                if (!worstMo || chPct < worstMo.pct) worstMo = { key: curr.key, pct: chPct };
+              }
+              if (curr.total > peak) { peak = curr.total; peakKey = curr.key; }
+              else if (peak > 0) {
+                const ddPct = (curr.total - peak) / peak * 100;
+                if (ddPct < maxDD) { maxDD = ddPct; maxDDPeakKey = peakKey; maxDDTroughKey = curr.key; }
               }
             }
+            const statsHtml = (bestMo || worstMo || maxDD < 0) ? `
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--line);">
+                ${bestMo ? `<div>
+                  <div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Best Month</div>
+                  <div style="font-family:'Roboto Mono',monospace;font-size:13px;font-weight:700;color:var(--mint)">+${bestMo.pct.toFixed(1)}%</div>
+                  <div style="font-size:9px;color:var(--dim)">${fmtMo(bestMo.key)}</div>
+                </div>` : ""}
+                ${worstMo ? `<div>
+                  <div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Worst Month</div>
+                  <div style="font-family:'Roboto Mono',monospace;font-size:13px;font-weight:700;color:${worstMo.pct < 0 ? "var(--coral)" : "var(--mint)"}">${worstMo.pct >= 0 ? "+" : ""}${worstMo.pct.toFixed(1)}%</div>
+                  <div style="font-size:9px;color:var(--dim)">${fmtMo(worstMo.key)}</div>
+                </div>` : ""}
+                ${maxDD < 0 ? `<div>
+                  <div style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Max Drawdown</div>
+                  <div style="font-family:'Roboto Mono',monospace;font-size:13px;font-weight:700;color:var(--coral)">${maxDD.toFixed(1)}%</div>
+                  <div style="font-size:9px;color:var(--dim)">${fmtMo(maxDDPeakKey)} → ${fmtMo(maxDDTroughKey)}</div>
+                </div>` : ""}
+              </div>` : "";
+
+            const rows = sorted.slice(-12).map((s, i, arr) => {
+              const prev = arr[i - 1];
+              const delta = prev ? s.total - prev.total : null;
+              const pct = prev && prev.total > 0 ? ((s.total - prev.total) / prev.total * 100) : null;
+              const color = delta === null ? "transparent" : delta >= 0 ? `rgba(0,245,160,${Math.min(0.7, Math.abs(pct || 0) / 10)})` : `rgba(248,113,113,${Math.min(0.7, Math.abs(pct || 0) / 10)})`;
+              const lbl = new Date(s.key + "-01T00:00:00").toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
+              return `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:3px;min-width:48px;padding:6px 4px;background:${color};border-radius:6px;border:1px solid var(--line);">
+                <div style="font-size:8px;color:var(--dim);font-family:'Roboto Mono',monospace;">${lbl}</div>
+                <div style="font-size:10px;font-weight:700;color:${delta === null ? "var(--dim)" : delta >= 0 ? "var(--mint)" : "var(--coral)"};">${delta !== null ? (delta >= 0 ? "+" : "−") + fmt(Math.abs(delta)) : "—"}</div>
+                <div style="font-size:8px;color:var(--dim);">${pct !== null ? (pct >= 0 ? "+" : "") + pct.toFixed(1) + "%" : ""}</div>
+              </div>`;
+            }).join("");
+            hmEl.innerHTML = `${statsHtml}<div style="display:flex;gap:6px;flex-wrap:wrap;">${rows}</div>
+              <div style="font-size:9px;color:var(--dim);margin-top:8px;">Darker = bigger month-over-month swing, green = gain, red = loss.</div>`;
           }
 

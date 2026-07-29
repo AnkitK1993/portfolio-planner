@@ -3,7 +3,7 @@ import { UI } from "../../core/ui.js";
 import { open as openModal } from "../../core/modal.js";
 import { refreshAncestorCollapsible } from "../../core/collapsible.js";
 import { _animOnRender, animateNumber, animateWidth } from "../../core/animate.js";
-import { avgMonthlyGrowthRate, avgMonthlyGrowthRateBy, buildCurrentSnapshot, changeFrom, mfTotalValue, mfUnrealizedGain, mfValueAsOf, nwTotal, snapshotMonthsAgo } from "../../domain/networth.js";
+import { avgMonthlyGrowthRate, avgMonthlyGrowthRateBy, buildCurrentSnapshot, changeFrom, mfTotalValue, mfUnrealizedGain, mfValueAsOf, monthsToReach, nwTotal, snapshotMonthsAgo } from "../../domain/networth.js";
 import { totalMonthlyExpenses } from "../../domain/expenses.js";
 import { editMode, EQ_FUNDS, LIQ_FUNDS, normalizeSnap, othersOfSnap, saveState, snapshotKey, state } from "../../core/state.js";
 import { el } from "../../core/dom.js";
@@ -1053,7 +1053,7 @@ function renderNwMilestone(sorted, r, cur) {
               return;
             }
 
-            const monthsAway = Math.log(next / cur) / Math.log(1 + r);
+            const monthsAway = monthsToReach(next, cur, r);
             const etaDate = new Date();
             etaDate.setMonth(etaDate.getMonth() + Math.round(monthsAway));
             const etaLabel = etaDate.toLocaleDateString("en-IN", { month: "short", year: "numeric" });
