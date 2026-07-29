@@ -234,6 +234,8 @@ export function applyCloudState(raw) {
               },
               forecast: { ...def.forecast, ...(raw.forecast || {}) },
               idealWeights: { ...def.idealWeights, ...(raw.idealWeights || {}) },
+              idealFundWeights: { ...(raw.idealFundWeights || {}) },
+              investDrafts: { ...(raw.investDrafts || {}) },
               surplus: normalizeSurplus(raw.surplus),
               transactions: Array.isArray(raw.transactions) ? raw.transactions : [],
               returnsLog: Array.isArray(raw.returnsLog) ? raw.returnsLog : [],

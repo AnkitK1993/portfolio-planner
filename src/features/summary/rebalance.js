@@ -594,11 +594,6 @@ export function renderIdealAlloc() {
 
 export let investEditMode = false;
 
-// Draft "money I'm about to add" per fund — scratch, in-memory only
-// (like expandedIdealCats above), never persisted or logged as a real
-// transaction. Keyed by fund id.
-const investDrafts = {};
-
 // Invest New Money (Planning tab) — put a hypothetical amount into one
 // or more equity funds (its own Edit/Done toggle, independent of the
 // app's blanket Edit mode, same convention as Rebalance's own
@@ -609,9 +604,18 @@ const investDrafts = {};
 // today's actual equity total; New % is its share of that total plus
 // everything drafted across every fund (so money added to one fund
 // correctly dilutes the others' percentages too).
+//
+// Drafts live in state.investDrafts (still just a "what if" scratch
+// figure — no transaction is created, fund balances are never touched)
+// but are written to the database once the user taps "Done", so the
+// plan survives a refresh or reopening on another device. Typing itself
+// only updates the in-memory state — see the Done-toggle listener below
+// for the actual saveState() call.
 export function renderInvestNewMoney() {
             const wrap = el("investNewMoneyBody");
             if (!wrap) return;
+            if (!state.investDrafts) state.investDrafts = {};
+            const investDrafts = state.investDrafts;
 
             const funds = EQ_FUNDS.map(f => ({
               id: f.id,
@@ -720,7 +724,11 @@ export function renderInvestNewMoney() {
               <div>${rows}</div>`;
 
             el("investEditToggle").addEventListener("click", () => {
+              const wasEditing = investEditMode;
               investEditMode = !investEditMode;
+              // Tapping "Done" (leaving edit mode) is the save point —
+              // typing itself never hits the database, only this does.
+              if (wasEditing) saveState();
               renderInvestNewMoney();
             });
 
