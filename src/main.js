@@ -7,7 +7,7 @@ import { registerCardOrder } from "./core/cardOrder.js";
 import { UI, closeNavDropdowns, collapseTxpCard, navigateTo, openNavDropdown } from "./core/ui.js";
 import { setRenderTrigger, setTabActivateHandler } from "./core/appEvents.js";
 import { addEquityFund, addLiquidFund, setForecastField } from "./store/actions.js";
-import { _hasLocalData, authUser, fbAuthReady, fbEnabled, flushCloudSave, handleSignInResult, initFirebase, loadBackupList, loadSyncHistory, resetBackupPanel, saveManualBackup } from "./infra/firebase.js";
+import { _hasLocalData, authUser, fbAuthReady, fbEnabled, flushCloudSave, initFirebase, loadBackupList, loadSyncHistory, resetBackupPanel, saveManualBackup } from "./infra/firebase.js";
 import { _upcomingHead } from "./features/portfolio/upcoming.js";
 import { animateNumber } from "./core/animate.js";
 import { applyTxnTotals, closeCurValModal, closeTxnModal, exportTxnsCSV, importTxnsCSV, openCurValModal, openTxnModal, renderReturns, renderTxns, saveCurVal, saveTxn, setTxnType, txnFilter } from "./features/transactions/index.js";
@@ -235,42 +235,21 @@ el("ddAuthBtn").addEventListener("click", async () => {
               await firebase.auth().signOut()
                 .catch(e => UI.toast("err", "Sign-out failed: " + e.message, 4000));
             } else {
+              // signInWithPopup is unreliable here regardless of device —
+              // GitHub Pages' response headers (Cross-Origin-Opener-Policy)
+              // interfere with Firebase's ability to detect that a popup
+              // actually completed, which can surface as the popup silently
+              // closing right after a successful sign-in with no result ever
+              // reaching the app (this hit mobile Safari even after trying to
+              // special-case mobile via user-agent sniffing — UA detection
+              // proved too fragile to rely on). The full-page redirect flow
+              // never opens a popup window at all, so it's immune to this
+              // whole class of failure. Already handled end-to-end by
+              // getRedirectResult() in initFirebase() on the page load after
+              // the redirect back.
               const provider = new firebase.auth.GoogleAuthProvider();
-              // Mobile Safari/Chrome routinely fail signInWithPopup with no
-              // usable signal at all — the popup can be silently blocked or
-              // the promise can just hang forever (never resolving or
-              // rejecting), which looks to the user like the button does
-              // nothing. Skip the popup attempt on mobile entirely and go
-              // straight to the full-page redirect flow, which has none of
-              // those failure modes and is already handled end-to-end by
-              // getRedirectResult() in initFirebase().
-              const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-              if (isMobile) {
-                firebase.auth().signInWithRedirect(provider)
-                  .catch(e => UI.toast("err", e.message || "Sign-in failed", 5000));
-                return;
-              }
-              try {
-                const result = await firebase.auth().signInWithPopup(provider);
-                handleSignInResult(result);
-              } catch (e) {
-                const ignored = ["auth/popup-closed-by-user", "auth/cancelled-popup-request"];
-                if (ignored.includes(e.code)) return;
-                // Popups are blocked/unsupported in some desktop contexts too
-                // (e.g. in-app webviews) — fall back to redirect there as well.
-                const fallbackToRedirect = [
-                  "auth/popup-blocked",
-                  "auth/operation-not-supported-in-this-environment",
-                  "auth/web-storage-unsupported",
-                  "auth/internal-error",
-                ];
-                if (fallbackToRedirect.includes(e.code)) {
-                  firebase.auth().signInWithRedirect(provider)
-                    .catch(e2 => UI.toast("err", e2.message || "Sign-in failed", 5000));
-                } else {
-                  UI.toast("err", e.message || "Sign-in failed", 5000);
-                }
-              }
+              firebase.auth().signInWithRedirect(provider)
+                .catch(e => UI.toast("err", e.message || "Sign-in failed", 5000));
             }
           });
 el("ddThemeBtn").addEventListener("click", e => {
