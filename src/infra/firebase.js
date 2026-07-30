@@ -57,10 +57,18 @@ export function initFirebase() {
               s.src = src; s.onload = resolve; s.onerror = reject;
               document.head.appendChild(s);
             });
-            loadScript("https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js")
+            // Pinned to a recent SDK release rather than the mid-2024
+            // 10.14.1 this was stuck on — Chrome's third-party-cookie/
+            // storage-partitioning enforcement for OAuth redirects has
+            // moved a lot since then, and Firebase ships auth reliability
+            // fixes for it in newer releases. Safari was never affected by
+            // this class of bug (it already forced a non-cookie fallback
+            // path via its own tracking prevention), which is why sign-in
+            // worked there even on the old SDK while failing on Chrome.
+            loadScript("https://www.gstatic.com/firebasejs/12.16.0/firebase-app-compat.js")
               .then(() => Promise.all([
-                loadScript("https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"),
-                loadScript("https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"),
+                loadScript("https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore-compat.js"),
+                loadScript("https://www.gstatic.com/firebasejs/12.16.0/firebase-auth-compat.js"),
               ]))
               .then(() => {
                 try {
