@@ -57,14 +57,6 @@ export function initFirebase() {
               s.src = src; s.onload = resolve; s.onerror = reject;
               document.head.appendChild(s);
             });
-            // Pinned to a recent SDK release rather than the mid-2024
-            // 10.14.1 this was stuck on — Chrome's third-party-cookie/
-            // storage-partitioning enforcement for OAuth redirects has
-            // moved a lot since then, and Firebase ships auth reliability
-            // fixes for it in newer releases. Safari was never affected by
-            // this class of bug (it already forced a non-cookie fallback
-            // path via its own tracking prevention), which is why sign-in
-            // worked there even on the old SDK while failing on Chrome.
             loadScript("https://www.gstatic.com/firebasejs/12.16.0/firebase-app-compat.js")
               .then(() => Promise.all([
                 loadScript("https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore-compat.js"),
@@ -88,31 +80,6 @@ export function initFirebase() {
                     authUser = user;
                     updateAuthUI();
                     if (user) maybeLoadFromCloud().catch(() => {});
-                  });
-                  // Completes sign-in started via signInWithRedirect (popup fallback,
-                  // and mobile's primary flow — see main.js). "No result, no error"
-                  // is the ordinary case on every OTHER page load (nothing pending),
-                  // so it's silent by default — but if main.js's redirect call set
-                  // the "we just tried" flag below, a still-empty result here means
-                  // the redirect trip genuinely failed to complete (commonly an
-                  // unauthorized domain in the Firebase console, or the browser
-                  // blocking the storage this flow depends on across the redirect
-                  // to/from the authDomain) rather than "nothing was pending" —
-                  // worth surfacing instead of leaving the user staring at a sign-in
-                  // button that silently did nothing.
-                  const fbRedirectWasPending = sessionStorage.getItem("fbRedirectPending") === "1";
-                  sessionStorage.removeItem("fbRedirectPending");
-                  firebase.auth().getRedirectResult().then(result => {
-                    handleSignInResult(result);
-                    if (fbRedirectWasPending && !result?.user) {
-                      UI.toast("err", "Sign-in didn't complete after returning from Google — this usually means the site isn't yet authorized in Firebase, or your browser blocked storage needed for redirect sign-in.", 8000);
-                    }
-                  }).catch(e => {
-                    if (e && e.code && e.code !== "auth/no-current-user") {
-                      UI.toast("err", "Sign-in failed: " + (e.message || e.code), 5000);
-                    } else if (fbRedirectWasPending) {
-                      UI.toast("err", "Sign-in didn't complete after returning from Google — this usually means the site isn't yet authorized in Firebase, or your browser blocked storage needed for redirect sign-in.", 8000);
-                    }
                   });
                 } catch (e) {
                   console.warn("Firebase init:", e.message);
@@ -499,6 +466,7 @@ export function resetBackupPanel() {
 export function updateAuthUI() {
             const userInfo = el("ddUserInfo");
             const authBtn  = el("ddAuthBtn");
+            const loginForm = el("ddLoginForm");
             const isGuest  = !authUser;
 
             // Admin-only items — hide for guests. Edit mode's own icon
@@ -519,15 +487,14 @@ export function updateAuthUI() {
               setPrivacyMode(false);
               document.body.classList.remove("privacy-mode");
               closeNavDropdowns();
-              el("ddUserName").textContent = authUser.displayName || authUser.email || "Signed in";
-              const avatar = el("ddUserAvatar");
-              avatar.src = authUser.photoURL || "";
-              avatar.style.display = authUser.photoURL ? "block" : "none";
+              el("ddUserName").textContent = authUser.email || "Signed in";
               userInfo.style.display = "flex";
-              authBtn.innerHTML = "Sign out";
+              authBtn.style.display = "";
+              loginForm.style.display = "none";
             } else {
               userInfo.style.display = "none";
-              authBtn.innerHTML = `<svg viewBox="0 0 18 18" width="15" height="15" style="flex-shrink:0"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/><path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" fill="#EA4335"/></svg> Sign in with Google`;
+              authBtn.style.display = "none";
+              loginForm.style.display = "flex";
             }
           }
 

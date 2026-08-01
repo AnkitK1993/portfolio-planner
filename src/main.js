@@ -7,7 +7,7 @@ import { registerCardOrder } from "./core/cardOrder.js";
 import { UI, closeNavDropdowns, collapseTxpCard, navigateTo, openNavDropdown } from "./core/ui.js";
 import { setRenderTrigger, setTabActivateHandler } from "./core/appEvents.js";
 import { addEquityFund, addLiquidFund, setForecastField } from "./store/actions.js";
-import { _hasLocalData, authUser, fbAuthReady, fbEnabled, flushCloudSave, initFirebase, loadBackupList, loadSyncHistory, resetBackupPanel, saveManualBackup } from "./infra/firebase.js";
+import { _hasLocalData, authUser, fbAuthReady, fbEnabled, flushCloudSave, handleSignInResult, initFirebase, loadBackupList, loadSyncHistory, resetBackupPanel, saveManualBackup } from "./infra/firebase.js";
 import { _upcomingHead } from "./features/portfolio/upcoming.js";
 import { animateNumber } from "./core/animate.js";
 import { applyTxnTotals, closeCurValModal, closeTxnModal, exportTxnsCSV, importTxnsCSV, openCurValModal, openTxnModal, renderReturns, renderTxns, saveCurVal, saveTxn, setTxnType, txnFilter } from "./features/transactions/index.js";
@@ -231,32 +231,28 @@ el("ddAuthBtn").addEventListener("click", async () => {
               return;
             }
             closeNavDropdowns();
-            if (authUser) {
-              await firebase.auth().signOut()
-                .catch(e => UI.toast("err", "Sign-out failed: " + e.message, 4000));
-            } else {
-              // signInWithPopup is unreliable here regardless of device —
-              // GitHub Pages' response headers (Cross-Origin-Opener-Policy)
-              // interfere with Firebase's ability to detect that a popup
-              // actually completed, which can surface as the popup silently
-              // closing right after a successful sign-in with no result ever
-              // reaching the app (this hit mobile Safari even after trying to
-              // special-case mobile via user-agent sniffing — UA detection
-              // proved too fragile to rely on). The full-page redirect flow
-              // never opens a popup window at all, so it's immune to this
-              // whole class of failure. Already handled end-to-end by
-              // getRedirectResult() in initFirebase() on the page load after
-              // the redirect back.
-              const provider = new firebase.auth.GoogleAuthProvider();
-              // Set right before leaving the page — initFirebase()'s
-              // getRedirectResult() checks this on the way back to tell "no
-              // redirect was pending" (normal, silent, every other page load)
-              // apart from "a redirect was pending and still came back empty"
-              // (a real failure worth surfacing instead of leaving the user
-              // stuck with no signal at all).
-              sessionStorage.setItem("fbRedirectPending", "1");
-              firebase.auth().signInWithRedirect(provider)
-                .catch(e => UI.toast("err", e.message || "Sign-in failed", 5000));
+            await firebase.auth().signOut()
+              .catch(e => UI.toast("err", "Sign-out failed: " + e.message, 4000));
+          });
+el("ddLoginForm").addEventListener("submit", async e => {
+            e.preventDefault();
+            if (!fbAuthReady) {
+              UI.toast("err", "Firebase still connecting — try again in a moment", 3000);
+              return;
+            }
+            const email = el("ddLoginEmail").value.trim();
+            const password = el("ddLoginPassword").value;
+            if (!email || !password) return;
+            const submitBtn = el("ddLoginSubmit");
+            submitBtn.disabled = true;
+            try {
+              const result = await firebase.auth().signInWithEmailAndPassword(email, password);
+              handleSignInResult(result);
+              el("ddLoginForm").reset();
+            } catch (err) {
+              UI.toast("err", err.message || "Sign-in failed", 5000);
+            } finally {
+              submitBtn.disabled = false;
             }
           });
 el("ddThemeBtn").addEventListener("click", e => {

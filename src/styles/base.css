@@ -1747,6 +1747,35 @@
         letter-spacing: 0;
         font-size: 12px;
       }
+      .nav-dd-login {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 6px 8px 4px;
+        min-width: 190px;
+      }
+      .nav-dd-login-inp {
+        width: 100%;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        color: var(--txt);
+        font-family: "Roboto", sans-serif;
+        font-size: 12px;
+        padding: 8px 10px;
+        outline: none;
+        transition: border-color 0.15s;
+      }
+      .nav-dd-login-inp:focus { border-color: var(--mint); }
+      .nav-dd-login-inp::placeholder { color: var(--dim); }
+      .nav-dd-login-submit {
+        text-align: center;
+        color: var(--mint);
+        text-transform: none;
+        letter-spacing: 0;
+        font-size: 12px;
+        font-weight: 600;
+      }
 
       /* hero title row */
       .hero-title-row {
