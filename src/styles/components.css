@@ -754,7 +754,8 @@
         border-radius: 14px; overflow: hidden; margin-bottom: 12px;
       }
       .reb-col-hdrs {
-        display: grid; grid-template-columns: minmax(50px, 90px) 80px 80px 92px;
+        display: grid; grid-template-columns: minmax(70px, 1fr) 64px 64px 70px;
+        gap: 6px;
         padding: 8px 14px; background: rgba(255,255,255,0.03);
         border-bottom: 1px solid var(--line);
       }
@@ -768,7 +769,8 @@
         text-transform: uppercase; letter-spacing: 1.2px; color: var(--mint); flex: 1;
       }
       .reb-section-name-inp {
-        flex: 1; background: rgba(0,245,160,0.08); border: 1px solid rgba(0,245,160,0.3);
+        width: 100%; min-width: 0; box-sizing: border-box;
+        background: rgba(0,245,160,0.08); border: 1px solid rgba(0,245,160,0.3);
         border-radius: 6px; color: var(--mint); font-family: "Roboto", sans-serif;
         font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px;
         padding: 2px 8px; outline: none;
@@ -783,9 +785,9 @@
       .reb-icon-btn:hover { background: rgba(255,255,255,0.1); color: var(--txt); }
       .reb-icon-btn.del:hover { background: rgba(248,113,113,0.15); color: #f87171; }
       .reb-row {
-        display: grid; grid-template-columns: minmax(50px, 90px) 80px 80px 92px;
+        display: grid; grid-template-columns: minmax(70px, 1fr) 64px 64px 70px;
         align-items: center; padding: 5px 14px;
-        border-bottom: 1px solid rgba(255,255,255,0.04); gap: 0;
+        border-bottom: 1px solid rgba(255,255,255,0.04); gap: 6px;
       }
       .reb-row:hover { background: rgba(255,255,255,0.02); }
       .reb-row:last-child { border-bottom: none; }
@@ -799,9 +801,10 @@
       }
       .reb-label-inp:focus { border-color: var(--mint); }
       .reb-inp {
-        width: 74px; background: rgba(255,255,255,0.06); border: 1px solid var(--line);
+        width: 100%; min-width: 0; box-sizing: border-box;
+        background: rgba(255,255,255,0.06); border: 1px solid var(--line);
         border-radius: 6px; color: var(--txt); font-family: "Roboto Mono", monospace;
-        font-size: 11px; padding: 5px 7px; text-align: right; outline: none;
+        font-size: 11px; padding: 5px 6px; text-align: right; outline: none;
         transition: border-color 0.15s; -moz-appearance: textfield; appearance: textfield;
       }
       .reb-inp::-webkit-inner-spin-button, .reb-inp::-webkit-outer-spin-button { -webkit-appearance: none; appearance: none; }
@@ -810,7 +813,8 @@
       .reb-diff.up { color: #4ade80; }
       .reb-diff.dn { color: #f87171; }
       .reb-total-row {
-        display: grid; grid-template-columns: minmax(50px, 90px) 80px 80px 92px;
+        display: grid; grid-template-columns: minmax(70px, 1fr) 64px 64px 70px;
+        gap: 6px;
         align-items: center; padding: 6px 14px;
         background: rgba(255,255,255,0.03);
         border-top: 1px solid rgba(255,255,255,0.07);
