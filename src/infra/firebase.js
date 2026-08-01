@@ -89,10 +89,29 @@ export function initFirebase() {
                     updateAuthUI();
                     if (user) maybeLoadFromCloud().catch(() => {});
                   });
-                  // Completes sign-in started via signInWithRedirect (popup fallback)
-                  firebase.auth().getRedirectResult().then(handleSignInResult).catch(e => {
+                  // Completes sign-in started via signInWithRedirect (popup fallback,
+                  // and mobile's primary flow — see main.js). "No result, no error"
+                  // is the ordinary case on every OTHER page load (nothing pending),
+                  // so it's silent by default — but if main.js's redirect call set
+                  // the "we just tried" flag below, a still-empty result here means
+                  // the redirect trip genuinely failed to complete (commonly an
+                  // unauthorized domain in the Firebase console, or the browser
+                  // blocking the storage this flow depends on across the redirect
+                  // to/from the authDomain) rather than "nothing was pending" —
+                  // worth surfacing instead of leaving the user staring at a sign-in
+                  // button that silently did nothing.
+                  const fbRedirectWasPending = sessionStorage.getItem("fbRedirectPending") === "1";
+                  sessionStorage.removeItem("fbRedirectPending");
+                  firebase.auth().getRedirectResult().then(result => {
+                    handleSignInResult(result);
+                    if (fbRedirectWasPending && !result?.user) {
+                      UI.toast("err", "Sign-in didn't complete after returning from Google — this usually means the site isn't yet authorized in Firebase, or your browser blocked storage needed for redirect sign-in.", 8000);
+                    }
+                  }).catch(e => {
                     if (e && e.code && e.code !== "auth/no-current-user") {
                       UI.toast("err", "Sign-in failed: " + (e.message || e.code), 5000);
+                    } else if (fbRedirectWasPending) {
+                      UI.toast("err", "Sign-in didn't complete after returning from Google — this usually means the site isn't yet authorized in Firebase, or your browser blocked storage needed for redirect sign-in.", 8000);
                     }
                   });
                 } catch (e) {

@@ -248,6 +248,13 @@ el("ddAuthBtn").addEventListener("click", async () => {
               // getRedirectResult() in initFirebase() on the page load after
               // the redirect back.
               const provider = new firebase.auth.GoogleAuthProvider();
+              // Set right before leaving the page — initFirebase()'s
+              // getRedirectResult() checks this on the way back to tell "no
+              // redirect was pending" (normal, silent, every other page load)
+              // apart from "a redirect was pending and still came back empty"
+              // (a real failure worth surfacing instead of leaving the user
+              // stuck with no signal at all).
+              sessionStorage.setItem("fbRedirectPending", "1");
               firebase.auth().signInWithRedirect(provider)
                 .catch(e => UI.toast("err", e.message || "Sign-in failed", 5000));
             }
