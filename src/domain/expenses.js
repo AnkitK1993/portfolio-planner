@@ -74,25 +74,24 @@ function investedInMonth(transactions, monthKey) {
             }, 0);
           }
 
-// Bank spend this month = the most recent monthly snapshot's Bank balance
-// (the month's opening figure) minus the live Bank value on the
-// Transactions tab's Update Assets card (today's balance) — reuses that
-// field rather than tracking a second, easily-drifting copy of "current
-// bank balance".
+// Bank spend this month = this month's Initial bank balance minus the
+// live Current bank balance, both entered on the Net Worth tab's Update
+// Assets card. Initial is carried forward automatically to Current's
+// value whenever a snapshot is saved (see takeSnapshot()), so it always
+// reflects this tracking period's own opening figure rather than
+// whatever the last snapshot happened to record.
 // Clamped to 0 so a mid-month deposit (salary credit, etc.) never reads as
-// negative spending.
+// negative spending. Returns null only when neither Initial nor Current
+// has ever been entered (both still 0) — the "haven't started tracking
+// yet" case.
 export function bankSpentThisMonth(networth) {
-            const snaps = networth?.snapshots || {};
-            const keys = Object.keys(snaps).sort();
-            if (!keys.length) return null;
-            const lastKey = keys[keys.length - 1];
-            const openingBank = snaps[lastKey]?.bank || 0;
+            const openingBank = networth?.bankInitial || 0;
             const currentBank = networth?.bank || 0;
+            if (!openingBank && !currentBank) return null;
             return {
               amount: Math.max(0, openingBank - currentBank),
               openingBank,
               currentBank,
-              asOfKey: lastKey,
             };
           }
 
@@ -153,11 +152,6 @@ export function totalMonthlyExpenses({ fixedExpenses, liqFunds, eqFunds, liquid,
             };
           }
 
-function prevMonthKey(key) {
-            const [y, m] = key.split("-").map(Number);
-            return monthKeyOf(new Date(y, m - 2, 1));
-          }
-
 function lastNMonthKeys(n) {
             const now = new Date();
             const keys = [];
@@ -200,9 +194,11 @@ export function resolvePeriodKeys(periodKey) {
           }
 
 // Per-month expense breakdown across a range of "YYYY-MM" keys. The
-// in-progress current month reuses bankSpentThisMonth()'s live-bank-vs-
-// last-snapshot logic; completed months instead diff two saved snapshots
-// (the month's own snapshot vs the one before it). Fixed item *amounts*
+// in-progress current month reuses bankSpentThisMonth()'s live Initial-
+// vs-Current logic; completed months instead read that same month's own
+// snapshot — bankInitial and bank were both frozen into it at
+// takeSnapshot() time, so each month is self-contained and no longer
+// needs the month before it to compute a drop. Fixed item *amounts*
 // aren't historized anywhere in the app, so today's amount is still what
 // applies to every past month an item was active for — but which items
 // count in a given month now respects each one's own startDate (see
@@ -214,9 +210,8 @@ export function resolvePeriodKeys(periodKey) {
 // month: networth.expenses; past months: that month's own snapshot) —
 // same reasoning as totalMonthlyExpenses()'s manualExpenses: it wins
 // outright over the bank-diffed total, and critically it's the only way
-// a month with no *preceding* snapshot to diff against (there's no prior
-// month to compute a bank drop from) gets a real total instead of null.
-// Without a manual figure and no snapshot pair to diff, bankDrop/extra/
+// a month with no saved snapshot at all gets a real total instead of
+// null. Without a manual figure and no snapshot to read, bankDrop/extra/
 // total all come back null rather than a guessed value.
 //
 // Like totalMonthlyExpenses(), each month's actual logged investing (from
@@ -243,11 +238,9 @@ export function monthlyExpenseSeries(periodKeys, { fixedExpenses, liqFunds, eqFu
               if (key === nowKey) {
                 const bs = bankSpentThisMonth(networth);
                 if (bs) bankDrop = bs.amount;
-              } else {
-                const prevKey = prevMonthKey(key);
-                if (snaps[key] && snaps[prevKey]) {
-                  bankDrop = Math.max(0, (snaps[prevKey].bank || 0) - (snaps[key].bank || 0));
-                }
+              } else if (snaps[key]) {
+                const snapInitial = snaps[key].bankInitial != null ? snaps[key].bankInitial : (snaps[key].bank || 0);
+                bankDrop = Math.max(0, snapInitial - (snaps[key].bank || 0));
               }
               if (bankDrop === null) return { key, fixed, sip, surplusInvestment, planned, bankDrop: null, extra: null, total: null };
               const extra = bankDrop - planned;

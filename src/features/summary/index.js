@@ -638,7 +638,7 @@ function renderExpenses() {
                     <span>Bank balance this month</span>
                     <span class="exp-bank-fig">${fmt(bankSpend.openingBank)}<span class="exp-bank-arrow">&rarr;</span>${fmt(bankSpend.currentBank)}</span>
                   </div>
-                  <div class="exp-bank-sub">As of ${fmtMonth(bankSpend.asOfKey)} snapshot vs. now on the Net Worth tab &mdash; a drop of ${fmt(bankSpend.amount)}</div>
+                  <div class="exp-bank-sub">Initial vs. Current on the Net Worth tab's Update Assets &mdash; a drop of ${fmt(bankSpend.amount)}</div>
                   ${segBarHtml}
                   <div class="exp-stat-grid" style="margin-top:12px;">
                     ${surplusInvestment > 0 ? `<div class="exp-stat-card"><div class="lbl">Surplus Investment</div><div class="val" style="color:#a78bfa">+${fmtCompact(surplusInvestment)}</div></div>` : ""}
@@ -646,7 +646,7 @@ function renderExpenses() {
                   </div>
                 </div>`
               : `<div class="exp-bank-block" style="font-size:10.5px;color:var(--dim);">
-                  Save a Net Worth snapshot to start tracking bank spending automatically &mdash; until then, Total This Month is just your Fixed Total.
+                  Enter Bank &amp; Savings' Initial and Current on the Net Worth tab's Update Assets to start tracking spending automatically &mdash; until then, Total This Month is just your Fixed Total.
                 </div>`;
 
             // wrap (unlike its children) is the same persistent DOM node

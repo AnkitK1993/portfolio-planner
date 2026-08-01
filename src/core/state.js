@@ -31,6 +31,11 @@ export const normalizeSnap = (key, v) => {
             const s = { key, ...v };
             if (s.income == null) s.income = s.incomeExtra || 0;
             if (s.expenses == null) s.expenses = 0;
+            // Snapshots saved before Bank & Savings split into Initial/
+            // Current only have the single `bank` figure — back-fill
+            // bankInitial to match it, which computes a 0 bank-drop for
+            // that month rather than a misleading nonzero one.
+            if (s.bankInitial == null) s.bankInitial = s.bank || 0;
             s.total = (s.mf || 0) + (s.mfProfit || 0) + othersOfSnap(s);
             return s;
           };
@@ -77,6 +82,7 @@ export function defaultState() {
               equityOrder: ['eq1', 'eq2', 'eq3'],
               networth: {
                 ...Object.fromEntries(NW_FIELDS.map((f) => [f.id, 0])),
+                bankInitial: 0,
                 income: 0,
                 expenses: 0,
                 snapshots: {},
@@ -158,6 +164,7 @@ export function loadState() {
                 equityOrder: eqOrder,
                 networth: {
                   ...Object.fromEntries(NW_FIELDS.map((f) => [f.id, s.networth?.[f.id] ?? 0])),
+                  bankInitial: s.networth?.bankInitial ?? 0,
                   income: s.networth?.income ?? 0,
                   expenses: s.networth?.expenses ?? 0,
                   snapshots: { ...(s.networth?.snapshots || {}) },

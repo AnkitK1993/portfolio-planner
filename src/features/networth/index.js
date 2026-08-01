@@ -65,7 +65,7 @@ const SNAPSHOT_DETAIL_FIELDS = [
 // evalArithmetic()) — every other field stays plain num() parsing,
 // unchanged. Shared between Update Assets (buildNwGrid) and the
 // snapshot edit popup (editSnapshot).
-const CALC_FIELDS = ["bank", "income", "expenses"];
+const CALC_FIELDS = ["bank", "bankInitial", "income", "expenses"];
 const calcHint = (id) => CALC_FIELDS.includes(id)
             ? ' <span style="color:var(--dim);font-size:8px;text-transform:none;letter-spacing:0;">(+/- to add or subtract)</span>'
             : "";
@@ -83,8 +83,33 @@ export function buildNwGrid() {
                   <input class="num" id="nw-mf" type="text" placeholder="0" inputmode="numeric" readonly style="opacity:0.6;cursor:default;" />
                 </div>
               </div>`;
+            // Bank & Savings splits into two sub-fields rather than NW_FIELDS'
+            // usual single input — Initial (this tracking period's opening
+            // balance, carried forward automatically when a snapshot is
+            // saved — see takeSnapshot()) and Current (today's live balance,
+            // same field/id as before). Their difference is what
+            // bankSpentThisMonth() (domain/expenses.js) uses to estimate
+            // this month's spend.
+            const bankFieldHtml = `
+              <div class="field nw-bank-field" style="margin-bottom:0;">
+                <label class="flabel">Bank &amp; Savings</label>
+                <div class="nw-bank-split">
+                  <div class="nw-bank-sub">
+                    <span class="nw-bank-sub-lbl">Initial</span>
+                    <div class="ibox"><span class="pfx">&#8377;</span>
+                      <input class="num" id="nw-bankInitial" type="text" placeholder="0" inputmode="numeric" value="${fmtNum(state.networth.bankInitial)}" />
+                    </div>
+                  </div>
+                  <div class="nw-bank-sub">
+                    <span class="nw-bank-sub-lbl">Current${calcHint("bank")}</span>
+                    <div class="ibox"><span class="pfx">&#8377;</span>
+                      <input class="num" id="nw-bank" type="text" placeholder="0" inputmode="numeric" value="${fmtNum(state.networth.bank)}" />
+                    </div>
+                  </div>
+                </div>
+              </div>`;
             el("nwFieldsGrid").innerHTML = mfFieldHtml + NW_FIELDS.map(
-              (f) => `
+              (f) => f.id === "bank" ? bankFieldHtml : `
               <div class="field" style="margin-bottom:0;">
                 <label class="flabel" for="nw-${f.id}">${f.label}${f.id === "mfProfit" ? ' <span style="color:var(--dim);font-size:8px;text-transform:none;letter-spacing:0;">(auto-calculated)</span>' : ""}${calcHint(f.id)}</label>
                 <div class="ibox"><span class="pfx">&#8377;</span>
@@ -107,6 +132,16 @@ export function buildNwGrid() {
               inp.addEventListener("focus", () => { const v = num(inp.value); inp.value = v > 0 ? v : ""; });
               inp.addEventListener("blur",  () => { inp.value = fmtNum(parse(inp.value)); });
             });
+
+            const bankInitialInp = el("nw-bankInitial");
+            if (bankInitialInp) {
+              bankInitialInp.addEventListener("input", (e) => {
+                setNetworthField("bankInitial", evalArithmetic(e.target.value));
+                renderNetWorth();
+              });
+              bankInitialInp.addEventListener("focus", () => { const v = num(bankInitialInp.value); bankInitialInp.value = v > 0 ? v : ""; });
+              bankInitialInp.addEventListener("blur",  () => { bankInitialInp.value = fmtNum(evalArithmetic(bankInitialInp.value)); });
+            }
 
             // Income — not part of NW_FIELDS (see extraIncome() in
             // domain/networth.js for why: it's always assumed to already
@@ -310,11 +345,21 @@ export function takeSnapshot() {
                 mf: mfVal, total,
                 income: state.networth.income || 0,
                 expenses: state.networth.expenses || 0,
+                bankInitial: state.networth.bankInitial || 0,
                 healthScore: computeHealthScore().total,
                 savedAt: new Date().toISOString(),
               };
               NW_FIELDS.forEach((f) => { snap[f.id] = state.networth[f.id] || 0; });
               saveSnapshot(key, snap);
+              // Carry this period's closing Current balance forward as the
+              // next period's opening Initial — the natural default (this
+              // month's ending balance IS next month's starting one) unless
+              // the user overrides it on Update Assets. buildNwGrid() only
+              // ever runs once at boot, so the live input needs its value
+              // synced by hand here too, not just the underlying state.
+              state.networth.bankInitial = state.networth.bank || 0;
+              const bankInitialInp = el("nw-bankInitial");
+              if (bankInitialInp) bankInitialInp.value = fmtNum(state.networth.bankInitial);
               saveState();
               refreshAllSnapshotViews();
               const msg = el("nwSnapMsg");
@@ -487,6 +532,7 @@ export function editSnapshot(key) {
             const normalized = normalizeSnap(key, snap);
             const incomeVal = normalized.income;
             const expensesVal = normalized.expenses;
+            const bankInitialVal = normalized.bankInitial;
             const readonlyRows = [
               { label: "MF Value", value: snap.mf || 0 },
               { label: "Unrealized Gain", value: snap.mfProfit || 0 },
@@ -503,7 +549,21 @@ export function editSnapshot(key) {
                     ${readonlyRows.map(r => `<div class="nw-hist-detail-row"><span>${r.label}</span><span>${fmt(r.value)}</span></div>`).join("")}
                   </div>
                   <div style="border-top:1px solid var(--line);"></div>
-                  ${OTHER_FIELDS.map(f => `
+                  ${OTHER_FIELDS.map(f => f.id === "bank" ? `
+                    <div class="field" style="margin-bottom:0;">
+                      <label class="flabel">Bank &amp; Savings</label>
+                      <div class="nw-bank-split">
+                        <div class="nw-bank-sub">
+                          <span class="nw-bank-sub-lbl">Initial</span>
+                          <input class="form-inp" id="${fid("bankInitial")}" type="text" inputmode="numeric" value="${fmtNum(bankInitialVal)}" />
+                        </div>
+                        <div class="nw-bank-sub">
+                          <span class="nw-bank-sub-lbl">Current${calcHint("bank")}</span>
+                          <input class="form-inp" id="${fid("bank")}" type="text" inputmode="numeric" value="${fmtNum(snap.bank)}" />
+                        </div>
+                      </div>
+                    </div>
+                  ` : `
                     <div class="field" style="margin-bottom:0;">
                       <label class="flabel" for="${fid(f.id)}">${f.label}${calcHint(f.id)}</label>
                       <input class="form-inp" id="${fid(f.id)}" type="text" inputmode="numeric" value="${fmtNum(snap[f.id])}" />
@@ -531,6 +591,9 @@ export function editSnapshot(key) {
                   inp.addEventListener("focus", () => { const v = num(inp.value); inp.value = v > 0 ? v : ""; });
                   inp.addEventListener("blur", () => { inp.value = fmtNum(parse(inp.value)); });
                 });
+                const bankInitialInp = bodyEl.querySelector("#" + fid("bankInitial"));
+                bankInitialInp.addEventListener("focus", () => { const v = num(bankInitialInp.value); bankInitialInp.value = v > 0 ? v : ""; });
+                bankInitialInp.addEventListener("blur", () => { bankInitialInp.value = fmtNum(evalArithmetic(bankInitialInp.value)); });
                 const incomeInp = bodyEl.querySelector("#" + fid("income"));
                 incomeInp.addEventListener("focus", () => { const v = num(incomeInp.value); incomeInp.value = v > 0 ? v : ""; });
                 incomeInp.addEventListener("blur", () => { incomeInp.value = fmtNum(evalArithmetic(incomeInp.value)); });
@@ -549,6 +612,7 @@ export function editSnapshot(key) {
                       const parse = CALC_FIELDS.includes(f.id) ? evalArithmetic : num;
                       updated[f.id] = parse(bodyElRef.querySelector("#" + fid(f.id)).value);
                     });
+                    updated.bankInitial = evalArithmetic(bodyElRef.querySelector("#" + fid("bankInitial")).value);
                     updated.income = evalArithmetic(bodyElRef.querySelector("#" + fid("income")).value);
                     updated.expenses = evalArithmetic(bodyElRef.querySelector("#" + fid("expenses")).value);
                     updated.total = (updated.mf || 0) + (updated.mfProfit || 0) + othersOfSnap(updated);
