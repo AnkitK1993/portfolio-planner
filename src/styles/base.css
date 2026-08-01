@@ -1071,6 +1071,11 @@
         cursor: pointer;
       }
       .nw-hist-cmp-btn:hover { border-color: var(--mint); }
+      /* Sharing .nw-snap-edit-row with the Edit button now (see
+         renderNwHistory()) — flex instead of the standalone full-width
+         sizing above, and no separate top margin since the row wrapper
+         already provides that spacing. */
+      .nw-snap-edit-row .nw-hist-cmp-btn { flex: 1; width: auto; margin-top: 0; }
       .nw-proj-cards {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));

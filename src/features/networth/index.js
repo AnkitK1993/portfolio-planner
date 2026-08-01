@@ -55,7 +55,13 @@ const ASSET_TREND_FIELDS = [
 const SNAPSHOT_DETAIL_FIELDS = [
             { key: "mf",       label: "MF Value" },
             { key: "mfProfit", label: "Unrealized Gain" },
-            ...OTHER_FIELDS.map(f => ({ key: f.id, label: f.label })),
+            // Bank & Savings' Initial sits right before Current (== the
+            // plain "bank" field) rather than alongside the rest of
+            // OTHER_FIELDS in NW_FIELDS order, so the two halves of the
+            // same figure read together here and in "Compare with Current".
+            ...OTHER_FIELDS.flatMap(f => f.id === "bank"
+              ? [{ key: "bankInitial", label: "Bank & Savings (Initial)" }, { key: "bank", label: "Bank & Savings (Current)" }]
+              : [{ key: f.id, label: f.label }]),
             { key: "income",   label: "Income" },
             { key: "expenses", label: "Expenses" },
             { key: "total",    label: "Total" },
@@ -435,7 +441,10 @@ export function renderNwHistory() {
                   : DETAIL_FIELDS.map(f =>
                       `<div class="nw-hist-detail-row"><span>${f.label}</span><span>${fmtCompact(s[f.key] || 0)}</span></div>`
                     ).join("")
-                ) + `<button class="nw-hist-cmp-btn" data-key="${s.key}">${showCompare ? "Hide comparison" : "Compare with Current"}</button>`;
+                ) + `<div class="nw-snap-edit-row">
+                    <button class="nw-hist-cmp-btn" data-key="${s.key}">${showCompare ? "Hide comparison" : "Compare with Current"}</button>
+                    <button class="btn btn-ghost btn-sm nw-hist-edit" data-key="${s.key}">Edit</button>
+                  </div>`;
               }
 
               return `<div class="nw-hist-item">
@@ -483,6 +492,10 @@ export function renderNwHistory() {
 
             el("nwHistory").querySelectorAll(".nw-hist-del").forEach(btn => {
               btn.addEventListener("click", (e) => { e.stopPropagation(); deleteSnapshotWithUndo(btn.dataset.key); });
+            });
+
+            el("nwHistory").querySelectorAll(".nw-hist-edit").forEach(btn => {
+              btn.addEventListener("click", (e) => { e.stopPropagation(); editSnapshot(btn.dataset.key); });
             });
           }
 

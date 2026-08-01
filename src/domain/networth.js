@@ -138,5 +138,6 @@ export function buildCurrentSnapshot(networth, liqFunds, eqFunds, liquid, equity
             NW_FIELDS.forEach((f) => { cur[f.id] = networth[f.id] || 0; });
             cur.mfProfit = mfUnrealizedGain(liqFunds, eqFunds, liquid, equity);
             cur.income = networth.income || 0;
+            cur.bankInitial = networth.bankInitial || 0;
             return cur;
           }
