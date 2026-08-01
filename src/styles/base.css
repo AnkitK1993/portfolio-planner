@@ -58,10 +58,10 @@
         right: 0;
         z-index: 100;
         overflow-x: auto;
-        /* Swipe-up-to-toggle-Edit-mode lives on this element (see main.js)
-           — pan-x keeps the existing horizontal auto-scroll working while
-           stopping the browser from also trying to pan the page vertically
-           during that gesture. */
+        /* This bar is position:fixed, outside the page's normal scroll
+           flow — pan-x keeps its own horizontal auto-scroll working on
+           touch while stopping a touch here from also trying to pan the
+           page vertically underneath it. */
         touch-action: pan-x;
         padding: 6px 10px;
         gap: 2px;
@@ -1648,24 +1648,10 @@
         }
       }
 
-      /* Pinned left group (Home + the scroll-revealed Edit shortcut) —
-         sticky so it stays reachable at the left edge of #tabs' own
-         horizontal auto-scroll instead of scrolling away with the rest
-         of the tab buttons. Only actually "sticks" above ~600px, where
-         .tabs can overflow at all — below that .tabs hides overflow
-         entirely (see its own mobile override), so this just sits in
-         normal flow like a plain button pair. */
-      .nav-pinned {
-        position: sticky;
-        left: 0;
-        z-index: 5;
-        display: flex;
-        align-items: center;
-        gap: 2px;
-        background: rgba(7, 7, 15, 0.92);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-      }
+      /* Edit-mode toggle — a plain scrollable nav item like every other
+         tab button, positioned before Home (see index.html). Same icon-
+         button treatment as .nav-home-btn; the "active" state is
+         body.edit-mode rather than a .active class. */
       .nav-edit-btn {
         position: relative;
         background: none;
@@ -1673,33 +1659,19 @@
         border-radius: 9px;
         color: var(--dim);
         cursor: pointer;
+        padding: 7px 14px;
         display: flex;
         align-items: center;
         justify-content: center;
+        transition: color 0.15s, background 0.15s;
         flex-shrink: 0;
-        max-width: 0;
-        padding: 7px 0;
-        opacity: 0;
-        overflow: hidden;
-        transition: max-width 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
       }
-      /* Revealed once #tabs has been scrolled away from the start (see
-         main.js's scroll listener). */
-      .nav-pinned.scrolled .nav-edit-btn {
-        max-width: 40px;
-        padding: 7px 10px;
-        opacity: 1;
-      }
-      .nav-edit-btn:hover { color: var(--txt); background: rgba(255,255,255,0.05); }
-      .nav-edit-btn:not(:hover) { background: rgba(255,255,255,0.04); }
       body.edit-mode .nav-edit-btn { color: var(--mint); background: rgba(0, 245, 160, 0.1); }
       @media (max-width: 600px) {
-        .nav-pinned {
-          position: static;
+        .nav-edit-btn {
           flex: 1;
-          background: none;
-          backdrop-filter: none;
-          -webkit-backdrop-filter: none;
+          min-height: 36px;
+          padding: 6px 2px;
         }
       }
       .nav-dd-trigger { display: flex; align-items: center; justify-content: center; gap: 4px; }

@@ -153,52 +153,18 @@ el("txnSortSel").addEventListener("change", () => {
             txnFilter.sort = el("txnSortSel").value;
             renderTxns();
           });
-// Edit mode has no visible button by default — swipe up anywhere on the
-// bottom nav bar to toggle it (same toggleEditMode() call handles entering
-// AND saving-on-exit, exactly like the old button's two-state click did).
-// A dedicated icon also sits pinned next to Home, but stays hidden (see
-// .nav-pinned.scrolled in base.css) until #tabs is actually scrolled
-// horizontally — the swipe gesture already covers the default, unscrolled
-// case, so the icon only needs to step in once scrolling makes that
-// gesture's target area less obvious.
-// Pointer Events rather than touch-specific ones so this also works via
-// mouse-drag on desktop. Only a vertical-dominant upward swipe past the
-// threshold counts, so it doesn't fire on an ordinary tap, and doesn't
-// fight the bar's own horizontal auto-scroll (see .tabs' touch-action).
+// Edit-mode toggle — a plain, always-visible icon on the bottom nav bar
+// (replaced an earlier swipe-up-anywhere-on-the-bar gesture, which wasn't
+// discoverable). Same toggleEditMode() call handles entering AND
+// saving-on-exit, exactly like the old Edit button's two-state click did.
 // Guarded by authUser the same way the old button was hidden for guests
-// in updateAuthUI() — a guest could never see/click that button, so the
-// gesture and icon that replace it need the same access check.
-(() => {
-            const SWIPE_UP_THRESHOLD = 45;
-            const tabsEl = el("tabs");
-            const navPinned = el("navPinned");
-            let startX = 0, startY = 0, tracking = false;
-            tabsEl.addEventListener("pointerdown", (e) => {
-              tracking = true;
-              startX = e.clientX;
-              startY = e.clientY;
-            });
-            tabsEl.addEventListener("pointerup", (e) => {
-              if (!tracking) return;
-              tracking = false;
-              const dx = e.clientX - startX;
-              const dy = e.clientY - startY;
-              if (-dy > SWIPE_UP_THRESHOLD && -dy > Math.abs(dx) && authUser) {
-                closeNavDropdowns();
-                toggleEditMode();
-              }
-            });
-            tabsEl.addEventListener("pointercancel", () => { tracking = false; });
-
-            tabsEl.addEventListener("scroll", () => {
-              navPinned.classList.toggle("scrolled", tabsEl.scrollLeft > 0);
-            });
-            el("navEditBtn").addEventListener("click", () => {
-              if (!authUser) { UI.toast("err", "Unauthorized — please sign in to access this section", 4000); return; }
-              closeNavDropdowns();
-              toggleEditMode();
-            });
-          })();
+// in updateAuthUI() — a guest could never see/click that button, so this
+// needs the same access check.
+el("navEditBtn").addEventListener("click", () => {
+            if (!authUser) { UI.toast("err", "Unauthorized — please sign in to access this section", 4000); return; }
+            closeNavDropdowns();
+            toggleEditMode();
+          });
 el("calPrev").addEventListener("click", () => {
             if (calView === "week") { setCalWeekOffset(calWeekOffset - 1); renderCalendar(); return; }
             setCalMonth(calMonth - 1); if (calMonth < 0) { setCalMonth(11); setCalYear(calYear - 1); } renderCalendar();
