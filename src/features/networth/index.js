@@ -4,7 +4,7 @@ import { open as openModal } from "../../core/modal.js";
 import { refreshAncestorCollapsible } from "../../core/collapsible.js";
 import { _animOnRender, animateNumber, animateWidth } from "../../core/animate.js";
 import { avgMonthlyGrowthRate, avgMonthlyGrowthRateBy, buildCurrentSnapshot, changeFrom, mfTotalValue, mfUnrealizedGain, mfValueAsOf, monthsToReach, nwTotal, snapshotMonthsAgo } from "../../domain/networth.js";
-import { totalMonthlyExpenses } from "../../domain/expenses.js";
+import { monthlyExpenseSeries, totalMonthlyExpenses } from "../../domain/expenses.js";
 import { editMode, EQ_FUNDS, LIQ_FUNDS, normalizeSnap, othersOfSnap, saveState, snapshotKey, state } from "../../core/state.js";
 import { el } from "../../core/dom.js";
 import { evalArithmetic, fmt, fmtCompact, fmtMonth, fmtNum, num } from "../../core/format.js";
@@ -166,17 +166,25 @@ export function buildNwGrid() {
               incomeInp.addEventListener("blur",  () => { incomeInp.value = fmtNum(evalArithmetic(incomeInp.value)); });
             }
 
-            // Expenses — a direct, optional override for the Expenses
-            // card's "Total This Month" figure (see totalMonthlyExpenses()/
-            // monthlyExpenseSeries() in domain/expenses.js). Bank alone
-            // can't always isolate genuine spend — e.g. income landing in
-            // the same account the same month as spending leaves no way to
-            // net that out of a plain bank-balance diff — so this lets you
-            // state the real figure directly instead. 0/unset = fall back
-            // to the bank-derived estimate, same convention as goalAmount.
+            // Expenses — pre-filled with the same bank-derived estimate the
+            // Expenses card's "Total This Month" shows (see
+            // totalMonthlyExpenses()/monthlyExpenseSeries() in
+            // domain/expenses.js) rather than starting blank/0, so the
+            // field always shows a real, editable number instead of
+            // looking like missing data. Still a direct override in
+            // effect — Bank alone can't always isolate genuine spend (e.g.
+            // income landing in the same account the same month as
+            // spending) — typing a different figure here replaces it;
+            // renderNetWorth() keeps this synced to the live estimate for
+            // as long as the field hasn't actually been typed into.
             const expensesInp = el("nw-expenses");
             if (expensesInp) {
-              expensesInp.value = fmtNum(state.networth.expenses);
+              const { total: liveExpEstimate } = totalMonthlyExpenses({
+                fixedExpenses: state.surplus?.fixedExpenses, liqFunds: LIQ_FUNDS, eqFunds: EQ_FUNDS,
+                liquid: state.liquid, equity: state.equity, networth: state.networth,
+                transactions: state.transactions,
+              });
+              expensesInp.value = fmtNum(liveExpEstimate || 0);
               expensesInp.addEventListener("input", (e) => {
                 setNetworthField("expenses", evalArithmetic(e.target.value));
                 renderNetWorth();
@@ -218,6 +226,17 @@ export function renderNetWorth() {
               });
               updateExpEl.textContent = fmt(expTotal);
               if (updateExpSubEl) updateExpSubEl.textContent = isManual ? "Manually entered below" : "Fixed + unplanned bank spend, SIP excluded";
+              // Keep the editable Expenses input itself synced to this same
+              // figure — covers both "still auto, Bank/BankInitial just
+              // changed" (expTotal moves, field should track it) and
+              // "already manual" (expTotal already equals the saved
+              // override, so this is a no-op) — except while the user is
+              // actively typing in it, which would otherwise fight their
+              // keystrokes and clobber the cursor position.
+              const liveExpensesInp = el("nw-expenses");
+              if (liveExpensesInp && document.activeElement !== liveExpensesInp) {
+                liveExpensesInp.value = fmtNum(expTotal || 0);
+              }
             }
             animateNumber(el("nwHeroVal"), total, _animOnRender && !editMode ? 2000 : 500, _animOnRender && !editMode);
             const _snapKey = snapshotKey();
@@ -544,7 +563,18 @@ export function editSnapshot(key) {
             const fid = (id) => "snapEdit-" + id;
             const normalized = normalizeSnap(key, snap);
             const incomeVal = normalized.income;
-            const expensesVal = normalized.expenses;
+            // Pre-fill with this month's own bank-derived estimate (same
+            // fixed+extra calc monthlyExpenseSeries() uses for the Expense
+            // Trends card) rather than the raw stored figure, which is 0 for
+            // any month that was never manually overridden — otherwise the
+            // field looks empty even though a real computed number exists.
+            // Already-manual months are unaffected: monthlyExpenseSeries()
+            // returns that same saved override as `total` when one exists.
+            const expensesVal = monthlyExpenseSeries([key], {
+              fixedExpenses: state.surplus?.fixedExpenses, liqFunds: LIQ_FUNDS, eqFunds: EQ_FUNDS,
+              liquid: state.liquid, equity: state.equity, networth: state.networth,
+              transactions: state.transactions,
+            })[0].total || 0;
             const bankInitialVal = normalized.bankInitial;
             const readonlyRows = [
               { label: "MF Value", value: snap.mf || 0 },
