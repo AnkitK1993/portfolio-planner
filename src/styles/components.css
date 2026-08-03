@@ -16,6 +16,15 @@
         border-radius: 18px;
         width: 100%;
         max-width: 400px;
+        /* Bounded to the overlay's padded viewport height, with head/foot
+           pinned and only the body scrolling — without this, a form with
+           enough fields (e.g. Edit Snapshot) grows taller than a mobile
+           screen and, since the page itself is scroll-locked while the
+           modal is open, its Save/Cancel footer ends up permanently
+           off-screen with no way to reach it. */
+        max-height: 100%;
+        display: flex;
+        flex-direction: column;
         box-shadow: 0 20px 60px rgba(0,0,0,0.7);
         animation: matrixIn 0.18s cubic-bezier(0.34,1.2,0.64,1) both;
       }
@@ -25,6 +34,7 @@
         justify-content: space-between;
         padding: 18px 20px 14px;
         border-bottom: 1px solid var(--line);
+        flex-shrink: 0;
       }
       .modal-title {
         font-family: "Roboto", sans-serif;
@@ -43,13 +53,21 @@
         transition: color 0.15s;
       }
       .modal-close:hover { color: var(--txt); }
-      .modal-body { padding: 16px 20px; display: flex; flex-direction: column; gap: 13px; }
+      .modal-body {
+        padding: 16px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 13px;
+        overflow-y: auto;
+        min-height: 0; /* let this flex child actually shrink & scroll, instead of forcing the card to grow past the viewport */
+      }
       .modal-foot {
         display: flex;
         gap: 10px;
         padding: 14px 20px;
         border-top: 1px solid var(--line);
         justify-content: flex-end;
+        flex-shrink: 0;
       }
       .form-inp {
         background: var(--bg);
