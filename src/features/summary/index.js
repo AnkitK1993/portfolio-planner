@@ -915,6 +915,13 @@ function renderExpenseTrends() {
                     <div class="nw-proj-card"><div class="pk">12 months</div><div class="pv">${fmtAvg(avgTotal * 12)}</div></div>
                   </div>
                 </div>
+                <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line);">
+                  <div style="font-size:10px;color:var(--dim);margin-bottom:8px;">Expenses by Month — ${EXPENSE_PERIODS.find(p => p.key === expPeriod)?.label || ""}</div>
+                  ${series.slice().reverse().map(m => `<div class="nw-hist-detail-row">
+                    <span>${fmtMonth(m.key)}</span>
+                    <span>${m.total !== null ? fmt(m.total) : "—"}</span>
+                  </div>`).join("")}
+                </div>
                 ${incExpBlockHtml}`
               : `<div style="font-size:10.5px;color:var(--dim);padding:8px 0;">No Net Worth snapshots in this period yet — save monthly snapshots on the Net Worth tab to see trends and projections.</div>`;
 
