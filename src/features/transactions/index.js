@@ -120,12 +120,6 @@ export function setTxnType(type) {
             el("txnTypeToggle").querySelectorAll(".txn-type-btn").forEach(b => {
               b.classList.toggle("active", b.dataset.type === type);
             });
-            // "Came from Bank" only means anything for money going INTO a
-            // fund — redemption/dividend/switch don't represent a fresh
-            // investment that could have come from somewhere other than
-            // the bank, so the checkbox is only relevant for sip/lump.
-            const fromBankRow = el("txnFromBankRow");
-            if (fromBankRow) fromBankRow.style.display = (type === "sip" || type === "lump") ? "flex" : "none";
             // The switch form completely replaces the per-fund amount list —
             // only relevant when adding a new transaction (the Switch type
             // button is hidden while editing an existing one, see
@@ -222,7 +216,6 @@ export function openTxnModal(txnId) {
               const txn = (state.transactions || []).find(t => t.id === editId);
               el("txnDate").value = txn?.date || today;
               setTxnType(txn?.type || "sip");
-              el("txnFromBank").checked = txn?.fromBank !== false;
               const isLiq = LIQ_FUNDS.some(f => f.id === txn?.fundId);
               const s = isLiq ? state.liquid[txn.fundId] : state.equity[txn.fundId];
               const defName = isLiq
@@ -233,7 +226,6 @@ export function openTxnModal(txnId) {
             } else {
               el("txnDate").value = today;
               setTxnType("sip");
-              el("txnFromBank").checked = true;
               buildFundInputList();
             }
             UI.openOverlay(el("txnModal"));
@@ -250,10 +242,6 @@ export function saveTxn() {
             if (!state.transactions) state.transactions = [];
 
             const txnType = el("txnType")?.value || "sip";
-            // Only meaningful for sip/lump — see txnFromBankRow's own
-            // comment in index.html. Read once here; every place below
-            // that constructs/updates a sip or lump transaction reuses it.
-            const fromBankChecked = el("txnFromBank")?.checked !== false;
             if (!editId && txnType === "switch") {
               const fromId = el("txnSwitchFrom")?.value;
               const toId = el("txnSwitchTo")?.value;
@@ -285,7 +273,6 @@ export function saveTxn() {
               txn.invested = invested;
               txn.afterExpense = afterExpense;
               txn.type = txnType;
-              if (txnType === "sip" || txnType === "lump") txn.fromBank = fromBankChecked;
               const newSigned = signedAfterExpense(txn);
               applyCurrentValueDelta(txn.fundId, isLiqFund(txn.fundId), newSigned - oldSigned);
             } else {
@@ -307,7 +294,6 @@ export function saveTxn() {
                   if (v > 0) {
                     const ae = Number(el("txae-" + f.id)?.value) || v;
                     const newTxn = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5), fundId: f.id, date, invested: v, afterExpense: ae, notes: "", type: txnType };
-                    if (txnType === "sip" || txnType === "lump") newTxn.fromBank = fromBankChecked;
                     state.transactions.push(newTxn);
                     applyCurrentValueDelta(f.id, isLiqFund(f.id), signedAfterExpense(newTxn));
                     added++;
@@ -325,7 +311,6 @@ export function saveTxn() {
                 if (v > 0) {
                   const ae = Number(el("txae-" + f.id)?.value) || v;
                   const newTxn = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5), fundId: f.id, date, invested: v, afterExpense: ae, notes: "", type: txnType };
-                  if (txnType === "sip" || txnType === "lump") newTxn.fromBank = fromBankChecked;
                   state.transactions.push(newTxn);
                   applyCurrentValueDelta(f.id, isLiqFund(f.id), signedAfterExpense(newTxn));
                   added++;

@@ -66,18 +66,9 @@ export function totalMonthlySip(liqFunds, eqFunds, liquid, equity) {
 // extra lump purchase); this is how totalMonthlyExpenses()/
 // monthlyExpenseSeries() recognize that surplus as investment rather than
 // unplanned bank spending.
-// A sip/lump explicitly marked fromBank:false (see the Add Transaction
-// modal's checkbox) never touched the tracked bank balance — a bonus
-// paid straight to a fund, an external transfer, etc. — so it's excluded
-// here entirely rather than being treated as bank-sourced investing;
-// otherwise it would wrongly offset a real bank-drop and understate
-// unplanned spend. Missing/undefined fromBank (every pre-existing
-// transaction, and redemption/dividend/switch legs, which never show
-// the checkbox) defaults to true, leaving prior behavior unchanged.
 function investedInMonth(transactions, monthKey) {
             return (transactions || []).reduce((sum, t) => {
               if (!t.date || t.date.slice(0, 7) !== monthKey) return sum;
-              if (t.type !== "redemption" && t.fromBank === false) return sum;
               const ae = Number(t.afterExpense ?? t.invested) || 0;
               return sum + (t.type === "redemption" ? -ae : ae);
             }, 0);
