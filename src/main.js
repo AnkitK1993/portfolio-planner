@@ -42,7 +42,45 @@ setTabActivateHandler(tabId => {
             }
           });
 
-el("homeBtn").addEventListener("click", () => navigateTo("portfolio"));
+// Home doubles as the Edit-mode toggle: hold it down for ~2s to enter or
+// exit edit mode (toggleEditMode() handles saving-on-exit, same as the
+// old two-state Edit button's click did) — works identically at any
+// viewport width, unlike an earlier scroll-revealed icon that depended
+// on the nav bar actually having room to scroll. A quick tap still
+// navigates Home as normal; only a genuine hold toggles edit mode, and
+// suppresses the click that would otherwise follow it. Guarded by
+// authUser the same way the old Edit button was hidden for guests in
+// updateAuthUI() — a guest could never see/click that button, so this
+// needs the same check.
+(() => {
+            const HOLD_MS = 2000;
+            const homeBtn = el("homeBtn");
+            let holdTimer = null;
+            let longPressFired = false;
+
+            const cancelHold = () => {
+              clearTimeout(holdTimer);
+              homeBtn.classList.remove("holding");
+            };
+            homeBtn.addEventListener("pointerdown", () => {
+              longPressFired = false;
+              homeBtn.classList.add("holding");
+              holdTimer = setTimeout(() => {
+                longPressFired = true;
+                homeBtn.classList.remove("holding");
+                if (!authUser) { UI.toast("err", "Unauthorized — please sign in to access this section", 4000); return; }
+                closeNavDropdowns();
+                toggleEditMode();
+              }, HOLD_MS);
+            });
+            homeBtn.addEventListener("pointerup", cancelHold);
+            homeBtn.addEventListener("pointerleave", cancelHold);
+            homeBtn.addEventListener("pointercancel", cancelHold);
+            homeBtn.addEventListener("click", () => {
+              if (longPressFired) return;
+              navigateTo("portfolio");
+            });
+          })();
 el("summaryBtn").addEventListener("click", () => {
             if (!authUser) { UI.toast("err", "Unauthorized — please sign in to access this section", 4000); return; }
             navigateTo("summary");
@@ -153,25 +191,6 @@ el("txnSortSel").addEventListener("change", () => {
             txnFilter.sort = el("txnSortSel").value;
             renderTxns();
           });
-// Edit-mode toggle — a pinned icon beside Home that only shows up once
-// #tabs is scrolled away from the start (swipe the bar to the right to
-// see the rest of the tabs), rather than sitting there permanently.
-// toggleEditMode() handles entering AND saving-on-exit, exactly like the
-// old Edit button's two-state click did. Guarded by authUser the same
-// way the old button was hidden for guests in updateAuthUI() — a guest
-// could never see/click that button, so this needs the same check.
-(() => {
-            const tabsEl = el("tabs");
-            const navPinned = el("navPinned");
-            tabsEl.addEventListener("scroll", () => {
-              navPinned.classList.toggle("scrolled", tabsEl.scrollLeft > 0);
-            });
-            el("navEditBtn").addEventListener("click", () => {
-              if (!authUser) { UI.toast("err", "Unauthorized — please sign in to access this section", 4000); return; }
-              closeNavDropdowns();
-              toggleEditMode();
-            });
-          })();
 el("calPrev").addEventListener("click", () => {
             if (calView === "week") { setCalWeekOffset(calWeekOffset - 1); renderCalendar(); return; }
             setCalMonth(calMonth - 1); if (calMonth < 0) { setCalMonth(11); setCalYear(calYear - 1); } renderCalendar();

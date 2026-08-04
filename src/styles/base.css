@@ -1645,67 +1645,22 @@
       }
       .nav-home-btn.active { color: var(--mint); background: rgba(0, 245, 160, 0.1); }
       .nav-home-btn:hover:not(.active) { color: var(--txt); background: rgba(255,255,255,0.05); }
+      /* Immediate "press" feedback while holding Home down toward the
+         2s edit-mode toggle (see main.js) — not synced to the exact
+         hold duration, just a quick, low-effort cue that the press
+         registered, same idea as a native :active state. */
+      .nav-home-btn.holding {
+        background: rgba(0, 245, 160, 0.15);
+        transform: scale(0.92);
+      }
+      /* Persistent indicator while edit mode is on, independent of
+         whether Home is also the active tab. */
+      body.edit-mode .nav-home-btn { color: var(--mint); background: rgba(0, 245, 160, 0.1); }
       @media (max-width: 600px) {
         .nav-home-btn {
           flex: 1;
           min-height: 36px;
           padding: 6px 2px;
-        }
-      }
-
-      /* Pinned left group (Home + the scroll-revealed Edit shortcut) —
-         sticky so it stays reachable at the left edge of #tabs' own
-         horizontal auto-scroll instead of scrolling away with the rest
-         of the tab buttons. Only actually "sticks" above ~600px, where
-         .tabs can overflow at all — below that .tabs hides overflow
-         entirely (see its own mobile override), so this just sits in
-         normal flow like a plain button pair. */
-      .nav-pinned {
-        position: sticky;
-        left: 0;
-        z-index: 5;
-        display: flex;
-        align-items: center;
-        gap: 2px;
-        background: rgba(7, 7, 15, 0.92);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-      }
-      .nav-edit-btn {
-        position: relative;
-        background: none;
-        border: none;
-        border-radius: 9px;
-        color: var(--dim);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        max-width: 0;
-        padding: 7px 0;
-        opacity: 0;
-        overflow: hidden;
-        transition: max-width 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
-      }
-      /* Revealed once #tabs has been scrolled away from the start (see
-         main.js's scroll listener) — i.e. once you swipe the bar to the
-         right to see the rest of the tabs. */
-      .nav-pinned.scrolled .nav-edit-btn {
-        max-width: 40px;
-        padding: 7px 10px;
-        opacity: 1;
-      }
-      .nav-edit-btn:hover { color: var(--txt); background: rgba(255,255,255,0.05); }
-      .nav-edit-btn:not(:hover) { background: rgba(255,255,255,0.04); }
-      body.edit-mode .nav-edit-btn { color: var(--mint); background: rgba(0, 245, 160, 0.1); }
-      @media (max-width: 600px) {
-        .nav-pinned {
-          position: static;
-          flex: 1;
-          background: none;
-          backdrop-filter: none;
-          -webkit-backdrop-filter: none;
         }
       }
       .nav-dd-trigger { display: flex; align-items: center; justify-content: center; gap: 4px; }
