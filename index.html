@@ -1124,6 +1124,15 @@
             <button class="txn-type-btn" data-type="switch" id="txnTypeSwitchBtn">Switch</button>
           </div>
           <input type="hidden" id="txnType" value="sip" />
+          <!-- SIP/Lump only — whether this money left Bank & Savings, so
+               domain/expenses.js's bank-drop expense estimate can exclude
+               investments that never touched the tracked bank balance
+               (a bonus paid straight to a fund, an external transfer,
+               etc.) instead of assuming every SIP/Lump came from there. -->
+          <label class="txn-frombank-row" id="txnFromBankRow">
+            <input type="checkbox" id="txnFromBank" checked />
+            <span>Money came from Bank &amp; Savings</span>
+          </label>
           <div id="txnFundInputList"></div>
         </div>
         <div class="modal-foot">

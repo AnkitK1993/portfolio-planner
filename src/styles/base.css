@@ -431,6 +431,8 @@
       .fc-scenario-btn.aggr.active { background:rgba(74,222,128,0.12); border-color:#4ade80; color:#4ade80; }
       .fc-all-label { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--dim); cursor:pointer; margin-left:auto; }
       .fc-all-label input { accent-color:var(--mint); }
+      .txn-frombank-row { display:flex; align-items:center; gap:7px; font-size:11.5px; color:var(--dim); cursor:pointer; margin-bottom:12px; }
+      .txn-frombank-row input { accent-color:var(--mint); }
       /* Toggle switch */
       .fc-toggle-wrap { position:relative; display:inline-block; width:34px; height:18px; }
       .fc-toggle-wrap input { opacity:0; width:0; height:0; }
