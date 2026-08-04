@@ -153,18 +153,25 @@ el("txnSortSel").addEventListener("change", () => {
             txnFilter.sort = el("txnSortSel").value;
             renderTxns();
           });
-// Edit-mode toggle — a plain, always-visible icon on the bottom nav bar
-// (replaced an earlier swipe-up-anywhere-on-the-bar gesture, which wasn't
-// discoverable). Same toggleEditMode() call handles entering AND
-// saving-on-exit, exactly like the old Edit button's two-state click did.
-// Guarded by authUser the same way the old button was hidden for guests
-// in updateAuthUI() — a guest could never see/click that button, so this
-// needs the same access check.
-el("navEditBtn").addEventListener("click", () => {
-            if (!authUser) { UI.toast("err", "Unauthorized — please sign in to access this section", 4000); return; }
-            closeNavDropdowns();
-            toggleEditMode();
-          });
+// Edit-mode toggle — a pinned icon beside Home that only shows up once
+// #tabs is scrolled away from the start (swipe the bar to the right to
+// see the rest of the tabs), rather than sitting there permanently.
+// toggleEditMode() handles entering AND saving-on-exit, exactly like the
+// old Edit button's two-state click did. Guarded by authUser the same
+// way the old button was hidden for guests in updateAuthUI() — a guest
+// could never see/click that button, so this needs the same check.
+(() => {
+            const tabsEl = el("tabs");
+            const navPinned = el("navPinned");
+            tabsEl.addEventListener("scroll", () => {
+              navPinned.classList.toggle("scrolled", tabsEl.scrollLeft > 0);
+            });
+            el("navEditBtn").addEventListener("click", () => {
+              if (!authUser) { UI.toast("err", "Unauthorized — please sign in to access this section", 4000); return; }
+              closeNavDropdowns();
+              toggleEditMode();
+            });
+          })();
 el("calPrev").addEventListener("click", () => {
             if (calView === "week") { setCalWeekOffset(calWeekOffset - 1); renderCalendar(); return; }
             setCalMonth(calMonth - 1); if (calMonth < 0) { setCalMonth(11); setCalYear(calYear - 1); } renderCalendar();
