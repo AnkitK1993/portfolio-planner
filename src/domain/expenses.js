@@ -143,12 +143,23 @@ export function totalMonthlyExpenses({ fixedExpenses, liqFunds, eqFunds, liquid,
               // have is the fixed budget; SIP stays excluded even here.
               return { fixed, sip, surplusInvestment, planned, bankSpend: null, extra: null, total: fixed };
             }
-            const extra = bankSpend.amount - planned;
+            // Never show less than the fixed budget as "this month's
+            // expenses" — that much is guaranteed regardless of what the
+            // bank-drop signal currently says (e.g. right at the start of
+            // a tracking period, before the drop has caught up to even
+            // the known fixed costs). Once the drop genuinely exceeds
+            // fixed+SIP, the real bank-derived figure takes over instead.
+            // extra is recomputed as total-minus-fixed so the fixed+extra
+            // =total invariant still holds, same convention as the
+            // manual-entry case above — it reads 0, not negative,
+            // whenever the floor is what's actually showing.
+            const total = Math.max(fixed, fixed + (bankSpend.amount - planned));
+            const extra = total - fixed;
             return {
               fixed, sip, surplusInvestment, planned,
               bankSpend,
               extra,
-              total: fixed + extra,
+              total,
             };
           }
 
@@ -243,8 +254,10 @@ export function monthlyExpenseSeries(periodKeys, { fixedExpenses, liqFunds, eqFu
                 bankDrop = Math.max(0, snapInitial - (snaps[key].bank || 0));
               }
               if (bankDrop === null) return { key, fixed, sip, surplusInvestment, planned, bankDrop: null, extra: null, total: null };
-              const extra = bankDrop - planned;
-              return { key, fixed, sip, surplusInvestment, planned, bankDrop, extra, total: fixed + extra };
+              // Same floor as totalMonthlyExpenses() — never below fixed.
+              const total = Math.max(fixed, fixed + (bankDrop - planned));
+              const extra = total - fixed;
+              return { key, fixed, sip, surplusInvestment, planned, bankDrop, extra, total };
             });
           }
 
