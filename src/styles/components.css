@@ -586,6 +586,7 @@
       .txn-badge-lump { background:rgba(147,197,253,.12); color:#93c5fd; }
       .txn-badge-redeem { background:rgba(248,113,113,.15); color:var(--coral); }
       .txn-badge-dividend { background:rgba(167,139,250,.15); color:#a78bfa; }
+      .txn-badge-switch { background:rgba(251,191,36,.15); color:var(--amber); }
 
       /* ── Fund split row (#10) ── */
       .fund-split-row { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; min-height:0; }

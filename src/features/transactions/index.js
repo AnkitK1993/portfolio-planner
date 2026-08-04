@@ -60,11 +60,75 @@ function applyCurrentValueDelta(fundId, isLiq, delta) {
             store.currentValue = Math.max(0, (store.currentValue || 0) + delta);
           }
 
+function allFundsList() {
+            return [
+              ...LIQ_FUNDS.map(f => ({ id: f.id, name: state.liquid[f.id].name || f.defaultName })),
+              ...EQ_FUNDS.map(f => ({ id: f.id, name: state.equity[f.id].name || f.defaultName })),
+            ];
+          }
+
+// Normal "amount per fund" list — every fund gets its own Invested/After
+// Expense row, any number of which can be filled in and saved together.
+// Factored out so it can be rebuilt both when the Add Transaction modal
+// first opens and when switching the type back from "switch" (whose form
+// replaces this list entirely — see switchFormHTML()).
+function buildFundInputList() {
+            const listEl = el("txnFundInputList");
+            if (!listEl) return;
+            listEl.innerHTML = allFundsList().map(f => txnFundRowHTML(f.id, f.name, "", "")).join("");
+          }
+
+// Switch (a.k.a. STP) — money moving from one of your own funds into
+// another (e.g. a recurring monthly Liquid -> Equity transfer) rather
+// than arriving fresh from the bank. Saved as a linked redemption
+// (source fund) + sip (destination fund) pair sharing a switchGroup id —
+// this reuses every bit of existing redemption/sip accounting (fund
+// totals, XIRR, Current Value) unchanged, and critically, the two legs'
+// signed amounts already net to zero in domain/expenses.js's "money
+// invested this month" total, so it's automatically excluded from
+// looking like Bank-sourced spending without any changes there.
+function switchFormHTML() {
+            const funds = allFundsList();
+            if (funds.length < 2) {
+              return `<div style="font-size:11px;color:var(--dim);padding:8px 0;">Add at least two funds to record a switch between them.</div>`;
+            }
+            const defaultFrom = LIQ_FUNDS[0]?.id || funds[0].id;
+            const defaultTo = EQ_FUNDS[0]?.id || funds.find(f => f.id !== defaultFrom)?.id || funds[1].id;
+            const opt = (f, selectedId) => `<option value="${f.id}"${f.id === selectedId ? " selected" : ""}>${f.name}</option>`;
+            return `
+              <div class="field">
+                <label class="flabel" for="txnSwitchFrom">From (source fund)</label>
+                <select class="form-inp" id="txnSwitchFrom">${funds.map(f => opt(f, defaultFrom)).join("")}</select>
+              </div>
+              <div class="field" style="margin-top:12px;">
+                <label class="flabel" for="txnSwitchTo">To (destination fund)</label>
+                <select class="form-inp" id="txnSwitchTo">${funds.map(f => opt(f, defaultTo)).join("")}</select>
+              </div>
+              <div class="field" style="margin-top:12px;">
+                <label class="flabel" for="txnSwitchAmt">Amount</label>
+                <div class="ibox"><span class="pfx">&#8377;</span>
+                  <input class="num" id="txnSwitchAmt" type="number" min="0" inputmode="numeric" placeholder="0" />
+                </div>
+              </div>
+              <div style="font-size:10.5px;color:var(--dim);margin-top:8px;">
+                Recorded as a redemption from the source fund and an investment into the destination fund for the same amount — not counted as money spent from Bank.
+              </div>`;
+          }
+
 export function setTxnType(type) {
             el("txnType").value = type;
             el("txnTypeToggle").querySelectorAll(".txn-type-btn").forEach(b => {
               b.classList.toggle("active", b.dataset.type === type);
             });
+            // The switch form completely replaces the per-fund amount list —
+            // only relevant when adding a new transaction (the Switch type
+            // button is hidden while editing an existing one, see
+            // openTxnModal(), so this never fires mid-edit).
+            const listEl = el("txnFundInputList");
+            if (listEl && !el("txnEditId")?.value) {
+              if (type === "switch") listEl.innerHTML = switchFormHTML();
+              else if (listEl.querySelector("#txnSwitchFrom")) buildFundInputList();
+            }
           }
 
 export function applyTxnTotals() {
@@ -141,6 +205,13 @@ export function openTxnModal(txnId) {
             el("txnModalTitle").textContent = editId ? "Edit Transaction" : "Add Transaction";
             const today = new Date().toISOString().split("T")[0];
 
+            // Switch creates a linked pair of transactions in one step, so
+            // it doesn't map onto editing a single existing one — hidden
+            // for edits, same as how Redemption/Dividend already skip the
+            // duplicate-detection path other types get in saveTxn().
+            const switchBtn = el("txnTypeSwitchBtn");
+            if (switchBtn) switchBtn.style.display = editId ? "none" : "";
+
             if (editId) {
               const txn = (state.transactions || []).find(t => t.id === editId);
               el("txnDate").value = txn?.date || today;
@@ -155,11 +226,7 @@ export function openTxnModal(txnId) {
             } else {
               el("txnDate").value = today;
               setTxnType("sip");
-              const allFunds = [
-                ...LIQ_FUNDS.map(f => ({ id: f.id, name: state.liquid[f.id].name || f.defaultName })),
-                ...EQ_FUNDS.map(f => ({ id: f.id, name: state.equity[f.id].name || f.defaultName })),
-              ];
-              el("txnFundInputList").innerHTML = allFunds.map(f => txnFundRowHTML(f.id, f.name, "", "")).join("");
+              buildFundInputList();
             }
             UI.openOverlay(el("txnModal"));
           }
@@ -175,6 +242,26 @@ export function saveTxn() {
             if (!state.transactions) state.transactions = [];
 
             const txnType = el("txnType")?.value || "sip";
+            if (!editId && txnType === "switch") {
+              const fromId = el("txnSwitchFrom")?.value;
+              const toId = el("txnSwitchTo")?.value;
+              const amt = Number(el("txnSwitchAmt")?.value) || 0;
+              if (!fromId || !toId || fromId === toId) { UI.toast("error", "Pick two different funds", 2500); return; }
+              if (!amt) { UI.toast("error", "Amount is required", 2500); return; }
+              const group = Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+              const outTxn = { id: group + "-a", fundId: fromId, date, invested: amt, afterExpense: amt, notes: "", type: "redemption", switchGroup: group, switchPeer: toId };
+              const inTxn  = { id: group + "-b", fundId: toId, date, invested: amt, afterExpense: amt, notes: "", type: "sip", switchGroup: group, switchPeer: fromId };
+              state.transactions.push(outTxn, inTxn);
+              applyCurrentValueDelta(fromId, isLiqFund(fromId), signedAfterExpense(outTxn));
+              applyCurrentValueDelta(toId, isLiqFund(toId), signedAfterExpense(inTxn));
+              applyTxnTotals();
+              saveState();
+              render();
+              renderTxns();
+              closeTxnModal();
+              UI.toast("success", "Switch recorded — " + fundName(fromId) + " → " + fundName(toId), 2500);
+              return;
+            }
             if (editId) {
               const txn = state.transactions.find(t => t.id === editId);
               if (!txn) return;
@@ -241,14 +328,26 @@ export function saveTxn() {
 
 export function deleteTxn(id) {
             const list = state.transactions || [];
-            const idx = list.findIndex(t => t.id === id);
-            if (idx === -1) return;
-            const [txn] = list.splice(idx, 1);
-            applyCurrentValueDelta(txn.fundId, isLiqFund(txn.fundId), -signedAfterExpense(txn));
+            const txn = list.find(t => t.id === id);
+            if (!txn) return;
+            // A switch is a linked pair (see saveTxn()) — deleting only one
+            // leg would leave the other dangling and unbalanced, right back
+            // to reading as real Bank-sourced money since nothing offsets
+            // it anymore. Delete and undo both together.
+            const peer = txn.switchGroup ? list.find(t => t.switchGroup === txn.switchGroup && t.id !== txn.id) : null;
+            const removedIds = new Set(peer ? [txn.id, peer.id] : [txn.id]);
+            const removed = list.filter(t => removedIds.has(t.id));
+            state.transactions = list.filter(t => !removedIds.has(t.id));
+            removed.forEach(t => applyCurrentValueDelta(t.fundId, isLiqFund(t.fundId), -signedAfterExpense(t)));
             applyTxnTotals(); saveState(); render(); renderTxns();
-            UI.undoToast(fundName(txn.fundId) + " transaction deleted", () => {
-              list.splice(idx, 0, txn);
-              applyCurrentValueDelta(txn.fundId, isLiqFund(txn.fundId), signedAfterExpense(txn));
+            const fromLeg = removed.find(t => t.type === "redemption") || txn;
+            const toLeg   = removed.find(t => t.type !== "redemption") || peer;
+            const label = peer
+              ? "Switch (" + fundName(fromLeg.fundId) + " → " + fundName(toLeg.fundId) + ") deleted"
+              : fundName(txn.fundId) + " transaction deleted";
+            UI.undoToast(label, () => {
+              state.transactions.push(...removed);
+              removed.forEach(t => applyCurrentValueDelta(t.fundId, isLiqFund(t.fundId), signedAfterExpense(t)));
               applyTxnTotals(); saveState(); render(); renderTxns();
             });
           }
@@ -590,7 +689,9 @@ export function renderTxns() {
                 list.forEach(t => {
                   const runningTotal = runMap[t.id] || 0;
                   const isRedeem = t.type === "redemption";
-                  const typeBadge = t.type === "sip"
+                  const typeBadge = t.switchGroup
+                    ? `<span class="txn-badge txn-badge-switch">Switch</span>`
+                    : t.type === "sip"
                     ? `<span class="txn-badge txn-badge-sip">SIP</span>`
                     : t.type === "redemption"
                     ? `<span class="txn-badge txn-badge-redeem">Redeemed</span>`
@@ -599,9 +700,17 @@ export function renderTxns() {
                     : t.type === "dividend"
                     ? `<span class="txn-badge txn-badge-dividend">Dividend</span>`
                     : "";
+                  // Linked switch legs show which fund the money moved
+                  // to/from instead of (or alongside) any user notes — the
+                  // detail that makes a lone Redeemed/SIP-looking row read
+                  // as one half of a transfer rather than real Bank activity.
+                  const switchSub = t.switchGroup
+                    ? `<div class="txn-sub">${isRedeem ? "→ " : "← "}${fundName(t.switchPeer)}</div>`
+                    : "";
                   html += `<div class="txn-row txn-row-child${isRedeem ? " txn-row-redeemed" : ""}">
                     <div class="txn-info">
                       <div class="txn-fund-name">${fundName(t.fundId)}${typeBadge}</div>
+                      ${switchSub}
                       ${t.notes ? `<div class="txn-sub">${t.notes}</div>` : ""}
                       <div class="txn-running">Running total: ${fmt(runningTotal)}</div>
                     </div>
