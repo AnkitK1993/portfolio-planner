@@ -1517,8 +1517,15 @@
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
       }
+      /* .coll-head (the expand/collapse <button>) and .fund-head-actions
+         (Archive/Delete) are siblings here, not nested — a <button> can't
+         legally contain another <button>, and browsers silently auto-close
+         the outer one when they hit a nested one, which used to detach
+         Archive/Delete/the chevron from the row's flex layout entirely. */
+      .coll-head-row { display: flex; align-items: stretch; }
       .coll-head {
-        width: 100%;
+        flex: 1;
+        min-width: 0;
         display: flex;
         align-items: center;
         padding: 13px 16px;
@@ -1532,6 +1539,14 @@
         text-align: left;
       }
       .coll-head:hover { color: var(--txt); }
+      .fund-head-actions {
+        display: none;
+        align-items: center;
+        gap: 4px;
+        flex-shrink: 0;
+        padding-right: 12px;
+      }
+      body.edit-mode .fund-head-actions { display: flex; }
       .coll-title {
         font-size: 9.5px;
         text-transform: uppercase;
@@ -1636,13 +1651,27 @@
       @keyframes catPulse { 0%,100% { outline-color: rgba(248,113,113,0.35); } 50% { outline-color: rgba(248,113,113,0.9); } }
       body.edit-mode .fund-cat-pill { display: none; }
       body.edit-mode .fund-cat-select { display: block; }
-      /* ── Archive button ── */
-      .fund-archive-btn { display: none; background: none; border: 1px solid var(--line); border-radius: 7px; color: var(--txt); font-size: 10px; font-family: "Roboto", sans-serif; padding: 2px 8px; cursor: pointer; flex-shrink: 0; }
-      body.edit-mode .fund-archive-btn { display: block; }
+      /* ── Archive / Delete buttons — icon-only (not text) because the
+         fund card header row is already tight on mobile (drag handle,
+         name, category, value, return%, chevron); a text "Archive" +
+         "Delete" pair was wide enough to push off the right edge of a
+         narrow screen entirely, with no scroll to reach it. Visibility is
+         gated on the .fund-head-actions wrapper (edit mode only), not
+         these individually. ── */
+      .fund-archive-btn, .fund-delete-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: none;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        color: var(--txt);
+        padding: 4px;
+        cursor: pointer;
+        flex-shrink: 0;
+      }
       .fund-archive-btn:hover { border-color: var(--coral); color: var(--coral); }
-      /* ── Delete button — permanent, unlike Archive ── */
-      .fund-delete-btn { display: none; background: none; border: 1px solid var(--coral); border-radius: 7px; color: var(--coral); font-size: 10px; font-family: "Roboto", sans-serif; padding: 2px 8px; cursor: pointer; flex-shrink: 0; opacity: 0.75; }
-      body.edit-mode .fund-delete-btn { display: block; }
+      .fund-delete-btn { border-color: var(--coral); color: var(--coral); opacity: 0.75; }
       .fund-delete-btn:hover { opacity: 1; background: rgba(248,113,113,0.12); }
       /* ── Archived section ── */
       .archived-section { display: none; margin-top: 10px; }

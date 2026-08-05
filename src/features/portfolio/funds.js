@@ -206,18 +206,30 @@ export function makeFundSection(f, isLiq, container) {
             sec.dataset.fundId   = f.id;
             sec.dataset.fundType = isLiq ? "liq" : "eq";
             sec.innerHTML = `
-              <button class="coll-head" id="coll-head-${f.id}" aria-expanded="false">
-                <span class="drag-handle" title="Drag to reorder">⠿</span>
-                <input class="coll-title coll-name-input" id="coll-name-${f.id}" value="${lbl}" ${editMode ? "" : "readonly"} />
-                ${cat ? `<span class="fund-cat-pill">${cat}</span>` : `<span class="fund-cat-pill" style="display:none"></span>`}
-                <select class="fund-cat-select" id="cat-${f.id}"><option value="">Category…</option>${catOpts}</select>
-                <span class="coll-meta" id="coll-val-${f.id}"></span>
-                <span class="coll-rtn" id="coll-rtn-${f.id}"></span>
-                <span class="coll-xirr" id="coll-xirr-${f.id}" style="display:none"></span>
-                <button class="fund-archive-btn" data-id="${f.id}" data-liq="${isLiq}" title="Archive fund">Archive</button>
-                <button class="fund-delete-btn" data-id="${f.id}" data-liq="${isLiq}" title="Permanently delete fund">Delete</button>
-                <span class="coll-chevron">▾</span>
-              </button>
+              <div class="coll-head-row">
+                <button class="coll-head" id="coll-head-${f.id}" aria-expanded="false">
+                  <span class="drag-handle" title="Drag to reorder">⠿</span>
+                  <input class="coll-title coll-name-input" id="coll-name-${f.id}" value="${lbl}" ${editMode ? "" : "readonly"} />
+                  ${cat ? `<span class="fund-cat-pill">${cat}</span>` : `<span class="fund-cat-pill" style="display:none"></span>`}
+                  <select class="fund-cat-select" id="cat-${f.id}"><option value="">Category…</option>${catOpts}</select>
+                  <span class="coll-meta" id="coll-val-${f.id}"></span>
+                  <span class="coll-rtn" id="coll-rtn-${f.id}"></span>
+                  <span class="coll-xirr" id="coll-xirr-${f.id}" style="display:none"></span>
+                  <span class="coll-chevron">▾</span>
+                </button>
+                <!-- Siblings of .coll-head, not nested inside it — <button>
+                     cannot legally contain another <button>; browsers
+                     silently auto-close the outer one when they hit a
+                     nested one, which broke this whole row's layout. -->
+                <div class="fund-head-actions">
+                  <button class="fund-archive-btn" data-id="${f.id}" data-liq="${isLiq}" title="Archive fund" aria-label="Archive fund">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>
+                  </button>
+                  <button class="fund-delete-btn" data-id="${f.id}" data-liq="${isLiq}" title="Permanently delete fund" aria-label="Permanently delete fund">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                  </button>
+                </div>
+              </div>
               <div class="coll-body" id="coll-body-${f.id}">
                 <div class="coll-body-inner" id="${isLiq ? "liq" : "eq"}-wrap-${f.id}"></div>
               </div>`;
