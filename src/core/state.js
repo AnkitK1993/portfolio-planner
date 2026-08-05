@@ -196,6 +196,12 @@ export let editMode = false;
 export function setEditMode(on) {
             editMode = on;
             document.body.classList.toggle("edit-mode", on);
+            const btn = el("editToggleBtn");
+            if (btn) {
+              btn.textContent = on ? "SAVE" : "EDIT";
+              btn.classList.toggle("done", on);
+              btn.setAttribute("aria-pressed", on ? "true" : "false");
+            }
             updateCollNameReadonly();
             render(); // rebuild calendar HTML (inputs vs text for paid events)
           }

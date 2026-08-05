@@ -42,45 +42,8 @@ setTabActivateHandler(tabId => {
             }
           });
 
-// Home doubles as the Edit-mode toggle: hold it down for ~2s to enter or
-// exit edit mode (toggleEditMode() handles saving-on-exit, same as the
-// old two-state Edit button's click did) — works identically at any
-// viewport width, unlike an earlier scroll-revealed icon that depended
-// on the nav bar actually having room to scroll. A quick tap still
-// navigates Home as normal; only a genuine hold toggles edit mode, and
-// suppresses the click that would otherwise follow it. Guarded by
-// authUser the same way the old Edit button was hidden for guests in
-// updateAuthUI() — a guest could never see/click that button, so this
-// needs the same check.
-(() => {
-            const HOLD_MS = 2000;
-            const homeBtn = el("homeBtn");
-            let holdTimer = null;
-            let longPressFired = false;
-
-            const cancelHold = () => {
-              clearTimeout(holdTimer);
-              homeBtn.classList.remove("holding");
-            };
-            homeBtn.addEventListener("pointerdown", () => {
-              longPressFired = false;
-              homeBtn.classList.add("holding");
-              holdTimer = setTimeout(() => {
-                longPressFired = true;
-                homeBtn.classList.remove("holding");
-                if (!authUser) { UI.toast("err", "Unauthorized — please sign in to access this section", 4000); return; }
-                closeNavDropdowns();
-                toggleEditMode();
-              }, HOLD_MS);
-            });
-            homeBtn.addEventListener("pointerup", cancelHold);
-            homeBtn.addEventListener("pointerleave", cancelHold);
-            homeBtn.addEventListener("pointercancel", cancelHold);
-            homeBtn.addEventListener("click", () => {
-              if (longPressFired) return;
-              navigateTo("portfolio");
-            });
-          })();
+el("homeBtn").addEventListener("click", () => navigateTo("portfolio"));
+el("editToggleBtn").addEventListener("click", () => { closeNavDropdowns(); toggleEditMode(); });
 el("summaryBtn").addEventListener("click", () => {
             if (!authUser) { UI.toast("err", "Unauthorized — please sign in to access this section", 4000); return; }
             navigateTo("summary");

@@ -1289,6 +1289,7 @@
         box-shadow: 0 0 0 3px color-mix(in srgb, var(--mint) 18%, transparent);
       }
       .num.liq:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--liq) 20%, transparent); }
+      .edit-toggle:focus-visible,
       .btn:focus-visible {
         outline: 2px solid var(--mint);
         outline-offset: 2px;
@@ -1619,6 +1620,10 @@
       .fund-archive-btn { display: none; background: none; border: 1px solid var(--line); border-radius: 7px; color: var(--txt); font-size: 10px; font-family: "Roboto", sans-serif; padding: 2px 8px; cursor: pointer; flex-shrink: 0; }
       body.edit-mode .fund-archive-btn { display: block; }
       .fund-archive-btn:hover { border-color: var(--coral); color: var(--coral); }
+      /* ── Delete button — permanent, unlike Archive ── */
+      .fund-delete-btn { display: none; background: none; border: 1px solid var(--coral); border-radius: 7px; color: var(--coral); font-size: 10px; font-family: "Roboto", sans-serif; padding: 2px 8px; cursor: pointer; flex-shrink: 0; opacity: 0.75; }
+      body.edit-mode .fund-delete-btn { display: block; }
+      .fund-delete-btn:hover { opacity: 1; background: rgba(248,113,113,0.12); }
       /* ── Archived section ── */
       .archived-section { display: none; margin-top: 10px; }
       body.edit-mode .archived-section { display: block; }
@@ -1627,6 +1632,8 @@
       .archived-fund-name { flex: 1; font-size: 12px; color: var(--txt); }
       .unarchive-btn { background: none; border: 1px solid var(--line); border-radius: 7px; color: var(--txt); font-size: 10px; padding: 2px 8px; cursor: pointer; }
       .unarchive-btn:hover { border-color: var(--mint); color: var(--mint); }
+      .archived-delete-btn { background: none; border: 1px solid var(--coral); border-radius: 7px; color: var(--coral); font-size: 10px; padding: 2px 8px; cursor: pointer; opacity: 0.75; }
+      .archived-delete-btn:hover { opacity: 1; background: rgba(248,113,113,0.12); }
 
       /* ═══ NAV DROPDOWNS ═══ */
       .nav-home-btn {
@@ -1645,23 +1652,35 @@
       }
       .nav-home-btn.active { color: var(--mint); background: rgba(0, 245, 160, 0.1); }
       .nav-home-btn:hover:not(.active) { color: var(--txt); background: rgba(255,255,255,0.05); }
-      /* Immediate "press" feedback while holding Home down toward the
-         2s edit-mode toggle (see main.js) — not synced to the exact
-         hold duration, just a quick, low-effort cue that the press
-         registered, same idea as a native :active state. */
-      .nav-home-btn.holding {
-        background: rgba(0, 245, 160, 0.15);
-        transform: scale(0.92);
-      }
-      /* Persistent indicator while edit mode is on, independent of
-         whether Home is also the active tab. */
-      body.edit-mode .nav-home-btn { color: var(--mint); background: rgba(0, 245, 160, 0.1); }
       @media (max-width: 600px) {
         .nav-home-btn {
           flex: 1;
           min-height: 36px;
           padding: 6px 2px;
         }
+        .edit-toggle { font-size: 8px; padding: 3px 6px; letter-spacing: 0.3px; }
+      }
+      .edit-toggle {
+        background: none;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        color: var(--txt);
+        font-family: "Roboto", sans-serif;
+        font-size: 10px;
+        letter-spacing: 0.5px;
+        padding: 4px 10px;
+        cursor: pointer;
+        transition: border-color 0.15s, color 0.15s, background 0.15s;
+        white-space: nowrap;
+      }
+      .edit-toggle:hover {
+        border-color: var(--mint);
+        color: var(--mint);
+      }
+      .edit-toggle.done {
+        border-color: var(--mint);
+        background: var(--mint);
+        color: #0a0f0d;
       }
       .nav-dd-trigger { display: flex; align-items: center; justify-content: center; gap: 4px; }
       .nav-chevron { display: none; }
@@ -1986,7 +2005,7 @@
            is purely decorative branding, so it's simplest to just hide it. */
         .portfolio-hero,
         nav.tabs, #themeMatrix, .nav-dropdown, .edit-banner, .modal-overlay,
-        .holdings-chevron, .coll-chevron, .drag-handle, .fund-archive-btn,
+        .holdings-chevron, .coll-chevron, .drag-handle, .fund-archive-btn, .fund-delete-btn,
         .add-fund-row, #privacyBtn, .reb-icon-btn, .reb-add-row-btn,
         .reb-add-section-btn, .reb-edit-btn, .nw-hist-del,
         .nw-snap-row, .cal-nav, .txn-preset, .btn, .btn-ghost,

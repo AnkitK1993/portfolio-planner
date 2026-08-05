@@ -215,6 +215,7 @@ export function makeFundSection(f, isLiq, container) {
                 <span class="coll-rtn" id="coll-rtn-${f.id}"></span>
                 <span class="coll-xirr" id="coll-xirr-${f.id}" style="display:none"></span>
                 <button class="fund-archive-btn" data-id="${f.id}" data-liq="${isLiq}" title="Archive fund">Archive</button>
+                <button class="fund-delete-btn" data-id="${f.id}" data-liq="${isLiq}" title="Permanently delete fund">Delete</button>
                 <span class="coll-chevron">▾</span>
               </button>
               <div class="coll-body" id="coll-body-${f.id}">
@@ -248,6 +249,13 @@ export function makeFundSection(f, isLiq, container) {
               });
             });
 
+            // Delete button — permanent, unlike Archive
+            const delBtn = sec.querySelector(".fund-delete-btn");
+            delBtn.addEventListener("click", e => {
+              e.stopPropagation();
+              deleteFund(e.currentTarget.dataset.id, e.currentTarget.dataset.liq === "true");
+            });
+
             // Drag-to-reorder
             sec.setAttribute("draggable", "true");
             sec.addEventListener("dragstart", e => {
@@ -271,6 +279,32 @@ export function makeFundSection(f, isLiq, container) {
               order.splice(toIdx, 0, dragId);
               state[orderKey] = order;
               saveState(); syncFundArrays(); rebuildFundCollapsibles(); render();
+            });
+          }
+
+// Permanent, unlike Archive (which just hides a fund while keeping its
+// data). Available both on an active fund's own card and on an already-
+// archived fund's row, since either can be a genuine "I'm done with
+// this" moment. Cascades to the fund's own transactions/return-value
+// log too — leaving those behind would just orphan them against a fund
+// that no longer exists, showing up as broken/unnamed entries in
+// History, CSV export, and XIRR everywhere else in the app.
+function deleteFund(fundId, isLiq) {
+            const store = isLiq ? state.liquid : state.equity;
+            if (!store[fundId]) return;
+            const name = fundName(fundId);
+            const txnCount = (state.transactions || []).filter(t => t.fundId === fundId).length;
+            const msg = txnCount > 0
+              ? `Permanently delete "${name}"? This also deletes its ${txnCount} transaction${txnCount !== 1 ? "s" : ""}. This cannot be undone.`
+              : `Permanently delete "${name}"? This cannot be undone.`;
+            UI.confirm(msg, "Delete fund?", "Delete", () => {
+              delete store[fundId];
+              const orderKey = isLiq ? "liquidOrder" : "equityOrder";
+              state[orderKey] = (state[orderKey] || []).filter(id => id !== fundId);
+              state.transactions = (state.transactions || []).filter(t => t.fundId !== fundId);
+              state.returnsLog = (state.returnsLog || []).filter(l => l.fundId !== fundId);
+              saveState(); syncFundArrays(); rebuildFundCollapsibles(); render();
+              UI.toast("success", `"${name}" deleted`, 2500);
             });
           }
 
@@ -301,8 +335,12 @@ export function rebuildFundCollapsibles() {
                 ? archivedFunds.map(f => `<div class="archived-fund-row">
                     <span class="archived-fund-name">${f.name} <span style="font-size:9px;color:var(--dim)">(${f.isLiq ? "Liquid" : "Equity"})</span></span>
                     <button class="unarchive-btn" data-id="${f.id}" data-liq="${f.isLiq}">Restore</button>
+                    <button class="archived-delete-btn" data-id="${f.id}" data-liq="${f.isLiq}">Delete</button>
                   </div>`).join("")
                 : `<div style="font-size:11px;color:var(--dim);">No archived funds.</div>`;
+              archivedEl.querySelectorAll(".archived-delete-btn").forEach(btn => {
+                btn.addEventListener("click", () => deleteFund(btn.dataset.id, btn.dataset.liq === "true"));
+              });
               archivedEl.querySelectorAll(".unarchive-btn").forEach(btn => {
                 btn.addEventListener("click", () => {
                   const fid = btn.dataset.id;
