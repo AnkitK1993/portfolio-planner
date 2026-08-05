@@ -198,9 +198,13 @@ export function setEditMode(on) {
             document.body.classList.toggle("edit-mode", on);
             const btn = el("editToggleBtn");
             if (btn) {
-              btn.textContent = on ? "SAVE" : "EDIT";
+              // Icon-only button (see index.html) — never touch textContent/
+              // innerHTML here, that would wipe out its SVG icon. The .done
+              // class carries all the visual "currently editing" signal.
               btn.classList.toggle("done", on);
               btn.setAttribute("aria-pressed", on ? "true" : "false");
+              btn.title = on ? "Save changes" : "Edit";
+              btn.setAttribute("aria-label", on ? "Save changes" : "Edit");
             }
             updateCollNameReadonly();
             render(); // rebuild calendar HTML (inputs vs text for paid events)

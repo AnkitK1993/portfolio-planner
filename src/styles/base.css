@@ -46,7 +46,6 @@
       /* ── TABS (always fixed at bottom) ── */
       .tabs {
         display: flex;
-        justify-content: center;
         align-items: center;
         background: rgba(7, 7, 15, 0.92);
         backdrop-filter: blur(20px);
@@ -57,17 +56,24 @@
         left: 0;
         right: 0;
         z-index: 100;
-        overflow-x: auto;
-        /* This bar is position:fixed, outside the page's normal scroll
-           flow — pan-x keeps its own horizontal auto-scroll working on
-           touch while stopping a touch here from also trying to pan the
-           page vertically underneath it. */
-        touch-action: pan-x;
         padding: 6px 10px;
+        gap: 6px;
+      }
+      /* The scrollable tab group — everything except the Edit icon, which
+         sits outside this div (see .nav-edit-btn) so it stays pinned at
+         the bar's extreme right instead of scrolling away with the rest. */
+      .nav-scroll {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow-x: auto;
+        touch-action: pan-x;
+        flex: 1;
+        min-width: 0;
         gap: 2px;
         scrollbar-width: none;
       }
-      .tabs::-webkit-scrollbar {
+      .nav-scroll::-webkit-scrollbar {
         display: none;
       }
       .tabs button {
@@ -1289,7 +1295,7 @@
         box-shadow: 0 0 0 3px color-mix(in srgb, var(--mint) 18%, transparent);
       }
       .num.liq:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--liq) 20%, transparent); }
-      .edit-toggle:focus-visible,
+      .nav-edit-btn:focus-visible,
       .btn:focus-visible {
         outline: 2px solid var(--mint);
         outline-offset: 2px;
@@ -1658,26 +1664,28 @@
           min-height: 36px;
           padding: 6px 2px;
         }
-        .edit-toggle { font-size: 8px; padding: 3px 6px; letter-spacing: 0.3px; }
       }
-      .edit-toggle {
+      /* Pinned outside .nav-scroll (see index.html/.tabs above) so it's
+         always reachable at the bar's extreme right, never scrolled out
+         of view the way an icon inside the scrollable group could be. */
+      .nav-edit-btn {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         background: none;
         border: 1px solid var(--line);
-        border-radius: 6px;
+        border-radius: 9px;
         color: var(--txt);
-        font-family: "Roboto", sans-serif;
-        font-size: 10px;
-        letter-spacing: 0.5px;
-        padding: 4px 10px;
+        padding: 7px 10px;
         cursor: pointer;
         transition: border-color 0.15s, color 0.15s, background 0.15s;
-        white-space: nowrap;
       }
-      .edit-toggle:hover {
+      .nav-edit-btn:hover {
         border-color: var(--mint);
         color: var(--mint);
       }
-      .edit-toggle.done {
+      .nav-edit-btn.done {
         border-color: var(--mint);
         background: var(--mint);
         color: #0a0f0d;
