@@ -875,6 +875,20 @@
           white-space: nowrap;
           border-radius: 7px;
         }
+        /* .tabs button above is a descendant selector, so without this it
+           also matches the Edit icon button (still a <button> descendant
+           of .tabs, just pinned outside .nav-scroll) and gives it flex:1
+           at the TOP level of .tabs' flex row — splitting the whole bar
+           roughly 50/50 between the icon and the entire rest of the nav
+           group, squeezing every other button. .tabs .nav-edit-btn (two
+           classes) outweighs .tabs button (class+element) on specificity,
+           so this reliably wins regardless of source order. */
+        .tabs .nav-edit-btn {
+          flex: 0 0 auto;
+          min-width: 36px;
+          min-height: 36px;
+          padding: 6px;
+        }
         /* Hide save indicator text on mobile — frees space for tab labels */
         .dot, #saveTxt { display: none; }
         .app {
