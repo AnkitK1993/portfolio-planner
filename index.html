@@ -395,23 +395,6 @@
           </div>
         </div>
 
-        <!-- Tax estimate -->
-        <div class="card" id="sumTaxCard" style="display:none;margin-bottom:12px">
-          <button class="card-toggle-head" id="sumTaxToggle" aria-expanded="false">
-            <div class="card-toggle-head-text">
-              <div class="sec-head" style="margin-bottom:4px">Tax Estimate — If Redeemed Today</div>
-              <div style="font-size:10px;color:var(--dim)">Rough estimate only, not tax advice — rates as of FY 2024-25, verify with a CA before filing. Losses aren't netted against gains.</div>
-            </div>
-            <span class="card-toggle-preview" id="sumTaxPreview"></span>
-            <span class="card-toggle-chevron">▾</span>
-          </button>
-          <div class="card-toggle-body" id="sumTaxCollBody">
-            <div class="card-toggle-body-inner">
-              <div id="sumTaxBody"></div>
-            </div>
-          </div>
-        </div>
-
         <!-- Returns heatmap -->
         <div class="card" id="sumHeatmapCard" style="display:none;margin-bottom:12px">
           <button class="card-toggle-head" id="sumHeatmapToggle" aria-expanded="false">
@@ -809,7 +792,7 @@
 
         <!-- Loans / EMIs — standalone informational tracker for loan
              balances and monthly EMI outflow. Deliberately NOT netted
-             against Net Worth, Health Score, Tax Estimate, or FIRE
+             against Net Worth, Health Score, or FIRE
              progress — those all currently assume asset-only net worth,
              and subtracting liabilities everywhere they're used would be a
              much larger, riskier change than adding a tracking card. -->

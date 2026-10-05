@@ -107,7 +107,6 @@ export function normalizeSurplus(raw) {
             }
             return {
               goals,
-              taxSlabPct: r.taxSlabPct ?? 30,
             };
           }
 

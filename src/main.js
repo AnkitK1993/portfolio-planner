@@ -394,8 +394,8 @@ nwToggleAll.refresh();
 createCollapsible({ header: el("holdingsToggle"), body: el("holdingsBody") });
 // Every collapsible card on the Analytics tab after Portfolio Health Score
 // (which stays plain/always-expanded) is grouped behind #sumToggleAllBtn
-// the same way the Net Worth tab's cards are. Streak/Fund Performance/Tax
-// Estimate get their own previews populated by their render functions
+// the same way the Net Worth tab's cards are. Streak/Fund Performance
+// get their own previews populated by their render functions
 // (see summary/index.js).
 const sumToggleAll = makeToggleAllGroup("sumToggleAllBtn");
 [
@@ -406,7 +406,6 @@ const sumToggleAll = makeToggleAllGroup("sumToggleAllBtn");
             ["sumRebalActionsToggle", "sumRebalActionsCollBody", "sumRebalActionsPreview"],
             ["sumStreakToggle", "sumStreakCollBody", "sumStreakPreview"],
             ["sumFundToggle", "sumFundCollBody", "sumFundPreview"],
-            ["sumTaxToggle", "sumTaxCollBody", "sumTaxPreview"],
             ["sumHeatmapToggle", "sumHeatmapCollBody", null],
             ["calToggle", "calCollBody", null],
           ].forEach(([headerId, bodyId, previewId]) => sumToggleAll.add(headerId, bodyId, previewId));
@@ -432,7 +431,7 @@ createCollapsible({ header: el("txnDonutToggle"), body: el("txnDonutCollBody") }
 // from the collapsible/expand-all group above.
 registerCardOrder("summary", [
             "sumXirrCard", "sumAllocCard", "sumCompositionCard", "sumIdealCard", "sumRebalActionsCard",
-            "sumStreakCard", "sumFundCard", "sumTaxCard", "sumHeatmapCard", "sumCalCard",
+            "sumStreakCard", "sumFundCard", "sumHeatmapCard", "sumCalCard",
           ]);
 registerCardOrder("planning", ["sumFireCard", "fcCard", "planningRebalanceCard", "sumLoansCard", "investNewMoneyCard"]);
 registerCardOrder("transactions", ["txp-history", "txp-curval", "txp-sip", "txp-entervalues", "txp-snapshot", "txnCharts"]);

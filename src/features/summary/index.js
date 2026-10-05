@@ -9,7 +9,6 @@ import { renderTrendChart } from "../../core/trendChart.js";
 import { avgMonthlyGrowthRate, monthsToReach, nwTotal } from "../../domain/networth.js";
 import { cachedPortfolioXirr, fundXirr, rollingPortfolioXirr } from "../../domain/xirr.js";
 import { el } from "../../core/dom.js";
-import { estimateCapitalGainsTax, LTCG_EXEMPTION } from "../../domain/tax.js";
 import { fmt, fmtCompact, fmtMonth, pct } from "../../core/format.js";
 import { renderAllocBars, renderCompositionDonut } from "../portfolio/allocation.js";
 import { renderIdealAlloc } from "./rebalance.js";
@@ -37,75 +36,6 @@ export function renderSummaryExtras(eqCur, liqCur, totCur, eqTgt, liqTgt, totTgt
             renderAllocBars();
             /* — Portfolio composition donut — */
             renderCompositionDonut();
-            /* — Tax estimate — */
-            renderTaxEstimate();
-          }
-
-function renderTaxEstimate() {
-            const card = el("sumTaxCard");
-            const body = el("sumTaxBody");
-            if (!card || !body) return;
-
-            const t = estimateCapitalGainsTax({
-              taxSlabPct: state.surplus?.taxSlabPct, eqFunds: EQ_FUNDS, liqFunds: LIQ_FUNDS,
-              equity: state.equity, liquid: state.liquid, transactions: state.transactions,
-            });
-            if (!t.hasAnyHolding) { card.style.display = "none"; return; }
-            card.style.display = "";
-            const taxPreview = el("sumTaxPreview");
-            if (taxPreview) taxPreview.textContent = fmt(t.totalTax);
-
-            const row = (label, gainTxt, taxTxt, sub) => `
-              <div style="display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--line);">
-                <div>
-                  <div style="font-size:11.5px;color:var(--txt);">${label}</div>
-                  ${sub ? `<div style="font-size:9px;color:var(--dim);margin-top:1px;">${sub}</div>` : ""}
-                </div>
-                <div style="font-family:'Roboto Mono',monospace;font-size:11px;color:var(--dim);text-align:right;white-space:nowrap;">${gainTxt}</div>
-                <div style="font-family:'Roboto Mono',monospace;font-size:11px;font-weight:700;color:var(--coral);text-align:right;white-space:nowrap;min-width:70px;">${taxTxt}</div>
-              </div>`;
-
-            body.innerHTML = `
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-                <span style="font-size:10px;text-transform:uppercase;letter-spacing:0.7px;color:var(--dim);">Estimated Tax</span>
-                <span style="font-family:'Roboto Mono',monospace;font-size:22px;font-weight:700;color:var(--coral);">${fmt(t.totalTax)}</span>
-              </div>
-              <div style="display:grid;grid-template-columns:1fr auto auto;gap:10px;padding-bottom:4px;">
-                <span></span>
-                <span style="font-size:9px;color:var(--dim);text-align:right;">Gain</span>
-                <span style="font-size:9px;color:var(--dim);text-align:right;min-width:70px;">Tax</span>
-              </div>
-              ${row("Equity LTCG", fmt(t.ltGain), fmt(t.equityLtTax), `Held 12+ mo · ${fmt(LTCG_EXEMPTION)} exempt/yr · 12.5% above that`)}
-              ${row("Equity STCG", fmt(t.stGain), fmt(t.equityStTax), "Held under 12 mo · flat 20%")}
-              ${row("Debt / Liquid / International", fmt(t.debtGain), fmt(t.debtTax), "Taxed at your income slab rate, any holding period")}
-              <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);">
-                <span style="font-size:11px;color:var(--txt)">Post-tax corpus if redeemed today</span>
-                <span style="font-family:'Roboto Mono',monospace;font-size:13px;font-weight:700;color:var(--mint)">${fmt(t.grossValue)} → ${fmt(t.netAfterTax)}</span>
-              </div>
-              ${t.ltcgHeadroom > 0 ? `<div style="font-size:10.5px;color:var(--mint);margin-top:10px;line-height:1.5;">
-                💡 You have <b>${fmt(t.ltcgHeadroom)}</b> of unused LTCG exemption this FY — realize up to that much more long-term equity gain tax-free (assuming you haven't booked LTCG elsewhere this year).
-              </div>` : ""}
-              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;flex-wrap:wrap;">
-                <span style="font-size:10px;color:var(--dim)">Your income tax slab ${editMode ? "" : "(tap Edit to change)"}</span>
-                <div style="display:flex;align-items:center;gap:4px;">
-                  <input type="number" id="sumTaxSlabInp" min="0" max="42.74" step="1" value="${t.taxSlabPct}" ${editMode ? "" : "readonly"}
-                    style="background:var(--input-bg,rgba(255,255,255,0.06));border:1px solid var(--line);border-radius:5px;color:${editMode ? "var(--txt)" : "var(--dim)"};
-                           font-family:'Roboto Mono',monospace;font-size:11px;text-align:right;padding:4px 7px;width:60px;${editMode ? "" : "cursor:default;"}"/>
-                  <span style="font-size:11px;color:var(--dim)">%</span>
-                </div>
-              </div>
-              ${t.excludedFunds > 0 ? `<div style="font-size:9.5px;color:var(--amber);margin-top:8px;">⚠ ${fmt(t.excludedGain)} gain across ${t.excludedFunds} fund${t.excludedFunds !== 1 ? "s" : ""} excluded — no transaction history to determine holding period.</div>` : ""}`;
-
-            const slabInp = el("sumTaxSlabInp");
-            if (slabInp) {
-              slabInp.addEventListener("change", e => {
-                if (!editMode) { renderTaxEstimate(); return; }
-                if (!state.surplus) state.surplus = {};
-                state.surplus.taxSlabPct = Math.max(0, parseFloat(e.target.value) || 0);
-                saveState();
-                renderTaxEstimate();
-              });
-            }
           }
 
 const FUND_TABLE_COLS = [
@@ -637,8 +567,8 @@ function renderFireProgress() {
           }
 
 /* Loans / EMIs — a standalone tracker for loan balances and monthly EMI
-   outflow. Deliberately NOT wired into Net Worth, Health Score, Tax
-   Estimate, or FIRE progress: all of those currently assume asset-only net
+   outflow. Deliberately NOT wired into Net Worth, Health Score,
+   or FIRE progress: all of those currently assume asset-only net
    worth, and every one of them (plus every saved Net Worth snapshot) would
    need rework to subtract liabilities correctly — a much bigger, riskier
    change than a plain tracking card. */
