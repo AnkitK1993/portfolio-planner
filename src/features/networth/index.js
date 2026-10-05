@@ -524,6 +524,85 @@ export function editSnapshot(key) {
             });
           }
 
+// "Add month" on Update History — creates an entry for a month that has
+// none yet, either blank or cloned from an existing month's balances, then
+// opens it in the edit popup so the figures can be adjusted straight away.
+// The new entry is dated the month's last day (or today, for the current
+// month), and a clone copies the source's MF value/gain and every balance.
+export function addMonthEntry() {
+            const snaps = state.networth.snapshots || {};
+            const existingKeys = Object.keys(snaps).sort().reverse();
+            const now = todayStr();
+            const defaultMonth = (() => {
+              // First month, going back from this one, with no entry yet.
+              const d = new Date();
+              for (let i = 0; i < 240; i++) {
+                const k = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+                if (!snaps[k]) return k;
+                d.setMonth(d.getMonth() - 1);
+              }
+              return now.slice(0, 7);
+            })();
+            const sourceOpts = existingKeys.length
+              ? existingKeys.map(k => `<option value="${k}">${fmtMonth(k)}</option>`).join("")
+              : "";
+            let bodyElRef = null;
+
+            openModal({
+              title: "Add month",
+              size: "sm",
+              body: (bodyEl) => {
+                bodyElRef = bodyEl;
+                bodyEl.innerHTML = `
+                  <div class="field" style="margin-bottom:0;">
+                    <label class="flabel" for="addMonthInput">Month</label>
+                    <input class="form-inp" id="addMonthInput" type="month" max="${now.slice(0, 7)}" value="${defaultMonth}" />
+                  </div>
+                  <div class="field" style="margin-bottom:0;">
+                    <label class="flabel" for="addMonthFrom">Start from</label>
+                    <select class="form-inp" id="addMonthFrom">
+                      <option value="">Blank — all balances 0</option>
+                      ${existingKeys.length ? `<optgroup label="Clone balances from">${sourceOpts}</optgroup>` : ""}
+                    </select>
+                  </div>
+                  <div style="font-size:10.5px;color:var(--dim);">
+                    The new month opens in the editor next so you can change its figures.
+                  </div>`;
+                // Default to cloning the most recent month, if there is one.
+                if (existingKeys.length) bodyEl.querySelector("#addMonthFrom").value = existingKeys[0];
+              },
+              footer: [
+                { label: "Cancel", variant: "ghost" },
+                {
+                  label: "Add",
+                  variant: "primary",
+                  onClick: () => {
+                    const key = bodyElRef.querySelector("#addMonthInput").value;
+                    const from = bodyElRef.querySelector("#addMonthFrom").value;
+                    if (!/^\d{4}-\d{2}$/.test(key)) throw new Error("Pick a month");
+                    if (key > now.slice(0, 7)) throw new Error("That month hasn't happened yet");
+                    if (snaps[key]) throw new Error(fmtMonth(key) + " already has an entry — edit it from the list");
+                    const lastDay = key + "-" + String(new Date(+key.slice(0, 4), +key.slice(5, 7), 0).getDate()).padStart(2, "0");
+                    const entry = { mf: 0, mfProfit: 0, asOf: lastDay > now ? now : lastDay, savedAt: new Date().toISOString() };
+                    NW_FIELDS.forEach(f => { entry[f.id] = 0; });
+                    if (from && snaps[from]) {
+                      entry.mf = snaps[from].mf || 0;
+                      NW_FIELDS.forEach(f => { entry[f.id] = snaps[from][f.id] || 0; });
+                    }
+                    entry.total = (entry.mf || 0) + (entry.mfProfit || 0) + othersOfSnap(entry);
+                    saveSnapshot(key, entry);
+                    saveState();
+                    refreshAllSnapshotViews();
+                    snapListExpanded.add(key);
+                    renderSnapshotsList();
+                    // Opens after this modal's own close completes.
+                    setTimeout(() => editSnapshot(key), 0);
+                  },
+                },
+              ],
+            });
+          }
+
 // Transactions tab's Snapshots card — a lighter-weight list than Monthly
 // History (Month + Total only, no MF/Returns/Others columns or compare
 // mode), expanding to a plain field breakdown with Edit/Delete at the
