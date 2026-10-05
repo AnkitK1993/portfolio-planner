@@ -3,7 +3,14 @@ import { UI, collapseTxpCard, expandTxpCard, navigateTo } from "../../core/ui.js
 import { el } from "../../core/dom.js";
 import { fmt, num } from "../../core/format.js";
 import { renderCalendar } from "./calendar.js";
-import { totalMonthlySip } from "../../domain/expenses.js";
+
+// Total of every fund's configured monthly SIP amount (liquid + equity).
+function totalMonthlySip(liqFunds, eqFunds, liquid, equity) {
+            let total = 0;
+            liqFunds.forEach(f => { total += liquid[f.id]?.sipAmt || 0; });
+            eqFunds.forEach(f => { total += equity[f.id]?.sipAmt || 0; });
+            return total;
+          }
 import { setFundSip } from "../../store/actions.js";
 
 export function openManageSips() {

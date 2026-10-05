@@ -12,24 +12,42 @@ export function mfTotalValue(liqFunds, eqFunds, liquid, equity) {
             return liq + eq;
           }
 
-// MF Value as of a given "YYYY-MM" snapshot month — the net after-expense
-// contribution (sip/lump minus redemptions) across all funds from
-// transactions dated on or before the end of that month. This is what a
-// Monthly History snapshot's MF Value should always reflect, whether the
-// snapshot is being created for the first time or edited later.
-export function mfValueAsOf(monthKey, liqFunds, eqFunds, transactions) {
-            const [y, m] = monthKey.split("-").map(Number);
-            const cutoff = new Date(y, m, 1).toISOString().slice(0, 10);
+// MF Value as of a given date: the net after-expense contribution
+// (sip/lump minus redemptions) per fund from transactions up to then.
+// Accepts a full "YYYY-MM-DD" date (inclusive) or a "YYYY-MM" month
+// (through the end of that month).
+export function mfValueAsOf(asOf, liqFunds, eqFunds, transactions) {
+            let cutoff;
+            if (asOf.length > 7) {
+              const d = new Date(asOf + "T00:00:00");
+              d.setDate(d.getDate() + 1);
+              cutoff = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+            } else {
+              const [y, m] = asOf.split("-").map(Number);
+              cutoff = new Date(y, m, 1).toISOString().slice(0, 10);
+            }
             const netAE = {};
             (transactions || []).forEach(t => {
               if (!t.date || t.date >= cutoff) return;
               const ae = Number(t.afterExpense ?? t.invested) || 0;
-              const signed = t.type === "redemption" ? -ae : ae;
+              const signed = t.type === "redemption" ? -ae : t.type === "dividend" ? 0 : ae;
               netAE[t.fundId] = (netAE[t.fundId] || 0) + signed;
             });
             return [...liqFunds, ...eqFunds].reduce(
               (sum, f) => sum + Math.max(0, netAE[f.id] || 0), 0,
             );
+          }
+
+// Unrealized gain as it stood on a past date: for each fund, the gain
+// recorded by the latest "Add Current Value" entry on or before then
+// (0 if none had been logged yet).
+export function mfProfitAsOf(asOf, liqFunds, eqFunds, returnsLog) {
+            const latest = {};
+            (returnsLog || []).forEach(l => {
+              if (!l.date || l.date > asOf) return;
+              if (!latest[l.fundId] || l.date >= latest[l.fundId].date) latest[l.fundId] = l;
+            });
+            return [...liqFunds, ...eqFunds].reduce((sum, f) => sum + (latest[f.id]?.profit || 0), 0);
           }
 
 export function mfUnrealizedGain(liqFunds, eqFunds, liquid, equity) {
@@ -47,24 +65,12 @@ export function mfUnrealizedGain(liqFunds, eqFunds, liquid, equity) {
             return total;
           }
 
-// Income is always assumed to already be reflected in the Bank &
-// Savings figure by the time it's entered, so it never adds a second,
-// separate contribution to Net Worth — this always returns 0. Kept as
-// its own function (rather than deleting the +0 term at every call
-// site) so the "why doesn't Income count here" answer lives in one
-// place. Income vs Expenses (Summary tab) is a monthly cash-flow view,
-// not a Net Worth total, so it uses the raw networth.income figure
-// directly instead of this.
-export function extraIncome(networth) {
-            return 0;
-          }
-
 export function nwTotal(networth, liqFunds, eqFunds, liquid, equity) {
             const other = NW_FIELDS.filter((f) => f.id !== "mfProfit").reduce(
               (s, f) => s + (networth[f.id] || 0),
               0,
             );
-            return mfTotalValue(liqFunds, eqFunds, liquid, equity) + mfUnrealizedGain(liqFunds, eqFunds, liquid, equity) + other + extraIncome(networth);
+            return mfTotalValue(liqFunds, eqFunds, liquid, equity) + mfUnrealizedGain(liqFunds, eqFunds, liquid, equity) + other;
           }
 
 // Average monthly compounding rate across consecutive snapshot pairs, for
@@ -137,7 +143,5 @@ export function buildCurrentSnapshot(networth, liqFunds, eqFunds, liquid, equity
             const cur = { mf: mfTotalValue(liqFunds, eqFunds, liquid, equity), total: nwTotal(networth, liqFunds, eqFunds, liquid, equity) };
             NW_FIELDS.forEach((f) => { cur[f.id] = networth[f.id] || 0; });
             cur.mfProfit = mfUnrealizedGain(liqFunds, eqFunds, liquid, equity);
-            cur.income = networth.income || 0;
-            cur.bankInitial = networth.bankInitial || 0;
             return cur;
           }

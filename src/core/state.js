@@ -19,23 +19,13 @@ export function syncFundArrays() {
 
 export const othersOfSnap = (s) => OTHER_FIELDS.reduce((sum, f) => sum + (s[f.id] || 0), 0);
 
-// Income never adds into the total — it's always assumed to already be
-// reflected in Bank & Savings — so total is just MF + gain + the other
-// asset fields. Snapshots saved before Income became its own field only
-// have the old derived incomeExtra — back-fill income from that so
-// every snap has a well-defined raw Income to display/edit; older
-// snapshots that had incomeExtra > 0 (income NOT counted as in-Bank at
-// the time) will show that figure but, per the new rule, it no longer
-// adds into the recomputed total here.
+// Total is just MF + unrealized gain + the other asset fields.
 export const normalizeSnap = (key, v) => {
             const s = { key, ...v };
-            if (s.income == null) s.income = s.incomeExtra || 0;
-            if (s.expenses == null) s.expenses = 0;
-            // Snapshots saved before Bank & Savings split into Initial/
-            // Current only have the single `bank` figure — back-fill
-            // bankInitial to match it, which computes a 0 bank-drop for
-            // that month rather than a misleading nonzero one.
-            if (s.bankInitial == null) s.bankInitial = s.bank || 0;
+            // The date this entry's balances are "as of" — entries saved
+            // before dated updates existed fall back to the day they were
+            // saved, then to the first of their month.
+            if (!s.asOf) s.asOf = (s.savedAt || "").slice(0, 10) || (key + "-01");
             s.total = (s.mf || 0) + (s.mfProfit || 0) + othersOfSnap(s);
             return s;
           };
@@ -82,9 +72,7 @@ export function defaultState() {
               equityOrder: ['eq1', 'eq2', 'eq3'],
               networth: {
                 ...Object.fromEntries(NW_FIELDS.map((f) => [f.id, 0])),
-                bankInitial: 0,
-                income: 0,
-                expenses: 0,
+                asOf: "",
                 snapshots: {},
               },
               forecast: { investments: 0, monthlyInvest: 0, annualRate: 12, stepUp: 0, inflationRate: 6, mode: "project", goalBank: 0, goalTarget: 0, goalYears: 10, goalRate: 12, fcScenario: "base", fcShowAll: false },
@@ -106,29 +94,18 @@ export function defaultState() {
             };
           }
 
-// Fixed expenses moved from a single number to an itemized list, so this
-// also migrates any pre-existing flat `surplus.expenses` value into a
-// single "Monthly Expenses" line item rather than silently dropping it —
-// shared by loadState() and firebase.js's applyCloudState() so both stay
-// in sync with the same shape and the same migration behaviour.
+// Shared by loadState() and firebase.js's applyCloudState() so both stay
+// in sync with the same shape (and the same one-time migrations).
 export function normalizeSurplus(raw) {
             const r = raw || {};
-            let fixedExpenses = Array.isArray(r.fixedExpenses) ? r.fixedExpenses : null;
-            if (!fixedExpenses) {
-              fixedExpenses = r.expenses > 0
-                ? [{ id: "exp_migrated", name: "Monthly Expenses", amount: r.expenses }]
-                : [];
-            }
             // Financial Goals moved from a single flat goalAmount to a
-            // named list (same one-time-migration convention as
-            // fixedExpenses above) — one pre-existing custom goal becomes
-            // a single migrated entry rather than being dropped.
+            // named list — one pre-existing custom goal becomes a single
+            // migrated entry rather than being dropped.
             let goals = Array.isArray(r.goals) ? r.goals : null;
             if (!goals) {
               goals = r.goalAmount > 0 ? [{ id: "goal_migrated", name: "My Goal", amount: r.goalAmount }] : [];
             }
             return {
-              fixedExpenses,
               goals,
               taxSlabPct: r.taxSlabPct ?? 30,
             };
@@ -164,9 +141,7 @@ export function loadState() {
                 equityOrder: eqOrder,
                 networth: {
                   ...Object.fromEntries(NW_FIELDS.map((f) => [f.id, s.networth?.[f.id] ?? 0])),
-                  bankInitial: s.networth?.bankInitial ?? 0,
-                  income: s.networth?.income ?? 0,
-                  expenses: s.networth?.expenses ?? 0,
+                  asOf: s.networth?.asOf || "",
                   snapshots: { ...(s.networth?.snapshots || {}) },
                 },
                 forecast: { ...def.forecast, ...(s.forecast || {}) },

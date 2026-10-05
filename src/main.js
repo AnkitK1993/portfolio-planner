@@ -411,15 +411,9 @@ const sumToggleAll = makeToggleAllGroup("sumToggleAllBtn");
             ["calToggle", "calCollBody", null],
           ].forEach(([headerId, bodyId, previewId]) => sumToggleAll.add(headerId, bodyId, previewId));
 sumToggleAll.refresh();
-// Planning tab's own expand-all group — Expenses/Financial Goals (moved
-// here from the now-removed standalone Budget tab; Expenses keeps its
-// existing Total-This-Month collapsed preview), Projections (the
-// forecast tool, previously the only always-open content on this tab),
-// and Rebalance (moved here from Budget earlier).
+// Planning tab's own expand-all group.
 const planningToggleAll = makeToggleAllGroup("planningToggleAllBtn");
 [
-            ["expCardToggle", "expCardBody", "expCollapsedTotal"],
-            ["sumExpTrendsToggle", "sumExpTrendsCollBody", "sumExpTrendsPreview"],
             ["sumFireToggle", "sumFireCollBody", "sumFirePreview"],
             ["fcCardToggle", "fcCardCollBody", null],
             ["planningRebalanceToggle", "planningRebalanceCollBody", null],
@@ -440,7 +434,7 @@ registerCardOrder("summary", [
             "sumXirrCard", "sumAllocCard", "sumCompositionCard", "sumIdealCard", "sumRebalActionsCard",
             "sumStreakCard", "sumFundCard", "sumTaxCard", "sumHeatmapCard", "sumCalCard",
           ]);
-registerCardOrder("planning", ["sumExpensesCard", "sumExpTrendsCard", "sumFireCard", "fcCard", "planningRebalanceCard", "sumLoansCard", "investNewMoneyCard"]);
+registerCardOrder("planning", ["sumFireCard", "fcCard", "planningRebalanceCard", "sumLoansCard", "investNewMoneyCard"]);
 registerCardOrder("transactions", ["txp-history", "txp-curval", "txp-sip", "txp-entervalues", "txp-snapshot", "txnCharts"]);
 registerCardOrder("networth", ["nwBreakdownCard", "nwAssetTrendsCard", "nwHistCard", "nwChartCard", "nwCompChartCard", "nwProjCard"]);
 // Returns badges (Total bar + Liquid/Equity division rows) toggle between

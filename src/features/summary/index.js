@@ -11,19 +11,12 @@ import { cachedPortfolioXirr, fundXirr, rollingPortfolioXirr } from "../../domai
 import { el } from "../../core/dom.js";
 import { estimateCapitalGainsTax, LTCG_EXEMPTION } from "../../domain/tax.js";
 import { fmt, fmtCompact, fmtMonth, pct } from "../../core/format.js";
-import { averageExpenseBreakdown, averageIncome, EXPENSE_PERIODS, EXPENSE_CATEGORIES, fixedExpensesByCategory, monthlyExpenseSeries, monthlyIncomeSeries, normalizeExpenseCategory, resolvePeriodKeys, totalMonthlyExpenses } from "../../domain/expenses.js";
 import { renderAllocBars, renderCompositionDonut } from "../portfolio/allocation.js";
 import { renderIdealAlloc } from "./rebalance.js";
 
 export function renderSummaryExtras(eqCur, liqCur, totCur, eqTgt, liqTgt, totTgt, nowEqPct, tgtEqPct) {
             /* — Health Score (also renders the drift alert banner) — */
             renderHealthScore();
-
-            /* — Expenses (fixed items + auto bank-spend) — */
-            renderExpenses();
-
-            /* — Expense Trends (averages, projections, Income vs Expenses) — */
-            renderExpenseTrends();
 
             /* — Financial Independence progress — */
             renderFireProgress();
@@ -365,23 +358,7 @@ export function computeHealthScore() {
               }
             }
 
-            // ── Dimension 3: Liquidity buffer (vs 6-month expenses) ──
-            const totalLiqFree = LIQ_FUNDS.reduce((s, f) => s + Math.max(0, (state.liquid[f.id]?.value || 0) - (state.liquid[f.id]?.reserve || 0)), 0);
-            const monthlyExp = totalMonthlyExpenses({
-              fixedExpenses: state.surplus?.fixedExpenses, liqFunds: LIQ_FUNDS, eqFunds: EQ_FUNDS,
-              liquid: state.liquid, equity: state.equity, networth: state.networth,
-              transactions: state.transactions,
-            }).total;
-            let bScore = 15, bNote = "Enter expenses to measure", bufMonths = null;
-            if (monthlyExp > 0) {
-              bufMonths = totalLiqFree / monthlyExp;
-              if (bufMonths >= 6)  { bScore = 25; bNote = bufMonths.toFixed(1) + " mo buffer"; }
-              else if (bufMonths >= 3) { bScore = 17; bNote = bufMonths.toFixed(1) + " mo buffer (need 6)"; }
-              else if (bufMonths >= 1) { bScore = 10; bNote = bufMonths.toFixed(1) + " mo buffer (need 6)"; }
-              else                 { bScore = 0;  bNote = "< 1 month buffer"; }
-            }
-
-            // ── Dimension 4: Returns (portfolio XIRR) ──
+            // ── Dimension 3: Returns (portfolio XIRR) ──
             // Reuses cachedPortfolioXirr rather than re-deriving cash flows
             // inline — an earlier inline copy here ignored currentValue and
             // mis-signed redemptions as outflows, so this dimension could
@@ -403,11 +380,12 @@ export function computeHealthScore() {
               }
             }
 
-            const total = cScore + aScore + bScore + rScore;
+            // Three dimensions of 25 each, scaled to a /100 score.
+            const total = Math.round((cScore + aScore + rScore) / 75 * 100);
             const grade = total >= 80 ? "Excellent" : total >= 60 ? "Good" : total >= 40 ? "Fair" : "Needs Work";
             const gc    = total >= 80 ? "var(--mint)" : total >= 60 ? "var(--mint-soft)" : total >= 40 ? "var(--amber)" : "var(--coral)";
 
-            return { cScore, cNote, aScore, aNote, bScore, bNote, rScore, rNote, total, grade, gc };
+            return { cScore, cNote, aScore, aNote, rScore, rNote, total, grade, gc };
           }
 
 function renderHealthScore() {
@@ -415,7 +393,7 @@ function renderHealthScore() {
             const wrap = el("sumHealthScore");
             if (!wrap) return;
 
-            const { cScore, cNote, aScore, aNote, bScore, bNote, rScore, rNote, total, grade, gc } = computeHealthScore();
+            const { cScore, cNote, aScore, aNote, rScore, rNote, total, grade, gc } = computeHealthScore();
 
             // SVG arc gauge (225° start → sweeps clockwise 270° at 100%)
             const CX = 50, CY = 50, R = 36;
@@ -431,9 +409,6 @@ function renderHealthScore() {
               { label: "Allocation",   score: aScore, note: aNote, color: "var(--mint)",
                 what: "How closely your current equity holdings match the ideal category weights you've set (Large/Flexi/Mid/Small Cap, on the Portfolio tab).",
                 max: "Reach 25/25 by keeping your actual allocation within about 6% of target — every 1% of drift costs 0.8 points." },
-              { label: "Liq. Buffer",  score: bScore, note: bNote, color: "var(--amber)",
-                what: "Your deployable liquid fund balance (fund value minus any reserve you've earmarked) measured against your monthly expenses.",
-                max: "Reach 25/25 by keeping at least 6 months of expenses covered in liquid funds (17 pts at 3+ months, 10 at 1+, 0 below 1)." },
               { label: "Returns",      score: rScore, note: rNote, color: "var(--purple)",
                 what: "Your portfolio's annualised XIRR across every logged transaction — the actual return you're earning on your money.",
                 max: "Reach 25/25 with an XIRR of 18%+ (20 pts at 12%+, 15 at 8%+, 8 at 0%+, 0 if negative)." },
@@ -545,429 +520,17 @@ function renderHealthTrend() {
             });
           }
 
-// Expense Trends section state — view-only UI preferences (which period to
-// look back over, which categories count toward the average), not
-// persisted, same as rtnMode/txnFilter elsewhere in the app.
-let expPeriod = "month";
-let expIncludeFixed = true;
-let expIncludeExtra = true;
-let expIncludeSip = false;
-
-// Fixed items are a user-maintained itemized list (rent, EMIs, subscriptions,
-// ...); the bank-spend line is fully derived from data the app already has
-// (Net Worth tab's Bank field vs. last month's snapshot), so there's no
-// input for it here — editing the underlying Bank value on the Net Worth
-// tab is what moves this number.
-function renderExpenses() {
-            const card = el("sumExpensesCard");
-            const wrap = el("sumExpensesBody");
-            if (!card || !wrap) return;
-            card.style.display = "";
-
-            const items = state.surplus?.fixedExpenses || [];
-            const { fixed, sip, surplusInvestment, planned, bankSpend, extra, total, isManual } = totalMonthlyExpenses({
-              fixedExpenses: items, liqFunds: LIQ_FUNDS, eqFunds: EQ_FUNDS,
-              liquid: state.liquid, equity: state.equity, networth: state.networth,
-              transactions: state.transactions,
-            });
-
-            // Emergency fund buffer — moved here from the Health Score card
-            // (still feeds that card's own "Liq. Buffer" score dimension via
-            // the same totalMonthlyExpenses()/deployable-liquid inputs, just
-            // displayed once, next to the expense total it's measured against).
-            const totalLiqFree = LIQ_FUNDS.reduce((s, f) => s + Math.max(0, (state.liquid[f.id]?.value || 0) - (state.liquid[f.id]?.reserve || 0)), 0);
-            const bufMonths = total > 0 ? totalLiqFree / total : null;
-
-            // Income vs Expenses — a monthly cash-flow view, not a Net
-            // Worth total, so it always uses the raw Income figure
-            // directly rather than extraIncome() (which is 0 by design —
-            // Income is assumed already reflected in Bank & Savings and
-            // never double-counted into Net Worth).
-            const incomeVal = state.networth.income || 0;
-            const netCashFlow = incomeVal > 0 ? incomeVal - total : null;
-
-            // Kept in sync regardless of collapsed/open state — this is
-            // what's visible when the card is collapsed (the default).
-            const collapsedTotalEl = el("expCollapsedTotal");
-            if (collapsedTotalEl) collapsedTotalEl.textContent = fmt(total);
-
-            const catBreakdown = fixedExpensesByCategory(items);
-            const catBreakdownHtml = catBreakdown.length > 1
-              ? `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;">
-                  ${catBreakdown.map(c => `<span style="display:inline-flex;align-items:center;gap:4px;font-size:9.5px;color:var(--dim);">
-                    <span style="width:7px;height:7px;border-radius:50%;background:${c.color};display:inline-block;"></span>${c.label} ${fmt(c.total)}
-                  </span>`).join("")}
-                </div>`
-              : "";
-
-            // Fixed items + SIPs are both a BREAKDOWN of the bank drop
-            // (SIPs auto-debit from the same account) — used only to work
-            // out "extra", whatever of that drop neither accounts for (can
-            // go negative: less left the account than was planned, e.g. a
-            // bill or SIP hasn't hit yet). SIP itself is excluded from
-            // Total This Month since it's an investment, not spend. A
-            // month that actually invested more than the configured SIP
-            // (Mutual Funds growing by more than planned) shows that
-            // excess as its own "Surplus" segment rather than folding it
-            // into "Extra" — it left the bank for investing, not spending.
-            const segs = (bankSpend && extra >= 0)
-              ? [
-                  { label: "Fixed", value: fixed, color: "var(--mint)" },
-                  { label: "SIP", value: sip, color: "var(--liq)" },
-                  // Compact (e.g. "1.5L") rather than exact rupees — this is
-                  // a one-off/variable top-up, not a precise budgeted figure
-                  // like the others, so a rounded-off amount reads better.
-                  { label: "Surplus", value: surplusInvestment, color: "#a78bfa", compact: true },
-                  { label: "Extra", value: extra, color: "var(--amber)" },
-                ].filter(s => s.value > 0)
-              : [];
-            const segBarHtml = segs.length
-              ? `<div class="alloc-seg-bar" style="display:flex;height:10px;border-radius:6px;overflow:hidden;gap:1px;margin-top:12px;">
-                  ${segs.map(s => `<div style="flex:${((s.value / bankSpend.amount) * 100).toFixed(2)};background:${s.color};min-width:2px;" title="${s.label}: ${s.compact ? fmtCompact(s.value) : fmt(s.value)}"></div>`).join("")}
-                </div>
-                <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:7px;">
-                  ${segs.map(s => `<span style="display:inline-flex;align-items:center;gap:4px;font-size:9.5px;color:var(--dim);">
-                    <span style="width:7px;height:7px;border-radius:50%;background:${s.color};display:inline-block;"></span>${s.label} ${s.compact ? fmtCompact(s.value) : fmt(s.value)}
-                  </span>`).join("")}
-                </div>`
-              : "";
-
-            const bankHtml = bankSpend
-              ? `<div class="exp-bank-block">
-                  <div class="exp-bank-row">
-                    <span>Bank balance this month</span>
-                    <span class="exp-bank-fig">${fmt(bankSpend.openingBank)}<span class="exp-bank-arrow">&rarr;</span>${fmt(bankSpend.currentBank)}</span>
-                  </div>
-                  <div class="exp-bank-sub">Initial vs. Current on the Net Worth tab's Update Assets &mdash; a drop of ${fmt(bankSpend.amount)}</div>
-                  ${segBarHtml}
-                  <div class="exp-stat-grid" style="margin-top:12px;">
-                    ${surplusInvestment > 0 ? `<div class="exp-stat-card"><div class="lbl">Surplus Investment</div><div class="val" style="color:#a78bfa">+${fmtCompact(surplusInvestment)}</div></div>` : ""}
-                    <div class="exp-stat-card"><div class="lbl">${extra >= 0 ? "Extra Beyond Planned" : "Under Planned"}</div><div class="val" style="color:${extra > 0 ? "#fbbf24" : "#4ade80"}">${extra >= 0 ? "+" : "−"}${fmt(Math.abs(extra))}</div></div>
-                  </div>
-                </div>`
-              : `<div class="exp-bank-block" style="font-size:10.5px;color:var(--dim);">
-                  Enter Bank &amp; Savings' Initial and Current on the Net Worth tab's Update Assets to start tracking spending automatically &mdash; until then, Total This Month is just your Fixed Total.
-                </div>`;
-
-            // wrap (unlike its children) is the same persistent DOM node
-            // across every render — capturing focus against it, before
-            // this function smashes its own innerHTML below, is what
-            // lets renderItemList() restore focus correctly afterward.
-            const hadFocusInside = wrap.contains(document.activeElement);
-
-            wrap.innerHTML = `
-              <div class="expenses-list-wrap"></div>
-              <div class="exp-stat-grid">
-                <div class="exp-stat-card"><div class="lbl">Fixed Total</div><div class="val">${fmt(fixed)}</div></div>
-                <div class="exp-stat-card"><div class="lbl">Monthly SIP</div><div class="val">${fmt(sip)}</div></div>
-                <div class="exp-stat-card"><div class="lbl">Planned Outflow</div><div class="val">${fmt(planned)}</div></div>
-              </div>
-              ${catBreakdownHtml}
-              <div style="font-size:9px;color:var(--dim);opacity:0.8;">SIP total is set per-fund on the Portfolio tab</div>
-              ${bankHtml}
-              <div class="exp-hero">
-                <div class="exp-hero-top">
-                  <span class="exp-hero-lbl">Total This Month</span>
-                  <span class="exp-hero-val">${fmt(total)}</span>
-                </div>
-                <div class="exp-hero-sub">${isManual ? "Manually entered above — overrides the Bank-based estimate" : "SIP excluded — it's an investment, not an expense"}</div>
-              </div>
-              ${netCashFlow !== null ? `
-              <div class="exp-hero" style="margin-top:12px;">
-                <div class="exp-hero-top">
-                  <span class="exp-hero-lbl">Income vs Expenses</span>
-                  <span class="exp-hero-val" style="color:${netCashFlow >= 0 ? "var(--mint)" : "var(--coral)"}">${netCashFlow >= 0 ? "+" : "−"}${fmt(Math.abs(netCashFlow))}</span>
-                </div>
-                <div class="exp-hero-sub">${fmt(incomeVal)} income &minus; ${fmt(total)} expenses this month</div>
-              </div>` : ""}
-              ${bufMonths !== null ? `
-              <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line);font-size:11px;color:var(--dim);">
-                Emergency fund: <b style="color:${bufMonths >= 6 ? "var(--mint)" : bufMonths >= 3 ? "var(--amber)" : "var(--coral)"};font-family:'Roboto Mono',monospace">${bufMonths.toFixed(1)} months</b> of expenses covered
-                (<span style="color:var(--txt)">${fmt(totalLiqFree)}</span> deployable liquid ÷ <span style="color:var(--txt)">${fmt(total)}</span>/mo)
-              </div>` : ""}`;
-
-            // In view mode, the amount renders as plain formatted text
-            // (fmt() gives "₹1,00,000") rather than a number input — native
-            // <input type="number"> can't display comma grouping even when
-            // readonly, so it was showing raw digits ("100000") next to
-            // properly formatted totals elsewhere on the card. The dot's
-            // color reflects the item's category (Rent/EMI/Utility/
-            // Insurance/Subscription/Other) rather than just cycling a
-            // palette by position, so it carries real meaning at a glance.
-            // The delete button is always rendered (never omitted) — the
-            // row is a 4-column CSS grid (dot / name / amount / delete),
-            // and omitting the 4th cell entirely in view mode would shift
-            // the amount into its column; only its own data-role (which
-            // is what makes it clickable) is conditional on edit mode.
-            renderItemList(wrap.querySelector(".expenses-list-wrap"), {
-              items,
-              editMode,
-              addLabel: "+ Add Fixed Expense",
-              addBtnClass: "exp-add-btn",
-              hadFocusInside,
-              emptyEditText: `No fixed expenses yet — use "+ Add Fixed Expense" below.`,
-              emptyViewText: `No fixed expenses added. Tap Edit to add rent, EMIs, subscriptions, etc.`,
-              renderRow: (item, editMode) => {
-                const cat = normalizeExpenseCategory(item.category);
-                const startLabel = item.startDate ? fmtMonth(item.startDate.slice(0, 7)) : "";
-                return `
-                <li class="exp-row">
-                  <span class="exp-dot" style="background:${cat.color}" title="${cat.label}"></span>
-                  <div class="exp-name-col">
-                    <input class="exp-name-inp" data-id="${item.id}" value="${item.name || ""}" placeholder="Expense name" ${editMode ? "" : "readonly"}/>
-                    <div class="exp-meta-row">
-                      ${editMode
-                        ? `<select class="exp-cat-sel" data-id="${item.id}">${EXPENSE_CATEGORIES.map(c => `<option value="${c.key}"${c.key === cat.key ? " selected" : ""}>${c.label}</option>`).join("")}</select>
-                           <input type="date" class="exp-date-inp" data-id="${item.id}" value="${item.startDate || ""}" title="Start date — this expense won't count toward months before this"/>`
-                        : `<span class="exp-cat-tag" style="color:${cat.color}">${cat.label}</span>
-                           ${startLabel ? `<span class="exp-date-tag" title="Doesn't count before ${startLabel}">from ${startLabel}</span>` : ""}`}
-                    </div>
-                  </div>
-                  ${editMode
-                    ? `<input type="number" class="exp-amt-inp" data-id="${item.id}" min="0" step="100" value="${item.amount || ""}" placeholder="0"/>`
-                    : `<span class="exp-amt-txt">${fmt(item.amount || 0)}</span>`}
-                  <button class="exp-del-btn" ${editMode ? `data-role="delete-item"` : ""} data-id="${item.id}" aria-label="Delete ${item.name || "expense"}" style="visibility:${editMode ? "visible" : "hidden"}">✕</button>
-                </li>`;
-              },
-              onAdd: () => {
-                if (!state.surplus.fixedExpenses) state.surplus.fixedExpenses = [];
-                state.surplus.fixedExpenses.push({ id: "exp_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6), name: "", amount: 0 });
-                saveState();
-                renderExpenses();
-                renderExpenseTrends();
-              },
-              onDelete: (id) => {
-                state.surplus.fixedExpenses = items.filter(i => i.id !== id);
-                saveState();
-                renderExpenses();
-                renderExpenseTrends();
-                renderHealthScore();
-                renderFireProgress();
-              },
-            });
-
-            if (_animOnRender && !editMode)
-              wrap.querySelectorAll(".alloc-seg-bar").forEach(bar => animateWidth(bar, 100, 800));
-
-            wrap.querySelectorAll(".exp-name-inp").forEach(inp => {
-              inp.addEventListener("change", e => {
-                if (!editMode) { renderExpenses(); return; }
-                const item = items.find(i => i.id === e.target.dataset.id);
-                if (item) { item.name = e.target.value; saveState(); }
-              });
-            });
-            wrap.querySelectorAll(".exp-cat-sel").forEach(sel => {
-              sel.addEventListener("change", e => {
-                const item = items.find(i => i.id === e.target.dataset.id);
-                if (!item) return;
-                item.category = e.target.value;
-                saveState();
-                renderExpenses();
-              });
-            });
-            wrap.querySelectorAll(".exp-date-inp").forEach(inp => {
-              inp.addEventListener("change", e => {
-                const item = items.find(i => i.id === e.target.dataset.id);
-                if (!item) return;
-                item.startDate = e.target.value || "";
-                saveState();
-                renderExpenses();
-                renderExpenseTrends();
-                renderHealthScore();
-                renderFireProgress();
-              });
-            });
-            wrap.querySelectorAll(".exp-amt-inp").forEach(inp => {
-              inp.addEventListener("change", e => {
-                if (!editMode) { renderExpenses(); return; }
-                const item = items.find(i => i.id === e.target.dataset.id);
-                if (!item) return;
-                item.amount = Math.max(0, parseFloat(e.target.value) || 0);
-                saveState();
-                renderExpenses();
-                renderExpenseTrends();
-                renderHealthScore();
-                renderFireProgress();
-              });
-            });
-          }
-
-/* Expense Trends — split out of renderExpenses() into its own card: average/
-   mo + projections over a chosen lookback period, with each category
-   (Fixed / Extra / SIP) individually toggleable so the average only counts
-   what the user actually wants counted (SIP defaults off), plus an Income
-   vs Expenses chart over the same period. A self-contained analysis tool
-   with its own controls, a different concern from Expenses' job of
-   managing this month's actual numbers. */
-function renderExpenseTrends() {
-            const card = el("sumExpTrendsCard");
-            const wrap = el("sumExpTrendsBody");
-            if (!card || !wrap) return;
-            card.style.display = "";
-
-            const items = state.surplus?.fixedExpenses || [];
-            const periodKeys = resolvePeriodKeys(expPeriod);
-            const series = monthlyExpenseSeries(periodKeys, {
-              fixedExpenses: items, liqFunds: LIQ_FUNDS, eqFunds: EQ_FUNDS,
-              liquid: state.liquid, equity: state.equity, networth: state.networth,
-              transactions: state.transactions,
-            });
-            const brk = averageExpenseBreakdown(series);
-            let avgTotal = 0;
-            if (expIncludeFixed) avgTotal += brk.avgFixed;
-            if (expIncludeExtra) avgTotal += brk.avgExtra;
-            if (expIncludeSip) avgTotal += brk.avgSip;
-
-            // Income vs Expenses over the same selected period — Income is
-            // carried forward month to month (see monthlyIncomeSeries()),
-            // so this reads sensibly even for months between actual raises.
-            const incomeSeries = monthlyIncomeSeries(periodKeys, state.networth);
-            const incBrk = averageIncome(incomeSeries);
-            const avgSavingsRate = incBrk.avgIncome > 0 ? ((incBrk.avgIncome - avgTotal) / incBrk.avgIncome) * 100 : null;
-
-            const previewEl = el("sumExpTrendsPreview");
-            if (previewEl) previewEl.textContent = brk.monthsWithData > 0 ? ((avgTotal < 0 ? "−" : "") + fmt(Math.abs(avgTotal)) + "/mo") : "";
-
-            const periodChipsHtml = EXPENSE_PERIODS.map(p =>
-              `<button class="txn-preset${expPeriod === p.key ? " active" : ""}" data-period="${p.key}">${p.label}</button>`
-            ).join("");
-
-            // fmt() clamps negatives to ₹0 (fine for amounts that are
-            // never negative) — but avgExtra genuinely can go negative
-            // (months where less left the bank than was planned), and
-            // silently showing "₹0" there would hide a real underspend
-            // instead of revealing it, which is the whole point of this row.
-            const fmtAvg = (n) => (n < 0 ? "−" : "") + fmt(Math.abs(n));
-            const catRow = (key, label, checked, avgVal) => `
-              <label style="display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;padding:7px 10px;border-radius:8px;background:var(--panel-2);">
-                <span style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--txt);">
-                  <input type="checkbox" class="exp-cat-chk" data-cat="${key}" ${checked ? "checked" : ""} style="accent-color:var(--mint);width:14px;height:14px;cursor:pointer;margin:0;"/>
-                  ${label}
-                </span>
-                <span style="font-family:'Roboto Mono',monospace;font-size:11px;color:var(--dim);">${fmtAvg(avgVal)}/mo</span>
-              </label>`;
-
-            // Grouped bar chart, Income vs Expense per month across the
-            // selected period — paired by index since both series were
-            // built from the same periodKeys.
-            const chartMonths = periodKeys.map((key, i) => ({
-              // Clamped to 0 for the chart's own bar heights — a month's
-              // expense total can genuinely go negative (an under-spend
-              // month, see averageExpenseBreakdown's avgExtra comment
-              // above), which would otherwise produce an invalid negative
-              // <rect> height.
-              key,
-              income: Math.max(0, incomeSeries[i]?.income ?? 0),
-              expense: Math.max(0, series[i]?.total ?? 0),
-            }));
-            const incExpChartHtml = chartMonths.some(m => m.income > 0 || m.expense > 0)
-              ? (() => {
-                  const W = 600, H = 120, PAD_T = 8, PAD_B = 22;
-                  const maxV = Math.max(...chartMonths.map(m => Math.max(m.income, m.expense)), 1);
-                  const gap = W / chartMonths.length;
-                  const bw = Math.max(3, Math.floor(gap * 0.3));
-                  const bars = chartMonths.map((m, i) => {
-                    const cx = (i + 0.5) * gap;
-                    const incH = (m.income / maxV) * (H - PAD_T - PAD_B);
-                    const expH = (m.expense / maxV) * (H - PAD_T - PAD_B);
-                    const lbl = new Date(m.key + "-01T00:00:00").toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
-                    return `<rect x="${(cx - bw - 1).toFixed(1)}" y="${(H - PAD_B - incH).toFixed(1)}" width="${bw}" height="${incH.toFixed(1)}" rx="1.5" fill="var(--mint)" opacity="0.85"/>
-                      <rect x="${(cx + 1).toFixed(1)}" y="${(H - PAD_B - expH).toFixed(1)}" width="${bw}" height="${expH.toFixed(1)}" rx="1.5" fill="var(--coral)" opacity="0.85"/>
-                      <text x="${cx.toFixed(1)}" y="${H - 5}" text-anchor="middle" font-size="7" fill="var(--dim)" font-family="Roboto Mono,monospace">${lbl}</text>`;
-                  }).join("");
-                  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:104px;display:block;overflow:visible;">${bars}</svg>
-                    <div style="display:flex;gap:14px;margin-top:6px;">
-                      <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;color:var(--dim);"><span style="width:8px;height:8px;border-radius:2px;background:var(--mint);display:inline-block;"></span>Income</span>
-                      <span style="display:inline-flex;align-items:center;gap:5px;font-size:9px;color:var(--dim);"><span style="width:8px;height:8px;border-radius:2px;background:var(--coral);display:inline-block;"></span>Expenses</span>
-                    </div>`;
-                })()
-              : "";
-
-            const incExpBlockHtml = incBrk.monthsWithData > 0 ? `
-                <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line);">
-                  <div style="font-size:10px;color:var(--dim);margin-bottom:8px;">Income vs Expenses</div>
-                  ${incExpChartHtml}
-                  <div class="exp-stat-grid" style="margin-top:10px;">
-                    <div class="exp-stat-card"><div class="lbl">Avg Income</div><div class="val">${fmtAvg(incBrk.avgIncome)}</div></div>
-                    <div class="exp-stat-card"><div class="lbl">Avg Expenses</div><div class="val">${fmtAvg(avgTotal)}</div></div>
-                    <div class="exp-stat-card"><div class="lbl">Savings Rate</div><div class="val" style="color:${avgSavingsRate === null ? "inherit" : avgSavingsRate >= 0 ? "var(--mint)" : "var(--coral)"}">${avgSavingsRate === null ? "—" : Math.round(avgSavingsRate) + "%"}</div></div>
-                  </div>
-                </div>` : "";
-
-            const trendsBodyHtml = brk.monthsWithData > 0
-              ? `<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;">
-                  ${catRow("fixed", "Fixed (Planned)", expIncludeFixed, brk.avgFixed)}
-                  ${catRow("extra", "Unplanned (Extra)", expIncludeExtra, brk.avgExtra)}
-                  ${catRow("sip", "SIP (Investment)", expIncludeSip, brk.avgSip)}
-                </div>
-                <div class="exp-hero">
-                  <div class="exp-hero-top">
-                    <span class="exp-hero-lbl">Average Expenses / Month</span>
-                    <span class="exp-hero-val">${fmtAvg(avgTotal)}</span>
-                  </div>
-                  <div class="exp-hero-sub">Based on ${brk.monthsWithData} of ${brk.totalMonths} month${brk.totalMonths !== 1 ? "s" : ""} with Net Worth snapshot data${brk.monthsWithData < brk.totalMonths ? " — save more snapshots for a fuller picture" : ""}. Fixed &amp; SIP use today's amounts, applied to each month an expense was active in.</div>
-                </div>
-                <div style="margin-top:14px;">
-                  <div style="font-size:10px;color:var(--dim);margin-bottom:8px;">Projected Expenses</div>
-                  <div class="nw-proj-cards">
-                    <div class="nw-proj-card"><div class="pk">3 months</div><div class="pv">${fmtAvg(avgTotal * 3)}</div></div>
-                    <div class="nw-proj-card"><div class="pk">6 months</div><div class="pv">${fmtAvg(avgTotal * 6)}</div></div>
-                    <div class="nw-proj-card"><div class="pk">12 months</div><div class="pv">${fmtAvg(avgTotal * 12)}</div></div>
-                  </div>
-                </div>
-                <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line);">
-                  <div style="font-size:10px;color:var(--dim);margin-bottom:8px;">Expenses by Month — ${EXPENSE_PERIODS.find(p => p.key === expPeriod)?.label || ""}</div>
-                  ${series.slice().reverse().map(m => `<div class="nw-hist-detail-row">
-                    <span>${fmtMonth(m.key)}</span>
-                    <span>${m.total !== null ? fmt(m.total) : "—"}</span>
-                  </div>`).join("")}
-                </div>
-                ${incExpBlockHtml}`
-              : `<div style="font-size:10.5px;color:var(--dim);padding:8px 0;">No Net Worth snapshots in this period yet — save monthly snapshots on the Net Worth tab to see trends and projections.</div>`;
-
-            wrap.innerHTML = `
-              <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px;">${periodChipsHtml}</div>
-              ${trendsBodyHtml}`;
-
-            wrap.querySelectorAll("[data-period]").forEach(btn => {
-              btn.addEventListener("click", () => {
-                expPeriod = btn.dataset.period;
-                renderExpenseTrends();
-              });
-            });
-            wrap.querySelectorAll(".exp-cat-chk").forEach(chk => {
-              chk.addEventListener("change", e => {
-                const cat = e.target.dataset.cat;
-                if (cat === "fixed") expIncludeFixed = e.target.checked;
-                if (cat === "extra") expIncludeExtra = e.target.checked;
-                if (cat === "sip") expIncludeSip = e.target.checked;
-                renderExpenseTrends();
-              });
-            });
-          }
-
 /* Financial Goals — a named list (state.surplus.goals), each measured
    independently against the SAME current net worth (there's no fund-
    earmarking infrastructure to actually split money between goals, so
    each goal just answers "at this rate, when would this much be
-   reached"). A brand-new goal's amount field defaults blank rather than
-   prefilled with the suggested 25×-expenses figure — that suggestion is
-   shown as a footnote hint instead, since it's a reasonable default for
-   "my whole net worth target" but not for an arbitrary named goal like a
-   house downpayment. Reuses the Expenses card's total and the Net Worth
-   tab's snapshot history for the growth-rate projection, so this needs no
-   other state of its own. */
+   reached"). Reuses the Net Worth tab's history for the growth-rate
+   projection, so this needs no other state of its own. */
 function renderFireProgress() {
             const card = el("sumFireCard");
             const wrap = el("sumFireBody");
             if (!card || !wrap) return;
 
-            const monthlyExp = totalMonthlyExpenses({
-              fixedExpenses: state.surplus?.fixedExpenses, liqFunds: LIQ_FUNDS, eqFunds: EQ_FUNDS,
-              liquid: state.liquid, equity: state.equity, networth: state.networth,
-              transactions: state.transactions,
-            }).total;
-            const suggestedTarget = monthlyExp * 12 * 25;
             const goals = state.surplus?.goals || [];
 
             if (!goals.length && !editMode) { card.style.display = "none"; return; }
@@ -1000,8 +563,7 @@ function renderFireProgress() {
 
             wrap.innerHTML = `
               <div style="font-size:10.5px;color:var(--dim);margin-bottom:10px;">Current Net Worth: <b style="color:var(--txt)">${fmt(cur)}</b></div>
-              <div class="goals-list-wrap"></div>
-              ${editMode ? `<div style="font-size:9px;color:var(--dim);opacity:0.8;margin-top:8px;">Suggested (25&times; annual expenses, the 4% withdrawal rule): ${fmt(suggestedTarget)}</div>` : ""}`;
+              <div class="goals-list-wrap"></div>`;
 
             renderItemList(wrap.querySelector(".goals-list-wrap"), {
               items: goals,
@@ -1079,10 +641,7 @@ function renderFireProgress() {
    Estimate, or FIRE progress: all of those currently assume asset-only net
    worth, and every one of them (plus every saved Net Worth snapshot) would
    need rework to subtract liabilities correctly — a much bigger, riskier
-   change than a plain tracking card. "EMI" is also a listed Expenses
-   category, but that's a separate manually-entered figure for this
-   month's spend total — the two aren't linked, by design, for the same
-   reason. */
+   change than a plain tracking card. */
 function renderLoans() {
             const card = el("sumLoansCard");
             const wrap = el("sumLoansBody");

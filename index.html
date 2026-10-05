@@ -465,7 +465,7 @@
         <div class="pg-head pg-head-with-action">
           <div>
             <h1>Net <span class="accent">Worth</span></h1>
-            <p>Monthly snapshot tracker. Save each month to build your growth history.</p>
+            <p>Update your balances with a date and your net worth is worked out for you.</p>
           </div>
           <button class="pg-head-toggle-all" id="nwToggleAllBtn" title="Expand all cards" aria-label="Expand all cards">
             <span class="pg-head-toggle-all-icon">▾</span>
@@ -477,7 +477,7 @@
         <div class="nw-hero">
           <div class="nw-stat-row" id="nwStatRow">
             <div class="nw-stat-card">
-              <div class="nw-stat-label">Current Net Worth</div>
+              <div class="nw-stat-label">Current Net Worth <span id="nwAsOfLabel" style="text-transform:none;letter-spacing:0;opacity:.7;"></span></div>
               <div class="nw-stat-val" id="nwHeroVal">₹0</div>
             </div>
             <div class="nw-stat-card">
@@ -593,9 +593,9 @@
         </div>
 
         <p class="foot">
-          Snapshot is dated to the 1st of the previous month. Save at the start
-          of each month to record the previous month's net worth. Projections use
-          your actual average monthly growth rate.
+          Each update is stamped with the date you pick on Update Assets; the
+          latest update in a month is the one shown for that month. Projections
+          use your actual average monthly growth rate.
         </p>
       </section>
 
@@ -604,51 +604,11 @@
         <div class="pg-head pg-head-with-action">
           <div>
             <h1>Financial <span class="accent">Planning</span></h1>
-            <p>Expenses, goals, long-range projections, and manual account rebalancing.</p>
+            <p>Goals, long-range projections, and manual account rebalancing.</p>
           </div>
           <button class="pg-head-toggle-all" id="planningToggleAllBtn" title="Expand all cards" aria-label="Expand all cards">
             <span class="pg-head-toggle-all-icon">▾</span>
           </button>
-        </div>
-
-        <!-- Expenses (collapsed by default; shows Total This Month while
-             collapsed). Moved here from the standalone Budget tab, which
-             only ever held this and Financial Goals below — both are the
-             same kind of forward-looking money-planning tool as
-             Projections/Rebalance, just merged onto one tab. -->
-        <div class="card" id="sumExpensesCard" style="display:none;margin-bottom:12px">
-          <button class="card-toggle-head" id="expCardToggle" aria-expanded="false">
-            <div class="card-toggle-head-text">
-              <div class="sec-head" style="margin-bottom:4px">Expenses</div>
-              <div style="font-size:10px;color:var(--dim)">Fixed monthly costs, plus this month's Bank spending (auto-tracked from the Net Worth tab)</div>
-            </div>
-            <span class="card-toggle-preview" id="expCollapsedTotal"></span>
-            <span class="card-toggle-chevron">▾</span>
-          </button>
-          <div class="exp-card-body" id="expCardBody">
-            <div id="sumExpensesBody"></div>
-          </div>
-        </div>
-
-        <!-- Expense Trends — split out of Expenses: that card is about
-             managing this month's actual spend, this one is a self-
-             contained historical analysis tool (period picker, averages,
-             projections, Income vs Expenses chart) with its own controls,
-             a different concern entirely. -->
-        <div class="card" id="sumExpTrendsCard" style="display:none;margin-bottom:12px">
-          <button class="card-toggle-head" id="sumExpTrendsToggle" aria-expanded="false">
-            <div class="card-toggle-head-text">
-              <div class="sec-head" style="margin-bottom:4px">Expense Trends</div>
-              <div style="font-size:10px;color:var(--dim)">Averages, projections, and Income vs Expenses over time</div>
-            </div>
-            <span class="card-toggle-preview" id="sumExpTrendsPreview"></span>
-            <span class="card-toggle-chevron">▾</span>
-          </button>
-          <div class="card-toggle-body" id="sumExpTrendsCollBody">
-            <div class="card-toggle-body-inner">
-              <div id="sumExpTrendsBody"></div>
-            </div>
-          </div>
         </div>
 
         <!-- Financial Goals progress — moved here from Budget, see above. -->
@@ -1012,53 +972,28 @@
                 <div class="nw-auto-val" id="nwUpdateTotal">₹0</div>
                 <div class="nw-auto-sub">Mutual Funds + every asset below</div>
               </div>
+              <div class="field" style="margin-bottom:12px;">
+                <label class="flabel" for="nw-asof">Balances as of</label>
+                <input class="form-inp" id="nw-asof" type="date" />
+              </div>
               <div class="nw-fields-grid" id="nwFieldsGrid"></div>
-              <div class="nw-income-block" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line);">
-                <div class="field" style="margin-bottom:0;">
-                  <label class="flabel" for="nw-income">Income <span style="color:var(--dim);font-size:8px;text-transform:none;letter-spacing:0;">(+/- to add or subtract)</span></label>
-                  <div class="ibox"><span class="pfx">&#8377;</span>
-                    <input class="num" id="nw-income" type="text" placeholder="0" inputmode="numeric" />
-                  </div>
-                </div>
-                <div style="font-size:10.5px;color:var(--dim);margin-top:8px;">
-                  Assumed already reflected in Bank &amp; Savings — tracked here for reference, not added separately to Net Worth.
-                </div>
-                <div class="field" style="margin-bottom:0;margin-top:14px;">
-                  <label class="flabel" for="nw-expenses">Expenses <span style="color:var(--dim);font-size:8px;text-transform:none;letter-spacing:0;">(+/- to add or subtract)</span></label>
-                  <div class="ibox"><span class="pfx">&#8377;</span>
-                    <input class="num" id="nw-expenses" type="text" placeholder="0" inputmode="numeric" />
-                  </div>
-                </div>
-                <div style="font-size:10.5px;color:var(--dim);margin-top:8px;">
-                  Optional — this month's real total spend. When set, it replaces the Bank-based estimate as "Total This Month" on the Expenses card.
-                </div>
-                <div class="nw-auto-item" style="margin-top:14px;">
-                  <div class="nw-auto-label">
-                    Total This Month
-                    <span class="tag equity" style="font-size:7.5px;padding:2px 6px">AUTO</span>
-                  </div>
-                  <div class="nw-auto-val" id="nwUpdateExpenseTotal">₹0</div>
-                  <div class="nw-auto-sub" id="nwUpdateExpenseSub">Fixed + unplanned bank spend, SIP excluded</div>
-                </div>
+              <div class="nw-snap-row" style="margin-top:14px;">
+                <button class="btn primary" id="nwSnapshotBtn" style="flex:0 0 auto">Save update</button>
+                <span id="nwSnapMsg" style="font-size:10.5px;color:var(--dim)"></span>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Snapshots Card (formerly "Save Snapshot") — extracted from
-             Update Assets so the monthly-snapshot action reads as its own
-             step, separate from live value entry. -->
+        <!-- History of saved balance updates (one per month — the latest
+             update in that month). Saving happens on Update Assets above. -->
         <div class="txp-card" id="txp-snapshot">
           <div class="txp-card-head" id="txp-snapshot-head">
-            <span class="txp-card-title">Snapshots</span>
+            <span class="txp-card-title">Update History</span>
             <span class="txp-card-chev">▾</span>
           </div>
           <div class="txp-card-body">
             <div class="txp-inner">
-              <div class="nw-snap-row">
-                <button class="btn primary" id="nwSnapshotBtn" style="flex:0 0 auto">Save snapshot</button>
-                <span id="nwSnapMsg" style="font-size:10.5px;color:var(--dim)"></span>
-              </div>
               <div id="nwSnapshotsList" style="margin-top:14px;"></div>
             </div>
           </div>

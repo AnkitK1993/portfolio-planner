@@ -3,9 +3,8 @@ import { UI } from "../../core/ui.js";
 import { open as openModal } from "../../core/modal.js";
 import { refreshAncestorCollapsible } from "../../core/collapsible.js";
 import { _animOnRender, animateNumber, animateWidth } from "../../core/animate.js";
-import { avgMonthlyGrowthRate, avgMonthlyGrowthRateBy, buildCurrentSnapshot, changeFrom, mfTotalValue, mfUnrealizedGain, mfValueAsOf, monthsToReach, nwTotal, snapshotMonthsAgo } from "../../domain/networth.js";
-import { monthlyExpenseSeries, totalMonthlyExpenses } from "../../domain/expenses.js";
-import { editMode, EQ_FUNDS, LIQ_FUNDS, normalizeSnap, othersOfSnap, saveState, snapshotKey, state } from "../../core/state.js";
+import { avgMonthlyGrowthRate, avgMonthlyGrowthRateBy, buildCurrentSnapshot, changeFrom, mfTotalValue, mfProfitAsOf, mfUnrealizedGain, mfValueAsOf, monthsToReach, nwTotal, snapshotMonthsAgo } from "../../domain/networth.js";
+import { editMode, EQ_FUNDS, LIQ_FUNDS, normalizeSnap, othersOfSnap, saveState, state } from "../../core/state.js";
 import { el } from "../../core/dom.js";
 import { evalArithmetic, fmt, fmtCompact, fmtMonth, fmtNum, num } from "../../core/format.js";
 import { deleteSnapshot, saveSnapshot, setNetworthField } from "../../store/actions.js";
@@ -46,35 +45,33 @@ const ASSET_TREND_FIELDS = [
             { key: "ppf",      label: "PPF",              bestWorst: true  },
             { key: "epf",      label: "EPF",              bestWorst: true  },
             { key: "bonds",    label: "Bonds",            bestWorst: true  },
-            { key: "income",   label: "Income",           bestWorst: true  },
           ];
 
 // Shared by renderNwHistory() (Net Worth tab) and renderSnapshotsList()
-// (Transactions tab) — both list the same underlying snapshots, just
+// (Transactions tab) — both list the same underlying entries, just
 // with a different level of detail, so the field shape stays in sync.
 const SNAPSHOT_DETAIL_FIELDS = [
             { key: "mf",       label: "MF Value" },
             { key: "mfProfit", label: "Unrealized Gain" },
-            // Bank & Savings' Initial sits right before Current (== the
-            // plain "bank" field) rather than alongside the rest of
-            // OTHER_FIELDS in NW_FIELDS order, so the two halves of the
-            // same figure read together here and in "Compare with Current".
-            ...OTHER_FIELDS.flatMap(f => f.id === "bank"
-              ? [{ key: "bankInitial", label: "Bank & Savings (Initial)" }, { key: "bank", label: "Bank & Savings (Current)" }]
-              : [{ key: f.id, label: f.label }]),
-            { key: "income",   label: "Income" },
-            { key: "expenses", label: "Expenses" },
+            ...OTHER_FIELDS.map(f => ({ key: f.id, label: f.label })),
             { key: "total",    label: "Total" },
           ];
 
-// Bank & Savings, Income and Expenses double as a quick calculator (see
-// evalArithmetic()) — every other field stays plain num() parsing,
-// unchanged. Shared between Update Assets (buildNwGrid) and the
-// snapshot edit popup (editSnapshot).
-const CALC_FIELDS = ["bank", "bankInitial", "income", "expenses"];
+// Bank & Savings doubles as a quick calculator (see evalArithmetic()) —
+// every other field stays plain num() parsing. Shared between Update
+// Assets (buildNwGrid) and the entry edit popup (editSnapshot).
+const CALC_FIELDS = ["bank"];
 const calcHint = (id) => CALC_FIELDS.includes(id)
             ? ' <span style="color:var(--dim);font-size:8px;text-transform:none;letter-spacing:0;">(+/- to add or subtract)</span>'
             : "";
+
+const todayStr = () => {
+            const d = new Date();
+            return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+          };
+
+// Pretty "12 Sep 2026" for an ISO yyyy-mm-dd date.
+const fmtDay = (iso) => iso ? new Date(iso + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "";
 
 export function buildNwGrid() {
             // Mutual Funds isn't a NW_FIELDS/state.networth entry (it's
@@ -89,33 +86,8 @@ export function buildNwGrid() {
                   <input class="num" id="nw-mf" type="text" placeholder="0" inputmode="numeric" readonly style="opacity:0.6;cursor:default;" />
                 </div>
               </div>`;
-            // Bank & Savings splits into two sub-fields rather than NW_FIELDS'
-            // usual single input — Initial (this tracking period's opening
-            // balance, carried forward automatically when a snapshot is
-            // saved — see takeSnapshot()) and Current (today's live balance,
-            // same field/id as before). Their difference is what
-            // bankSpentThisMonth() (domain/expenses.js) uses to estimate
-            // this month's spend.
-            const bankFieldHtml = `
-              <div class="field nw-bank-field" style="margin-bottom:0;">
-                <label class="flabel">Bank &amp; Savings</label>
-                <div class="nw-bank-split">
-                  <div class="nw-bank-sub">
-                    <span class="nw-bank-sub-lbl">Initial</span>
-                    <div class="ibox"><span class="pfx">&#8377;</span>
-                      <input class="num" id="nw-bankInitial" type="text" placeholder="0" inputmode="numeric" value="${fmtNum(state.networth.bankInitial)}" />
-                    </div>
-                  </div>
-                  <div class="nw-bank-sub">
-                    <span class="nw-bank-sub-lbl">Current${calcHint("bank")}</span>
-                    <div class="ibox"><span class="pfx">&#8377;</span>
-                      <input class="num" id="nw-bank" type="text" placeholder="0" inputmode="numeric" value="${fmtNum(state.networth.bank)}" />
-                    </div>
-                  </div>
-                </div>
-              </div>`;
             el("nwFieldsGrid").innerHTML = mfFieldHtml + NW_FIELDS.map(
-              (f) => f.id === "bank" ? bankFieldHtml : `
+              (f) => `
               <div class="field" style="margin-bottom:0;">
                 <label class="flabel" for="nw-${f.id}">${f.label}${f.id === "mfProfit" ? ' <span style="color:var(--dim);font-size:8px;text-transform:none;letter-spacing:0;">(auto-calculated)</span>' : ""}${calcHint(f.id)}</label>
                 <div class="ibox"><span class="pfx">&#8377;</span>
@@ -139,58 +111,19 @@ export function buildNwGrid() {
               inp.addEventListener("blur",  () => { inp.value = fmtNum(parse(inp.value)); });
             });
 
-            const bankInitialInp = el("nw-bankInitial");
-            if (bankInitialInp) {
-              bankInitialInp.addEventListener("input", (e) => {
-                setNetworthField("bankInitial", evalArithmetic(e.target.value));
+            // "As of" date — the day these balances were true. Defaults to
+            // today the first time it's needed; changing it re-labels the
+            // net worth figure and decides which month's entry Save fills.
+            const asOfInp = el("nw-asof");
+            if (asOfInp) {
+              if (!state.networth.asOf) setNetworthField("asOf", todayStr());
+              asOfInp.value = state.networth.asOf;
+              asOfInp.max = todayStr();
+              asOfInp.addEventListener("change", (e) => {
+                setNetworthField("asOf", e.target.value || todayStr());
+                saveState();
                 renderNetWorth();
               });
-              bankInitialInp.addEventListener("focus", () => { const v = num(bankInitialInp.value); bankInitialInp.value = v > 0 ? v : ""; });
-              bankInitialInp.addEventListener("blur",  () => { bankInitialInp.value = fmtNum(evalArithmetic(bankInitialInp.value)); });
-            }
-
-            // Income — not part of NW_FIELDS (see extraIncome() in
-            // domain/networth.js for why: it's always assumed to already
-            // be reflected in Bank & Savings, so it never adds a second
-            // contribution to Net Worth). Not auto-reset month to month,
-            // same as every other field here — whatever was last entered
-            // IS the default for the next month, until the user changes it.
-            const incomeInp = el("nw-income");
-            if (incomeInp) {
-              incomeInp.value = fmtNum(state.networth.income);
-              incomeInp.addEventListener("input", (e) => {
-                setNetworthField("income", evalArithmetic(e.target.value));
-                renderNetWorth();
-              });
-              incomeInp.addEventListener("focus", () => { const v = num(incomeInp.value); incomeInp.value = v > 0 ? v : ""; });
-              incomeInp.addEventListener("blur",  () => { incomeInp.value = fmtNum(evalArithmetic(incomeInp.value)); });
-            }
-
-            // Expenses — pre-filled with the same bank-derived estimate the
-            // Expenses card's "Total This Month" shows (see
-            // totalMonthlyExpenses()/monthlyExpenseSeries() in
-            // domain/expenses.js) rather than starting blank/0, so the
-            // field always shows a real, editable number instead of
-            // looking like missing data. Still a direct override in
-            // effect — Bank alone can't always isolate genuine spend (e.g.
-            // income landing in the same account the same month as
-            // spending) — typing a different figure here replaces it;
-            // renderNetWorth() keeps this synced to the live estimate for
-            // as long as the field hasn't actually been typed into.
-            const expensesInp = el("nw-expenses");
-            if (expensesInp) {
-              const { total: liveExpEstimate } = totalMonthlyExpenses({
-                fixedExpenses: state.surplus?.fixedExpenses, liqFunds: LIQ_FUNDS, eqFunds: EQ_FUNDS,
-                liquid: state.liquid, equity: state.equity, networth: state.networth,
-                transactions: state.transactions,
-              });
-              expensesInp.value = fmtNum(liveExpEstimate || 0);
-              expensesInp.addEventListener("input", (e) => {
-                setNetworthField("expenses", evalArithmetic(e.target.value));
-                renderNetWorth();
-              });
-              expensesInp.addEventListener("focus", () => { const v = num(expensesInp.value); expensesInp.value = v > 0 ? v : ""; });
-              expensesInp.addEventListener("blur",  () => { expensesInp.value = fmtNum(evalArithmetic(expensesInp.value)); });
             }
           }
 
@@ -212,38 +145,16 @@ export function renderNetWorth() {
             const updateTotalEl = el("nwUpdateTotal");
             if (updateTotalEl) updateTotalEl.textContent = fmt(total);
 
-            // Mirrors the Expenses card's "Total This Month" (Planning tab) —
-            // same totalMonthlyExpenses() call, same manual-override
-            // behaviour — so it's visible right next to the Bank/Expenses
-            // inputs that actually drive it, without switching tabs.
-            const updateExpEl = el("nwUpdateExpenseTotal");
-            const updateExpSubEl = el("nwUpdateExpenseSub");
-            if (updateExpEl) {
-              const { total: expTotal, isManual } = totalMonthlyExpenses({
-                fixedExpenses: state.surplus?.fixedExpenses, liqFunds: LIQ_FUNDS, eqFunds: EQ_FUNDS,
-                liquid: state.liquid, equity: state.equity, networth: state.networth,
-                transactions: state.transactions,
-              });
-              updateExpEl.textContent = fmt(expTotal);
-              if (updateExpSubEl) updateExpSubEl.textContent = isManual ? "Manually entered below" : "Fixed + unplanned bank spend, SIP excluded";
-              // Keep the editable Expenses input itself synced to this same
-              // figure — covers both "still auto, Bank/BankInitial just
-              // changed" (expTotal moves, field should track it) and
-              // "already manual" (expTotal already equals the saved
-              // override, so this is a no-op) — except while the user is
-              // actively typing in it, which would otherwise fight their
-              // keystrokes and clobber the cursor position.
-              const liveExpensesInp = el("nw-expenses");
-              if (liveExpensesInp && document.activeElement !== liveExpensesInp) {
-                liveExpensesInp.value = fmtNum(expTotal || 0);
-              }
-            }
             animateNumber(el("nwHeroVal"), total, _animOnRender && !editMode ? 2000 : 500, _animOnRender && !editMode);
-            const _snapKey = snapshotKey();
-            const _hasSnap = !!(state.networth.snapshots && state.networth.snapshots[_snapKey]);
+            // Net worth is "as of" whatever date was picked on Update
+            // Assets; saving fills the entry for that date's month.
+            const asOf = state.networth.asOf || todayStr();
+            const _snapKey = asOf.slice(0, 7);
+            const _existing = state.networth.snapshots && state.networth.snapshots[_snapKey];
+            const asOfLabel = el("nwAsOfLabel");
+            if (asOfLabel) asOfLabel.textContent = "as of " + fmtDay(asOf);
             const _snapBtn = el("nwSnapshotBtn");
-            _snapBtn.textContent = "Save snapshot — " + fmtMonth(_snapKey);
-            _snapBtn.style.display = _hasSnap ? "none" : "";
+            _snapBtn.textContent = (_existing ? "Update " : "Save ") + fmtMonth(_snapKey) + " entry";
 
             // Delta chip, Avg Monthly Growth tile, hero chart — driven by
             // snapshots. The stat row itself always shows (Current Net
@@ -359,42 +270,44 @@ export function renderNetWorth() {
           }
 
 export function takeSnapshot() {
-            const key = snapshotKey();
-            const mfVal = mfValueAsOf(key, LIQ_FUNDS, EQ_FUNDS, state.transactions);
+            const asOf = state.networth.asOf || todayStr();
+            const key = asOf.slice(0, 7);
+            // A balance update dated today (or later) uses the live fund
+            // figures. One dated in the past uses the MF value/gain that
+            // were true on that date, from transactions and logged
+            // current values up to it, so back-filling old months doesn't
+            // stamp today's fund total onto them.
+            const isLive = asOf >= todayStr();
+            const mfVal = isLive
+              ? mfTotalValue(LIQ_FUNDS, EQ_FUNDS, state.liquid, state.equity)
+              : mfValueAsOf(asOf, LIQ_FUNDS, EQ_FUNDS, state.transactions);
+            const mfProfit = isLive
+              ? (state.networth.mfProfit || 0)
+              : mfProfitAsOf(asOf, LIQ_FUNDS, EQ_FUNDS, state.returnsLog);
             const other = NW_FIELDS.filter((f) => f.id !== "mfProfit").reduce(
               (s, f) => s + (state.networth[f.id] || 0), 0
             );
-            const total = mfVal + (state.networth.mfProfit || 0) + other;
+            const total = mfVal + mfProfit + other;
             const doSave = () => {
               const snap = {
-                mf: mfVal, total,
-                income: state.networth.income || 0,
-                expenses: state.networth.expenses || 0,
-                bankInitial: state.networth.bankInitial || 0,
+                mf: mfVal, total, asOf,
                 healthScore: computeHealthScore().total,
                 savedAt: new Date().toISOString(),
               };
               NW_FIELDS.forEach((f) => { snap[f.id] = state.networth[f.id] || 0; });
+              snap.mfProfit = mfProfit;
               saveSnapshot(key, snap);
-              // Carry this period's closing Current balance forward as the
-              // next period's opening Initial — the natural default (this
-              // month's ending balance IS next month's starting one) unless
-              // the user overrides it on Update Assets. buildNwGrid() only
-              // ever runs once at boot, so the live input needs its value
-              // synced by hand here too, not just the underlying state.
-              state.networth.bankInitial = state.networth.bank || 0;
-              const bankInitialInp = el("nw-bankInitial");
-              if (bankInitialInp) bankInitialInp.value = fmtNum(state.networth.bankInitial);
               saveState();
               refreshAllSnapshotViews();
               const msg = el("nwSnapMsg");
               if (msg) {
-                msg.textContent = "Saved ✓ " + fmtMonth(key);
+                msg.textContent = "Saved ✓ " + fmtDay(asOf);
                 setTimeout(() => { if (msg.textContent.startsWith("Saved")) msg.textContent = ""; }, 3000);
               }
             };
-            if (state.networth.snapshots[key]) {
-              UI.confirm("Replace the existing snapshot for " + fmtMonth(key) + "?", "Overwrite snapshot?", "Overwrite", doSave);
+            const existing = state.networth.snapshots[key];
+            if (existing) {
+              UI.confirm("Replace the " + fmtMonth(key) + " entry (dated " + fmtDay(normalizeSnap(key, existing).asOf) + ") with these balances dated " + fmtDay(asOf) + "?", "Replace entry?", "Replace", doSave);
             } else {
               doSave();
             }
@@ -541,38 +454,19 @@ function deleteSnapshotWithUndo(key) {
             });
           }
 
-// Edits an arbitrary month's snapshot entirely within its own popup —
+// Edits an arbitrary month's entry entirely within its own popup —
 // Update Assets only ever reflects live/current values, never a past
-// snapshot, so this reads/writes the snapshot object directly instead
-// of routing through state.networth. MF Value and Unrealized Gain are
-// derived/frozen (never hand-entered, same as in Update Assets, where
-// mfProfit is readonly), so they're shown read-only here too. Income is
-// historized per snapshot (frozen at takeSnapshot() time, same as
-// Bank/FD/etc.) and editable here, but — same rule as everywhere else —
-// it's tracked for reference only and never adds into the total.
+// entry, so this reads/writes the entry object directly instead of
+// routing through state.networth. MF Value, Unrealized Gain and the date
+// are all editable so a past entry can be corrected.
 export function editSnapshot(key) {
             const snap = state.networth.snapshots && state.networth.snapshots[key];
             if (!snap) return;
             const fid = (id) => "snapEdit-" + id;
             const normalized = normalizeSnap(key, snap);
-            const incomeVal = normalized.income;
-            // Pre-fill with this month's own bank-derived estimate (same
-            // fixed+extra calc monthlyExpenseSeries() uses for the Expense
-            // Trends card) rather than the raw stored figure, which is 0 for
-            // any month that was never manually overridden — otherwise the
-            // field looks empty even though a real computed number exists.
-            // Already-manual months are unaffected: monthlyExpenseSeries()
-            // returns that same saved override as `total` when one exists.
-            const expensesVal = monthlyExpenseSeries([key], {
-              fixedExpenses: state.surplus?.fixedExpenses, liqFunds: LIQ_FUNDS, eqFunds: EQ_FUNDS,
-              liquid: state.liquid, equity: state.equity, networth: state.networth,
-              transactions: state.transactions,
-            })[0].total || 0;
-            const bankInitialVal = normalized.bankInitial;
-            const readonlyRows = [
-              { label: "Unrealized Gain", value: snap.mfProfit || 0 },
-            ];
             let bodyElRef = null;
+            const monthStart = key + "-01";
+            const monthEnd = key + "-" + String(new Date(+key.slice(0, 4), +key.slice(5, 7), 0).getDate()).padStart(2, "0");
 
             openModal({
               title: "Edit " + fmtMonth(key),
@@ -581,67 +475,31 @@ export function editSnapshot(key) {
                 bodyElRef = bodyEl;
                 bodyEl.innerHTML = `
                   <div class="field" style="margin-bottom:0;">
-                    <label class="flabel" for="${fid("mf")}">MF Value${calcHint("mf")}</label>
+                    <label class="flabel" for="${fid("asOf")}">As of</label>
+                    <input class="form-inp" id="${fid("asOf")}" type="date" min="${monthStart}" max="${monthEnd}" value="${normalized.asOf}" />
+                  </div>
+                  <div class="field" style="margin-bottom:0;">
+                    <label class="flabel" for="${fid("mf")}">MF Value</label>
                     <input class="form-inp" id="${fid("mf")}" type="text" inputmode="numeric" value="${fmtNum(snap.mf || 0)}" />
                   </div>
-                  <div>
-                    ${readonlyRows.map(r => `<div class="nw-hist-detail-row"><span>${r.label}</span><span>${fmt(r.value)}</span></div>`).join("")}
+                  <div class="field" style="margin-bottom:0;">
+                    <label class="flabel" for="${fid("mfProfit")}">Unrealized Gain</label>
+                    <input class="form-inp" id="${fid("mfProfit")}" type="text" inputmode="numeric" value="${fmtNum(snap.mfProfit || 0)}" />
                   </div>
                   <div style="border-top:1px solid var(--line);"></div>
-                  ${OTHER_FIELDS.map(f => f.id === "bank" ? `
-                    <div class="field" style="margin-bottom:0;">
-                      <label class="flabel">Bank &amp; Savings</label>
-                      <div class="nw-bank-split">
-                        <div class="nw-bank-sub">
-                          <span class="nw-bank-sub-lbl">Initial</span>
-                          <input class="form-inp" id="${fid("bankInitial")}" type="text" inputmode="numeric" value="${fmtNum(bankInitialVal)}" />
-                        </div>
-                        <div class="nw-bank-sub">
-                          <span class="nw-bank-sub-lbl">Current${calcHint("bank")}</span>
-                          <input class="form-inp" id="${fid("bank")}" type="text" inputmode="numeric" value="${fmtNum(snap.bank)}" />
-                        </div>
-                      </div>
-                    </div>
-                  ` : `
+                  ${OTHER_FIELDS.map(f => `
                     <div class="field" style="margin-bottom:0;">
                       <label class="flabel" for="${fid(f.id)}">${f.label}${calcHint(f.id)}</label>
                       <input class="form-inp" id="${fid(f.id)}" type="text" inputmode="numeric" value="${fmtNum(snap[f.id])}" />
                     </div>
                   `).join("")}
-                  <div style="border-top:1px solid var(--line);"></div>
-                  <div class="field" style="margin-bottom:0;">
-                    <label class="flabel" for="${fid("income")}">Income${calcHint("income")}</label>
-                    <input class="form-inp" id="${fid("income")}" type="text" inputmode="numeric" value="${fmtNum(incomeVal)}" />
-                  </div>
-                  <div style="font-size:10.5px;color:var(--dim);margin-top:8px;">
-                    Assumed already reflected in Bank &amp; Savings — tracked for reference, not added separately to the total.
-                  </div>
-                  <div class="field" style="margin-bottom:0;margin-top:12px;">
-                    <label class="flabel" for="${fid("expenses")}">Expenses${calcHint("expenses")}</label>
-                    <input class="form-inp" id="${fid("expenses")}" type="text" inputmode="numeric" value="${fmtNum(expensesVal)}" />
-                  </div>
-                  <div style="font-size:10.5px;color:var(--dim);margin-top:8px;">
-                    Optional — this month's real total spend, when Bank alone can't isolate it. 0/blank falls back to the bank-based estimate.
-                  </div>
                 `;
-                OTHER_FIELDS.forEach(f => {
-                  const inp = bodyEl.querySelector("#" + fid(f.id));
-                  const parse = CALC_FIELDS.includes(f.id) ? evalArithmetic : num;
-                  inp.addEventListener("focus", () => { const v = num(inp.value); inp.value = v > 0 ? v : ""; });
+                ["mf", "mfProfit", ...OTHER_FIELDS.map(f => f.id)].forEach(id => {
+                  const inp = bodyEl.querySelector("#" + fid(id));
+                  const parse = CALC_FIELDS.includes(id) ? evalArithmetic : num;
+                  inp.addEventListener("focus", () => { const v = num(inp.value); inp.value = v !== 0 ? v : ""; });
                   inp.addEventListener("blur", () => { inp.value = fmtNum(parse(inp.value)); });
                 });
-                const mfInp = bodyEl.querySelector("#" + fid("mf"));
-                mfInp.addEventListener("focus", () => { const v = num(mfInp.value); mfInp.value = v > 0 ? v : ""; });
-                mfInp.addEventListener("blur", () => { mfInp.value = fmtNum(evalArithmetic(mfInp.value)); });
-                const bankInitialInp = bodyEl.querySelector("#" + fid("bankInitial"));
-                bankInitialInp.addEventListener("focus", () => { const v = num(bankInitialInp.value); bankInitialInp.value = v > 0 ? v : ""; });
-                bankInitialInp.addEventListener("blur", () => { bankInitialInp.value = fmtNum(evalArithmetic(bankInitialInp.value)); });
-                const incomeInp = bodyEl.querySelector("#" + fid("income"));
-                incomeInp.addEventListener("focus", () => { const v = num(incomeInp.value); incomeInp.value = v > 0 ? v : ""; });
-                incomeInp.addEventListener("blur", () => { incomeInp.value = fmtNum(evalArithmetic(incomeInp.value)); });
-                const expensesInp = bodyEl.querySelector("#" + fid("expenses"));
-                expensesInp.addEventListener("focus", () => { const v = num(expensesInp.value); expensesInp.value = v > 0 ? v : ""; });
-                expensesInp.addEventListener("blur", () => { expensesInp.value = fmtNum(evalArithmetic(expensesInp.value)); });
               },
               footer: [
                 { label: "Cancel", variant: "ghost" },
@@ -650,19 +508,16 @@ export function editSnapshot(key) {
                   variant: "primary",
                   onClick: () => {
                     const updated = { ...snap };
-                    OTHER_FIELDS.forEach(f => {
-                      const parse = CALC_FIELDS.includes(f.id) ? evalArithmetic : num;
-                      updated[f.id] = parse(bodyElRef.querySelector("#" + fid(f.id)).value);
-                    });
-                    updated.mf = evalArithmetic(bodyElRef.querySelector("#" + fid("mf")).value);
-                    updated.bankInitial = evalArithmetic(bodyElRef.querySelector("#" + fid("bankInitial")).value);
-                    updated.income = evalArithmetic(bodyElRef.querySelector("#" + fid("income")).value);
-                    updated.expenses = evalArithmetic(bodyElRef.querySelector("#" + fid("expenses")).value);
+                    const read = (id) => (CALC_FIELDS.includes(id) ? evalArithmetic : num)(bodyElRef.querySelector("#" + fid(id)).value);
+                    updated.mf = read("mf");
+                    updated.mfProfit = read("mfProfit");
+                    OTHER_FIELDS.forEach(f => { updated[f.id] = read(f.id); });
+                    updated.asOf = bodyElRef.querySelector("#" + fid("asOf")).value || normalized.asOf;
                     updated.total = (updated.mf || 0) + (updated.mfProfit || 0) + othersOfSnap(updated);
                     saveSnapshot(key, updated);
                     saveState();
                     refreshAllSnapshotViews();
-                    UI.toast("success", "Snapshot updated — " + fmtMonth(key), 2500);
+                    UI.toast("success", "Entry updated — " + fmtMonth(key), 2500);
                   },
                 },
               ],
@@ -980,7 +835,6 @@ export function renderAssetTrends() {
               total: currentTotal, mf: mfVal, mfProfit: profit,
               bank: state.networth.bank || 0, fd: state.networth.fd || 0, cash: state.networth.cash || 0,
               ppf: state.networth.ppf || 0, epf: state.networth.epf || 0, bonds: state.networth.bonds || 0,
-              income: state.networth.income || 0,
             };
 
             const periodsEl = el("nwAssetTrendsPeriods");
@@ -1045,7 +899,7 @@ export function renderAssetTrends() {
                 const growthPct = (Math.pow(1 + growthRate, 12) - 1) * 100;
 
                 const allSnap = snapshotMonthsAgo(sorted, "all");
-                const shareHtml = r.key !== "income" && r.key !== "total" && currentTotal > 0
+                const shareHtml = r.key !== "total" && currentTotal > 0
                   ? (() => {
                       const shareNow = (r.current / currentTotal) * 100;
                       const shareThen = allSnap && allSnap.total > 0 ? ((allSnap[r.key] || 0) / allSnap.total) * 100 : null;
