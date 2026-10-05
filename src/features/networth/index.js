@@ -629,7 +629,7 @@ export function renderSnapshotsList() {
                   ).join("") +
                   `<div class="nw-snap-edit-row">
                     <button class="btn btn-ghost btn-sm nw-snap-list-edit" data-key="${s.key}">Edit</button>
-                    ${editMode ? `<button class="btn btn-ghost btn-sm nw-snap-list-del" data-key="${s.key}" style="color:var(--coral)">Delete</button>` : ""}
+                    <button class="btn btn-ghost btn-sm nw-snap-list-del" data-key="${s.key}" style="color:var(--coral)">Delete</button>
                   </div>`
                 : "";
               return `<div class="nw-hist-item">
