@@ -8,7 +8,7 @@ import { monthlyExpenseSeries, totalMonthlyExpenses } from "../../domain/expense
 import { editMode, EQ_FUNDS, LIQ_FUNDS, normalizeSnap, othersOfSnap, saveState, snapshotKey, state } from "../../core/state.js";
 import { el } from "../../core/dom.js";
 import { evalArithmetic, fmt, fmtCompact, fmtMonth, fmtNum, num } from "../../core/format.js";
-import { deleteSnapshot, healSnapshotMf, saveSnapshot, setNetworthField } from "../../store/actions.js";
+import { deleteSnapshot, saveSnapshot, setNetworthField } from "../../store/actions.js";
 import { computeHealthScore } from "../summary/index.js";
 
 export let nwHistExpanded = new Set();
@@ -402,18 +402,11 @@ export function takeSnapshot() {
 
 export function renderNwHistory() {
             const snaps = state.networth.snapshots || {};
-            // Self-heal: recompute each snapshot's MF Value from transaction
-            // history as of its month, correcting any figure that was
-            // previously saved wrong (e.g. overwritten with a live total).
-            let healed = false;
-            Object.keys(snaps).forEach((k) => {
-              const correctMf = mfValueAsOf(k, LIQ_FUNDS, EQ_FUNDS, state.transactions);
-              if ((snaps[k].mf || 0) !== correctMf) {
-                healSnapshotMf(k, correctMf);
-                healed = true;
-              }
-            });
-            if (healed) saveState();
+            // Saved snapshots are historical records and are never
+            // recomputed here. (An earlier "self-heal" re-derived every
+            // snapshot's MF Value from transactions on each render, which
+            // silently rewrote past months whenever the transaction log
+            // changed — e.g. logging a redemption shrank old snapshots.)
             const sorted = Object.entries(snaps)
               .map(([k, v]) => normalizeSnap(k, v))
               .sort((a, b) => b.key.localeCompare(a.key));
@@ -577,7 +570,6 @@ export function editSnapshot(key) {
             })[0].total || 0;
             const bankInitialVal = normalized.bankInitial;
             const readonlyRows = [
-              { label: "MF Value", value: snap.mf || 0 },
               { label: "Unrealized Gain", value: snap.mfProfit || 0 },
             ];
             let bodyElRef = null;
@@ -588,6 +580,10 @@ export function editSnapshot(key) {
               body: (bodyEl) => {
                 bodyElRef = bodyEl;
                 bodyEl.innerHTML = `
+                  <div class="field" style="margin-bottom:0;">
+                    <label class="flabel" for="${fid("mf")}">MF Value${calcHint("mf")}</label>
+                    <input class="form-inp" id="${fid("mf")}" type="text" inputmode="numeric" value="${fmtNum(snap.mf || 0)}" />
+                  </div>
                   <div>
                     ${readonlyRows.map(r => `<div class="nw-hist-detail-row"><span>${r.label}</span><span>${fmt(r.value)}</span></div>`).join("")}
                   </div>
@@ -634,6 +630,9 @@ export function editSnapshot(key) {
                   inp.addEventListener("focus", () => { const v = num(inp.value); inp.value = v > 0 ? v : ""; });
                   inp.addEventListener("blur", () => { inp.value = fmtNum(parse(inp.value)); });
                 });
+                const mfInp = bodyEl.querySelector("#" + fid("mf"));
+                mfInp.addEventListener("focus", () => { const v = num(mfInp.value); mfInp.value = v > 0 ? v : ""; });
+                mfInp.addEventListener("blur", () => { mfInp.value = fmtNum(evalArithmetic(mfInp.value)); });
                 const bankInitialInp = bodyEl.querySelector("#" + fid("bankInitial"));
                 bankInitialInp.addEventListener("focus", () => { const v = num(bankInitialInp.value); bankInitialInp.value = v > 0 ? v : ""; });
                 bankInitialInp.addEventListener("blur", () => { bankInitialInp.value = fmtNum(evalArithmetic(bankInitialInp.value)); });
@@ -655,6 +654,7 @@ export function editSnapshot(key) {
                       const parse = CALC_FIELDS.includes(f.id) ? evalArithmetic : num;
                       updated[f.id] = parse(bodyElRef.querySelector("#" + fid(f.id)).value);
                     });
+                    updated.mf = evalArithmetic(bodyElRef.querySelector("#" + fid("mf")).value);
                     updated.bankInitial = evalArithmetic(bodyElRef.querySelector("#" + fid("bankInitial")).value);
                     updated.income = evalArithmetic(bodyElRef.querySelector("#" + fid("income")).value);
                     updated.expenses = evalArithmetic(bodyElRef.querySelector("#" + fid("expenses")).value);
